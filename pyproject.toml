@@ -1,0 +1,20 @@
+[tool.poetry]
+name = "driftpy"
+version = "0.1.0"
+description = "A Python client for the Drift DEX"
+authors = ["Your Name <you@example.com>"]
+license = "MIT"
+
+[tool.poetry.dependencies]
+python = "^3.9"
+anchorpy = "^0.6.3"
+solana = "^0.21.0"
+
+[tool.poetry.dev-dependencies]
+pytest = "^6.2.5"
+flake8 = "^4.0.1"
+mypy = "^0.931"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
