@@ -29,6 +29,16 @@ class ClearingHouse:
     async def create(cls, program: Program) -> "ClearingHouse":
         state_pubkey = PublicKey.find_program_address(
             [b"clearing_house"], program.program_id
-        )
+        )[0]
         state: StateAccount = program.account["state"].fetch(state_pubkey)
-        pdas = ClearingHousePDAs(state=state.)
+        pdas = ClearingHousePDAs(
+            state=state_pubkey,
+            markets=state.markets,
+            trade_history=state.trade_history,
+            deposit_history=state.deposit_history,
+            funding_payment_history=state.funding_payment_history,
+            funding_rate_history=state.funding_rate_history,
+            liquidation_history=state.liquidation_history,
+            curve_history=state.curve_history,
+        )
+        return cls(program, pdas)
