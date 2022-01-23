@@ -1,6 +1,9 @@
+from typing import TypeVar, Type
 from solana.publickey import PublicKey
 from anchorpy import Program
 from driftpy.types import StateAccount
+
+T = TypeVar("T")
 
 
 class ClearingHousePDAs:
@@ -12,6 +15,12 @@ class ClearingHousePDAs:
     funding_rate_history: PublicKey
     liquidation_history: PublicKey
     curve_history: PublicKey
+
+
+def get_clearing_house_state_account_public_key_and_nonce(
+    program_id: PublicKey,
+) -> tuple[PublicKey, int]:
+    return PublicKey.find_program_address([b"clearing_house"], program_id)
 
 
 class ClearingHouse:
@@ -26,7 +35,7 @@ class ClearingHouse:
         self.program.account["state"].fetch(self.pdas.state)
 
     @classmethod
-    async def create(cls, program: Program) -> "ClearingHouse":
+    async def create(cls: Type[T], program: Program) -> T:
         state_pubkey = PublicKey.find_program_address(
             [b"clearing_house"], program.program_id
         )[0]
