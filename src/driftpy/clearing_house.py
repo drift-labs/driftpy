@@ -23,6 +23,10 @@ def get_clearing_house_state_account_public_key_and_nonce(
     return PublicKey.find_program_address([b"clearing_house"], program_id)
 
 
+async def _get_state_account(program: Program, state_pubkey: PublicKey) -> StateAccount:
+    return await program.account["State"].fetch(state_pubkey)
+
+
 class ClearingHouse:
     def __init__(self, program: Program, pdas: ClearingHousePDAs):
         self.program = program
@@ -31,15 +35,15 @@ class ClearingHouse:
     def _find_program_address(self, seeds: list[bytes]) -> PublicKey:
         return PublicKey.find_program_address(seeds, self.program.program_id)[0]
 
-    async def get_state_account(self):
-        self.program.account["state"].fetch(self.pdas.state)
+    async def get_state_account(self) -> StateAccount:
+        return await _get_state_account(self.program, self.pdas.state)
 
     @classmethod
     async def create(cls: Type[T], program: Program) -> T:
         state_pubkey = PublicKey.find_program_address(
             [b"clearing_house"], program.program_id
         )[0]
-        state: StateAccount = program.account["state"].fetch(state_pubkey)
+        state = await _get_state_account(program, state_pubkey)
         pdas = ClearingHousePDAs(
             state=state_pubkey,
             markets=state.markets,
