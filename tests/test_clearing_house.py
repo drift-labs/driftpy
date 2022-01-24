@@ -13,8 +13,8 @@ def program(workspace: WorkspaceType) -> Program:
 
 @fixture(scope="module")
 async def clearing_house(program: Program, usdc_mint: PublicKey) -> Admin:
-    prog = await Admin.from_(program.program_id, program.provider)
-    await prog.initialize(usdc_mint, admin_controls_prices=True)
+    await Admin.initialize(program, usdc_mint, admin_controls_prices=True)
+    return await Admin.from_(program.program_id, program.provider)
 
 
 @fixture(scope="module")

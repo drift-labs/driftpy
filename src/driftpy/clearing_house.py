@@ -38,11 +38,15 @@ class ClearingHouse:
     async def get_state_account(self) -> StateAccount:
         return await _get_state_account(self.program, self.pdas.state)
 
+    @staticmethod
+    def _get_state_pubkey(program: Program) -> PublicKey:
+        return PublicKey.find_program_address([b"clearing_house"], program.program_id)[
+            0
+        ]
+
     @classmethod
     async def create(cls: Type[T], program: Program) -> T:
-        state_pubkey = PublicKey.find_program_address(
-            [b"clearing_house"], program.program_id
-        )[0]
+        state_pubkey = cls._get_state_pubkey(program)
         state = await _get_state_account(program, state_pubkey)
         pdas = ClearingHousePDAs(
             state=state_pubkey,
