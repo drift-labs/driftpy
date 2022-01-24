@@ -1,5 +1,6 @@
 from pytest import fixture, mark
 from solana.publickey import PublicKey
+from solana.keypair import Keypair
 from anchorpy import Program, Provider, WorkspaceType
 
 from driftpy.admin import Admin
@@ -12,8 +13,8 @@ def program(workspace: WorkspaceType) -> Program:
 
 
 @fixture(scope="module")
-async def clearing_house(program: Program, usdc_mint: PublicKey) -> Admin:
-    await Admin.initialize(program, usdc_mint, admin_controls_prices=True)
+async def clearing_house(program: Program, usdc_mint: Keypair) -> Admin:
+    await Admin.initialize(program, usdc_mint.public_key, admin_controls_prices=True)
     return await Admin.from_(program.program_id, program.provider)
 
 

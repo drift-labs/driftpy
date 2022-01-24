@@ -52,3 +52,4 @@ async def usdc_mint(provider: Provider) -> Keypair:
         create_usdc_mint_account_ix, init_collateral_mint_ix
     )
     await provider.send(fake_usdc_tx, [fake_usdc_mint])
+    return fake_usdc_mint
