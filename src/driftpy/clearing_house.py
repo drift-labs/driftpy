@@ -17,6 +17,7 @@ from driftpy.types import (
     LiquidationHistoryAccount,
     DepositHistoryAccount,
     CurveHistoryAccount,
+    User,
 )
 
 
@@ -216,3 +217,39 @@ class ClearingHouse:
         return get_user_account_public_key_and_nonce(
             self.program.program_id, self.program.provider.wallet.public_key
         )[0]
+
+    async def get_withdraw_collateral_ix(
+        self, amount: int, collateral_account_public_key: PublicKey
+    ) -> TransactionInstruction:
+        user_account_public_key = self.get_user_account_public_key()
+        user: User = await self.program.account["User"].fetch(user_account_public_key)
+        state = await self.get_state_account()
+        return self.program.instruction["withdraw_collateral"](
+            amount,
+            ctx=Context(
+                accounts={
+                    "state": self.pdas.state,
+                    "user": user_account_public_key,
+                    "collateral_vault": state.collateral_vault,
+                    "collateral_vault_authority": state.collateral_vault_authority,
+                    "insurance_vault": state.insurance_vault,
+                    "insurance_vault_authority": state.insurance_vault_authority,
+                    "user_collateral_account": collateral_account_public_key,
+                    "authority": self.program.provider.wallet.public_key,
+                    "token_program": TOKEN_PROGRAM_ID,
+                    "markets": state.markets,
+                    "user_positions": user.positions,
+                    "funding_payment_history": state.funding_payment_history,
+                    "deposit_history": state.deposit_history,
+                },
+            ),
+        )
+
+    async def withdraw_collateral(
+        self, amount: int, collateral_account_public_key: PublicKey
+    ) -> TransactionSignature:
+        ix = await self.get_withdraw_collateral_ix(
+            amount, collateral_account_public_key
+        )
+        tx = Transaction().add(ix)
+        return await self.program.provider.send(tx)

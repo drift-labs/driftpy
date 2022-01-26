@@ -1,4 +1,5 @@
 from math import sqrt
+from turtle import clear
 from pytest import fixture, mark
 from pytest_asyncio import fixture as async_fixture
 from solana.keypair import Keypair
@@ -224,3 +225,47 @@ async def test_initialize_user_account_with_collateral(
     assert deposit_history.deposit_records[0].amount == 10000000
     assert deposit_history.deposit_records[0].collateral_before == 0
     assert deposit_history.deposit_records[0].cumulative_deposits_before == 0
+
+
+@async_fixture(scope="module")
+async def after_withdraw_collateral(
+    clearing_house: Admin, user_usdc_account: Keypair
+) -> Admin:
+    await clearing_house.withdraw_collateral(USDC_AMOUNT, user_usdc_account.public_key)
+    return clearing_house
+
+
+@mark.asyncio
+async def test_withdraw_collateral(
+    after_withdraw_collateral: Admin,
+    initialized_user_account_with_deposit: PublicKey,
+    provider: Provider,
+    user_usdc_account: Keypair,
+) -> None:
+    user_account_public_key = initialized_user_account_with_deposit
+    # Check that user account has proper collateral
+    user: User = await after_withdraw_collateral.program.account["User"].fetch(
+        user_account_public_key
+    )
+    assert user.collateral == 0
+    assert user.cumulative_deposits == 0
+    # Check that clearing house collateral account has proper collateral]
+    clearing_house_state = await after_withdraw_collateral.get_state_account()
+    clearing_house_collateral_vault = await get_token_account(
+        provider, clearing_house_state.collateral_vault
+    )
+    assert clearing_house_collateral_vault.amount == 0
+
+    user_usd_ctoken = await get_token_account(provider, user_usdc_account.public_key)
+    assert user_usd_ctoken.amount == USDC_AMOUNT
+
+    deposit_history = await after_withdraw_collateral.get_deposit_history_account()
+
+    deposit_record = deposit_history.deposit_records[1]
+    assert deposit_history.head == 2
+    assert deposit_record.record_id == 2
+    assert deposit_record.user_authority == provider.wallet.public_key
+    assert deposit_record.user == user_account_public_key
+    assert deposit_record.amount == 10000000
+    assert deposit_record.collateral_before == 10000000
+    assert deposit_record.cumulative_deposits_before == 10000000
