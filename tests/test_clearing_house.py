@@ -3,18 +3,31 @@ from pytest import fixture, mark
 from pytest_asyncio import fixture as async_fixture
 from solana.keypair import Keypair
 from solana.publickey import PublicKey
+from solana.transaction import Transaction
+from solana.system_program import create_account, CreateAccountParams
+from spl.token.async_client import AsyncToken
+from spl.token._layouts import ACCOUNT_LAYOUT
+from spl.token.constants import TOKEN_PROGRAM_ID
+from spl.token.instructions import (
+    initialize_account,
+    InitializeAccountParams,
+    mint_to,
+    MintToParams,
+)
 from anchorpy import Program, Provider, WorkspaceType
+from anchorpy.utils.token import get_token_account
 
 from driftpy.admin import Admin
 from driftpy.constants.markets import MARKETS
 from driftpy.constants.numeric_constants import MARK_PRICE_PRECISION
-from driftpy.types import StateAccount
+from driftpy.types import DepositDirection, StateAccount, User, UserPositions
 from .helpers import mock_oracle
 
 MANTISSA_SQRT_SCALE = int(sqrt(MARK_PRICE_PRECISION))
 AMM_INITIAL_QUOTE_ASSET_AMOUNT = int((5 * 10 ** 13) * MANTISSA_SQRT_SCALE)
 AMM_INITIAL_BASE_ASSET_AMOUNT = int((5 * 10 ** 13) * MANTISSA_SQRT_SCALE)
 PERIODICITY = 60 * 60  # 1 HOUR
+USDC_AMOUNT = int(10 * 10 ** 6)
 
 
 @fixture(scope="module")
@@ -105,3 +118,109 @@ async def test_initialized_market(
     assert amm_data.funding_period == PERIODICITY
     assert amm_data.last_funding_rate == 0
     assert amm_data.last_funding_rate_ts != 0
+
+
+@async_fixture(scope="module")
+async def user_usdc_account(
+    usdc_mint: Keypair,
+    provider: Provider,
+) -> Keypair:
+    account = Keypair()
+    fake_usdc_tx = Transaction()
+
+    owner = provider.wallet.public_key
+
+    create_usdc_token_account_ix = create_account(
+        CreateAccountParams(
+            from_pubkey=provider.wallet.public_key,
+            new_account_pubkey=account.public_key,
+            lamports=await AsyncToken.get_min_balance_rent_for_exempt_for_account(
+                provider.connection
+            ),
+            space=ACCOUNT_LAYOUT.sizeof(),
+            program_id=TOKEN_PROGRAM_ID,
+        )
+    )
+    fake_usdc_tx.add(create_usdc_token_account_ix)
+
+    init_usdc_token_account_ix = initialize_account(
+        InitializeAccountParams(
+            program_id=TOKEN_PROGRAM_ID,
+            account=account.public_key,
+            mint=usdc_mint.public_key,
+            owner=owner,
+        )
+    )
+    fake_usdc_tx.add(init_usdc_token_account_ix)
+
+    mint_to_user_account_tx = mint_to(
+        MintToParams(
+            program_id=TOKEN_PROGRAM_ID,
+            mint=usdc_mint.public_key,
+            dest=account.public_key,
+            mint_authority=provider.wallet.public_key,
+            signers=[],
+            amount=USDC_AMOUNT,
+        )
+    )
+    fake_usdc_tx.add(mint_to_user_account_tx)
+
+    await provider.send(fake_usdc_tx, [provider.wallet.payer, account])
+    return account
+
+
+@async_fixture(scope="module")
+async def initialized_user_account_with_deposit(
+    clearing_house: Admin, user_usdc_account: Keypair
+) -> PublicKey:
+    (
+        _,
+        user_account_public_key,
+    ) = await clearing_house.initialize_user_account_and_deposit_collateral(
+        USDC_AMOUNT, user_usdc_account.public_key
+    )
+    return user_account_public_key
+
+
+@mark.asyncio
+async def test_initialize_user_account_with_collateral(
+    clearing_house: Admin,
+    initialized_user_account_with_deposit: PublicKey,
+    provider: Provider,
+) -> None:
+    user_account_public_key = initialized_user_account_with_deposit
+    user: User = await clearing_house.program.account["User"].fetch(
+        user_account_public_key
+    )
+    assert user.authority == provider.wallet.public_key
+    assert user.collateral == USDC_AMOUNT
+    assert user.cumulative_deposits == USDC_AMOUNT
+
+    # Check that clearing house collateral account has proper collateral
+    clearing_house_state = await clearing_house.get_state_account()
+    clearing_house_collateral_vault = await get_token_account(
+        provider, clearing_house_state.collateral_vault
+    )
+    assert clearing_house_collateral_vault.amount == USDC_AMOUNT
+
+    user_positions_account: UserPositions = await clearing_house.program.account[
+        "UserPositions"
+    ].fetch(user.positions)
+
+    assert len(user_positions_account.positions) == 5
+    assert user_positions_account.user == user_account_public_key
+    assert user_positions_account.positions[0].base_asset_amount == 0
+    assert user_positions_account.positions[0].quote_asset_amount == 0
+    assert user_positions_account.positions[0].last_cumulative_funding_rate == 0
+
+    deposit_history = await clearing_house.get_deposit_history_account()
+
+    assert deposit_history.head == 1
+    assert deposit_history.deposit_records[0].record_id == 1
+    assert (
+        deposit_history.deposit_records[0].user_authority == provider.wallet.public_key
+    )
+    assert deposit_history.deposit_records[0].user == user_account_public_key
+    assert deposit_history.deposit_records[0].amount == 10000000
+    assert deposit_history.deposit_records[0].collateral_before == 0
+    assert deposit_history.deposit_records[0].cumulative_deposits_before == 0

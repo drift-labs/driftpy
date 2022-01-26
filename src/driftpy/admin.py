@@ -152,7 +152,7 @@ class Admin(ClearingHouse):
         markets_account = await self.get_markets_account()
         if markets_account.markets[market_index].initialized:
             raise ValueError(f"MarketIndex {market_index} already initialized")
-        await self.program.rpc["initialize_market"](
+        return await self.program.rpc["initialize_market"](
             market_index,
             base_asset_reserve,
             quote_asset_reserve,

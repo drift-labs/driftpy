@@ -1,6 +1,6 @@
 from typing import Optional, Any
 from dataclasses import dataclass
-from sumtypes import constructor
+from sumtypes import constructor  # type: ignore
 from borsh_construct.enum import _rust_enum
 from solana.publickey import PublicKey
 
@@ -147,10 +147,10 @@ class MarketsAccount:
 # ClearingHouse Account Types
 
 
-@dataclass
+@_rust_enum
 class DepositDirection:
-    deposit: Optional[Any]
-    withdraw: Optional[Any]
+    DEPOSIT = constructor()
+    WITHDRAW = constructor()
 
 
 @dataclass
@@ -290,3 +290,46 @@ class FundingPaymentHistoryAccount:
 class LiquidationHistoryAccount:
     head: int
     liquidation_records: list[LiquidationRecord]
+
+
+@dataclass
+class User:
+    authority: PublicKey
+    collateral: int
+    cumulative_deposits: int
+    total_fee_paid: int
+    total_token_discount: int
+    total_referral_reward: int
+    total_referee_discount: int
+    positions: PublicKey
+    # upgrade-ability
+    padding0: int
+    padding1: int
+    padding2: int
+    padding3: int
+
+
+@dataclass
+class MarketPosition:
+    market_index: int
+    base_asset_amount: int
+    quote_asset_amount: int
+    last_cumulative_funding_rate: int
+    last_cumulative_repeg_rebate: int
+    last_funding_rate_ts: int
+    stop_loss_price: int
+    stop_loss_amount: int
+    stop_profit_price: int
+    stop_profit_amount: int
+    transfer_to: PublicKey
+    # upgrade-ability
+    padding0: int
+    padding1: int
+
+
+@dataclass
+class UserPositions:
+    user: PublicKey
+    positions: tuple[
+        MarketPosition, MarketPosition, MarketPosition, MarketPosition, MarketPosition
+    ]
