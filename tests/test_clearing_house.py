@@ -46,13 +46,13 @@ async def test_state(state: StateAccount, provider: Provider, clearing_house: Ad
     assert state.insurance_vault_authority == expected_insurance_account_authority
     assert state.insurance_vault_nonce == expected_insurance_account_nonce
 
-    markets_account = clearing_house.get_markets_account()
-    assert markets_account.markets.length == 64
+    markets_account = await clearing_house.get_markets_account()
+    assert len(markets_account.markets) == 64
 
-    funding_rate_history = clearing_house.get_funding_payment_history_account()
-    assert funding_rate_history.head.toNumber() == 0
-    assert funding_rate_history.funding_payment_records.length == 1024
+    funding_rate_history = await clearing_house.get_funding_payment_history_account()
+    assert funding_rate_history.head == 0
+    assert len(funding_rate_history.funding_payment_records) == 1024
 
-    trade_history_account = clearing_house.get_trade_history_account()
-    assert trade_history_account.head.toNumber() == 0
-    assert trade_history_account.trade_records.length == 1024
+    trade_history_account = await clearing_house.get_trade_history_account()
+    assert trade_history_account.head == 0
+    assert len(trade_history_account.trade_records) == 1024

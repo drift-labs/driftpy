@@ -44,8 +44,8 @@ class ClearingHouse:
         self.program = program
         self.pdas = pdas
 
-    def _find_program_address(self, seeds: list[bytes]) -> PublicKey:
-        return PublicKey.find_program_address(seeds, self.program.program_id)[0]
+    def _find_program_address(self, seeds: list[bytes]) -> tuple[PublicKey, int]:
+        return PublicKey.find_program_address(seeds, self.program.program_id)
 
     async def get_state_account(self) -> StateAccount:
         return await _get_state_account(self.program, self.pdas.state)
