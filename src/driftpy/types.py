@@ -333,3 +333,9 @@ class UserPositions:
     positions: tuple[
         MarketPosition, MarketPosition, MarketPosition, MarketPosition, MarketPosition
     ]
+
+
+@_rust_enum
+class PositionDirection:
+    LONG = constructor()
+    SHORT = constructor()

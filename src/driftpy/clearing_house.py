@@ -5,10 +5,12 @@ from solana.keypair import Keypair
 from solana.transaction import Transaction, TransactionSignature, TransactionInstruction
 from solana.system_program import SYS_PROGRAM_ID
 from solana.sysvar import SYSVAR_RENT_PUBKEY
+from solana.transaction import AccountMeta
 from spl.token.constants import TOKEN_PROGRAM_ID
 from anchorpy import Program, Context
 from driftpy.addresses import get_user_account_public_key_and_nonce
 from driftpy.types import (
+    PositionDirection,
     StateAccount,
     MarketsAccount,
     FundingPaymentHistoryAccount,
@@ -172,7 +174,8 @@ class ClearingHouse:
     ) -> TransactionInstruction:
         user_account_public_key = self.get_user_account_public_key()
         if user_positions_account_public_key is None:
-            user_positions_account_public_key = await self.get_user_account().positions
+            user_account = await self.get_user_account()
+            user_positions_account_public_key = user_account.positions
 
         state = await self.get_state_account()
         return self.program.instruction["deposit_collateral"](
@@ -192,6 +195,18 @@ class ClearingHouse:
                 },
             ),
         )
+
+    async def deposit_collateral(
+        self,
+        amount: int,
+        collateral_account_public_key: PublicKey,
+        user_positions_account_public_key: Optional[PublicKey] = None,
+    ) -> TransactionSignature:
+        ix = await self.get_deposit_collateral_instruction(
+            amount, collateral_account_public_key, user_positions_account_public_key
+        )
+        tx = Transaction().add(ix)
+        return await self.program.provider.send(tx)
 
     async def initialize_user_account_and_deposit_collateral(
         self, amount: int, collateral_account_public_key: PublicKey
@@ -253,3 +268,83 @@ class ClearingHouse:
         )
         tx = Transaction().add(ix)
         return await self.program.provider.send(tx)
+
+    async def open_position(
+        self,
+        direction: PositionDirection,
+        amount: int,
+        market_index: int,
+        limit_price: Optional[int] = None,
+        discount_token: Optional[PublicKey] = None,
+        referrer: Optional[PublicKey] = None,
+    ) -> TransactionSignature:
+        ix = await self.get_open_position_ix(
+            direction, amount, market_index, limit_price, discount_token, referrer
+        )
+        tx = Transaction().add(ix)
+        return await self.program.provider.send(tx)
+
+    async def get_open_position_ix(
+        self,
+        direction: PositionDirection,
+        amount: int,
+        market_index: int,
+        limit_price: Optional[int] = None,
+        discount_token: Optional[PublicKey] = None,
+        referrer: Optional[PublicKey] = None,
+    ) -> TransactionInstruction:
+        user_account_public_key = self.get_user_account_public_key()
+        user_account = await self.get_user_account()
+        limit_price_to_use = 0 if limit_price is None else limit_price
+
+        optional_accounts = {
+            "discount_token": False,
+            "referrer": False,
+        }
+        remaining_accounts = []
+        if discount_token:
+            optional_accounts["discount_token"] = True
+            remaining_accounts.append(
+                AccountMeta(
+                    pubkey=discount_token,
+                    is_writable=False,
+                    is_signer=False,
+                )
+            )
+        if referrer:
+            optional_accounts["referrer"] = True
+            remaining_accounts.append(
+                AccountMeta(
+                    pubkey=referrer,
+                    is_writable=True,
+                    is_signer=False,
+                )
+            )
+        markets_account = await self.get_markets_account()
+        price_oracle = markets_account.markets[market_index].amm.oracle
+        state = await self.get_state_account()
+        return self.program.instruction["open_position"](
+            direction,
+            amount,
+            market_index,
+            limit_price_to_use,
+            optional_accounts,
+            ctx=Context(
+                accounts={
+                    "state": self.pdas.state,
+                    "user": user_account_public_key,
+                    "authority": self.program.provider.wallet.public_key,
+                    "markets": state.markets,
+                    "user_positions": user_account.positions,
+                    "trade_history": state.trade_history,
+                    "funding_payment_history": state.funding_payment_history,
+                    "funding_rate_history": state.funding_rate_history,
+                    "oracle": price_oracle,
+                },
+                remaining_accounts=remaining_accounts,
+            ),
+        )
+
+    async def get_user_account(self) -> User:
+        user_account_pubkey = self.get_user_account_public_key()
+        return await self.program.account["User"].fetch(user_account_pubkey)

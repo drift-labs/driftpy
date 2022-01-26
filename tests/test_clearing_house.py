@@ -1,5 +1,4 @@
 from math import sqrt
-from turtle import clear
 from pytest import fixture, mark
 from pytest_asyncio import fixture as async_fixture
 from solana.keypair import Keypair
@@ -20,8 +19,14 @@ from anchorpy.utils.token import get_token_account
 
 from driftpy.admin import Admin
 from driftpy.constants.markets import MARKETS
-from driftpy.constants.numeric_constants import MARK_PRICE_PRECISION
-from driftpy.types import DepositDirection, StateAccount, User, UserPositions
+from driftpy.constants.numeric_constants import MARK_PRICE_PRECISION, MAX_LEVERAGE
+from driftpy.types import (
+    DepositDirection,
+    PositionDirection,
+    StateAccount,
+    User,
+    UserPositions,
+)
 from .helpers import mock_oracle
 
 MANTISSA_SQRT_SCALE = int(sqrt(MARK_PRICE_PRECISION))
@@ -29,6 +34,18 @@ AMM_INITIAL_QUOTE_ASSET_AMOUNT = int((5 * 10 ** 13) * MANTISSA_SQRT_SCALE)
 AMM_INITIAL_BASE_ASSET_AMOUNT = int((5 * 10 ** 13) * MANTISSA_SQRT_SCALE)
 PERIODICITY = 60 * 60  # 1 HOUR
 USDC_AMOUNT = int(10 * 10 ** 6)
+
+
+def calculate_trade_amount(amount_of_collateral: int) -> int:
+    one_mantissa = 100000
+    fee = one_mantissa / 1000
+    trade_amount = (
+        amount_of_collateral
+        * MAX_LEVERAGE
+        * (one_mantissa - MAX_LEVERAGE * fee)
+        / one_mantissa
+    )
+    return int(trade_amount)
 
 
 @fixture(scope="module")
@@ -269,3 +286,66 @@ async def test_withdraw_collateral(
     assert deposit_record.amount == 10000000
     assert deposit_record.collateral_before == 10000000
     assert deposit_record.cumulative_deposits_before == 10000000
+
+
+@async_fixture(scope="module")
+async def redeposit_collateral(
+    after_withdraw_collateral: Admin, user_usdc_account: Keypair
+) -> Admin:
+    await after_withdraw_collateral.deposit_collateral(
+        USDC_AMOUNT, user_usdc_account.public_key
+    )
+    return after_withdraw_collateral
+
+
+@async_fixture(scope="module")
+async def open_long_from_zero_position(
+    redeposit_collateral: Admin,
+) -> tuple[Admin, int]:
+    incremental_usdc_notional_amount = calculate_trade_amount(USDC_AMOUNT)
+    market_index = 0
+    await redeposit_collateral.open_position(
+        PositionDirection.LONG(), incremental_usdc_notional_amount, market_index
+    )
+    return redeposit_collateral, market_index
+
+
+@mark.asyncio
+async def test_long_from_zero_position(
+    open_long_from_zero_position: tuple[Admin, int],
+    initialized_user_account_with_deposit: PublicKey,
+) -> None:
+    clearing_house, market_index = open_long_from_zero_position
+    user_account_public_key = initialized_user_account_with_deposit
+    user: User = await clearing_house.program.account["User"].fetch(
+        user_account_public_key
+    )
+
+    assert user.collateral == 9950250
+    assert user.total_fee_paid == 49750
+    assert user.cumulative_deposits == USDC_AMOUNT
+
+    user_positions_account: UserPositions = await clearing_house.program.account[
+        "UserPositions"
+    ].fetch(user.positions)
+
+    assert user_positions_account.positions[0].quote_asset_amount == 49750000
+    assert user_positions_account.positions[0].base_asset_amount == 497450503674885
+
+    markets_account = await clearing_house.get_markets_account()
+
+    market = markets_account.markets[0]
+
+    assert market.base_asset_amount == 497450503674885
+    assert market.amm.total_fee == 49750
+    assert market.amm.total_fee_minus_distributions == 49750
+
+    trade_history_account = await clearing_house.get_trade_history_account()
+
+    assert trade_history_account.head == 1
+    assert trade_history_account.trade_records[0].user == user_account_public_key
+    assert trade_history_account.trade_records[0].record_id == 1
+    assert trade_history_account.trade_records[0].base_asset_amount == 497450503674885
+    assert trade_history_account.trade_records[0].liquidation is False
+    assert trade_history_account.trade_records[0].quote_asset_amount == 49750000
+    assert trade_history_account.trade_records[0].market_index == market_index
