@@ -1,5 +1,6 @@
 import asyncio
 from pytest import fixture
+from pytest_asyncio import fixture as async_fixture
 from anchorpy import Provider, WorkspaceType, workspace_fixture, Program
 from solana.keypair import Keypair
 from solana.transaction import Transaction
@@ -26,7 +27,7 @@ def provider(workspace: WorkspaceType) -> Provider:
     return workspace["clearing_house"].provider
 
 
-@fixture(scope="session")
+@async_fixture(scope="session")
 async def usdc_mint(provider: Provider) -> Keypair:
     fake_usdc_mint = Keypair()
     params = CreateAccountParams(
