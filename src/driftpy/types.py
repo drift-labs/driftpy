@@ -1,4 +1,7 @@
+from typing import Optional, Any
 from dataclasses import dataclass
+from sumtypes import constructor
+from borsh_construct.enum import _rust_enum
 from solana.publickey import PublicKey
 
 
@@ -91,3 +94,199 @@ class StateAccount:
     discount_mint: PublicKey
     oracle_guard_rails: OracleGuardRails
     max_deposit: int
+
+
+@_rust_enum
+class OracleSource:
+    Pyth = constructor()
+    Switchboard = constructor()
+
+
+@dataclass
+class AMM:
+    base_asset_reserve: int
+    sqrt_k: int
+    cumulative_funding_rate: int
+    last_funding_rate: int
+    last_funding_rate_ts: int
+    last_mark_price_twap: int
+    last_mark_price_twap_ts: int
+    last_oracle_price_twap: int
+    last_oracle_price_twap_ts: int
+    oracle: PublicKey
+    oracle_source: OracleSource
+    funding_period: int
+    quote_asset_reserve: int
+    peg_multiplier: int
+    cumulative_funding_rate_long: int
+    cumulative_funding_rate_short: int
+    cumulative_repeg_rebate_long: int
+    cumulative_repeg_rebate_short: int
+    total_fee_minus_distributions: int
+    total_fee_withdrawn: int
+    total_fee: int
+    minimum_trade_size: int
+
+
+@dataclass
+class Market:
+    amm: AMM
+    base_asset_amount: int
+    base_asset_amount_long: int
+    base_asset_amount_short: int
+    initialized: bool
+    open_interest: int
+
+
+@dataclass
+class MarketsAccount:
+    account_index: int
+    markets: list[Market]
+
+
+# ClearingHouse Account Types
+
+
+@dataclass
+class DepositDirection:
+    deposit: Optional[Any]
+    withdraw: Optional[Any]
+
+
+@dataclass
+class DepositRecord:
+    ts: int
+    record_id: int
+    user_authority: PublicKey
+    user: PublicKey
+    direction: DepositDirection
+    collateral_before: int
+    cumulative_deposits_before: int
+    amount: int
+
+
+@dataclass
+class CurveRecord:
+    ts: int
+    record_id: int
+    market_index: int
+    peg_multiplier_before: int
+    base_asset_reserve_before: int
+    quote_asset_reserve_before: int
+    sqrt_k_before: int
+    peg_multiplier_after: int
+    base_asset_reserve_after: int
+    quote_asset_reserve_after: int
+    sqrt_k_after: int
+    base_asset_amount_long: int
+    base_asset_amount_short: int
+    base_asset_amount: int
+    open_interest: int
+
+
+@dataclass
+class TradeDirection:
+    long: Optional[Any]
+    short: Optional[Any]
+
+
+@dataclass
+class TradeRecord:
+    ts: int
+    record_id: int
+    user_authority: PublicKey
+    user: PublicKey
+    direction: TradeDirection
+    base_asset_amount: int
+    quote_asset_amount: int
+    mark_price_before: int
+    mark_price_after: int
+    fee: int
+    referrer_reward: int
+    referee_discount: int
+    token_discount: int
+    market_index: int
+    liquidation: bool
+    oracle_price: int
+
+
+@dataclass
+class FundingRateRecord:
+    ts: int
+    record_id: int
+    market_index: int
+    funding_rate: int
+    cumulative_funding_rate_long: int
+    cumulative_funding_rate_short: int
+    oracle_price_twap: int
+    mark_price_twap: int
+
+
+@dataclass
+class FundingPaymentRecord:
+    ts: int
+    record_id: int
+    user_authority: PublicKey
+    user: PublicKey
+    market_index: int
+    funding_payment: int
+    base_asset_amount: int
+    user_last_cumulative_funding: int
+    user_last_funding_rate_ts: int
+    amm_cumulative_funding_long: int
+    amm_cumulative_funding_short: int
+
+
+@dataclass
+class LiquidationRecord:
+    ts: int
+    record_id: int
+    user_authority: PublicKey
+    user: PublicKey
+    partial: bool
+    base_asset_value: int
+    base_asset_value_closed: int
+    liquidation_fee: int
+    fee_to_liquidator: int
+    fee_to_insurance_fund: int
+    liquidator: PublicKey
+    total_collateral: int
+    collateral: int
+    unrealized_pnl: int
+    margin_ratio: int
+
+
+@dataclass
+class TradeHistoryAccount:
+    head: int
+    trade_records: list[TradeRecord]
+
+
+@dataclass
+class DepositHistoryAccount:
+    head: int
+    deposit_records: list[DepositRecord]
+
+
+@dataclass
+class CurveHistoryAccount:
+    head: int
+    curve_records: list[CurveRecord]
+
+
+@dataclass
+class FundingRateHistoryAccount:
+    head: int
+    funding_rate_records: list[FundingRateRecord]
+
+
+@dataclass
+class FundingPaymentHistoryAccount:
+    head: int
+    funding_payment_records: list[FundingPaymentRecord]
+
+
+@dataclass
+class LiquidationHistoryAccount:
+    head: int
+    liquidation_records: list[LiquidationRecord]
