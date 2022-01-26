@@ -111,20 +111,20 @@ class Admin(ClearingHouse):
                     "system_program": SYS_PROGRAM_ID,
                 },
                 pre_instructions=await asyncio.gather(
-                    program.account["funding_rate_history"].create_instruction(
+                    program.account["FundingRateHistory"].create_instruction(
                         funding_rate_history
                     ),
-                    program.account["funding_payment_history"].create_instruction(
+                    program.account["FundingPaymentHistory"].create_instruction(
                         funding_payment_history
                     ),
-                    program.account["trade_history"].create_instruction(trade_history),
-                    program.account["liquidation_history"].create_instruction(
+                    program.account["TradeHistory"].create_instruction(trade_history),
+                    program.account["LiquidationHistory"].create_instruction(
                         liquidation_history
                     ),
-                    program.account["deposit_history"].create_instruction(
+                    program.account["DepositHistory"].create_instruction(
                         deposit_history
                     ),
-                    program.account["curve_history"].create_instruction(curve_history),
+                    program.account["CurveHistory"].create_instruction(curve_history),
                 ),
                 signers=[
                     deposit_history,
