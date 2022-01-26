@@ -1,11 +1,23 @@
+from dataclasses import dataclass
 from typing import TypeVar, Type
 from solana.publickey import PublicKey
 from anchorpy import Program
-from driftpy.types import StateAccount
+from driftpy.types import (
+    StateAccount,
+    MarketsAccount,
+    FundingPaymentHistoryAccount,
+    FundingRateHistoryAccount,
+    TradeHistoryAccount,
+    LiquidationHistoryAccount,
+    DepositHistoryAccount,
+    CurveHistoryAccount,
+)
+
 
 T = TypeVar("T")
 
 
+@dataclass
 class ClearingHousePDAs:
     state: PublicKey
     markets: PublicKey
@@ -37,6 +49,35 @@ class ClearingHouse:
 
     async def get_state_account(self) -> StateAccount:
         return await _get_state_account(self.program, self.pdas.state)
+
+    async def get_markets_account(self) -> MarketsAccount:
+        return await self.program.account["Markets"].fetch(self.pdas.markets)
+
+    async def get_funding_payment_history_account(self) -> FundingPaymentHistoryAccount:
+        return await self.program.account["FundingPaymentHistory"].fetch(
+            self.pdas.funding_payment_history
+        )
+
+    async def get_funding_rate_history_account(self) -> FundingRateHistoryAccount:
+        return await self.program.account["FundingRateHistory"].fetch(
+            self.pdas.funding_rate_history
+        )
+
+    async def get_trade_history_account(self) -> TradeHistoryAccount:
+        return await self.program.account["TradeHistory"].fetch(self.pdas.trade_history)
+
+    async def get_liquidation_history_account(self) -> LiquidationHistoryAccount:
+        return await self.program.account["LiquidationHistory"].fetch(
+            self.pdas.liquidation_history
+        )
+
+    async def get_deposit_history_account(self) -> DepositHistoryAccount:
+        return await self.program.account["DepositHistory"].fetch(
+            self.pdas.deposit_history
+        )
+
+    async def get_curve_history_account(self) -> CurveHistoryAccount:
+        return await self.program.account["CurveHistory"].fetch(self.pdas.curve_history)
 
     @staticmethod
     def _get_state_pubkey(program: Program) -> PublicKey:
