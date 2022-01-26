@@ -16,6 +16,7 @@ from driftpy.clearing_house import (
     T,
     get_clearing_house_state_account_public_key_and_nonce,
 )
+from driftpy.constants.numeric_constants import PEG_PRECISION
 
 
 class Admin(ClearingHouse):
@@ -138,3 +139,31 @@ class Admin(ClearingHouse):
         )
 
         return initialize_tx_sig, initialize_history_tx_sig
+
+    async def initialize_market(
+        self,
+        market_index: int,
+        price_oracle: PublicKey,
+        base_asset_reserve: int,
+        quote_asset_reserve: int,
+        periodicity: int,
+        peg_multiplier: int = PEG_PRECISION,
+    ) -> TransactionSignature:
+        markets_account = await self.get_markets_account()
+        if markets_account.markets[market_index].initialized:
+            raise ValueError(f"MarketIndex {market_index} already initialized")
+        await self.program.rpc["initialize_market"](
+            market_index,
+            base_asset_reserve,
+            quote_asset_reserve,
+            periodicity,
+            peg_multiplier,
+            ctx=Context(
+                accounts={
+                    "state": self.pdas.state,
+                    "admin": self.program.provider.wallet.public_key,
+                    "oracle": price_oracle,
+                    "markets": self.pdas.markets,
+                }
+            ),
+        )
