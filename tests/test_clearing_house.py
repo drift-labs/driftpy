@@ -34,6 +34,7 @@ AMM_INITIAL_QUOTE_ASSET_AMOUNT = int((5 * 10 ** 13) * MANTISSA_SQRT_SCALE)
 AMM_INITIAL_BASE_ASSET_AMOUNT = int((5 * 10 ** 13) * MANTISSA_SQRT_SCALE)
 PERIODICITY = 60 * 60  # 1 HOUR
 USDC_AMOUNT = int(10 * 10 ** 6)
+MARKET_INDEX = 0
 
 
 def calculate_trade_amount(amount_of_collateral: int) -> int:
@@ -301,21 +302,20 @@ async def redeposit_collateral(
 @async_fixture(scope="module")
 async def open_long_from_zero_position(
     redeposit_collateral: Admin,
-) -> tuple[Admin, int]:
+) -> Admin:
     incremental_usdc_notional_amount = calculate_trade_amount(USDC_AMOUNT)
-    market_index = 0
     await redeposit_collateral.open_position(
-        PositionDirection.LONG(), incremental_usdc_notional_amount, market_index
+        PositionDirection.LONG(), incremental_usdc_notional_amount, MARKET_INDEX
     )
-    return redeposit_collateral, market_index
+    return redeposit_collateral
 
 
 @mark.asyncio
 async def test_long_from_zero_position(
-    open_long_from_zero_position: tuple[Admin, int],
+    open_long_from_zero_position: Admin,
     initialized_user_account_with_deposit: PublicKey,
 ) -> None:
-    clearing_house, market_index = open_long_from_zero_position
+    clearing_house = open_long_from_zero_position
     user_account_public_key = initialized_user_account_with_deposit
     user: User = await clearing_house.program.account["User"].fetch(
         user_account_public_key
@@ -348,4 +348,49 @@ async def test_long_from_zero_position(
     assert trade_history_account.trade_records[0].base_asset_amount == 497450503674885
     assert trade_history_account.trade_records[0].liquidation is False
     assert trade_history_account.trade_records[0].quote_asset_amount == 49750000
-    assert trade_history_account.trade_records[0].market_index == market_index
+    assert trade_history_account.trade_records[0].market_index == MARKET_INDEX
+
+
+@async_fixture(scope="module")
+async def reduce_long_position(
+    open_long_from_zero_position: Admin,
+) -> Admin:
+    new_usdc_notional_amount = calculate_trade_amount(int(USDC_AMOUNT / 2))
+    await open_long_from_zero_position.open_position(
+        PositionDirection.SHORT(), new_usdc_notional_amount, MARKET_INDEX
+    )
+    return open_long_from_zero_position
+
+
+@mark.asyncio
+async def test_reduce_long_position(
+    reduce_long_position: Admin, initialized_user_account_with_deposit: PublicKey
+) -> None:
+    user_account_public_key = initialized_user_account_with_deposit
+    clearing_house = reduce_long_position
+    user = await clearing_house.program.account["User"].fetch(user_account_public_key)
+    user_positions_account = await clearing_house.program.account[
+        "UserPositions"
+    ].fetch(user.positions)
+    assert user_positions_account.positions[0].quote_asset_amount == 24876238
+    assert user_positions_account.positions[0].base_asset_amount == 248737625303142
+    assert user.collateral == 9926613
+    assert user.total_fee_paid == 74625
+    assert user.cumulative_deposits == USDC_AMOUNT
+
+    markets_account = await clearing_house.get_markets_account()
+    market = markets_account.markets[0]
+    assert market.base_asset_amount == 248737625303142
+    assert market.amm.total_fee == 74625
+    assert market.amm.total_fee_minus_distributions == 74625
+
+    trade_history_account = await clearing_house.get_trade_history_account()
+
+    assert trade_history_account.head == 2
+    assert trade_history_account.trade_records[1].user == user_account_public_key
+    assert trade_history_account.trade_records[1].record_id == 2
+    assert trade_history_account.trade_records[1].base_asset_amount == 248712878371743
+
+    assert trade_history_account.trade_records[1].liquidation is False
+    assert trade_history_account.trade_records[1].quote_asset_amount == 24875000
+    assert trade_history_account.trade_records[1].market_index == MARKET_INDEX
