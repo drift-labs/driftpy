@@ -20,6 +20,7 @@ from driftpy.types import (
     DepositHistoryAccount,
     CurveHistoryAccount,
     User,
+    UserPositions,
 )
 
 
@@ -126,25 +127,25 @@ class ClearingHouse:
             self.program.program_id, self.program.provider.wallet.public_key
         )
 
-        remaining_accounts = []
+        remaining_accounts: list[AccountMeta] = []
         optional_accounts = self.program.type["InitializeUserOptionalAccounts"](
             whitelist_token=False
         )
 
         # state = self.get_state_account()
         # if state.whitelist_mint:
-        #     optional_accounts.whitelist_token = true
+        #     optional_accounts.whitelist_token = True
         #     associated_token_public_key = await Token.get_associated_token_address(
         #         ASSOCIATED_TOKEN_PROGRAM_ID,
         #         TOKEN_PROGRAM_ID,
         #         state.whitelist_mint,
         #         self.program.provider.wallet.public_key,
         #     )
-        #     remaining_accounts.push(
+        #     remaining_accounts.append(
         #         {
-        #             pubkey: associated_token_public_key,
-        #             is_writable: false,
-        #             is_signer: false,
+        #             pubkey=associated_token_public_key,
+        #             is_writable: False,
+        #             is_signer: False,
         #         }
         #     )
 
@@ -348,3 +349,186 @@ class ClearingHouse:
     async def get_user_account(self) -> User:
         user_account_pubkey = self.get_user_account_public_key()
         return await self.program.account["User"].fetch(user_account_pubkey)
+
+    async def get_close_position_ix(
+        self,
+        market_index: int,
+        discount_token: Optional[PublicKey] = None,
+        referrer: Optional[PublicKey] = None,
+    ) -> TransactionInstruction:
+        user_account_public_key = self.get_user_account_public_key()
+        user_account = await self.get_user_account()
+        markets_account = await self.get_markets_account()
+        price_oracle = markets_account.markets[market_index].amm.oracle
+
+        optional_accounts = {
+            "discount_token": False,
+            "referrer": False,
+        }
+        remaining_accounts = []
+        if discount_token is not None:
+            optional_accounts["discount_token"] = True
+            remaining_accounts.append(
+                AccountMeta(
+                    pubkey=discount_token,
+                    is_writable=False,
+                    is_signer=False,
+                )
+            )
+        if referrer is not None:
+            optional_accounts["referrer"] = True
+            remaining_accounts.append(
+                AccountMeta(
+                    pubkey=referrer,
+                    is_writable=True,
+                    is_signer=False,
+                )
+            )
+
+        state = await self.get_state_account()
+        return self.program.instruction["close_position"](
+            market_index,
+            optional_accounts,
+            ctx=Context(
+                accounts={
+                    "state": self.pdas.state,
+                    "user": user_account_public_key,
+                    "authority": self.program.provider.wallet.public_key,
+                    "markets": state.markets,
+                    "user_positions": user_account.positions,
+                    "trade_history": state.trade_history,
+                    "funding_payment_history": state.funding_payment_history,
+                    "funding_rate_history": state.funding_rate_history,
+                    "oracle": price_oracle,
+                },
+                remaining_accounts=remaining_accounts,
+            ),
+        )
+
+    async def close_position(
+        self,
+        market_index: int,
+        discount_token: Optional[PublicKey] = None,
+        referrer: Optional[PublicKey] = None,
+    ) -> TransactionSignature:
+        """Close an entire position. If you want to reduce a position, use the {@link openPosition} method in the opposite direction of the current position."""
+        ix = await self.get_close_position_ix(market_index, discount_token, referrer)
+        tx = Transaction().add(ix)
+        return await self.program.provider.send(tx)
+
+    async def deleteUser(self) -> TransactionSignature:
+        user_account_public_key = self.get_user_account_public_key()
+        user = await self.program.account["User"].fetch(user_account_public_key)
+        return await self.program.rpc["DeleteUser"](
+            ctx=Context(
+                accounts={
+                    "user": user_account_public_key,
+                    "user_positions": user.positions,
+                    "authority": self.program.provider.wallet.public_key,
+                }
+            )
+        )
+
+    async def liquidate(
+        self, liquidatee_user_account_public_key: PublicKey
+    ) -> TransactionSignature:
+        ix = await self.get_liquidate_ix(liquidatee_user_account_public_key)
+        tx = Transaction().add(ix)
+        return await self.program.provider.send(tx)
+
+    async def get_liquidate_ix(
+        self,
+        liquidatee_user_account_public_key: PublicKey,
+    ) -> TransactionInstruction:
+        user_account_public_key = self.get_user_account_public_key()
+
+        liquidatee_user_account: User = await self.program.account["User"].fetch(
+            liquidatee_user_account_public_key
+        )
+        liquidatee_positions: UserPositions = await self.program.account[
+            "UserPositions"
+        ].fetch(liquidatee_user_account.positions)
+        markets = await self.get_markets_account()
+
+        remaining_accounts = []
+        for position in liquidatee_positions.positions:
+            if position.base_asset_amount != 0:
+                market = markets.markets[position.market_index]
+                remaining_accounts.append(
+                    AccountMeta(
+                        pubkey=market.amm.oracle,
+                        is_writable=False,
+                        is_signer=False,
+                    )
+                )
+
+        state = await self.get_state_account()
+        return self.program.instruction["liquidate"](
+            ctx=Context(
+                accounts={
+                    "state": self.pdas.state,
+                    "authority": self.program.provider.wallet.public_key,
+                    "user": liquidatee_user_account_public_key,
+                    "liquidator": user_account_public_key,
+                    "collateral_vault": state.collateral_vault,
+                    "collateral_vault_authority": state.collateral_vault_authority,
+                    "insurance_vault": state.insurance_vault,
+                    "insurance_vault_authority": state.insurance_vault_authority,
+                    "token_program": TOKEN_PROGRAM_ID,
+                    "markets": state.markets,
+                    "user_positions": liquidatee_user_account.positions,
+                    "trade_history": state.trade_history,
+                    "liquidation_history": state.liquidation_history,
+                    "funding_payment_history": state.funding_payment_history,
+                },
+                remaining_accounts=remaining_accounts,
+            )
+        )
+
+    async def update_funding_rate(
+        self, oracle: PublicKey, market_index: int
+    ) -> TransactionSignature:
+        ix = await self.get_update_funding_rate_ix(oracle, market_index)
+        tx = Transaction().add(ix)
+        return await self.program.provider.send(tx)
+
+    async def get_update_funding_rate_ix(
+        self, oracle: PublicKey, market_index: int
+    ) -> TransactionInstruction:
+        state = await self.get_state_account()
+        return self.program.instruction["update_funding_rate"](
+            market_index,
+            ctx=Context(
+                accounts={
+                    "state": self.pdas.state,
+                    "markets": state.markets,
+                    "oracle": oracle,
+                    "funding_rate_history": state.funding_rate_history,
+                },
+            ),
+        )
+
+    async def settle_funding_payment(
+        self, user_account: PublicKey, user_positions_account: PublicKey
+    ) -> TransactionSignature:
+        ix = await self.get_settle_funding_payment_ix(
+            user_account, user_positions_account
+        )
+        tx = Transaction().add(ix)
+        return await self.program.provider.send(tx)
+
+    async def get_settle_funding_payment_ix(
+        self, user_account: PublicKey, user_positions_account: PublicKey
+    ) -> TransactionInstruction:
+        state = await self.get_state_account()
+        return self.program.instruction["settle_funding_payment"](
+            ctx=Context(
+                accounts={
+                    "state": self.pdas.state,
+                    "markets": state.markets,
+                    "user": user_account,
+                    "user_positions": user_positions_account,
+                    "funding_payment_history": state.funding_payment_history,
+                },
+            )
+        )
