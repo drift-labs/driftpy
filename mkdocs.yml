@@ -1,0 +1,45 @@
+site_name: DriftPy
+theme:
+  name: material
+  icon:
+    logo: material/chart-line
+  favicon: img/anchor.svg
+  palette:
+    - scheme: default
+      primary: deep-purple
+      toggle:
+        icon: material/toggle-switch-off-outline
+        name: Switch to dark mode
+    - scheme: slate
+      toggle:
+        icon: material/toggle-switch
+        name: Switch to light mode
+markdown_extensions:
+  - pymdownx.highlight
+  - pymdownx.superfences
+  - admonition
+  - pymdownx.snippets
+  - meta
+  - pymdownx.tabbed:
+      alternate_style: true
+repo_url: https://github.com/drift-labs/driftpy
+repo_name: drift-labs/driftpy
+site_url: https://drift-labs.github.io/driftpy/
+plugins:
+  - mkdocstrings:
+      handlers:
+        python:
+          selection:
+            filters:
+              - "!^_"  # exlude all members starting with _
+              - "^__init__$"  # but always include __init__ modules and methods
+          rendering:
+            show_root_heading: true
+            show_root_full_path: false
+  - search
+nav:
+  - index.md
+  - api_reference.md
+extra_css:
+  - css/mkdocstrings.css
+  - css/custom.css
