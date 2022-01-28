@@ -2,12 +2,12 @@
 name = "driftpy"
 version = "0.1.0"
 description = "A Python client for the Drift DEX"
-authors = ["Your Name <you@example.com>"]
+authors = ["Kevin Heavey <kevinheavey123@gmail.com>"]
 license = "MIT"
 
 [tool.poetry.dependencies]
 python = "^3.9"
-anchorpy = "^0.6.3"
+anchorpy = "^0.6.5"
 solana = "^0.21.0"
 
 [tool.poetry.dev-dependencies]
