@@ -51,6 +51,15 @@ async def _get_state_account(program: Program, state_pubkey: PublicKey) -> State
 
 
 class ClearingHouse:
+    """This class is the main way to interact with Drift Protocol.
+
+    It allows you to subscribe to the various accounts where the Market's state is
+    stored, as well as: opening positions, liquidating, settling funding, depositing &
+    withdrawing, and more.
+
+    The default way to construct a ClearingHouse instance is using the {@link create} method.
+    """
+
     def __init__(self, program: Program, pdas: ClearingHousePDAs):
         self.program = program
         self.pdas = pdas
@@ -120,7 +129,7 @@ class ClearingHouse:
         )
         return cls(program, pdas)  # type: ignore
 
-    async def get_initialize_user_instructions(
+    def get_initialize_user_instructions(
         self,
     ) -> tuple[Keypair, PublicKey, TransactionInstruction]:
         user_public_key, user_account_nonce = get_user_account_public_key_and_nonce(
@@ -155,26 +164,26 @@ class ClearingHouse:
         amount: int,
         collateral_account_public_key: PublicKey,
         user_positions_account_public_key: Optional[PublicKey] = None,
+        state: Optional[StateAccount] = None,
     ) -> TransactionInstruction:
         user_account_public_key = self.get_user_account_public_key()
         if user_positions_account_public_key is None:
             user_account = await self.get_user_account()
             user_positions_account_public_key = user_account.positions
-
-        state = await self.get_state_account()
+        state_to_use = await self.get_state_account() if state is None else state
         return self.program.instruction["deposit_collateral"](
             amount,
             ctx=Context(
                 accounts={
                     "state": self.pdas.state,
                     "user": user_account_public_key,
-                    "collateral_vault": state.collateral_vault,
+                    "collateral_vault": state_to_use.collateral_vault,
                     "user_collateral_account": collateral_account_public_key,
                     "authority": self.program.provider.wallet.public_key,
                     "token_program": TOKEN_PROGRAM_ID,
-                    "markets": state.markets,
-                    "funding_payment_history": state.funding_payment_history,
-                    "deposit_history": state.deposit_history,
+                    "markets": state_to_use.markets,
+                    "funding_payment_history": state_to_use.funding_payment_history,
+                    "deposit_history": state_to_use.deposit_history,
                     "user_positions": user_positions_account_public_key,
                 },
             ),
@@ -185,25 +194,35 @@ class ClearingHouse:
         amount: int,
         collateral_account_public_key: PublicKey,
         user_positions_account_public_key: Optional[PublicKey] = None,
+        state: Optional[StateAccount] = None,
     ) -> TransactionSignature:
         ix = await self.get_deposit_collateral_instruction(
-            amount, collateral_account_public_key, user_positions_account_public_key
+            amount,
+            collateral_account_public_key,
+            user_positions_account_public_key,
+            state,
         )
         tx = Transaction().add(ix)
         return await self.program.provider.send(tx)
 
     async def initialize_user_account_and_deposit_collateral(
-        self, amount: int, collateral_account_public_key: PublicKey
+        self,
+        amount: int,
+        collateral_account_public_key: PublicKey,
+        state: Optional[StateAccount] = None,
     ) -> tuple[TransactionSignature, PublicKey]:
         """Creates the Clearing House User account for a user, and deposits some initial collateral."""  # noqa: E501
         (
             user_positions_account,
             user_account_public_key,
             initialize_user_account_ix,
-        ) = await self.get_initialize_user_instructions()
+        ) = self.get_initialize_user_instructions()
 
         deposit_collateral_ix = await self.get_deposit_collateral_instruction(
-            amount, collateral_account_public_key, user_positions_account.public_key
+            amount,
+            collateral_account_public_key,
+            user_positions_account.public_key,
+            state,
         )
 
         tx = Transaction().add(initialize_user_account_ix, deposit_collateral_ix)
@@ -218,13 +237,23 @@ class ClearingHouse:
         )[0]
 
     async def get_withdraw_collateral_ix(
-        self, amount: int, collateral_account_public_key: PublicKey
+        self,
+        amount: int,
+        collateral_account_public_key: PublicKey,
+        user_account: Optional[User] = None,
+        state_account: Optional[StateAccount] = None,
     ) -> TransactionInstruction:
         user_account_public_key = self.get_user_account_public_key()
-        user = cast(
-            User, await self.program.account["User"].fetch(user_account_public_key)
+        user = (
+            cast(
+                User, await self.program.account["User"].fetch(user_account_public_key)
+            )
+            if user_account is None
+            else user_account
         )
-        state = await self.get_state_account()
+        state = (
+            await self.get_state_account() if state_account is None else state_account
+        )
         return self.program.instruction["withdraw_collateral"](
             amount,
             ctx=Context(
@@ -247,10 +276,14 @@ class ClearingHouse:
         )
 
     async def withdraw_collateral(
-        self, amount: int, collateral_account_public_key: PublicKey
+        self,
+        amount: int,
+        collateral_account_public_key: PublicKey,
+        user: Optional[User] = None,
+        state: Optional[StateAccount] = None,
     ) -> TransactionSignature:
         ix = await self.get_withdraw_collateral_ix(
-            amount, collateral_account_public_key
+            amount, collateral_account_public_key, user, state
         )
         tx = Transaction().add(ix)
         return await self.program.provider.send(tx)
@@ -278,9 +311,14 @@ class ClearingHouse:
         limit_price: Optional[int] = None,
         discount_token: Optional[PublicKey] = None,
         referrer: Optional[PublicKey] = None,
+        user_account: Optional[User] = None,
+        markets_account: Optional[MarketsAccount] = None,
+        state_account: Optional[StateAccount] = None,
     ) -> TransactionInstruction:
         user_account_public_key = self.get_user_account_public_key()
-        user_account = await self.get_user_account()
+        user_account_to_use = (
+            await self.get_user_account() if user_account is None else user_account
+        )
         limit_price_to_use = 0 if limit_price is None else limit_price
 
         optional_accounts = {
@@ -306,9 +344,15 @@ class ClearingHouse:
                     is_signer=False,
                 )
             )
-        markets_account = await self.get_markets_account()
-        price_oracle = markets_account.markets[market_index].amm.oracle
-        state = await self.get_state_account()
+        markets_account_to_use = (
+            await self.get_markets_account()
+            if markets_account is None
+            else markets_account
+        )
+        price_oracle = markets_account_to_use.markets[market_index].amm.oracle
+        state = (
+            await self.get_state_account() if state_account is None else state_account
+        )
         return self.program.instruction["open_position"](
             direction,
             amount,
@@ -321,7 +365,7 @@ class ClearingHouse:
                     "user": user_account_public_key,
                     "authority": self.program.provider.wallet.public_key,
                     "markets": state.markets,
-                    "user_positions": user_account.positions,
+                    "user_positions": user_account_to_use.positions,
                     "trade_history": state.trade_history,
                     "funding_payment_history": state.funding_payment_history,
                     "funding_rate_history": state.funding_rate_history,
@@ -340,11 +384,20 @@ class ClearingHouse:
         market_index: int,
         discount_token: Optional[PublicKey] = None,
         referrer: Optional[PublicKey] = None,
+        user_account: Optional[User] = None,
+        markets_account: Optional[MarketsAccount] = None,
+        state_account: Optional[StateAccount] = None,
     ) -> TransactionInstruction:
         user_account_public_key = self.get_user_account_public_key()
-        user_account = await self.get_user_account()
-        markets_account = await self.get_markets_account()
-        price_oracle = markets_account.markets[market_index].amm.oracle
+        user_account_to_use = (
+            await self.get_user_account() if user_account is None else user_account
+        )
+        markets_account_to_use = (
+            await self.get_markets_account()
+            if markets_account is None
+            else markets_account
+        )
+        price_oracle = markets_account_to_use.markets[market_index].amm.oracle
 
         optional_accounts = {
             "discount_token": False,
@@ -370,7 +423,9 @@ class ClearingHouse:
                 )
             )
 
-        state = await self.get_state_account()
+        state = (
+            await self.get_state_account() if state_account is None else state_account
+        )
         return self.program.instruction["close_position"](
             market_index,
             optional_accounts,
@@ -380,7 +435,7 @@ class ClearingHouse:
                     "user": user_account_public_key,
                     "authority": self.program.provider.wallet.public_key,
                     "markets": state.markets,
-                    "user_positions": user_account.positions,
+                    "user_positions": user_account_to_use.positions,
                     "trade_history": state.trade_history,
                     "funding_payment_history": state.funding_payment_history,
                     "funding_rate_history": state.funding_rate_history,
@@ -395,13 +450,23 @@ class ClearingHouse:
         market_index: int,
         discount_token: Optional[PublicKey] = None,
         referrer: Optional[PublicKey] = None,
+        user_account: Optional[User] = None,
+        markets_account: Optional[MarketsAccount] = None,
+        state_account: Optional[StateAccount] = None,
     ) -> TransactionSignature:
         """Close an entire position. If you want to reduce a position, use the {@link openPosition} method in the opposite direction of the current position."""  # noqa: E501
-        ix = await self.get_close_position_ix(market_index, discount_token, referrer)
+        ix = await self.get_close_position_ix(
+            market_index=market_index,
+            discount_token=discount_token,
+            referrer=referrer,
+            user_account=user_account,
+            markets_account=markets_account,
+            state_account=state_account,
+        )
         tx = Transaction().add(ix)
         return await self.program.provider.send(tx)
 
-    async def deleteUser(self) -> TransactionSignature:
+    async def delete_user(self) -> TransactionSignature:
         user_account_public_key = self.get_user_account_public_key()
         user = await self.program.account["User"].fetch(user_account_public_key)
         return await self.program.rpc["DeleteUser"](
@@ -415,34 +480,61 @@ class ClearingHouse:
         )
 
     async def liquidate(
-        self, liquidatee_user_account_public_key: PublicKey
+        self,
+        liquidatee_user_account_public_key: PublicKey,
+        liquidatee_user_account: Optional[User] = None,
+        liquidatee_positions: Optional[UserPositions] = None,
+        markets_account: Optional[MarketsAccount] = None,
+        state_account: Optional[StateAccount] = None,
     ) -> TransactionSignature:
-        ix = await self.get_liquidate_ix(liquidatee_user_account_public_key)
+        ix = await self.get_liquidate_ix(
+            liquidatee_user_account_public_key,
+            liquidatee_user_account=liquidatee_user_account,
+            liquidatee_positions=liquidatee_positions,
+            markets_account=markets_account,
+            state_account=state_account,
+        )
         tx = Transaction().add(ix)
         return await self.program.provider.send(tx)
 
     async def get_liquidate_ix(
         self,
         liquidatee_user_account_public_key: PublicKey,
+        liquidatee_user_account: Optional[User] = None,
+        liquidatee_positions: Optional[UserPositions] = None,
+        markets_account: Optional[MarketsAccount] = None,
+        state_account: Optional[StateAccount] = None,
     ) -> TransactionInstruction:
         user_account_public_key = self.get_user_account_public_key()
 
-        liquidatee_user_account = cast(
-            User,
-            await self.program.account["User"].fetch(
-                liquidatee_user_account_public_key
-            ),
+        liquidatee_user_account_to_use = (
+            cast(
+                User,
+                await self.program.account["User"].fetch(
+                    liquidatee_user_account_public_key
+                ),
+            )
+            if liquidatee_user_account is None
+            else liquidatee_user_account
         )
-        liquidatee_positions = cast(
-            UserPositions,
-            await self.program.account["UserPositions"].fetch(
-                liquidatee_user_account.positions
-            ),
+        liquidatee_positions_to_use = (
+            cast(
+                UserPositions,
+                await self.program.account["UserPositions"].fetch(
+                    liquidatee_user_account_to_use.positions
+                ),
+            )
+            if liquidatee_positions is None
+            else liquidatee_positions
         )
-        markets = await self.get_markets_account()
+        markets = (
+            await self.get_markets_account()
+            if markets_account is None
+            else markets_account
+        )
 
         remaining_accounts = []
-        for position in liquidatee_positions.positions:
+        for position in liquidatee_positions_to_use.positions:
             if position.base_asset_amount != 0:
                 market = markets.markets[position.market_index]
                 remaining_accounts.append(
@@ -453,7 +545,9 @@ class ClearingHouse:
                     )
                 )
 
-        state = await self.get_state_account()
+        state = (
+            await self.get_state_account() if state_account is None else state_account
+        )
         return self.program.instruction["liquidate"](
             ctx=Context(
                 accounts={
@@ -467,7 +561,7 @@ class ClearingHouse:
                     "insurance_vault_authority": state.insurance_vault_authority,
                     "token_program": TOKEN_PROGRAM_ID,
                     "markets": state.markets,
-                    "user_positions": liquidatee_user_account.positions,
+                    "user_positions": liquidatee_user_account_to_use.positions,
                     "trade_history": state.trade_history,
                     "liquidation_history": state.liquidation_history,
                     "funding_payment_history": state.funding_payment_history,
@@ -477,16 +571,24 @@ class ClearingHouse:
         )
 
     async def update_funding_rate(
-        self, oracle: PublicKey, market_index: int
+        self,
+        oracle: PublicKey,
+        market_index: int,
+        state_account: Optional[StateAccount] = None,
     ) -> TransactionSignature:
-        ix = await self.get_update_funding_rate_ix(oracle, market_index)
+        ix = await self.get_update_funding_rate_ix(oracle, market_index, state_account)
         tx = Transaction().add(ix)
         return await self.program.provider.send(tx)
 
     async def get_update_funding_rate_ix(
-        self, oracle: PublicKey, market_index: int
+        self,
+        oracle: PublicKey,
+        market_index: int,
+        state_account: Optional[StateAccount] = None,
     ) -> TransactionInstruction:
-        state = await self.get_state_account()
+        state = (
+            await self.get_state_account() if state_account is None else state_account
+        )
         return self.program.instruction["update_funding_rate"](
             market_index,
             ctx=Context(
@@ -500,7 +602,10 @@ class ClearingHouse:
         )
 
     async def settle_funding_payment(
-        self, user_account: PublicKey, user_positions_account: PublicKey
+        self,
+        user_account: PublicKey,
+        user_positions_account: PublicKey,
+        state_account: Optional[StateAccount] = None,
     ) -> TransactionSignature:
         ix = await self.get_settle_funding_payment_ix(
             user_account, user_positions_account
@@ -509,9 +614,14 @@ class ClearingHouse:
         return await self.program.provider.send(tx)
 
     async def get_settle_funding_payment_ix(
-        self, user_account: PublicKey, user_positions_account: PublicKey
+        self,
+        user_account: PublicKey,
+        user_positions_account: PublicKey,
+        state_account: Optional[StateAccount] = None,
     ) -> TransactionInstruction:
-        state = await self.get_state_account()
+        state = (
+            await self.get_state_account() if state_account is None else state_account
+        )
         return self.program.instruction["settle_funding_payment"](
             ctx=Context(
                 accounts={
