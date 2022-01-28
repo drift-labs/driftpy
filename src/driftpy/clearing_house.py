@@ -132,23 +132,6 @@ class ClearingHouse:
             whitelist_token=False
         )
 
-        # state = self.get_state_account()
-        # if state.whitelist_mint:
-        #     optional_accounts.whitelist_token = True
-        #     associated_token_public_key = await Token.get_associated_token_address(
-        #         ASSOCIATED_TOKEN_PROGRAM_ID,
-        #         TOKEN_PROGRAM_ID,
-        #         state.whitelist_mint,
-        #         self.program.provider.wallet.public_key,
-        #     )
-        #     remaining_accounts.append(
-        #         {
-        #             pubkey=associated_token_public_key,
-        #             is_writable: False,
-        #             is_signer: False,
-        #         }
-        #     )
-
         user_positions = Keypair()
         initialize_user_account_ix = self.program.instruction["initialize_user"](
             user_account_nonce,
