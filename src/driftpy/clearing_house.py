@@ -413,7 +413,7 @@ class ClearingHouse:
         discount_token: Optional[PublicKey] = None,
         referrer: Optional[PublicKey] = None,
     ) -> TransactionSignature:
-        """Close an entire position. If you want to reduce a position, use the {@link openPosition} method in the opposite direction of the current position."""
+        """Close an entire position. If you want to reduce a position, use the {@link openPosition} method in the opposite direction of the current position."""  # noqa: E501
         ix = await self.get_close_position_ix(market_index, discount_token, referrer)
         tx = Transaction().add(ix)
         return await self.program.provider.send(tx)

@@ -22,7 +22,6 @@ from driftpy.admin import Admin
 from driftpy.constants.markets import MARKETS
 from driftpy.constants.numeric_constants import MARK_PRICE_PRECISION, MAX_LEVERAGE
 from driftpy.types import (
-    DepositDirection,
     PositionDirection,
     StateAccount,
     User,
