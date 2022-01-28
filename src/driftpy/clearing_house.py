@@ -28,7 +28,7 @@ T = TypeVar("T")
 
 
 @dataclass
-class ClearingHousePDAs:
+class _ClearingHousePDAs:
     state: PublicKey
     markets: PublicKey
     trade_history: PublicKey
@@ -57,10 +57,11 @@ class ClearingHouse:
     stored, as well as: opening positions, liquidating, settling funding, depositing &
     withdrawing, and more.
 
-    The default way to construct a ClearingHouse instance is using the {@link create} method.
+    The default way to construct a ClearingHouse instance is using the
+    [create][driftpy.clearing_house.ClearingHouse.create] method.
     """
 
-    def __init__(self, program: Program, pdas: ClearingHousePDAs):
+    def __init__(self, program: Program, pdas: _ClearingHousePDAs):
         self.program = program
         self.pdas = pdas
 
@@ -115,9 +116,18 @@ class ClearingHouse:
 
     @classmethod
     async def create(cls: Type[T], program: Program) -> T:
+        """Create a new ClearingHouse instance
+
+        Args:
+            cls (Type[T]): [description]
+            program (Program): [description]
+
+        Returns:
+            T: [description]
+        """
         state_pubkey = cls._get_state_pubkey(program)  # type: ignore
         state = await _get_state_account(program, state_pubkey)
-        pdas = ClearingHousePDAs(
+        pdas = _ClearingHousePDAs(
             state=state_pubkey,
             markets=state.markets,
             trade_history=state.trade_history,
