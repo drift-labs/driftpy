@@ -1,4 +1,5 @@
 from math import sqrt
+from typing import cast
 from pytest import fixture, mark
 from pytest_asyncio import fixture as async_fixture
 from solana.keypair import Keypair
@@ -208,8 +209,9 @@ async def test_initialize_user_account_with_collateral(
     provider: Provider,
 ) -> None:
     user_account_public_key = initialized_user_account_with_deposit
-    user: User = await clearing_house.program.account["User"].fetch(
-        user_account_public_key
+    user = cast(
+        User,
+        await clearing_house.program.account["User"].fetch(user_account_public_key),
     )
     assert user.authority == provider.wallet.public_key
     assert user.collateral == USDC_AMOUNT
@@ -222,9 +224,10 @@ async def test_initialize_user_account_with_collateral(
     )
     assert clearing_house_collateral_vault.amount == USDC_AMOUNT
 
-    user_positions_account: UserPositions = await clearing_house.program.account[
-        "UserPositions"
-    ].fetch(user.positions)
+    user_positions_account = cast(
+        UserPositions,
+        await clearing_house.program.account["UserPositions"].fetch(user.positions),
+    )
 
     assert len(user_positions_account.positions) == 5
     assert user_positions_account.user == user_account_public_key
@@ -262,8 +265,11 @@ async def test_withdraw_collateral(
 ) -> None:
     user_account_public_key = initialized_user_account_with_deposit
     # Check that user account has proper collateral
-    user: User = await after_withdraw_collateral.program.account["User"].fetch(
-        user_account_public_key
+    user = cast(
+        User,
+        await after_withdraw_collateral.program.account["User"].fetch(
+            user_account_public_key
+        ),
     )
     assert user.collateral == 0
     assert user.cumulative_deposits == 0
@@ -317,17 +323,19 @@ async def test_long_from_zero_position(
 ) -> None:
     clearing_house = open_long_from_zero_position
     user_account_public_key = initialized_user_account_with_deposit
-    user: User = await clearing_house.program.account["User"].fetch(
-        user_account_public_key
+    user = cast(
+        User,
+        await clearing_house.program.account["User"].fetch(user_account_public_key),
     )
 
     assert user.collateral == 9950250
     assert user.total_fee_paid == 49750
     assert user.cumulative_deposits == USDC_AMOUNT
 
-    user_positions_account: UserPositions = await clearing_house.program.account[
-        "UserPositions"
-    ].fetch(user.positions)
+    user_positions_account = cast(
+        UserPositions,
+        await clearing_house.program.account["UserPositions"].fetch(user.positions),
+    )
 
     assert user_positions_account.positions[0].quote_asset_amount == 49750000
     assert user_positions_account.positions[0].base_asset_amount == 497450503674885
@@ -369,9 +377,10 @@ async def test_reduce_long_position(
     user_account_public_key = initialized_user_account_with_deposit
     clearing_house = reduce_long_position
     user = await clearing_house.get_user_account()
-    user_positions_account: UserPositions = await clearing_house.program.account[
-        "UserPositions"
-    ].fetch(user.positions)
+    user_positions_account = cast(
+        UserPositions,
+        await clearing_house.program.account["UserPositions"].fetch(user.positions),
+    )
     assert user_positions_account.positions[0].quote_asset_amount == 24876238
     assert user_positions_account.positions[0].base_asset_amount == 248737625303142
     assert user.collateral == 9926613
@@ -414,9 +423,10 @@ async def test_reverse_long_position(
     user_account_public_key = initialized_user_account_with_deposit
     clearing_house = reverse_long_position
     user = await clearing_house.get_user_account()
-    user_positions_account: UserPositions = await clearing_house.program.account[
-        "UserPositions"
-    ].fetch(user.positions)
+    user_positions_account = cast(
+        UserPositions,
+        await clearing_house.program.account["UserPositions"].fetch(user.positions),
+    )
 
     assert user.collateral == 9875625
     assert user.total_fee_paid == 124375
@@ -454,9 +464,10 @@ async def test_close_position(
     user_account_public_key = initialized_user_account_with_deposit
     clearing_house = close_position
     user = await clearing_house.get_user_account()
-    user_positions_account: UserPositions = await clearing_house.program.account[
-        "UserPositions"
-    ].fetch(user.positions)
+    user_positions_account = cast(
+        UserPositions,
+        await clearing_house.program.account["UserPositions"].fetch(user.positions),
+    )
     assert user_positions_account.positions[0].quote_asset_amount == 0
     assert user_positions_account.positions[0].base_asset_amount == 0
     assert user.collateral == 9850749

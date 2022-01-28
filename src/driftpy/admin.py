@@ -26,7 +26,7 @@ class Admin(ClearingHouse):
             idl_raw = json.load(f)
         idl = Idl.from_json(idl_raw)
         program = Program(idl, program_id, provider)
-        return await cls.create(program)
+        return await cls.create(program)  # type: ignore
 
     @classmethod
     async def initialize(
@@ -36,7 +36,7 @@ class Admin(ClearingHouse):
         admin_controls_prices: bool,
     ) -> tuple[TransactionSignature, TransactionSignature]:
         state_account_rpc_response = await program.provider.connection.get_account_info(
-            cls._get_state_pubkey(program)
+            cls._get_state_pubkey(program)  # type: ignore
         )
         if state_account_rpc_response["result"]["value"] is not None:
             raise RuntimeError("Clearing house already initialized")

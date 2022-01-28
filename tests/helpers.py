@@ -12,7 +12,7 @@ async def create_price_feed(
     oracle_program: Program,
     init_price: int,
     confidence: Optional[int] = None,
-    expo: Optional[int] = -4,
+    expo: int = -4,
 ) -> PublicKey:
     conf = int((init_price / 10) * 10 ** -expo) if confidence is None else confidence
     collateral_token_feed = Keypair()
@@ -65,7 +65,7 @@ async def get_feed_data(oracle_program: Program, price_feed: PublicKey) -> Price
 
 
 async def mock_oracle(
-    pyth_program: Program, price: int = 50 * 10e7, expo=-7
+    pyth_program: Program, price: int = int(50 * 10e7), expo=-7
 ) -> PublicKey:
     price_feed_address = await create_price_feed(
         oracle_program=pyth_program, init_price=price, expo=expo

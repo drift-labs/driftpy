@@ -106,7 +106,7 @@ class ClearingHouse:
 
     @classmethod
     async def create(cls: Type[T], program: Program) -> T:
-        state_pubkey = cls._get_state_pubkey(program)
+        state_pubkey = cls._get_state_pubkey(program)  # type: ignore
         state = await _get_state_account(program, state_pubkey)
         pdas = ClearingHousePDAs(
             state=state_pubkey,
@@ -118,7 +118,7 @@ class ClearingHouse:
             liquidation_history=state.liquidation_history,
             curve_history=state.curve_history,
         )
-        return cls(program, pdas)
+        return cls(program, pdas)  # type: ignore
 
     async def get_initialize_user_instructions(
         self,
@@ -238,7 +238,9 @@ class ClearingHouse:
         self, amount: int, collateral_account_public_key: PublicKey
     ) -> TransactionInstruction:
         user_account_public_key = self.get_user_account_public_key()
-        user: User = await self.program.account["User"].fetch(user_account_public_key)
+        user = cast(
+            User, await self.program.account["User"].fetch(user_account_public_key)
+        )
         state = await self.get_state_account()
         return self.program.instruction["withdraw_collateral"](
             amount,
@@ -348,7 +350,7 @@ class ClearingHouse:
 
     async def get_user_account(self) -> User:
         user_account_pubkey = self.get_user_account_public_key()
-        return await self.program.account["User"].fetch(user_account_pubkey)
+        return cast(User, await self.program.account["User"].fetch(user_account_pubkey))
 
     async def get_close_position_ix(
         self,
@@ -442,12 +444,18 @@ class ClearingHouse:
     ) -> TransactionInstruction:
         user_account_public_key = self.get_user_account_public_key()
 
-        liquidatee_user_account: User = await self.program.account["User"].fetch(
-            liquidatee_user_account_public_key
+        liquidatee_user_account = cast(
+            User,
+            await self.program.account["User"].fetch(
+                liquidatee_user_account_public_key
+            ),
         )
-        liquidatee_positions: UserPositions = await self.program.account[
-            "UserPositions"
-        ].fetch(liquidatee_user_account.positions)
+        liquidatee_positions = cast(
+            UserPositions,
+            await self.program.account["UserPositions"].fetch(
+                liquidatee_user_account.positions
+            ),
+        )
         markets = await self.get_markets_account()
 
         remaining_accounts = []
