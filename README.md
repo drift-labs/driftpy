@@ -45,3 +45,11 @@ Run `mkdocs serve` to build the docs and serve them locally.
 ### Updating the embedded IDLs
 
 DriftPy ships with IDL files for the user's convenience. These live at `src/driftpy/idl` if you need to update them.
+
+### Releasing a new version of the package
+
+1. Make sure CHANGELOG.md is updated.
+2. Run `bumpversion major|minor|patch` to update the version number locally and create a tagged commit.
+3. Run `git push origin <version_number>` to push the tag to GitHub.
+4. After merging your PR on GitHub, create a new release at https://github.com/drift-labs/driftpy/releases. 
+The CI process will upload a new version of the package to PyPI.
