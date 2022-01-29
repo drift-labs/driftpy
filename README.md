@@ -41,3 +41,7 @@ poetry shell
 ### Building the docs
 
 Run `mkdocs serve` to build the docs and serve them locally.
+
+### Updating the embedded IDLs
+
+DriftPy ships with IDL files for the user's convenience. These live at `src/driftpy/idl` if you need to update them.
