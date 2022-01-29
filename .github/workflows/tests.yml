@@ -86,7 +86,11 @@ jobs:
       #----------------------------------------------
       - name: Install library
         run: poetry install --no-interaction
-
+      #----------------------------------------------
+      # install nox-poetry
+      #----------------------------------------------
+      - name: Install nox-poetry
+        run: pip install nox-poetry
       #----------------------------------------------
       #              run linters
       #----------------------------------------------
