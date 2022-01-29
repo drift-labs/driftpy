@@ -1,4 +1,5 @@
 test:
+	nox
 	poetry run pytest -vv
 
 lint:

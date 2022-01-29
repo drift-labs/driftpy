@@ -1,6 +1,4 @@
 from typing import Type
-import json
-from importlib import resources
 import asyncio
 
 from solana.publickey import PublicKey
@@ -9,7 +7,7 @@ from solana.keypair import Keypair
 from solana.system_program import SYS_PROGRAM_ID
 from solana.sysvar import SYSVAR_RENT_PUBKEY
 from spl.token.constants import TOKEN_PROGRAM_ID
-from anchorpy import Program, Provider, Idl, Context
+from anchorpy import Program, Provider, Context
 
 from driftpy.clearing_house import (
     ClearingHouse,
@@ -22,11 +20,9 @@ from driftpy.constants.numeric_constants import PEG_PRECISION
 class Admin(ClearingHouse):
     @classmethod
     async def from_(cls: Type[T], program_id: PublicKey, provider: Provider) -> T:
-        with resources.open_text("driftpy.idl", "clearing_house.json") as f:
-            idl_raw = json.load(f)
-        idl = Idl.from_json(idl_raw)
+        idl = cls.local_idl()
         program = Program(idl, program_id, provider)
-        return await cls.create(program)  # type: ignore
+        return await cls.create(program)
 
     @classmethod
     async def initialize(
@@ -36,7 +32,7 @@ class Admin(ClearingHouse):
         admin_controls_prices: bool,
     ) -> tuple[TransactionSignature, TransactionSignature]:
         state_account_rpc_response = await program.provider.connection.get_account_info(
-            cls._get_state_pubkey(program)  # type: ignore
+            cls._get_state_pubkey(program)
         )
         if state_account_rpc_response["result"]["value"] is not None:
             raise RuntimeError("Clearing house already initialized")

@@ -3,7 +3,7 @@ theme:
   name: material
   icon:
     logo: material/chart-line
-  favicon: img/anchor.svg
+  favicon: img/drift.png
   palette:
     - scheme: default
       primary: deep-purple
@@ -33,9 +33,12 @@ plugins:
             filters:
               - "!^_"  # exlude all members starting with _
               - "^__init__$"  # but always include __init__ modules and methods
+              - "!^T$"
+              - "!^get_clearing_house_state_account_public_key_and_nonce$"
           rendering:
             show_root_heading: true
             show_root_full_path: false
+            show_if_no_docstring: true
   - search
 nav:
   - index.md

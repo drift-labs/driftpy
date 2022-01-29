@@ -1,4 +1,6 @@
 from dataclasses import dataclass
+import json
+from importlib import resources
 from typing import Optional, TypeVar, Type, cast
 from solana.publickey import PublicKey
 from solana.keypair import Keypair
@@ -7,7 +9,7 @@ from solana.system_program import SYS_PROGRAM_ID
 from solana.sysvar import SYSVAR_RENT_PUBKEY
 from solana.transaction import AccountMeta
 from spl.token.constants import TOKEN_PROGRAM_ID
-from anchorpy import Program, Context
+from anchorpy import Program, Context, Idl
 from driftpy.addresses import get_user_account_public_key_and_nonce
 from driftpy.types import (
     PositionDirection,
@@ -24,11 +26,14 @@ from driftpy.types import (
 )
 
 
-T = TypeVar("T")
+T = TypeVar("T", bound="ClearingHouse")
 
 
 @dataclass
-class _ClearingHousePDAs:
+class ClearingHousePDAs:
+    """A collection of pubkeys needed to instantiate
+    [ClearingHouse][driftpy.clearing_house.ClearingHouse]"""
+
     state: PublicKey
     markets: PublicKey
     trade_history: PublicKey
@@ -61,7 +66,17 @@ class ClearingHouse:
     [create][driftpy.clearing_house.ClearingHouse.create] method.
     """
 
-    def __init__(self, program: Program, pdas: _ClearingHousePDAs):
+    def __init__(self, program: Program, pdas: ClearingHousePDAs):
+        """Initialize the ClearingHouse object.
+
+        Note: you probably want to use
+        [create][driftpy.clearing_house.ClearingHouse.create]
+        instead of this method.
+
+        Args:
+            program: The AnchorPy program object.
+            pdas: The required PDAs for the ClearingHouse object.
+        """
         self.program = program
         self.pdas = pdas
 
@@ -116,18 +131,17 @@ class ClearingHouse:
 
     @classmethod
     async def create(cls: Type[T], program: Program) -> T:
-        """Create a new ClearingHouse instance
+        """Create a new `ClearingHouse` instance.
 
         Args:
-            cls (Type[T]): [description]
-            program (Program): [description]
+            program: An AnchorPy Program instance.
 
         Returns:
-            T: [description]
+            The new `ClearingHouse` instance.
         """
-        state_pubkey = cls._get_state_pubkey(program)  # type: ignore
+        state_pubkey = cls._get_state_pubkey(program)
         state = await _get_state_account(program, state_pubkey)
-        pdas = _ClearingHousePDAs(
+        pdas = ClearingHousePDAs(
             state=state_pubkey,
             markets=state.markets,
             trade_history=state.trade_history,
@@ -137,7 +151,7 @@ class ClearingHouse:
             liquidation_history=state.liquidation_history,
             curve_history=state.curve_history,
         )
-        return cls(program, pdas)  # type: ignore
+        return cls(program, pdas)
 
     def get_initialize_user_instructions(
         self,
@@ -169,7 +183,7 @@ class ClearingHouse:
         )
         return user_positions, user_public_key, initialize_user_account_ix
 
-    async def get_deposit_collateral_instruction(
+    async def get_deposit_collateral_ix(
         self,
         amount: int,
         collateral_account_public_key: PublicKey,
@@ -206,7 +220,7 @@ class ClearingHouse:
         user_positions_account_public_key: Optional[PublicKey] = None,
         state: Optional[StateAccount] = None,
     ) -> TransactionSignature:
-        ix = await self.get_deposit_collateral_instruction(
+        ix = await self.get_deposit_collateral_ix(
             amount,
             collateral_account_public_key,
             user_positions_account_public_key,
@@ -228,7 +242,7 @@ class ClearingHouse:
             initialize_user_account_ix,
         ) = self.get_initialize_user_instructions()
 
-        deposit_collateral_ix = await self.get_deposit_collateral_instruction(
+        deposit_collateral_ix = await self.get_deposit_collateral_ix(
             amount,
             collateral_account_public_key,
             user_positions_account.public_key,
@@ -242,6 +256,10 @@ class ClearingHouse:
         return tx_sig, user_account_public_key
 
     def get_user_account_public_key(self) -> PublicKey:
+        """Get the address for the Clearing House User's account.
+
+        NOT the user's wallet address.
+        """
         return get_user_account_public_key_and_nonce(
             self.program.program_id, self.program.provider.wallet.public_key
         )[0]
@@ -464,7 +482,7 @@ class ClearingHouse:
         markets_account: Optional[MarketsAccount] = None,
         state_account: Optional[StateAccount] = None,
     ) -> TransactionSignature:
-        """Close an entire position. If you want to reduce a position, use the {@link openPosition} method in the opposite direction of the current position."""  # noqa: E501
+        """Close an entire position. If you want to reduce a position, use the [open_position][driftpy.clearing_house.ClearingHouse.open_position] method in the opposite direction of the current position."""  # noqa: E501
         ix = await self.get_close_position_ix(
             market_index=market_index,
             discount_token=discount_token,
@@ -643,3 +661,9 @@ class ClearingHouse:
                 },
             )
         )
+
+    @staticmethod
+    def local_idl() -> Idl:
+        with resources.open_text("driftpy.idl", "clearing_house.json") as f:
+            idl_raw = json.load(f)
+        return Idl.from_json(idl_raw)
