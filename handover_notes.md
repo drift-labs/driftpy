@@ -19,7 +19,7 @@ You can also just fetch the IDL on-chain of course.
 - This repo pulls in the main Drift repo using [git subtree](https://www.atlassian.com/git/tutorials/git-subtree).
 Follow that linked tutorial if you want to see how it was done or update the repo.
 - Running the tests on localnet currently requires changing the program ID in `drift-core/programs/clearing_house/src/lib.rs`.
-The Makefile does this with sed. Don't commit the lib.rs change or it will be confusing for people.
+Don't commit the lib.rs change or it will be confusing for people.
 
 ### Differences from the TypeScript client
 
