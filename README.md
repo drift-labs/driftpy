@@ -6,6 +6,8 @@
 
 DriftPy is the Python client for the [Drift](https://www.drift.trade/) protocol. It allows you to trade and fetch data from Drift using Python.
 
+[Read The Documentation](https://drift-labs.github.io/driftpy/)
+
 ## Installation
 
 ```
