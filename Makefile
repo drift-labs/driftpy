@@ -1,4 +1,5 @@
 test:
+	sed -i 's/AsW7LnXB9UA1uec9wi9MctYTgTz7YH9snhxd16GsFaGX/4eqgQ2BwhFDdb2ujcQkz7jLXC2tU94kv4hbPkhQpEHgK/' drift-core/programs/clearing_house/src/lib.rs
 	nox
 	poetry run pytest -vv
 

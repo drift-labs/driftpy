@@ -51,7 +51,7 @@ def calculate_trade_amount(amount_of_collateral: int) -> int:
 
 @fixture(scope="module")
 def program(workspace: WorkspaceType) -> Program:
-    return workspace["clearing_house"]
+    yield workspace["clearing_house"]
 
 
 @async_fixture(scope="module")

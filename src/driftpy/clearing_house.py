@@ -664,6 +664,7 @@ class ClearingHouse:
 
     @staticmethod
     def local_idl() -> Idl:
+        """Load the `clearing_house` IDL embedded in the Python package."""
         with resources.open_text("driftpy.idl", "clearing_house.json") as f:
             idl_raw = json.load(f)
         return Idl.from_json(idl_raw)
