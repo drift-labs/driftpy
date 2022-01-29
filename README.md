@@ -57,4 +57,7 @@ The CI process will upload a new version of the package to PyPI.
 ### Updating the `drift-core` subtree
 
 - This repo pulls in the main Drift repo using [git subtree](https://www.atlassian.com/git/tutorials/git-subtree).
-Follow that linked tutorial if you want to see how it was done or update the repo.
+Follow that linked tutorial if you want to see how it was done.
+
+The short answer:
+`git subtree pull --prefix drift-core drift-protocol master --squash`
