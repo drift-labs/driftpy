@@ -9,15 +9,13 @@ Writing those tests also required writing `admin.py`, `types.py` and some consta
 So you need to write what's left.
 
 Also, I copied docstrings from the TS client but most of the methods didn't have docstrings
-and I don't really 
+and I don't really have enough context to write good docstrings for them.
 
 ## Things to note
 
 - The development setup instructions are in the README.
 - The IDLs are copied into `src/driftpy/idl`. You can load the `clearing_house` IDL from there by using `ClearingHouse.local_idl()`.
 You can also just fetch the IDL on-chain of course.
-- This repo pulls in the main Drift repo using [git subtree](https://www.atlassian.com/git/tutorials/git-subtree).
-Follow that linked tutorial if you want to see how it was done or update the repo.
 - Running the tests on localnet currently requires changing the program ID in `drift-core/programs/clearing_house/src/lib.rs`.
 Don't commit the lib.rs change or it will be confusing for people.
 

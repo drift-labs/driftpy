@@ -53,3 +53,8 @@ DriftPy ships with IDL files for the user's convenience. These live at `src/drif
 3. Run `git push origin <version_number>` to push the tag to GitHub.
 4. After merging your PR on GitHub, create a new release at https://github.com/drift-labs/driftpy/releases. 
 The CI process will upload a new version of the package to PyPI.
+
+### Updating the `drift-core` subtree
+
+- This repo pulls in the main Drift repo using [git subtree](https://www.atlassian.com/git/tutorials/git-subtree).
+Follow that linked tutorial if you want to see how it was done or update the repo.
