@@ -97,11 +97,6 @@ jobs:
       - name: Run linters
         run: make lint
       #----------------------------------------------
-      #              Fix Anchor.toml
-      #----------------------------------------------
-      - name: Fix Anchor.toml
-        run: echo -e '\n[programs.localnet]\nclearing_house = "AsW7LnXB9UA1uec9wi9MctYTgTz7YH9snhxd16GsFaGX"' >> drift-core/Anchor.toml
-      #----------------------------------------------
       #              run test suite
       #----------------------------------------------
       - name: Run tests
