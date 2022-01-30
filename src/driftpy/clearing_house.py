@@ -20,7 +20,7 @@ from driftpy.types import (
     TradeHistoryAccount,
     LiquidationHistoryAccount,
     DepositHistoryAccount,
-    CurveHistoryAccount,
+    ExtendedCurveHistoryAccount,
     User,
     UserPositions,
 )
@@ -119,9 +119,9 @@ class ClearingHouse:
         )
         return cast(DepositHistoryAccount, res)
 
-    async def get_curve_history_account(self) -> CurveHistoryAccount:
+    async def get_curve_history_account(self) -> ExtendedCurveHistoryAccount:
         res = await self.program.account["CurveHistory"].fetch(self.pdas.curve_history)
-        return cast(CurveHistoryAccount, res)
+        return cast(ExtendedCurveHistoryAccount, res)
 
     @staticmethod
     def _get_state_pubkey(program: Program) -> PublicKey:

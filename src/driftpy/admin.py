@@ -121,7 +121,9 @@ class Admin(ClearingHouse):
                     program.account["DepositHistory"].create_instruction(
                         deposit_history
                     ),
-                    program.account["CurveHistory"].create_instruction(curve_history),
+                    program.account["ExtendedCurveHistory"].create_instruction(
+                        curve_history
+                    ),
                 ),
                 signers=[
                     deposit_history,
