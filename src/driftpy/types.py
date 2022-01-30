@@ -92,6 +92,7 @@ class StateAccount:
     discount_mint: PublicKey
     oracle_guard_rails: OracleGuardRails
     max_deposit: int
+    extended_curve_history: PublicKey
     # upgrade-ability
     padding0: int
     padding1: int
@@ -99,8 +100,6 @@ class StateAccount:
     padding3: int
     padding4: int
     padding5: int
-    padding6: int
-    padding7: int
 
 
 @_rust_enum
@@ -173,7 +172,7 @@ class DepositRecord:
 
 
 @dataclass
-class CurveRecord:
+class ExtendedCurveRecord:
     ts: int
     record_id: int
     market_index: int
@@ -189,6 +188,7 @@ class CurveRecord:
     base_asset_amount_short: int
     base_asset_amount: int
     open_interest: int
+    oracle_price: int
 
 
 @dataclass
@@ -276,9 +276,9 @@ class DepositHistoryAccount:
 
 
 @dataclass
-class CurveHistoryAccount:
+class ExtendedCurveHistoryAccount:
     head: int
-    curve_records: list[CurveRecord]
+    curve_records: list[ExtendedCurveRecord]
 
 
 @dataclass
