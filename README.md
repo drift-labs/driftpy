@@ -62,4 +62,4 @@ The CI process will upload a new version of the package to PyPI.
 Follow that linked tutorial if you want to see how it was done.
 
 The short answer:
-`git subtree pull --prefix drift-core drift-protocol master --squash`
+`git subtree pull --prefix drift-core drift-protocol mainnet-beta --squash`
