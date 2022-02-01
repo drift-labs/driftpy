@@ -13,7 +13,7 @@ from datetime import datetime, timedelta
 import pandas as pd
 import math
 
-driftAssets = ['SOL', 'BTC', 'ETH', 'LUNA', 'AVAX', 'BNB', 'MATIC', 'ATOM', 'DOT']
+driftAssets = ['SOL', 'BTC', 'ETH', 'LUNA', 'AVAX', 'BNB', 'MATIC', 'ATOM', 'DOT', 'ALGO']
 FUNDING_PRECISION = 1e4
 PEG_PRECISION = 1000
 AMM_TO_QUOTE_PRECISION_RATIO = 10**7
