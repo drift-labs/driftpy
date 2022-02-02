@@ -25,6 +25,8 @@ from driftpy.types import (
     UserPositions,
 )
 
+from driftpy.program import load_program
+
 
 T = TypeVar("T", bound="ClearingHouse")
 
@@ -152,6 +154,32 @@ class ClearingHouse:
             curve_history=state.curve_history,
         )
         return cls(program, pdas)
+
+    @classmethod
+    async def create_from_env(cls: Type[T], env: str) -> T:
+        """Create a new `ClearingHouse` instance.
+
+        Args:
+            program: An AnchorPy Program instance.
+
+        Returns:
+            The new `ClearingHouse` instance.
+        """
+        program = load_program(env)
+        state_pubkey = cls._get_state_pubkey(program)
+        state = await _get_state_account(program, state_pubkey)
+        pdas = ClearingHousePDAs(
+            state=state_pubkey,
+            markets=state.markets,
+            trade_history=state.trade_history,
+            deposit_history=state.deposit_history,
+            funding_payment_history=state.funding_payment_history,
+            funding_rate_history=state.funding_rate_history,
+            liquidation_history=state.liquidation_history,
+            curve_history=state.curve_history,
+        )
+        return cls(program, pdas)
+
 
     def get_initialize_user_instructions(
         self,
