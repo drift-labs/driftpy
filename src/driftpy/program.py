@@ -7,7 +7,7 @@ import requests
 
 
 def load_program(env: str, wallet_path=None):
-    assert (env in CONFIG.keys(), "%s not in %s" % (env, str(CONFIG.keys())))
+    assert env in CONFIG.keys()  # , "%s not in %s" % (env, str(CONFIG.keys())))
 
     CH_PID = CONFIG[env].get("CLEARING_HOUSE_PROGRAM_ID")
     IDL_JSON = None
@@ -24,7 +24,7 @@ def load_program(env: str, wallet_path=None):
         os.environ["ANCHOR_PROVIDER_URL"] = CONFIG[env].get("URL")
 
     # override path to wallet
-    # os.environ["ANCHOR_WALLET"] = os.path.expanduser("~/.config/solana/<YOURWALLETNAME>.json")
+    # os.environ["ANCHOR_WALLET"] = os.path.expanduser("~/.config/solana/.json")
     # del os.environ["ANCHOR_WALLET"]
     if wallet_path is not None:
         wallet_path_full = os.path.expanduser(wallet_path)
