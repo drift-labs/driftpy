@@ -13,9 +13,8 @@ from datetime import datetime, timedelta
 import pandas as pd
 import math
 
-driftAssets = ['SOL', 'BTC', 'ETH', 'LUNA', 'AVAX', 'BNB', 'MATIC', 'ATOM', 'DOT', 'ALGO']
 FUNDING_PRECISION = 1e4
-PEG_PRECISION = 1000
+PEG_PRECISION = 10**3
 AMM_TO_QUOTE_PRECISION_RATIO = 10**7
 
 CH_PID = "dammHkt7jmytvbS3nHTxQNEcP59aE57nxwV21YdqEDN"
@@ -28,7 +27,7 @@ idlO = Idl.from_json(raw_idl)
 if "ANCHOR_PROVIDER_URL" not in os.environ:
     os.environ["ANCHOR_PROVIDER_URL"] =  "https://api.mainnet-beta.solana.com/"
 
-#os.environ["ANCHOR_WALLET"] =  "PATH_TO_WALLET" # un-comment if wallet not located in solana config file
+#os.environ["ANCHOR_WALLET"] =  "PATH_TO_WALLET" # uncomment this line and paste the path to your wallet.json file if solana config wallet file not found
     
 # Address of the deployed program.
 program_id = PublicKey(CH_PID)
@@ -36,7 +35,7 @@ program = Program(idlO, program_id, Provider.env())
 
 """"""
 
-def calculateMarketSummary(markets):
+def calculate_market_summary(markets):
 
     markets_summary = pd.concat([
         pd.DataFrame(MARKETS).iloc[:,:3],
@@ -47,7 +46,7 @@ def calculateMarketSummary(markets):
 
 """"""
 
-def calculatePredictedFunding(markets, markets_summary):
+def calculate_predicted_funding(markets, markets_summary):
 
     last_funding_ts = pd.to_datetime(markets.markets[0].amm.last_funding_rate_ts*1e9)
     next_funding_ts = last_funding_ts + timedelta(hours=1)
@@ -66,154 +65,162 @@ def calculatePredictedFunding(markets, markets_summary):
 
 """"""
 
-def calculatePrice(baseAssetAmount, quoteAssetAmount, peg_multiplier):
-    if abs(baseAssetAmount) <= 0:
+def calculate_price(base_asset_amount, quote_asset_amount, peg_multiplier):
+    if abs(base_asset_amount) <= 0:
         return 0
     else:
-        return ((quoteAssetAmount*peg_multiplier/PEG_PRECISION)/baseAssetAmount)
+        return ((quote_asset_amount*peg_multiplier/PEG_PRECISION)/base_asset_amount)
 
 """"""
 
-def calculateMarkPrice(markets, symbol):
-    idx = driftAssets.index(symbol)
-    return calculatePrice(markets.markets[idx].amm.base_asset_reserve, markets.markets[idx].amm.quote_asset_reserve, markets.markets[idx].amm.peg_multiplier)
+def calculate_mark_price(market):
+    return calculate_price(market.amm.base_asset_reserve, market.amm.quote_asset_reserve, market.amm.peg_multiplier)
 
 """"""
 
-def calculateTargetPriceTrade(markets, symbol: str, targetPrice: float, outputAssetType = None):
+def calculate_target_price_trade(market, target_price: float, output_asset_type = 'quote'):
 
-    idx = driftAssets.index(symbol)
-    markPriceBefore = calculateMarkPrice(markets, symbol)
+    mark_price_before = calculate_mark_price(market)
     
-    if targetPrice > markPriceBefore:
-        priceGap = targetPrice - markPriceBefore
-        targetPrice = markPriceBefore + priceGap
+    if target_price > mark_price_before:
+        price_gap = target_price - mark_price_before
+        target_price = mark_price_before + price_gap
     else:
-        priceGap = markPriceBefore - targetPrice
-        targetPrice = markPriceBefore - priceGap
+        price_gap = mark_price_before - target_price
+        target_price = mark_price_before - price_gap
 
-    baseAssetReserveBefore = markets.markets[idx].amm.base_asset_reserve/MARK_PRICE_PRECISION
-    quoteAssetReserveBefore = markets.markets[idx].amm.quote_asset_reserve/MARK_PRICE_PRECISION
-    peg = markets.markets[idx].amm.peg_multiplier/MARK_PRICE_PRECISION
-    invariant = (markets.markets[idx].amm.sqrt_k/MARK_PRICE_PRECISION)**2
+    base_asset_reserve_before = market.amm.base_asset_reserve/MARK_PRICE_PRECISION
+    quote_asset_reserve_before = market.amm.quote_asset_reserve/MARK_PRICE_PRECISION
+    peg = market.amm.peg_multiplier/MARK_PRICE_PRECISION
+    invariant = (market.amm.sqrt_k/MARK_PRICE_PRECISION)**2
     k = invariant*MARK_PRICE_PRECISION
     bias_modifier = 1
 
-    if markPriceBefore > targetPrice:
-        baseAssetReserveAfter = math.sqrt((k/targetPrice)*(peg/PEG_PRECISION) - bias_modifier) - 1
-        quoteAssetReserveAfter = (k/MARK_PRICE_PRECISION)/baseAssetReserveAfter
+    if mark_price_before > target_price:
+        base_asset_reserve_after = math.sqrt((k/target_price)*(peg/PEG_PRECISION) - bias_modifier) - 1
+        quote_asset_reserve_after = (k/MARK_PRICE_PRECISION)/base_asset_reserve_after
 
         direction = 'SHORT'
-        tradeSize = ((quoteAssetReserveBefore - quoteAssetReserveAfter)*(peg/PEG_PRECISION))/AMM_TO_QUOTE_PRECISION_RATIO
-        baseSize = baseAssetReserveAfter - baseAssetReserveBefore
+        trade_size = ((quote_asset_reserve_before - quote_asset_reserve_after)*(peg/PEG_PRECISION))/AMM_TO_QUOTE_PRECISION_RATIO
+        base_size = base_asset_reserve_after - base_asset_reserve_before
 
-    elif markPriceBefore < targetPrice:
-        baseAssetReserveAfter = math.sqrt((k/targetPrice)*(peg/PEG_PRECISION) + bias_modifier) + 1
-        quoteAssetReserveAfter = (k/MARK_PRICE_PRECISION)/baseAssetReserveAfter
+    elif mark_price_before < target_price:
+        base_asset_reserve_after = math.sqrt((k/target_price)*(peg/PEG_PRECISION) + bias_modifier) + 1
+        quote_asset_reserve_after = (k/MARK_PRICE_PRECISION)/base_asset_reserve_after
         
         direction = 'LONG'
-        tradeSize = ((quoteAssetReserveAfter - quoteAssetReserveBefore)*(peg/PEG_PRECISION))/AMM_TO_QUOTE_PRECISION_RATIO
-        baseSize = baseAssetReserveBefore - baseAssetReserveAfter
+        trade_size = ((quote_asset_reserve_after - quote_asset_reserve_before)*(peg/PEG_PRECISION))/AMM_TO_QUOTE_PRECISION_RATIO
+        base_size = base_asset_reserve_before - base_asset_reserve_after
 
     else:
         # no trade, market is at target
         direction = 'LONG'
-        tradeSize = 0
-        return [direction, tradeSize, targetPrice, targetPrice]
+        trade_size = 0
+        return [direction, trade_size, target_price, target_price]
 
-    entryPrice = tradeSize*AMM_TO_QUOTE_PRECISION_RATIO*MARK_PRICE_PRECISION/abs(baseSize)
+    entry_price = trade_size*AMM_TO_QUOTE_PRECISION_RATIO*MARK_PRICE_PRECISION/abs(base_size)
 
-    if outputAssetType == 'quote':
-        return [direction, tradeSize*10**14, entryPrice, targetPrice]
+    if output_asset_type == 'quote':
+        return [direction, trade_size*MARK_PRICE_PRECISION*FUNDING_PRECISION, entry_price, target_price]
     else:
-        return [direction, baseSize/1000, entryPrice, targetPrice]
+        return [direction, base_size/PEG_PRECISION, entry_price, target_price]
 
 """"""
 
-def calculateSwapOutput(inputAssetReserve, swapAmount, swapDirection, invariant):
-    if swapDirection == 'LONG':
-        newInputAssetReserve = inputAssetReserve + swapAmount
-    else:
-        newInputAssetReserve = inputAssetReserve - swapAmount
-    newOutputAssetReserve = invariant/newInputAssetReserve
-    return [newInputAssetReserve, newOutputAssetReserve]
+def calculate_swap_output(input_asset_reserve, swap_amount, invariant):
+    new_input_asset_reserve = input_asset_reserve + swap_amount
+    new_output_asset_reserve = invariant/new_input_asset_reserve
+    return [new_input_asset_reserve, new_output_asset_reserve]
 
 """"""
 
-def calculateAmmReservesAfterSwap(amm, inputAssetType, swapAmount, swapDirection):
-    assert swapAmount >= 0
+def calculate_amm_reserves_after_swap(amm, input_asset_type, swap_amount, swap_direction):
     
-    if inputAssetType == 'quote':
-        swapAmount = swapAmount
-
-        [newQuoteAssetReserve, newBaseAssetReserve] = calculateSwapOutput(amm.quote_asset_reserve/MARK_PRICE_PRECISION, 
-                                                        swapAmount, swapDirection,
+    if input_asset_type == 'quote':
+        swap_amount = swap_amount*MARK_PRICE_PRECISION*(PEG_PRECISION**2)/(amm.peg_multiplier*MARK_PRICE_PRECISION)
+        if swap_direction == 'SHORT':
+            swap_amount = swap_amount*(-1)
+        [new_quote_asset_reserve, new_base_asset_reserve] = calculate_swap_output(amm.quote_asset_reserve/MARK_PRICE_PRECISION, 
+                                                        swap_amount,
                                                         (amm.sqrt_k/MARK_PRICE_PRECISION)**2)
 
     else:
-        [newBaseAssetReserve, newQuoteAssetReserve] = calculateSwapOutput(amm.base_asset_reserve/MARK_PRICE_PRECISION,
-                                                        swapAmount, swapDirection,
+        swap_amount = swap_amount*PEG_PRECISION
+        if swap_direction == 'LONG':
+            swap_amount = swap_amount*(-1)
+        [new_base_asset_reserve, new_quote_asset_reserve] = calculate_swap_output(amm.base_asset_reserve/MARK_PRICE_PRECISION,
+                                                        swap_amount,
                                                         (amm.sqrt_k/MARK_PRICE_PRECISION)**2)
     
-    return [newQuoteAssetReserve, newBaseAssetReserve]
+    return [new_quote_asset_reserve, new_base_asset_reserve]
     
 """"""    
 
-def calculateTradeAcquiredAmounts(direction, amount, market, inputAssetType = 'quote'):
+def calculate_trade_acquired_amounts(direction, amount, market, input_asset_type = 'quote'):
     if amount == 0:
         return [0, 0]
-    [newQuoteAssetReserve, newBaseAssetReserve] = calculateAmmReservesAfterSwap(market.amm, inputAssetType, amount, direction)
 
-    acquiredBase = market.amm.base_asset_reserve/MARK_PRICE_PRECISION - newBaseAssetReserve
-    acquireQuote = market.amm.quote_asset_reserve/MARK_PRICE_PRECISION - newQuoteAssetReserve
+    [new_quote_asset_reserve, new_base_asset_reserve] = calculate_amm_reserves_after_swap(market.amm, input_asset_type, amount, direction)
 
-    return [acquiredBase, acquireQuote]
+    acquired_base = market.amm.base_asset_reserve/MARK_PRICE_PRECISION - new_base_asset_reserve
+    acquired_quote = market.amm.quote_asset_reserve/MARK_PRICE_PRECISION - new_quote_asset_reserve
+
+    return [acquired_base, acquired_quote]
 
 """"""
 
-def calculateTradeSlippage(direction, amount, markets, symbol, inputAssetType = 'quote'):
+def calculate_trade_slippage(direction, amount, market, input_asset_type = 'quote'):
 
-    idx = driftAssets.index(symbol)
-    market = markets.markets[idx]
-
-    oldPrice = calculateMarkPrice(markets, symbol)
+    old_price = calculate_mark_price(market)
     if amount == 0:
-        return [0, 0, oldPrice, oldPrice]
+        return [0, 0, old_price, old_price]
 
-    [acquiredBase, acquiredQuote] = calculateTradeAcquiredAmounts(direction, amount, market, inputAssetType)
+    [acquired_base, acquired_quote] = calculate_trade_acquired_amounts(direction, amount, market, input_asset_type)
 
-    entryPrice = calculatePrice(acquiredBase, acquiredQuote, market.amm.peg_multiplier*(-1)/MARK_PRICE_PRECISION)*MARK_PRICE_PRECISION
+    entry_price = calculate_price(acquired_base, acquired_quote, market.amm.peg_multiplier*(-1)/MARK_PRICE_PRECISION)*MARK_PRICE_PRECISION
 
-    newPrice = calculatePrice(market.amm.base_asset_reserve/MARK_PRICE_PRECISION - acquiredBase, 
-                            market.amm.quote_asset_reserve/MARK_PRICE_PRECISION - acquiredQuote, 
+    new_price = calculate_price(market.amm.base_asset_reserve/MARK_PRICE_PRECISION - acquired_base, 
+                            market.amm.quote_asset_reserve/MARK_PRICE_PRECISION - acquired_quote, 
                             market.amm.peg_multiplier/MARK_PRICE_PRECISION)*MARK_PRICE_PRECISION
 
     if direction == 'SHORT':
-        assert newPrice < oldPrice
+        assert new_price < old_price
     else:
-        assert oldPrice < newPrice
+        assert old_price < new_price
 
-    pctMaxSlippage = abs((newPrice - oldPrice)/oldPrice)
-    pctAvgSlippage = abs((entryPrice - oldPrice)/oldPrice)
+    pct_max_slippage = abs((new_price - old_price)/old_price)
+    pct_avg_slippage = abs((entry_price - old_price)/old_price)
 
-    return [pctAvgSlippage, pctMaxSlippage, entryPrice, newPrice]
+    return [pct_avg_slippage, pct_max_slippage, entry_price, new_price]
 
-        
 async def main():
+    #Try out  the functions here
+    
+    #Initiate ClearingHouse
     drift_acct = await ClearingHouse.create(program)
     drift_user_acct = await drift_acct.get_user_account()
 
+    #Get the total value of your collateral
     balance = (drift_user_acct.collateral/1e6)
     print(f'Total Collateral: {balance}')
 
+    asset = 'SOL' #Select which asset you want to use here
+
+    drift_assets = ['SOL', 'BTC', 'ETH', 'LUNA', 'AVAX', 'BNB', 'MATIC', 'ATOM', 'DOT', 'ALGO']
+    idx = drift_assets.index(asset)
+
     markets = await drift_acct.get_markets_account()
+    market = markets.markets[idx]
 
-    markets_summary = calculateMarketSummary(markets)
+    markets_summary = calculate_market_summary(markets)
 
-    print(calculatePredictedFunding(markets, markets_summary))
+    #Get the predicted funding rates of each market
+    print(calculate_predicted_funding(markets, markets_summary))
 
-    print(calculateTargetPriceTrade(markets, 'SOL', 95, outputAssetType='quote'))
+    #Liquidity required to move AMM price of SOL to 95
+    print(calculate_target_price_trade(market, 95, output_asset_type='quote'))
 
-    print(calculateTradeSlippage('LONG', 5000, markets, 'SOL'))
-
+    #Slippage of a $5000 long trade
+    print(calculate_trade_slippage('LONG', 5000, market, input_asset_type='quote'))
+    
 asyncio.run(main())
