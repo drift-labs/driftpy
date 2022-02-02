@@ -180,7 +180,6 @@ class ClearingHouse:
         )
         return cls(program, pdas)
 
-
     def get_initialize_user_instructions(
         self,
     ) -> tuple[Keypair, PublicKey, TransactionInstruction]:
