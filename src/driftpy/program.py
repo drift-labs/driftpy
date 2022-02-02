@@ -1,6 +1,5 @@
 from solana.publickey import PublicKey
 from anchorpy import Idl, Program, Provider
-from driftpy.clearing_house import ClearingHouse
 from driftpy.constants.config import CONFIG
 
 import os
@@ -13,6 +12,7 @@ def load_program(env: str, wallet_path=None):
     IDL_JSON = None
     IDL_URL = CONFIG[env].get('IDL_URL', None)
     if IDL_URL is None:
+        from driftpy.clearing_house import ClearingHouse
         IDL_JSON = ClearingHouse.local_idl()
     else:
         print('requesting idl from', IDL_URL)
