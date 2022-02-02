@@ -7,9 +7,7 @@ import requests
 
 
 def load_program(env: str, wallet_path=None):
-    assert (
-        env in CONFIG.keys()
-    )  # , "%s not in %s" % (env, str(CONFIG.keys())))
+    assert env in CONFIG.keys()  # , "%s not in %s" % (env, str(CONFIG.keys())))
 
     CH_PID = CONFIG[env].get("CLEARING_HOUSE_PROGRAM_ID")
     IDL_JSON = None
@@ -20,14 +18,10 @@ def load_program(env: str, wallet_path=None):
         IDL_JSON = ClearingHouse.local_idl()
     else:
         print("requesting idl from", IDL_URL)
-        IDL_JSON = Idl.from_json(
-            requests.request("GET", IDL_URL).json()
-        )
+        IDL_JSON = Idl.from_json(requests.request("GET", IDL_URL).json())
 
     if "ANCHOR_PROVIDER_URL" not in os.environ:
-        os.environ["ANCHOR_PROVIDER_URL"] = CONFIG[env].get(
-            "URL"
-        )
+        os.environ["ANCHOR_PROVIDER_URL"] = CONFIG[env].get("URL")
 
     # override path to wallet
     # os.environ["ANCHOR_WALLET"] = os.path.expanduser("~/.config/solana/.json")
@@ -43,9 +37,7 @@ def load_program(env: str, wallet_path=None):
             )
 
     # Address of the deployed program.
-    program = Program(
-        IDL_JSON, PublicKey(CH_PID), Provider.env()
-    )
+    program = Program(IDL_JSON, PublicKey(CH_PID), Provider.env())
     return program
 
 
