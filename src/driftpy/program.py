@@ -33,7 +33,8 @@ def load_program(env: str, wallet_path=None):
     else:
         if "ANCHOR_WALLET" not in os.environ:
             raise (
-                "No solana wallet specified/found. Run `export ANCHOR_WALLET=/path/to/wallet.json`"
+                """No solana wallet specified/found. \n
+                Run `export ANCHOR_WALLET=/path/to/wallet.json`"""
             )
 
     # Address of the deployed program.
