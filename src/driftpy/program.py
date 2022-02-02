@@ -3,13 +3,11 @@ from anchorpy import Idl, Program, Provider
 from driftpy.constants.config import CONFIG
 
 import os
-import requests
 
 
 def load_program(env: str, wallet_path=None):
     assert env in CONFIG.keys()  # , "%s not in %s" % (env, str(CONFIG.keys())))
-
-    CH_PID = CONFIG[env].get("CLEARING_HOUSE_PROGRAM_ID")
+    CH_PID = CONFIG[env]["CLEARING_HOUSE_PROGRAM_ID"]
     IDL_JSON = None
     IDL_URL = CONFIG[env].get("IDL_URL", None)
     if IDL_URL is None:
@@ -17,11 +15,14 @@ def load_program(env: str, wallet_path=None):
 
         IDL_JSON = ClearingHouse.local_idl()
     else:
+        import requests
+
         print("requesting idl from", IDL_URL)
         IDL_JSON = Idl.from_json(requests.request("GET", IDL_URL).json())
 
     if "ANCHOR_PROVIDER_URL" not in os.environ:
-        os.environ["ANCHOR_PROVIDER_URL"] = CONFIG[env].get("URL")
+        if CONFIG[env].get("URL") is not None:
+            os.environ["ANCHOR_PROVIDER_URL"] = CONFIG[env]["URL"]
 
     # override path to wallet
     # os.environ["ANCHOR_WALLET"] = os.path.expanduser("~/.config/solana/.json")
@@ -32,7 +33,7 @@ def load_program(env: str, wallet_path=None):
         os.environ["ANCHOR_WALLET"] = wallet_path_full
     else:
         if "ANCHOR_WALLET" not in os.environ:
-            raise (
+            raise Exception(
                 """No solana wallet specified/found. \n
                 Run `export ANCHOR_WALLET=/path/to/wallet.json`"""
             )
