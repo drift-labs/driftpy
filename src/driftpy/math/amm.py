@@ -1,6 +1,4 @@
 from driftpy.constants.numeric_constants import MARK_PRICE_PRECISION, PEG_PRECISION
-
-
 from driftpy.types import SwapDirection, AssetType, PositionDirection
 
 

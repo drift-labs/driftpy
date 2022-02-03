@@ -1,4 +1,4 @@
-from amm import calculate_price
+from driftpy.math.amm import calculate_price
 
 
 def calculate_mark_price(market):
