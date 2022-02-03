@@ -874,6 +874,25 @@ optional = false
 python-versions = "*"
 
 [[package]]
+name = "types-requests"
+version = "2.27.8"
+description = "Typing stubs for requests"
+category = "main"
+optional = false
+python-versions = "*"
+
+[package.dependencies]
+types-urllib3 = "<1.27"
+
+[[package]]
+name = "types-urllib3"
+version = "1.26.9"
+description = "Typing stubs for urllib3"
+category = "main"
+optional = false
+python-versions = "*"
+
+[[package]]
 name = "typing-extensions"
 version = "3.10.0.2"
 description = "Backported and Experimental Type Hints for Python 3.5+"
@@ -942,7 +961,7 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.9"
-content-hash = "7bd1bc939567571c792a54671994363617dcea37edfefb795125bbdf015bd1d0"
+content-hash = "fb12b7c512b8964ed0885ff76ac9f437076f05e65936b1376f09331ebe1058e4"
 
 [metadata.files]
 anchorpy = [
@@ -1468,6 +1487,14 @@ toolz = [
 types-cachetools = [
     {file = "types-cachetools-4.2.9.tar.gz", hash = "sha256:4ac4b7866da8d3f750413a3e91809c2bf6124aa920ef6dc32c5df2d84a53585c"},
     {file = "types_cachetools-4.2.9-py3-none-any.whl", hash = "sha256:da18b1acbc4a03ed3ce8f6ad4d70ad8ca31f542c205cb45ceb524d2ddd544c28"},
+]
+types-requests = [
+    {file = "types-requests-2.27.8.tar.gz", hash = "sha256:c2f4e4754d07ca0a88fd8a89bbc6c8a9f90fb441f9c9b572fd5c484f04817486"},
+    {file = "types_requests-2.27.8-py3-none-any.whl", hash = "sha256:8ec9f5f84adc6f579f53943312c28a84e87dc70201b54f7c4fbc7d22ecfa8a3e"},
+]
+types-urllib3 = [
+    {file = "types-urllib3-1.26.9.tar.gz", hash = "sha256:abd2d4857837482b1834b4817f0587678dcc531dbc9abe4cde4da28cef3f522c"},
+    {file = "types_urllib3-1.26.9-py3-none-any.whl", hash = "sha256:4a54f6274ab1c80968115634a55fb9341a699492b95e32104a7c513db9fe02e9"},
 ]
 typing-extensions = [
     {file = "typing_extensions-3.10.0.2-py2-none-any.whl", hash = "sha256:d8226d10bc02a29bcc81df19a26e56a9647f8b0a6d4a83924139f4a8b01f17b7"},
