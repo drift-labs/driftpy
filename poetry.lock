@@ -6,6 +6,7 @@ category = "main"
 optional = false
 python-versions = ">=3.9,<4.0"
 
+
 [package.dependencies]
 apischema = ">=0.16.6,<0.17.0"
 borsh-construct = ">=0.1.0,<0.2.0"
