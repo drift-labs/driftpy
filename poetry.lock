@@ -942,7 +942,7 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.9"
-content-hash = "6c43b6264252bd8c33911bb7ad18a8ee6ca3404490f91bb364a20ed49ae7434b"
+content-hash = "7bd1bc939567571c792a54671994363617dcea37edfefb795125bbdf015bd1d0"
 
 [metadata.files]
 anchorpy = [
