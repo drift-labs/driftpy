@@ -15,6 +15,7 @@ from driftpy.types import (
     PositionDirection,
     StateAccount,
     MarketsAccount,
+    Market,
     FundingPaymentHistoryAccount,
     FundingRateHistoryAccount,
     TradeHistoryAccount,
@@ -92,6 +93,10 @@ class ClearingHouse:
     async def get_markets_account(self) -> MarketsAccount:
         res = await self.program.account["Markets"].fetch(self.pdas.markets)
         return cast(MarketsAccount, res)
+
+    async def get_market(self, market_index) -> Market:
+        market = (await self.get_markets_account()).markets[market_index]
+        return cast(Market, market)
 
     async def get_funding_payment_history_account(self) -> FundingPaymentHistoryAccount:
         res = await self.program.account["FundingPaymentHistory"].fetch(
