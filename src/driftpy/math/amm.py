@@ -1,5 +1,16 @@
 from driftpy.constants.numeric_constants import MARK_PRICE_PRECISION, PEG_PRECISION
-from driftpy.types import SwapDirection, AssetType, PositionDirection
+from driftpy.types import PositionDirection
+from sumtypes import constructor  # type: ignore
+
+
+class SwapDirection:
+    ADD = constructor()
+    REMOVE = constructor()
+
+
+class AssetType:
+    QUOTE = constructor()
+    BASE = constructor()
 
 
 def calculate_price(base_asset_amount, quote_asset_amount, peg_multiplier):
@@ -9,14 +20,19 @@ def calculate_price(base_asset_amount, quote_asset_amount, peg_multiplier):
         return (quote_asset_amount * peg_multiplier / PEG_PRECISION) / base_asset_amount
 
 
-def calculate_swap_output(input_asset_reserve, swap_amount, invariant):
-    new_input_asset_reserve = input_asset_reserve + swap_amount
+def calculate_swap_output(
+    input_asset_reserve, swap_amount, swap_direction: SwapDirection, invariant
+):
+    if swap_direction == SwapDirection.ADD:
+        new_input_asset_reserve = input_asset_reserve + swap_amount
+    else:
+        new_input_asset_reserve = input_asset_reserve - swap_amount
     new_output_asset_reserve = invariant / new_input_asset_reserve
     return [new_input_asset_reserve, new_output_asset_reserve]
 
 
 def calculate_amm_reserves_after_swap(
-    amm, input_asset_type: AssetType, swap_amount, swap_direction: PositionDirection
+    amm, input_asset_type: AssetType, swap_amount, swap_direction: SwapDirection
 ):
 
     if input_asset_type == AssetType.QUOTE:
@@ -31,6 +47,7 @@ def calculate_amm_reserves_after_swap(
         [new_quote_asset_reserve, new_base_asset_reserve] = calculate_swap_output(
             amm.quote_asset_reserve / MARK_PRICE_PRECISION,
             swap_amount,
+            swap_direction,
             (amm.sqrt_k / MARK_PRICE_PRECISION) ** 2,
         )
 
@@ -41,6 +58,7 @@ def calculate_amm_reserves_after_swap(
         [new_base_asset_reserve, new_quote_asset_reserve] = calculate_swap_output(
             amm.base_asset_reserve / MARK_PRICE_PRECISION,
             swap_amount,
+            swap_direction,
             (amm.sqrt_k / MARK_PRICE_PRECISION) ** 2,
         )
 

@@ -54,18 +54,18 @@ class ClearingHouseUser:
 
     async def get_user_positions_account(self) -> UserPositions:
         user_account = self.get_user_account()
-        positions = cast(
+        positions_account = cast(
             UserPositions,
             await self.clearing_house.program.account["UserPositions"].fetch(
                 user_account.positions
             ),
         )
 
-        return positions
+        return positions_account
 
     async def get_user_position(self, market_index) -> MarketPosition:
-        positions = await self.get_user_positions_account()
-        for position in positions:
+        positions_account = await self.get_user_positions_account()
+        for position in positions_account.positions:
             if position.market_index == market_index:
                 return position
         return MarketPosition(
@@ -73,10 +73,10 @@ class ClearingHouseUser:
         )
 
     async def get_unrealised_pnl(self, market_index=None):
-        positions = await self.get_user_positions_account()
+        positions_account = await self.get_user_positions_account()
 
         pnl = 0
-        for position in positions:
+        for position in positions_account.positions:
             if market_index is not None and position.market_index == market_index:
                 market = self.clearing_house.get_market(
                     position.market_index
@@ -90,9 +90,9 @@ class ClearingHouseUser:
         return collateral + self.get_unrealised_pnl()
 
     async def get_total_position_value(self):
-        positions = await self.get_user_positions_account()
+        positions_account = await self.get_user_positions_account()
         value = 0
-        for position in positions:
+        for position in positions_account.positions:
             market = self.clearing_house.get_market(
                 position.market_index
             )  # todo repeat querying
@@ -101,9 +101,9 @@ class ClearingHouseUser:
         return value
 
     async def get_position_value(self, market_index=None):
-        positions = await self.get_user_positions_account()
+        positions_account = await self.get_user_positions_account()
         value = 0
-        for position in positions:
+        for position in positions_account.positions:
             if market_index is not None and position.market_index == market_index:
                 market = self.clearing_house.get_market(
                     position.market_index

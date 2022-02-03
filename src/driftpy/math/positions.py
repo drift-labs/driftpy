@@ -27,6 +27,8 @@ from driftpy.constants.numeric_constants import (
     AMM_TIMES_PEG_TO_QUOTE_PRECISION_RATIO,
 )
 
+from driftpy.math.amm import AssetType
+
 
 def calculate_base_asset_value(market: Market, user_position: MarketPosition) -> int:
 
@@ -41,9 +43,9 @@ def calculate_base_asset_value(market: Market, user_position: MarketPosition) ->
 
     new_quote_asset_reserve, _ = calculate_amm_reserves_after_swap(
         market.amm,
-        "base",
+        AssetType.BASE,
         abs(user_position.base_asset_amount),
-        get_swap_direction("base", direction_to_close),
+        get_swap_direction(AssetType.BASE, direction_to_close),
     )
 
     result = None
@@ -65,7 +67,7 @@ def calculate_base_asset_value(market: Market, user_position: MarketPosition) ->
 def calculate_position_pnl(
     market: Market, market_position: MarketPosition, with_funding=False
 ):
-    pnl = 0
+    pnl = 0.0
 
     if market_position.base_asset_amount == 0:
         return pnl
@@ -79,13 +81,13 @@ def calculate_position_pnl(
 
     if with_funding:
         funding_rate_pnl = 0.0
-        pnl += funding_rate_pnl / PRICE_TO_QUOTE_PRECISION
+        pnl += funding_rate_pnl / float(PRICE_TO_QUOTE_PRECISION)
 
     return pnl
 
 
 def calculate_position_funding_pnl(market: Market, market_position: MarketPosition):
-    funding_pnl = 0
+    funding_pnl = 0.0
 
     if market_position.base_asset_amount == 0:
         return funding_pnl
@@ -100,7 +102,7 @@ def calculate_position_funding_pnl(market: Market, market_position: MarketPositi
         market_position.last_cumulative_funding_rate - amm_cum_funding_rate
     ) * market_position.base_asset_amount
 
-    funding_pnl /= int(AMM_RESERVE_PRECISION * FUNDING_PRECISION)
+    funding_pnl /= float(AMM_RESERVE_PRECISION * FUNDING_PRECISION)
 
     return funding_pnl
 

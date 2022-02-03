@@ -2,7 +2,7 @@ import math
 from driftpy.math.amm import calculate_price, calculate_amm_reserves_after_swap
 from driftpy.math.market import calculate_mark_price
 
-from driftpy.constants import (
+from driftpy.constants.numeric_constants import (
     MARK_PRICE_PRECISION,
     PEG_PRECISION,
     FUNDING_PRECISION,
