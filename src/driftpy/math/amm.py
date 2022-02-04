@@ -1,4 +1,8 @@
-from driftpy.constants.numeric_constants import MARK_PRICE_PRECISION, PEG_PRECISION
+from driftpy.constants.numeric_constants import (
+    # MARK_PRICE_PRECISION,
+    PEG_PRECISION,
+    AMM_TIMES_PEG_TO_QUOTE_PRECISION_RATIO,
+)
 from driftpy.types import PositionDirection
 from sumtypes import constructor  # type: ignore
 
@@ -23,6 +27,7 @@ def calculate_price(base_asset_amount, quote_asset_amount, peg_multiplier):
 def calculate_swap_output(
     input_asset_reserve, swap_amount, swap_direction: SwapDirection, invariant
 ):
+    assert swap_amount >= 0
     if swap_direction == SwapDirection.ADD:
         new_input_asset_reserve = input_asset_reserve + swap_amount
     else:
@@ -37,29 +42,27 @@ def calculate_amm_reserves_after_swap(
 
     if input_asset_type == AssetType.QUOTE:
         swap_amount = (
-            swap_amount
-            * MARK_PRICE_PRECISION
-            * (PEG_PRECISION ** 2)
-            / (amm.peg_multiplier * MARK_PRICE_PRECISION)
+            swap_amount * AMM_TIMES_PEG_TO_QUOTE_PRECISION_RATIO / amm.peg_multiplier
         )
-        if swap_direction == PositionDirection.SHORT:
-            swap_amount = swap_amount * (-1)
+
+        # if swap_direction == PositionDirection.SHORT:
+        #     swap_amount = swap_amount * (-1)
         [new_quote_asset_reserve, new_base_asset_reserve] = calculate_swap_output(
-            amm.quote_asset_reserve / MARK_PRICE_PRECISION,
+            amm.quote_asset_reserve,
             swap_amount,
             swap_direction,
-            (amm.sqrt_k / MARK_PRICE_PRECISION) ** 2,
+            (amm.sqrt_k) ** 2,
         )
 
     else:
-        swap_amount = swap_amount * PEG_PRECISION
-        if swap_direction == PositionDirection.LONG:
-            swap_amount = swap_amount * (-1)
+        # swap_amount = swap_amount * PEG_PRECISION
+        # if swap_direction == PositionDirection.LONG:
+        #     swap_amount = swap_amount * (-1)
         [new_base_asset_reserve, new_quote_asset_reserve] = calculate_swap_output(
-            amm.base_asset_reserve / MARK_PRICE_PRECISION,
+            amm.base_asset_reserve,
             swap_amount,
             swap_direction,
-            (amm.sqrt_k / MARK_PRICE_PRECISION) ** 2,
+            (amm.sqrt_k) ** 2,
         )
 
     return [new_quote_asset_reserve, new_base_asset_reserve]

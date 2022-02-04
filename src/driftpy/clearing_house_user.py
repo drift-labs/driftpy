@@ -16,10 +16,17 @@ from driftpy.types import (
     UserPositions,
     MarketPosition,
 )
+from driftpy.math.market import calculate_mark_price
 
 from driftpy.math.positions import (
     calculate_base_asset_value,
     calculate_position_pnl,
+)
+
+from driftpy.constants.numeric_constants import (
+    MAX_LEVERAGE,
+    PARTIAL_LIQUIDATION_RATIO,
+    AMM_RESERVE_PRECISION,
 )
 
 
@@ -53,7 +60,7 @@ class ClearingHouseUser:
         return user_account
 
     async def get_user_positions_account(self) -> UserPositions:
-        user_account = self.get_user_account()
+        user_account = await self.get_user_account()
         positions_account = cast(
             UserPositions,
             await self.clearing_house.program.account["UserPositions"].fetch(
@@ -78,7 +85,7 @@ class ClearingHouseUser:
         pnl = 0
         for position in positions_account.positions:
             if market_index is not None and position.market_index == market_index:
-                market = self.clearing_house.get_market(
+                market = await self.clearing_house.get_market(
                     position.market_index
                 )  # todo repeat querying
                 pnl += calculate_position_pnl(market, position)
@@ -86,14 +93,14 @@ class ClearingHouseUser:
         return pnl
 
     async def get_total_collateral(self):
-        collateral = await self.clearing_house.get_user_account().collatearl
-        return collateral + self.get_unrealised_pnl()
+        collateral = (await self.clearing_house.get_user_account()).collateral
+        return collateral + await self.get_unrealised_pnl()
 
     async def get_total_position_value(self):
         positions_account = await self.get_user_positions_account()
         value = 0
         for position in positions_account.positions:
-            market = self.clearing_house.get_market(
+            market = await self.clearing_house.get_market(
                 position.market_index
             )  # todo repeat querying
             value += calculate_base_asset_value(market, position)
@@ -105,8 +112,61 @@ class ClearingHouseUser:
         value = 0
         for position in positions_account.positions:
             if market_index is not None and position.market_index == market_index:
-                market = self.clearing_house.get_market(
+                market = await self.clearing_house.get_market(
                     position.market_index
                 )  # todo repeat querying
                 value += calculate_base_asset_value(market, position)
         return value
+
+    async def get_margin_ratio(self):
+        return await self.get_total_collateral() / await self.get_total_position_value()
+
+    async def get_leverage(self):
+        return (await self.get_total_position_value()) / (
+            await self.get_total_collateral()
+        )
+
+    async def get_free_collateral(self):
+        return (await self.get_total_collateral()) - (
+            (await self.get_total_position_value()) / MAX_LEVERAGE
+        )
+
+    async def can_be_liquidated(self):
+        return (await self.get_margin_ratio()) <= PARTIAL_LIQUIDATION_RATIO / 100
+
+    async def liquidation_price(self, market_index: int):
+        # todo
+
+        tc = await self.get_total_collateral()
+        tpv = await self.get_total_position_value()
+        free_collateral = (
+            await self.get_free_collateral()
+        )  # todo: use maint/partial lev
+        partial_lev = 16
+        # maint_lev = 20
+
+        lev = partial_lev  # todo: param
+
+        # this_level = partial_lev #if partial else maint_lev
+
+        market = await self.clearing_house.get_market(market_index)
+
+        position = await self.get_user_position(market_index)
+        if position.base_asset_amount > 0 and tpv < free_collateral:
+            return -1
+
+        price_delt = None
+        if position.base_asset_amount > 0:
+            price_delt = tc * lev - tpv / (lev - 1)
+        else:
+            price_delt = tc * lev - tpv / (lev + 1)
+
+        current_price = calculate_mark_price(market)
+
+        eat_margin = price_delt * AMM_RESERVE_PRECISION / position.base_asset_amount
+        if eat_margin > current_price:
+            return -1
+
+        liq_price = current_price - eat_margin
+
+        return liq_price
