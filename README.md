@@ -1,19 +1,4 @@
-Repo for adding helper functions mirrored from the Drift TypeScript SDK to expand Driftpy's functionality.
-
-These can be found in the <i>driftfunctions.py</i> file.
-
-<b>Currently added:</b><br />
-<i>calculateMarketSummary*<br />
-calculatePredictedFunding*<br />
-calculatePrice<br />
-calculateMarkPrice<br />
-calculateTargetPriceTrade<br />
-calculateSwapOutput<br />
-calculateAmmReservesAfterSwap<br />
-calculateTradeAcquiredAmounts<br />
-calculateTradeSlippage</i><br />
-
-*send love to bigz
+Forked Repo of DriftPy for making observations and fixing some things.
 
 
 # DriftPy
