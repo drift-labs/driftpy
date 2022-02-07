@@ -20,11 +20,11 @@ from driftpy.constants.numeric_constants import (
     MARK_PRICE_PRECISION,
     # PEG_PRECISION,
     AMM_RESERVE_PRECISION,
-    # QUOTE_PRECISION,
+    QUOTE_PRECISION,
     FUNDING_PRECISION,
     PRICE_TO_QUOTE_PRECISION,
     AMM_TO_QUOTE_PRECISION_RATIO,
-    AMM_TIMES_PEG_TO_QUOTE_PRECISION_RATIO,
+    # AMM_TIMES_PEG_TO_QUOTE_PRECISION_RATIO,
 )
 
 from driftpy.math.amm import AssetType
@@ -44,22 +44,22 @@ def calculate_base_asset_value(market: Market, user_position: MarketPosition) ->
     new_quote_asset_reserve, _ = calculate_amm_reserves_after_swap(
         market.amm,
         AssetType.BASE,
-        abs(user_position.base_asset_amount),
+        abs(user_position.base_asset_amount) / AMM_RESERVE_PRECISION,
         get_swap_direction(AssetType.BASE, direction_to_close),
     )
 
     result = None
     if direction_to_close == PositionDirection.SHORT:
         result = (
-            (market.amm.quote_asset_reserve - new_quote_asset_reserve)
+            (market.amm.quote_asset_reserve/MARK_PRICE_PRECISION - new_quote_asset_reserve)
             * market.amm.peg_multiplier
-        ) / AMM_TIMES_PEG_TO_QUOTE_PRECISION_RATIO
+        ) / QUOTE_PRECISION
     else:
         # PositionDirection.LONG:
         result = (
-            (new_quote_asset_reserve - market.amm.quote_asset_reserve)
+            (new_quote_asset_reserve - market.amm.quote_asset_reserve/MARK_PRICE_PRECISION)
             * market.amm.peg_multiplier
-        ) / AMM_TIMES_PEG_TO_QUOTE_PRECISION_RATIO
+        ) / QUOTE_PRECISION
 
     return result
 
@@ -75,9 +75,9 @@ def calculate_position_pnl(
     base_asset_value = calculate_base_asset_value(market, market_position)
 
     if market_position.base_asset_amount > 0:
-        pnl = base_asset_value - market_position.quote_asset_amount
-    else:
-        pnl = market_position.quote_asset_amount - base_asset_value - 1
+        pnl = base_asset_value - market_position.quote_asset_amount/QUOTE_PRECISION
+    else:   
+        pnl = market_position.quote_asset_amount/QUOTE_PRECISION - base_asset_value
 
     if with_funding:
         funding_rate_pnl = 0.0
