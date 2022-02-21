@@ -10,7 +10,10 @@ from solana.sysvar import SYSVAR_RENT_PUBKEY
 from solana.transaction import AccountMeta
 from spl.token.constants import TOKEN_PROGRAM_ID
 from anchorpy import Program, Context, Idl
-from driftpy.addresses import get_user_account_public_key_and_nonce
+from driftpy.addresses import (
+    get_user_account_public_key_and_nonce,
+    get_user_orders_account_public_key_and_nonce,
+)
 from driftpy.types import (
     PositionDirection,
     StateAccount,
@@ -293,6 +296,15 @@ class ClearingHouse:
         NOT the user's wallet address.
         """
         return get_user_account_public_key_and_nonce(
+            self.program.program_id, self.program.provider.wallet.public_key
+        )[0]
+
+    def get_user_orders_public_key(self) -> PublicKey:
+        """Get the address for the Clearing House User's order account.
+
+        NOT the user's wallet address.
+        """
+        return get_user_orders_account_public_key_and_nonce(
             self.program.program_id, self.program.provider.wallet.public_key
         )[0]
 

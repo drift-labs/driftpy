@@ -14,6 +14,7 @@ from driftpy.types import (
     # ExtendedCurveHistoryAccount,
     # User,
     UserPositions,
+    UserOrdersAccount,
     MarketPosition,
 )
 from driftpy.math.market import calculate_mark_price
@@ -69,6 +70,17 @@ class ClearingHouseUser:
         )
 
         return positions_account
+
+    async def get_user_orders_account(self) -> UserOrdersAccount:
+        user_orders_account = self.clearing_house.get_user_orders_public_key()
+        orders_account = cast(
+            UserOrdersAccount,
+            await self.clearing_house.program.account["UserOrders"].fetch(
+                user_orders_account
+            ),
+        )
+
+        return orders_account
 
     async def get_user_position(self, market_index) -> MarketPosition:
         positions_account = await self.get_user_positions_account()

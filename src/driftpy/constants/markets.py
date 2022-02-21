@@ -90,4 +90,20 @@ MARKETS: list[Market] = [
         mainnet_pyth_oracle="HqFyq1wh1xKvL7KDqqT7NJeSPdAqsDqnmBisUC2XdXAX",
         # launch_ts: 1643686767000,
     ),
+    Market(
+        symbol="FTT-PERP",
+        base_asset_symbol="FTT",
+        market_index=11,
+        devnet_pyth_oracle="6vivTRs5ZPeeXbjo7dfburfaYDWoXjBtdtuYgQRuGfu",
+        mainnet_pyth_oracle="8JPJJkmDScpcNmBRKGZuPuG2GYAveQgP3t5gFuMymwvF",
+        # launch_ts: 1643686767000,
+    ),
+    Market(
+        symbol="LTC-PERP",
+        base_asset_symbol="LTC",
+        market_index=12,
+        devnet_pyth_oracle="BLArYBCUYhdWiY8PCUTpvFE21iaJq85dvxLk9bYMobcU",
+        mainnet_pyth_oracle="8RMnV1eD55iqUFJLMguPkYBkq8DCtx81XcmAja93LvRR",
+        # launch_ts: 1643686767000,
+    ),
 ]

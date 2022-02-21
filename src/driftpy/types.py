@@ -343,6 +343,110 @@ class UserPositions:
 
 
 @_rust_enum
+class OrderType:
+    LIMIT = constructor()
+    TRIGGER_MARKET = constructor()
+    TRIGGER_LIMIT = constructor()
+    MARKET = constructor()
+
+
+@_rust_enum
+class OrderStatus:
+    INIT = constructor()
+    OPEN = constructor()
+
+
+@_rust_enum
+class OrderDiscountTier:
+    NONE = constructor()
+    FIRST = constructor()
+    SECOND = constructor()
+    THIRD = constructor()
+    FOURTH = constructor()
+
+
+@_rust_enum
+class OrderAction:
+    PLACE = constructor()
+    FILL = constructor()
+    CANCEL = constructor()
+
+
+@_rust_enum
+class OrderTriggerCondition:
+    ABOVE = constructor()
+    BELOW = constructor()
+
+
+@_rust_enum
 class PositionDirection:
     LONG = constructor()
     SHORT = constructor()
+
+
+@_rust_enum
+class SwapDirection:
+    ADD = constructor()
+    REMOVE = constructor()
+
+
+@_rust_enum
+class AssetType:
+    QUOTE = constructor()
+    BASE = constructor()
+
+
+@dataclass
+class Order:
+    status: OrderStatus
+    order_type: OrderType
+    ts: int
+    order_id: int
+    user_order_id: int
+    market_index: int
+    price: int
+    user_base_asset_amount: int
+    base_asset_amount: int
+    base_asset_amount_filled: int
+    quote_asset_amount: int
+    quote_asset_amount_filled: int
+    fee: int
+    direction: PositionDirection
+    reduce_only: bool
+    trigger_price: int
+    trigger_condition: OrderTriggerCondition
+    discount_tier: OrderDiscountTier
+    referrer: PublicKey
+    post_only: bool
+    immediate_or_cancel: bool
+    oracle_price_offset: int
+
+
+class OrderParams:
+    order_type: OrderType
+    user_order_id: int
+    direction: PositionDirection
+    quote_asset_amount: int
+    base_asset_amount: int
+    price: int
+    market_index: int
+    reduce_only: bool
+    post_only: bool
+    immediate_or_cancel: bool
+    trigger_price: int
+    trigger_condition: OrderTriggerCondition
+    position_limit: int
+    oracle_orice_offset: int
+    # upgradable
+    padding0: bool
+    padding1: int
+    # optional_accounts: {
+    # 	discount_token: bool
+    # 	referrer: bool
+    # }
+
+
+@dataclass
+class UserOrdersAccount:
+    orders: list[Order]
+    user: PublicKey
