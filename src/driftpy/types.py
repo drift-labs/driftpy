@@ -93,13 +93,15 @@ class StateAccount:
     oracle_guard_rails: OracleGuardRails
     max_deposit: int
     extended_curve_history: PublicKey
+    order_state: PublicKey
+
     # upgrade-ability
     padding0: int
     padding1: int
     padding2: int
     padding3: int
-    padding4: int
-    padding5: int
+    # padding4: int
+    # padding5: int
 
 
 @_rust_enum
@@ -263,85 +265,6 @@ class LiquidationRecord:
     margin_ratio: int
 
 
-@dataclass
-class TradeHistoryAccount:
-    head: int
-    trade_records: list[TradeRecord]
-
-
-@dataclass
-class DepositHistoryAccount:
-    head: int
-    deposit_records: list[DepositRecord]
-
-
-@dataclass
-class ExtendedCurveHistoryAccount:
-    head: int
-    curve_records: list[ExtendedCurveRecord]
-
-
-@dataclass
-class FundingRateHistoryAccount:
-    head: int
-    funding_rate_records: list[FundingRateRecord]
-
-
-@dataclass
-class FundingPaymentHistoryAccount:
-    head: int
-    funding_payment_records: list[FundingPaymentRecord]
-
-
-@dataclass
-class LiquidationHistoryAccount:
-    head: int
-    liquidation_records: list[LiquidationRecord]
-
-
-@dataclass
-class User:
-    authority: PublicKey
-    collateral: int
-    cumulative_deposits: int
-    total_fee_paid: int
-    total_token_discount: int
-    total_referral_reward: int
-    total_referee_discount: int
-    positions: PublicKey
-    # upgrade-ability
-    padding0: int
-    padding1: int
-    padding2: int
-    padding3: int
-
-
-@dataclass
-class MarketPosition:
-    market_index: int
-    base_asset_amount: int
-    quote_asset_amount: int
-    last_cumulative_funding_rate: int
-    last_cumulative_repeg_rebate: int
-    last_funding_rate_ts: int
-    stop_loss_price: int
-    stop_loss_amount: int
-    stop_profit_price: int
-    stop_profit_amount: int
-    transfer_to: PublicKey
-    # upgrade-ability
-    padding0: int
-    padding1: int
-
-
-@dataclass
-class UserPositions:
-    user: PublicKey
-    positions: tuple[
-        MarketPosition, MarketPosition, MarketPosition, MarketPosition, MarketPosition
-    ]
-
-
 @_rust_enum
 class OrderType:
     LIMIT = constructor()
@@ -444,6 +367,123 @@ class OrderParams:
     # 	discount_token: bool
     # 	referrer: bool
     # }
+
+
+@dataclass
+class OrderFillerRewardStructure:
+    reward_numerator: int
+    reward_denominator: int
+    time_based_reward_lower_bound: int  # minimum time filler reward
+
+
+@dataclass
+class OrderState:
+    order_history: PublicKey
+    order_filler_reward_structure: OrderFillerRewardStructure
+    min_order_quote_asset_amount: int  # minimum est. quote_asset
+    padding: list[int]
+
+
+@dataclass
+class OrderRecord:
+    ts: int
+    record_id: int
+    order: Order
+    user: PublicKey
+    authority: PublicKey
+    action: OrderAction
+    filler: PublicKey
+    baseAssetAmountFilled: int
+    quoteAssetAmountFilled: int
+    fee: int
+    fillerReward: int
+    tradeRecordId: int
+
+
+@dataclass
+class TradeHistoryAccount:
+    head: int
+    trade_records: list[TradeRecord]
+
+
+@dataclass
+class DepositHistoryAccount:
+    head: int
+    deposit_records: list[DepositRecord]
+
+
+@dataclass
+class ExtendedCurveHistoryAccount:
+    head: int
+    curve_records: list[ExtendedCurveRecord]
+
+
+@dataclass
+class FundingRateHistoryAccount:
+    head: int
+    funding_rate_records: list[FundingRateRecord]
+
+
+@dataclass
+class FundingPaymentHistoryAccount:
+    head: int
+    funding_payment_records: list[FundingPaymentRecord]
+
+
+@dataclass
+class LiquidationHistoryAccount:
+    head: int
+    liquidation_records: list[LiquidationRecord]
+
+
+@dataclass
+class OrderHistoryAccount:
+    head: int
+    last_order_id: int
+    order_records: list[OrderRecord]
+
+
+@dataclass
+class User:
+    authority: PublicKey
+    collateral: int
+    cumulative_deposits: int
+    total_fee_paid: int
+    total_token_discount: int
+    total_referral_reward: int
+    total_referee_discount: int
+    positions: PublicKey
+    # upgrade-ability
+    padding0: int
+    padding1: int
+    padding2: int
+    padding3: int
+
+
+@dataclass
+class MarketPosition:
+    market_index: int
+    base_asset_amount: int
+    quote_asset_amount: int
+    last_cumulative_funding_rate: int
+    last_cumulative_repeg_rebate: int
+    last_funding_rate_ts: int
+    stop_loss_price: int
+    stop_loss_amount: int
+    stop_profit_price: int
+    stop_profit_amount: int
+    transfer_to: PublicKey
+    # upgrade-ability
+    padding0: int
+    padding1: int
+
+
+@dataclass
+class UserPositions:
+    user: PublicKey
+    positions: tuple[
+        MarketPosition, MarketPosition, MarketPosition, MarketPosition, MarketPosition
+    ]
 
 
 @dataclass

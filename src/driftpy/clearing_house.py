@@ -27,6 +27,8 @@ from driftpy.types import (
     ExtendedCurveHistoryAccount,
     User,
     UserPositions,
+    OrderState,
+    OrderHistoryAccount,
 )
 
 from driftpy.program import load_program
@@ -48,6 +50,8 @@ class ClearingHousePDAs:
     funding_rate_history: PublicKey
     liquidation_history: PublicKey
     curve_history: PublicKey
+    extended_curve_history: PublicKey
+    order_state: PublicKey
 
 
 def get_clearing_house_state_account_public_key_and_nonce(
@@ -133,6 +137,23 @@ class ClearingHouse:
         res = await self.program.account["CurveHistory"].fetch(self.pdas.curve_history)
         return cast(ExtendedCurveHistoryAccount, res)
 
+    async def get_extended_curve_history_account(self) -> ExtendedCurveHistoryAccount:
+        res = await self.program.account["ExtendedCurveHistory"].fetch(
+            self.pdas.extended_curve_history
+        )
+        return cast(ExtendedCurveHistoryAccount, res)
+
+    async def get_orders_state_account(self) -> OrderState:
+        res = await self.program.account["OrderState"].fetch(self.pdas.order_state)
+        return cast(OrderState, res)
+
+    async def get_orders_history_account(self) -> OrderHistoryAccount:
+        order_state = await self.get_orders_state_account()
+        res = await self.program.account["OrderHistory"].fetch(
+            order_state.order_history
+        )
+        return cast(OrderHistoryAccount, res)
+
     @staticmethod
     def _get_state_pubkey(program: Program) -> PublicKey:
         return PublicKey.find_program_address([b"clearing_house"], program.program_id)[
@@ -160,6 +181,8 @@ class ClearingHouse:
             funding_rate_history=state.funding_rate_history,
             liquidation_history=state.liquidation_history,
             curve_history=state.curve_history,
+            extended_curve_history=state.extended_curve_history,
+            order_state=state.order_state,
         )
         return cls(program, pdas)
 
@@ -185,6 +208,8 @@ class ClearingHouse:
             funding_rate_history=state.funding_rate_history,
             liquidation_history=state.liquidation_history,
             curve_history=state.curve_history,
+            order_state=state.order_state,
+            extended_curve_history=state.extended_curve_history,
         )
         return cls(program, pdas)
 

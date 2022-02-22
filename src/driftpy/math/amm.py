@@ -10,7 +10,29 @@ def calculate_price(base_asset_amount, quote_asset_amount, peg_multiplier):
     if abs(base_asset_amount) <= 0:
         return 0
     else:
-        return (quote_asset_amount * peg_multiplier / PEG_PRECISION) / base_asset_amount
+        return (quote_asset_amount / base_asset_amount) * peg_multiplier / PEG_PRECISION
+
+
+def calculate_terminal_price(market):
+    swap_direction = (
+        SwapDirection.ADD if market.base_asset_amount > 0 else SwapDirection.REMOVE
+    )
+
+    new_base_asset_amount, new_quote_asset_amount = calculate_swap_output(
+        market.amm.base_asset_reserve,
+        abs(market.base_asset_amount),
+        swap_direction,
+        market.amm.sqrt_k ** 2,
+    )
+    # print(new_quote_asset_amount/new_base_asset_amount)
+
+    terminal_price = calculate_price(
+        new_base_asset_amount,
+        new_quote_asset_amount,
+        market.amm.peg_multiplier,
+    )
+
+    return terminal_price
 
 
 def calculate_swap_output(
@@ -25,6 +47,11 @@ def calculate_swap_output(
         new_input_asset_reserve = input_asset_reserve + swap_amount
     else:
         new_input_asset_reserve = input_asset_reserve - swap_amount
+        assert new_input_asset_reserve > 0, "%i > %i" % (
+            swap_amount,
+            input_asset_reserve,
+        )
+
     new_output_asset_reserve = invariant / new_input_asset_reserve
     return [new_input_asset_reserve, new_output_asset_reserve]
 

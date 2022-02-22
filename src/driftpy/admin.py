@@ -165,3 +165,30 @@ class Admin(ClearingHouse):
                 }
             ),
         )
+
+    async def repeg_amm_curve(
+        self,
+        new_peg: int,
+        market_index: int,
+    ) -> TransactionSignature:
+        markets_account = await self.get_markets_account()
+        market_data = markets_account.markets[market_index]
+
+        if not market_data.initialized:
+            raise ValueError(f"MarketIndex {market_index} is not initialized")
+
+        amm_data = market_data.amm
+
+        return await self.program.rpc["repeg_amm_curve"](
+            new_peg,
+            market_index,
+            ctx=Context(
+                accounts={
+                    "state": self.pdas.state,
+                    "admin": self.program.provider.wallet.public_key,
+                    "oracle": amm_data.oracle,
+                    "markets": self.pdas.markets,
+                    "curve_history": self.pdas.extended_curve_history,
+                }
+            ),
+        )
