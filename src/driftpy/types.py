@@ -359,7 +359,7 @@ class OrderParams:
     trigger_price: int
     trigger_condition: OrderTriggerCondition
     position_limit: int
-    oracle_orice_offset: int
+    oracle_price_offset: int
     # upgradable
     padding0: bool
     padding1: int
