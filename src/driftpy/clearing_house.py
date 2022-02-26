@@ -479,6 +479,16 @@ class ClearingHouse:
             ),
         )
 
+    async def place_order(
+        self,
+        order_params: OrderParams,
+        discount_token: Optional[PublicKey] = None,
+        referrer: Optional[PublicKey] = None,
+    ) -> TransactionSignature:
+        ix = await self.get_place_order_ix(order_params, discount_token, referrer)
+        tx = Transaction().add(ix)
+        return await self.program.provider.send(tx)
+
     async def get_place_order_ix(
         self,
         order_params: OrderParams,
@@ -553,6 +563,143 @@ class ClearingHouse:
                     "oracle": price_oracle,
                 },
                 remaining_accounts=remaining_accounts,
+            ),
+        )
+
+    async def place_and_fill_order(
+        self,
+        order_params: OrderParams,
+        discount_token: Optional[PublicKey] = None,
+        referrer: Optional[PublicKey] = None,
+    ) -> TransactionSignature:
+        ix = await self.get_place_and_fill_order_ix(
+            order_params, discount_token, referrer
+        )
+        tx = Transaction().add(ix)
+        return await self.program.provider.send(tx)
+
+    async def get_place_and_fill_order_ix(
+        self,
+        order_params: OrderParams,
+        discount_token: Optional[PublicKey] = None,
+        referrer: Optional[PublicKey] = None,
+        user_account: Optional[User] = None,
+        markets_account: Optional[MarketsAccount] = None,
+        state_account: Optional[StateAccount] = None,
+        orders_state_account: Optional[OrderState] = None,
+    ) -> TransactionInstruction:
+        user_account_public_key = self.get_user_account_public_key()
+        user_account_to_use = (
+            await self.get_user_account() if user_account is None else user_account
+        )
+        optional_accounts = {
+            "discount_token": False,
+            "referrer": False,
+        }
+        remaining_accounts = []
+        if discount_token:
+            optional_accounts["discount_token"] = True
+            remaining_accounts.append(
+                AccountMeta(
+                    pubkey=discount_token,
+                    is_writable=False,
+                    is_signer=False,
+                )
+            )
+        if referrer:
+            optional_accounts["referrer"] = True
+            remaining_accounts.append(
+                AccountMeta(
+                    pubkey=referrer,
+                    is_writable=True,
+                    is_signer=False,
+                )
+            )
+
+        markets_account_to_use = (
+            await self.get_markets_account()
+            if markets_account is None
+            else markets_account
+        )
+        price_oracle = markets_account_to_use.markets[
+            order_params.market_index
+        ].amm.oracle
+
+        state = (
+            await self.get_state_account() if state_account is None else state_account
+        )
+
+        orders_state = (
+            await self.get_orders_state_account()
+            if orders_state_account is None
+            else orders_state_account
+        )
+
+        return self.program.instruction["place_and_fill_order"](
+            order_params,
+            ctx=Context(
+                accounts={
+                    "state": self.pdas.state,
+                    "user": user_account_public_key,
+                    "authority": self.program.provider.wallet.public_key,
+                    "markets": state.markets,
+                    "user_orders": self.get_user_orders_public_key(),
+                    "user_positions": user_account_to_use.positions,
+                    "trade_history": state.trade_history,
+                    "funding_payment_history": state.funding_payment_history,
+                    "funding_rate_history": state.funding_rate_history,
+                    "order_state": self.get_order_state_public_key(),
+                    "order_history": orders_state.order_history,
+                    "extended_curve_history": state.extended_curve_history,
+                    "oracle": price_oracle,
+                },
+                remaining_accounts=remaining_accounts,
+            ),
+        )
+
+    async def cancel_order(
+        self,
+        order_id: int,
+    ) -> TransactionSignature:
+        ix = await self.get_cancel_order_ix(order_id)
+        tx = Transaction().add(ix)
+        return await self.program.provider.send(tx)
+
+    async def get_cancel_order_ix(
+        self,
+        order_id: int,
+        user_account: Optional[User] = None,
+        state_account: Optional[StateAccount] = None,
+        orders_state_account: Optional[OrderState] = None,
+    ) -> TransactionInstruction:
+        user_account_public_key = self.get_user_account_public_key()
+        user_account_to_use = (
+            await self.get_user_account() if user_account is None else user_account
+        )
+        state = (
+            await self.get_state_account() if state_account is None else state_account
+        )
+        orders_state = (
+            await self.get_orders_state_account()
+            if orders_state_account is None
+            else orders_state_account
+        )
+
+        return self.program.instruction["cancel_order"](
+            order_id,
+            ctx=Context(
+                accounts={
+                    "state": self.pdas.state,
+                    "user": user_account_public_key,
+                    "authority": self.program.provider.wallet.public_key,
+                    "markets": state.markets,
+                    "user_orders": self.get_user_orders_public_key(),
+                    "user_positions": user_account_to_use.positions,
+                    "funding_payment_history": state.funding_payment_history,
+                    "funding_rate_history": state.funding_rate_history,
+                    "order_state": self.get_order_state_public_key(),
+                    "order_history": orders_state.order_history,
+                },
             ),
         )
 
