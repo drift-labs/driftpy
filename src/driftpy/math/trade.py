@@ -42,6 +42,9 @@ def calculate_trade_acquired_amounts(
     acquired_base = market.amm.base_asset_reserve - new_base_asset_reserve
     acquired_quote = market.amm.quote_asset_reserve - new_quote_asset_reserve
 
+    if input_asset_type == AssetType.BASE and direction == PositionDirection.LONG:
+        acquired_quote -= 1  # round up
+
     return [acquired_base, acquired_quote]
 
 

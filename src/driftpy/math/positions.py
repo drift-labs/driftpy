@@ -53,7 +53,7 @@ def calculate_base_asset_value(market: Market, user_position: MarketPosition) ->
         result = (
             (market.amm.quote_asset_reserve - new_quote_asset_reserve)
             * market.amm.peg_multiplier
-        ) / AMM_TIMES_PEG_TO_QUOTE_PRECISION_RATIO
+        ) / AMM_TIMES_PEG_TO_QUOTE_PRECISION_RATIO + 1  # round up
     else:
         # PositionDirection.LONG:
         result = (
@@ -77,7 +77,7 @@ def calculate_position_pnl(
     if market_position.base_asset_amount > 0:
         pnl = base_asset_value - market_position.quote_asset_amount
     else:
-        pnl = market_position.quote_asset_amount - base_asset_value - 1
+        pnl = market_position.quote_asset_amount - base_asset_value
 
     if with_funding:
         funding_rate_pnl = 0.0
