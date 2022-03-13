@@ -46,11 +46,12 @@ def calculate_swap_output(
     if swap_direction == SwapDirection.ADD:
         new_input_asset_reserve = input_asset_reserve + swap_amount
     else:
-        new_input_asset_reserve = input_asset_reserve - swap_amount
-        assert new_input_asset_reserve > 0, "%i > %i" % (
-            swap_amount,
+        assert input_asset_reserve > swap_amount, "%i > %i" % (
             input_asset_reserve,
+            swap_amount,
         )
+        new_input_asset_reserve = input_asset_reserve - swap_amount
+
 
     new_output_asset_reserve = invariant / new_input_asset_reserve
     return [new_input_asset_reserve, new_output_asset_reserve]
@@ -78,6 +79,7 @@ def calculate_amm_reserves_after_swap(
         # swap_amount = swap_amount * PEG_PRECISION
         # if swap_direction == PositionDirection.LONG:
         #     swap_amount = swap_amount * (-1)
+        # print(swap_amount, amm)
         [new_base_asset_reserve, new_quote_asset_reserve] = calculate_swap_output(
             amm.base_asset_reserve,
             swap_amount,

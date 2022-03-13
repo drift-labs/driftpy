@@ -78,6 +78,7 @@ def calculate_trade_slippage(
     if direction == PositionDirection.SHORT:
         assert new_price < old_price
     else:
+        # print(new_price, old_price)
         assert new_price > old_price
 
     pct_max_slippage = abs((new_price - old_price) / old_price)
@@ -141,7 +142,10 @@ def calculate_target_price_trade(
         trade_size = 0
         return [direction, trade_size, target_price, target_price]
 
-    entry_price = trade_size * AMM_TO_QUOTE_PRECISION_RATIO / abs(base_size)
+    if(base_size !=0):
+        entry_price = trade_size * AMM_TO_QUOTE_PRECISION_RATIO / abs(base_size)
+    else:
+        entry_price = 0
 
     if output_asset_type == AssetType.QUOTE:
         return [

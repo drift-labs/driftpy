@@ -36,9 +36,9 @@ def calculate_base_asset_value(market: Market, user_position: MarketPosition) ->
         return 0
 
     direction_to_close = (
-        PositionDirection.LONG
+        PositionDirection.SHORT
         if user_position.base_asset_amount > 0
-        else PositionDirection.SHORT
+        else PositionDirection.LONG
     )
 
     new_quote_asset_reserve, _ = calculate_amm_reserves_after_swap(
@@ -56,10 +56,10 @@ def calculate_base_asset_value(market: Market, user_position: MarketPosition) ->
         ) / AMM_TIMES_PEG_TO_QUOTE_PRECISION_RATIO
     else:
         # PositionDirection.LONG:
-        result = (
+        result = ((
             (new_quote_asset_reserve - market.amm.quote_asset_reserve)
             * market.amm.peg_multiplier
-        ) / AMM_TIMES_PEG_TO_QUOTE_PRECISION_RATIO
+        ) / AMM_TIMES_PEG_TO_QUOTE_PRECISION_RATIO) + 1.0
 
     return result
 
@@ -77,7 +77,7 @@ def calculate_position_pnl(
     if market_position.base_asset_amount > 0:
         pnl = base_asset_value - market_position.quote_asset_amount
     else:
-        pnl = market_position.quote_asset_amount - base_asset_value - 1
+        pnl = market_position.quote_asset_amount - base_asset_value
 
     if with_funding:
         funding_rate_pnl = 0.0

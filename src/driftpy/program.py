@@ -27,19 +27,26 @@ def load_program(env: str, wallet_path=None):
     # override path to wallet
     # os.environ["ANCHOR_WALLET"] = os.path.expanduser("~/.config/solana/.json")
     # del os.environ["ANCHOR_WALLET"]
+    p = None
     if wallet_path is not None:
         wallet_path_full = os.path.expanduser(wallet_path)
         assert os.path.exists(wallet_path_full)
         os.environ["ANCHOR_WALLET"] = wallet_path_full
+        p = Provider.env()
     else:
         if "ANCHOR_WALLET" not in os.environ:
-            raise Exception(
-                """No solana wallet specified/found. \n
-                Run `export ANCHOR_WALLET=/path/to/wallet.json`"""
-            )
+            print('No solana wallet specified/found. Read-Only mode.')
+            p = Provider.readonly(url=os.environ["ANCHOR_PROVIDER_URL"])
+        else:
+            p = Provider.env()
+            # Provider.readonly()
+            # raise Exception(
+            #     """No solana wallet specified/found. \n
+            #     Run `export ANCHOR_WALLET=/path/to/wallet.json`"""
+            # )
 
     # Address of the deployed program.
-    program = Program(IDL_JSON, PublicKey(CH_PID), Provider.env())
+    program = Program(IDL_JSON, PublicKey(CH_PID),  p)
     return program
 
 
