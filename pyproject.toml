@@ -10,7 +10,7 @@ documentation = "https://drift-labs.github.io/driftpy/"
 
 [tool.poetry.dependencies]
 python = "^3.9"
-anchorpy = "^0.6.5"
+anchorpy = "^0.8.0"
 solana = "^0.21.0"
 requests = "^2.27.1"
 types-requests = "^2.27.8"
