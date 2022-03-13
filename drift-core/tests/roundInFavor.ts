@@ -1,6 +1,6 @@
 import * as anchor from '@project-serum/anchor';
 import { assert } from 'chai';
-import BN from 'bn.js';
+import { BN } from '../sdk';
 
 import { Program, Wallet } from '@project-serum/anchor';
 
@@ -147,8 +147,8 @@ describe('round in favor', () => {
 		user = await primaryClearingHouse.program.account.user.fetch(
 			userAccountPublicKey
 		);
-
 		assert(user.collateral.eq(new BN(9999000)));
+		await clearingHouse.unsubscribe();
 	});
 
 	it('long', async () => {
@@ -192,7 +192,7 @@ describe('round in favor', () => {
 		user = await primaryClearingHouse.program.account.user.fetch(
 			userAccountPublicKey
 		);
-
 		assert(user.collateral.eq(new BN(9998999)));
+		await clearingHouse.unsubscribe();
 	});
 });

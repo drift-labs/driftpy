@@ -5,19 +5,25 @@ import {
 	FundingRateHistoryAccount,
 	LiquidationHistoryAccount,
 	MarketsAccount,
+	OrderHistoryAccount,
+	OrderStateAccount,
 	StateAccount,
 	TradeHistoryAccount,
 	UserAccount,
+	UserOrdersAccount,
 	UserPositionsAccount,
 } from '../types';
 import StrictEventEmitter from 'strict-event-emitter-types';
 import { EventEmitter } from 'events';
+import { PublicKey } from '@solana/web3.js';
+import { AccountInfo } from '@solana/spl-token';
+import { ClearingHouseConfigType, ClearingHouseUserConfigType } from '..';
 
 export interface AccountSubscriber<T> {
 	data?: T;
 	subscribe(onChange: (data: T) => void): Promise<void>;
 	fetch(): Promise<void>;
-	unsubscribe(): void;
+	unsubscribe(): Promise<void>;
 }
 
 export class NotSubscribedError extends Error {
@@ -35,7 +41,10 @@ export interface ClearingHouseAccountEvents {
 	liquidationHistoryAccountUpdate: (payload: LiquidationHistoryAccount) => void;
 	depositHistoryAccountUpdate: (payload: DepositHistoryAccount) => void;
 	curveHistoryAccountUpdate: (payload: ExtendedCurveHistoryAccount) => void;
+	orderHistoryAccountUpdate: (payload: OrderHistoryAccount) => void;
+	orderStateAccountUpdate: (payload: OrderStateAccount) => void;
 	update: void;
+	error: (e: Error) => void;
 }
 
 export type ClearingHouseAccountTypes =
@@ -44,7 +53,8 @@ export type ClearingHouseAccountTypes =
 	| 'fundingPaymentHistoryAccount'
 	| 'fundingRateHistoryAccount'
 	| 'curveHistoryAccount'
-	| 'liquidationHistoryAccount';
+	| 'liquidationHistoryAccount'
+	| 'orderHistoryAccount';
 
 export interface ClearingHouseAccountSubscriber {
 	eventEmitter: StrictEventEmitter<EventEmitter, ClearingHouseAccountEvents>;
@@ -66,12 +76,24 @@ export interface ClearingHouseAccountSubscriber {
 	getFundingRateHistoryAccount(): FundingRateHistoryAccount;
 	getCurveHistoryAccount(): ExtendedCurveHistoryAccount;
 	getLiquidationHistoryAccount(): LiquidationHistoryAccount;
+	getOrderStateAccount(): OrderStateAccount;
+	getOrderHistoryAccount(): OrderHistoryAccount;
+
+	type: ClearingHouseConfigType;
 }
+
+export type UserPublicKeys = {
+	user: PublicKey;
+	userPositions: PublicKey;
+	userOrders: PublicKey | undefined;
+};
 
 export interface UserAccountEvents {
 	userAccountData: (payload: UserAccount) => void;
 	userPositionsData: (payload: UserPositionsAccount) => void;
+	userOrdersData: (payload: UserOrdersAccount) => void;
 	update: void;
+	error: (e: Error) => void;
 }
 
 export interface UserAccountSubscriber {
@@ -84,4 +106,35 @@ export interface UserAccountSubscriber {
 
 	getUserAccount(): UserAccount;
 	getUserPositionsAccount(): UserPositionsAccount;
+	getUserOrdersAccount(): UserOrdersAccount;
+	type: ClearingHouseUserConfigType;
 }
+
+export interface TokenAccountEvents {
+	tokenAccountUpdate: (payload: AccountInfo) => void;
+	update: void;
+	error: (e: Error) => void;
+}
+
+export interface TokenAccountSubscriber {
+	eventEmitter: StrictEventEmitter<EventEmitter, TokenAccountEvents>;
+	isSubscribed: boolean;
+
+	subscribe(): Promise<boolean>;
+	fetch(): Promise<void>;
+	unsubscribe(): Promise<void>;
+
+	getTokenAccount(): AccountInfo;
+}
+
+export type AccountToPoll = {
+	key: string;
+	publicKey: PublicKey;
+	eventType: string;
+	callbackId?: string;
+};
+
+export type AccountData = {
+	slot: number;
+	buffer: Buffer | undefined;
+};

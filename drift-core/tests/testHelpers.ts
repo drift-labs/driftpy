@@ -16,7 +16,7 @@ import {
 } from '@solana/web3.js';
 import { assert } from 'chai';
 import buffer from 'buffer';
-import BN from 'bn.js';
+import { BN } from '../sdk';
 import { ClearingHouse, ClearingHouseUser } from '../sdk/src';
 
 export async function mockOracle(
@@ -26,7 +26,12 @@ export async function mockOracle(
 	// default: create a $50 coin oracle
 	const program = anchor.workspace.Pyth;
 
-	anchor.setProvider(anchor.Provider.env());
+	anchor.setProvider(
+		anchor.Provider.local(undefined, {
+			commitment: 'confirmed',
+			preflightCommitment: 'confirmed',
+		})
+	);
 	const priceFeedAddress = await createPriceFeed({
 		oracleProgram: program,
 		initPrice: price,
@@ -34,7 +39,10 @@ export async function mockOracle(
 	});
 
 	const feedData = await getFeedData(program, priceFeedAddress);
-	assert.ok(feedData.price === price);
+	if (feedData.price !== price) {
+		console.log('mockOracle precision error:', feedData.price, '!=', price);
+	}
+	assert.ok(Math.abs(feedData.price - price) < 1e-10);
 
 	return priceFeedAddress;
 }
@@ -194,7 +202,10 @@ export async function initUserAccounts(
 			provider.connection,
 			//@ts-ignore
 			ownerWallet,
-			chProgram.programId
+			chProgram.programId,
+			{
+				commitment: 'confirmed',
+			}
 		);
 
 		// await clearingHouse1.initialize(usdcMint.publicKey, false);
@@ -280,6 +291,19 @@ export const setFeedPrice = async (
 	);
 	const data = parsePriceData(info.data);
 	await oracleProgram.rpc.setPrice(new BN(newPrice * 10 ** -data.exponent), {
+		accounts: { price: priceFeed },
+	});
+};
+export const setFeedTwap = async (
+	oracleProgram: Program,
+	newTwap: number,
+	priceFeed: PublicKey
+) => {
+	const info = await oracleProgram.provider.connection.getAccountInfo(
+		priceFeed
+	);
+	const data = parsePriceData(info.data);
+	await oracleProgram.rpc.setTwap(new BN(newTwap * 10 ** -data.exponent), {
 		accounts: { price: priceFeed },
 	});
 };

@@ -19,7 +19,7 @@ pub mod pyth {
     ) -> ProgramResult {
         let oracle = &ctx.accounts.price;
 
-        let mut price_oracle = Price::load(&oracle).unwrap();
+        let mut price_oracle = Price::load(oracle).unwrap();
 
         price_oracle.agg.price = price;
         price_oracle.agg.conf = 0;
@@ -32,7 +32,7 @@ pub mod pyth {
 
     pub fn set_price(ctx: Context<SetPrice>, price: i64) -> ProgramResult {
         let oracle = &ctx.accounts.price;
-        let mut price_oracle = Price::load(&oracle).unwrap();
+        let mut price_oracle = Price::load(oracle).unwrap();
 
         price_oracle.twap = price_oracle
             .twap
@@ -41,6 +41,14 @@ pub mod pyth {
             .checked_div(2)
             .unwrap(); //todo
         price_oracle.agg.price = price as i64;
+        Ok(())
+    }
+
+    pub fn set_twap(ctx: Context<SetPrice>, twap: i64) -> ProgramResult {
+        let oracle = &ctx.accounts.price;
+        let mut price_oracle = Price::load(oracle).unwrap();
+
+        price_oracle.twap = twap;
         Ok(())
     }
 }

@@ -25,7 +25,7 @@ pub fn swap_quote_asset(
     let quote_asset_reserve_amount =
         asset_to_reserve_amount(quote_asset_amount, amm.peg_multiplier)?;
 
-    if quote_asset_reserve_amount < amm.minimum_trade_size {
+    if quote_asset_reserve_amount < amm.minimum_quote_asset_trade_size {
         return Err(ErrorCode::TradeSizeTooSmall);
     }
 
@@ -44,7 +44,7 @@ pub fn swap_quote_asset(
         .checked_sub(cast(new_base_asset_reserve)?)
         .ok_or_else(math_error!())?;
 
-    return Ok(base_asset_amount);
+    Ok(base_asset_amount)
 }
 
 pub fn swap_base_asset(
@@ -52,8 +52,9 @@ pub fn swap_base_asset(
     base_asset_swap_amount: u128,
     direction: SwapDirection,
     now: i64,
+    precomputed_mark_price: Option<u128>,
 ) -> ClearingHouseResult<u128> {
-    amm::update_mark_twap(amm, now, None)?;
+    amm::update_mark_twap(amm, now, precomputed_mark_price)?;
 
     let initial_quote_asset_reserve = amm.quote_asset_reserve;
     let (new_quote_asset_reserve, new_base_asset_reserve) = amm::calculate_swap_output(

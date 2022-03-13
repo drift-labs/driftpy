@@ -1,4 +1,4 @@
-import BN from 'bn.js';
+import { BN } from '../';
 import {
 	AMM_RESERVE_PRECISION,
 	AMM_TIMES_PEG_TO_QUOTE_PRECISION_RATIO,
@@ -27,9 +27,7 @@ export function calculateBaseAssetValue(
 		return ZERO;
 	}
 
-	const directionToClose = userPosition.baseAssetAmount.gt(ZERO)
-		? PositionDirection.SHORT
-		: PositionDirection.LONG;
+	const directionToClose = findDirectionToClose(userPosition);
 
 	const [newQuoteAssetReserve, _] = calculateAmmReservesAfterSwap(
 		market.amm,
@@ -49,7 +47,8 @@ export function calculateBaseAssetValue(
 			return newQuoteAssetReserve
 				.sub(market.amm.quoteAssetReserve)
 				.mul(market.amm.pegMultiplier)
-				.div(AMM_TIMES_PEG_TO_QUOTE_PRECISION_RATIO);
+				.div(AMM_TIMES_PEG_TO_QUOTE_PRECISION_RATIO)
+				.add(ONE);
 	}
 }
 
@@ -76,7 +75,7 @@ export function calculatePositionPNL(
 	if (marketPosition.baseAssetAmount.gt(ZERO)) {
 		pnl = baseAssetValue.sub(marketPosition.quoteAssetAmount);
 	} else {
-		pnl = marketPosition.quoteAssetAmount.sub(baseAssetValue).sub(ONE);
+		pnl = marketPosition.quoteAssetAmount.sub(baseAssetValue);
 	}
 
 	if (withFunding) {
@@ -137,4 +136,26 @@ export function calculateEntryPrice(userPosition: UserPosition): BN {
 		.mul(AMM_TO_QUOTE_PRECISION_RATIO)
 		.div(userPosition.baseAssetAmount)
 		.abs();
+}
+
+export function findDirectionToClose(
+	userPosition: UserPosition
+): PositionDirection {
+	return userPosition.baseAssetAmount.gt(ZERO)
+		? PositionDirection.SHORT
+		: PositionDirection.LONG;
+}
+
+export function positionCurrentDirection(
+	userPosition: UserPosition
+): PositionDirection {
+	return userPosition.baseAssetAmount.gte(ZERO)
+		? PositionDirection.LONG
+		: PositionDirection.SHORT;
+}
+
+export function isEmptyPosition(userPosition: UserPosition): boolean {
+	return (
+		userPosition.baseAssetAmount.eq(ZERO) && userPosition.openOrders.eq(ZERO)
+	);
 }

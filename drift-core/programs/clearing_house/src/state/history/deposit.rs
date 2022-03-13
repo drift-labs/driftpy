@@ -7,15 +7,6 @@ pub struct DepositHistory {
     deposit_records: [DepositRecord; 1024],
 }
 
-impl Default for DepositHistory {
-    fn default() -> Self {
-        return DepositHistory {
-            head: 0,
-            deposit_records: [DepositRecord::default(); 1024],
-        };
-    }
-}
-
 impl DepositHistory {
     pub fn append(&mut self, pos: DepositRecord) {
         self.deposit_records[DepositHistory::index_of(self.head)] = pos;
@@ -29,7 +20,7 @@ impl DepositHistory {
     pub fn next_record_id(&self) -> u128 {
         let prev_trade_id = if self.head == 0 { 1023 } else { self.head - 1 };
         let prev_trade = &self.deposit_records[DepositHistory::index_of(prev_trade_id)];
-        return prev_trade.record_id + 1;
+        prev_trade.record_id + 1
     }
 }
 
