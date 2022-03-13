@@ -22,22 +22,17 @@ pub fn repeg(
     oracle_guard_rails: &OracleGuardRails,
 ) -> ClearingHouseResult<i128> {
     if new_peg_candidate == market.amm.peg_multiplier {
-        return Err(ErrorCode::InvalidRepegRedundant.into());
+        return Err(ErrorCode::InvalidRepegRedundant);
     }
 
     let terminal_price_before = amm::calculate_terminal_price(market)?;
 
     let adjustment_cost = repeg::adjust_peg_cost(market, new_peg_candidate)?;
 
-    let (oracle_price, _oracle_twap, oracle_conf, _oracle_twac, _oracle_delay) =
-        market.amm.get_oracle_price(price_oracle, clock_slot)?;
-
-    let oracle_is_valid = amm::is_oracle_valid(
-        &market.amm,
-        price_oracle,
-        clock_slot,
-        &oracle_guard_rails.validity,
-    )?;
+    let oracle_price_data = &market.amm.get_oracle_price(price_oracle, clock_slot)?;
+    let oracle_price = oracle_price_data.price;
+    let oracle_conf = oracle_price_data.confidence;
+    let oracle_is_valid = amm::is_oracle_valid(oracle_price_data, &oracle_guard_rails.validity)?;
 
     // if oracle is valid: check on size/direction of repeg
     if oracle_is_valid {
@@ -60,34 +55,34 @@ pub fn repeg(
         if cast_to_u128(oracle_price)? > terminal_price_after {
             // only allow terminal up when oracle is higher
             if terminal_price_after < terminal_price_before {
-                return Err(ErrorCode::InvalidRepegDirection.into());
+                return Err(ErrorCode::InvalidRepegDirection);
             }
 
             // only push terminal up to top of oracle confidence band
             if oracle_conf_band_bottom < terminal_price_after {
-                return Err(ErrorCode::InvalidRepegProfitability.into());
+                return Err(ErrorCode::InvalidRepegProfitability);
             }
 
             // only push mark up to top of oracle confidence band
             if mark_price_after > oracle_conf_band_top {
-                return Err(ErrorCode::InvalidRepegProfitability.into());
+                return Err(ErrorCode::InvalidRepegProfitability);
             }
         }
 
         if cast_to_u128(oracle_price)? < terminal_price_after {
             // only allow terminal down when oracle is lower
             if terminal_price_after > terminal_price_before {
-                return Err(ErrorCode::InvalidRepegDirection.into());
+                return Err(ErrorCode::InvalidRepegDirection);
             }
 
             // only push terminal down to top of oracle confidence band
             if oracle_conf_band_top > terminal_price_after {
-                return Err(ErrorCode::InvalidRepegProfitability.into());
+                return Err(ErrorCode::InvalidRepegProfitability);
             }
 
             // only push mark down to bottom of oracle confidence band
             if mark_price_after < oracle_conf_band_bottom {
-                return Err(ErrorCode::InvalidRepegProfitability.into());
+                return Err(ErrorCode::InvalidRepegProfitability);
             }
         }
     }
@@ -112,7 +107,7 @@ pub fn repeg(
                 .checked_div(SHARE_OF_FEES_ALLOCATED_TO_CLEARING_HOUSE_DENOMINATOR)
                 .ok_or_else(math_error!())?
         {
-            return Err(ErrorCode::InvalidRepegProfitability.into());
+            return Err(ErrorCode::InvalidRepegProfitability);
         }
     } else {
         market.amm.total_fee_minus_distributions = market

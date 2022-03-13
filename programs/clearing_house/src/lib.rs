@@ -1,22 +1,28 @@
+#![allow(clippy::too_many_arguments)]
 use anchor_lang::prelude::*;
 use borsh::{BorshDeserialize, BorshSerialize};
 
 use context::*;
-use controller::position::PositionDirection;
+use controller::position::{add_new_position, get_position_index, PositionDirection};
 use error::*;
-use math::{amm, bn, constants::*, fees, margin::*, position::*, withdrawal::*};
-use state::{
+use math::{amm, bn, constants::*, fees, margin::*, orders::*, withdrawal::*};
+
+use crate::state::{
     history::trade::TradeRecord,
     market::{Market, Markets, OracleSource, AMM},
+    order_state::*,
     state::*,
-    user::{MarketPosition, User},
+    user::{MarketPosition, User, UserPositions},
+    user_orders::*,
 };
 
 pub mod context;
 pub mod controller;
 pub mod error;
+mod margin_validation;
 pub mod math;
 pub mod optional_accounts;
+pub mod order_validation;
 pub mod state;
 mod user_initialization;
 
@@ -28,12 +34,21 @@ declare_id!("AsW7LnXB9UA1uec9wi9MctYTgTz7YH9snhxd16GsFaGX");
 #[program]
 pub mod clearing_house {
     use crate::math;
+    use crate::optional_accounts::{get_discount_token, get_referrer, get_referrer_for_fill_order};
     use crate::state::history::curve::ExtendedCurveRecord;
     use crate::state::history::deposit::{DepositDirection, DepositRecord};
     use crate::state::history::liquidation::LiquidationRecord;
 
     use super::*;
+    use crate::margin_validation::validate_margin;
+    use crate::math::amm::{
+        calculate_mark_twap_spread_pct, is_oracle_mark_too_divergent, normalise_oracle_price,
+    };
     use crate::math::casting::{cast, cast_to_i128, cast_to_u128};
+    use crate::math::slippage::{calculate_slippage, calculate_slippage_pct};
+    use crate::state::market::OraclePriceData;
+    use crate::state::order_state::{OrderFillerRewardStructure, OrderState};
+    use std::ops::Div;
 
     pub fn initialize(
         ctx: Context<Initialize>,
@@ -143,16 +158,15 @@ pub mod clearing_house {
                 },
                 use_for_liquidations: true,
             },
+            order_state: Pubkey::default(),
             extended_curve_history: Pubkey::default(),
             padding0: 0,
             padding1: 0,
             padding2: 0,
             padding3: 0,
-            padding4: 0,
-            padding5: 0,
         };
 
-        return Ok(());
+        Ok(())
     }
 
     pub fn initialize_history(ctx: Context<InitializeHistory>) -> ProgramResult {
@@ -193,6 +207,33 @@ pub mod clearing_house {
         Ok(())
     }
 
+    pub fn initialize_order_state(
+        ctx: Context<InitializeOrderState>,
+        _order_house_nonce: u8,
+    ) -> ProgramResult {
+        let state = &mut ctx.accounts.state;
+
+        if !state.order_state.eq(&Pubkey::default()) {
+            return Err(ErrorCode::OrderStateAlreadyInitialized.into());
+        }
+
+        state.order_state = ctx.accounts.order_state.key();
+        ctx.accounts.order_history.load_init()?;
+
+        **ctx.accounts.order_state = OrderState {
+            order_history: ctx.accounts.order_history.key(),
+            order_filler_reward_structure: OrderFillerRewardStructure {
+                reward_numerator: 1,
+                reward_denominator: 10,
+                time_based_reward_lower_bound: 10_000, // 1 cent
+            },
+            min_order_quote_asset_amount: 500_000, // 50 cents
+            padding: [0; 10],
+        };
+
+        Ok(())
+    }
+
     pub fn initialize_market(
         ctx: Context<InitializeMarket>,
         market_index: u64,
@@ -200,6 +241,9 @@ pub mod clearing_house {
         amm_quote_asset_reserve: u128,
         amm_periodicity: i64,
         amm_peg_multiplier: u128,
+        margin_ratio_initial: u32,
+        margin_ratio_partial: u32,
+        margin_ratio_maintenance: u32,
     ) -> ProgramResult {
         let markets = &mut ctx.accounts.markets.load_mut()?;
         let market = &markets.markets[Markets::index_from_u64(market_index)];
@@ -227,10 +271,20 @@ pub mod clearing_house {
             .ok_or_else(math_error!())?;
 
         // Verify oracle is readable
-        let (_, oracle_price_twap, _, _, _) = market
+        let OraclePriceData {
+            price: oracle_price,
+            twap: oracle_price_twap,
+            ..
+        } = market
             .amm
             .get_oracle_price(&ctx.accounts.oracle, clock_slot)
             .unwrap();
+
+        validate_margin(
+            margin_ratio_initial,
+            margin_ratio_initial,
+            margin_ratio_maintenance,
+        )?;
 
         let market = Market {
             initialized: true,
@@ -238,6 +292,9 @@ pub mod clearing_house {
             base_asset_amount_short: 0,
             base_asset_amount: 0,
             open_interest: 0,
+            margin_ratio_initial, // unit is 20% (+2 decimal places)
+            margin_ratio_partial,
+            margin_ratio_maintenance,
             padding0: 0,
             padding1: 0,
             padding2: 0,
@@ -263,13 +320,13 @@ pub mod clearing_house {
                 total_fee: 0,
                 total_fee_withdrawn: 0,
                 total_fee_minus_distributions: 0,
-                minimum_trade_size: 10000000,
+                minimum_quote_asset_trade_size: 10000000,
                 last_oracle_price_twap_ts: now,
-                padding0: 0,
+                last_oracle_price: oracle_price,
+                minimum_base_asset_trade_size: 10000000,
                 padding1: 0,
                 padding2: 0,
                 padding3: 0,
-                padding4: 0,
             },
         };
 
@@ -390,10 +447,7 @@ pub mod clearing_house {
             .checked_sub(cast(insurance_account_withdrawal)?)
             .ok_or_else(math_error!())?;
 
-        // Verify that the user doesn't enter liquidation territory if they withdraw
-        let (_total_collateral, _unrealized_pnl, _base_asset_value, margin_ratio) =
-            calculate_margin_ratio(user, user_positions, markets)?;
-        if margin_ratio < ctx.accounts.state.margin_ratio_initial {
+        if !meets_initial_margin_requirement(user, user_positions, markets)? {
             return Err(ErrorCode::InsufficientCollateral.into());
         }
 
@@ -452,6 +506,10 @@ pub mod clearing_house {
         let now = clock.unix_timestamp;
         let clock_slot = clock.slot;
 
+        if quote_asset_amount == 0 {
+            return Err(ErrorCode::TradeSizeTooSmall.into());
+        }
+
         // Settle user's funding payments so that collateral is up to date
         let user_positions = &mut ctx.accounts.user_positions.load_mut()?;
         let funding_payment_history = &mut ctx.accounts.funding_payment_history.load_mut()?;
@@ -463,54 +521,10 @@ pub mod clearing_house {
             now,
         )?;
 
-        // Check if the user has an existing position for the market
-        let mut market_position = user_positions
-            .positions
-            .iter_mut()
-            .find(|market_position| market_position.is_for(market_index));
-
-        // If they don't have an existing position, look into the positions account for a spot for space
-        // for a new position
-        if market_position.is_none() {
-            let available_position_index = user_positions
-                .positions
-                .iter()
-                .position(|market_position| !market_position.is_open_position());
-
-            if available_position_index.is_none() {
-                return Err(ErrorCode::MaxNumberOfPositions.into());
-            }
-
-            let new_market_position = MarketPosition {
-                market_index,
-                base_asset_amount: 0,
-                quote_asset_amount: 0,
-                last_cumulative_funding_rate: 0,
-                last_cumulative_repeg_rebate: 0,
-                last_funding_rate_ts: 0,
-                stop_profit_price: 0,
-                stop_profit_amount: 0,
-                stop_loss_price: 0,
-                stop_loss_amount: 0,
-                transfer_to: Pubkey::default(),
-                padding0: 0,
-                padding1: 0,
-            };
-
-            user_positions.positions[available_position_index.unwrap()] = new_market_position;
-
-            market_position =
-                Some(&mut user_positions.positions[available_position_index.unwrap()]);
-        }
-
-        let market_position = market_position.unwrap();
-
-        // A trade is risk increasing if it increases the users leverage
-        // If a trade is risk increasing and brings the user's margin ratio below initial requirement
-        // the trade fails
-        // If a trade is risk increasing and it pushes the mark price too far away from the oracle price
-        // the trade fails
-        let mut potentially_risk_increasing = true;
+        // Get existing position or add a new position for market
+        let position_index = get_position_index(user_positions, market_index)
+            .or_else(|_| add_new_position(user_positions, market_index))?;
+        let market_position = &mut user_positions.positions[position_index];
 
         // Collect data about position/market before trade is executed so that it can be stored in trade history
         let mark_price_before: u128;
@@ -520,103 +534,54 @@ pub mod clearing_house {
             let market = &mut ctx.accounts.markets.load_mut()?.markets
                 [Markets::index_from_u64(market_index)];
             mark_price_before = market.amm.mark_price()?;
-            let (oracle_price, _, _oracle_mark_spread_pct_before) =
-                amm::calculate_oracle_mark_spread_pct(
-                    &market.amm,
-                    &ctx.accounts.oracle,
-                    0,
-                    clock_slot,
-                    None,
-                )?;
-            oracle_mark_spread_pct_before = _oracle_mark_spread_pct_before;
-            is_oracle_valid = amm::is_oracle_valid(
+            let oracle_price_data = &market
+                .amm
+                .get_oracle_price(&ctx.accounts.oracle, clock_slot)?;
+            oracle_mark_spread_pct_before = amm::calculate_oracle_mark_spread_pct(
                 &market.amm,
-                &ctx.accounts.oracle,
-                clock_slot,
+                oracle_price_data,
+                0,
+                Some(mark_price_before),
+            )?;
+            is_oracle_valid = amm::is_oracle_valid(
+                oracle_price_data,
                 &ctx.accounts.state.oracle_guard_rails.validity,
             )?;
-
             if is_oracle_valid {
-                amm::update_oracle_price_twap(&mut market.amm, now, oracle_price)?;
+                let normalised_oracle_price = normalise_oracle_price(
+                    &market.amm,
+                    oracle_price_data,
+                    Some(mark_price_before),
+                )?;
+                amm::update_oracle_price_twap(&mut market.amm, now, normalised_oracle_price)?;
             }
         }
 
-        let mut quote_asset_amount = quote_asset_amount;
+        // A trade is risk increasing if it increases the users leverage
+        // If a trade is risk increasing and brings the user's margin ratio below initial requirement
+        // the trade fails
+        // If a trade is risk increasing and it pushes the mark price too far away from the oracle price
+        // the trade fails
+        let potentially_risk_increasing;
         let base_asset_amount;
-        // The trade increases the the user position if
-        // 1) the user does not have a position
-        // 2) the trade is in the same direction as the user's existing position
-        let increase_position = market_position.base_asset_amount == 0
-            || market_position.base_asset_amount > 0 && direction == PositionDirection::Long
-            || market_position.base_asset_amount < 0 && direction == PositionDirection::Short;
-        if increase_position {
-            let market = &mut ctx.accounts.markets.load_mut()?.markets
-                [Markets::index_from_u64(market_index)];
-
-            base_asset_amount = controller::position::increase(
-                direction,
-                quote_asset_amount,
-                market,
-                market_position,
-                now,
-            )?
-            .unsigned_abs();
-        } else {
-            let market = &mut ctx.accounts.markets.load_mut()?.markets
-                [Markets::index_from_u64(market_index)];
-
-            let (base_asset_value, _unrealized_pnl) =
-                calculate_base_asset_value_and_pnl(market_position, &market.amm)?;
-
-            // if the quote_asset_amount is close enough in value to base_asset_value,
-            // round the quote_asset_amount to be the same as base_asset_value
-            if amm::should_round_trade(&market.amm, quote_asset_amount, base_asset_value)? {
-                quote_asset_amount = base_asset_value;
-            }
-
-            // we calculate what the user's position is worth if they closed to determine
-            // if they are reducing or closing and reversing their position
-            if base_asset_value > quote_asset_amount {
-                base_asset_amount = controller::position::reduce(
-                    direction,
+        let mut quote_asset_amount = quote_asset_amount;
+        {
+            let markets = &mut ctx.accounts.markets.load_mut()?;
+            let market = markets.get_market_mut(market_index);
+            let (_potentially_risk_increasing, _, _base_asset_amount, _quote_asset_amount) =
+                controller::position::update_position_with_quote_asset_amount(
                     quote_asset_amount,
-                    user,
-                    market,
-                    market_position,
-                    now,
-                    None,
-                )?
-                .unsigned_abs();
-
-                potentially_risk_increasing = false;
-            } else {
-                // after closing existing position, how large should trade be in opposite direction
-                let quote_asset_amount_after_close = quote_asset_amount
-                    .checked_sub(base_asset_value)
-                    .ok_or_else(math_error!())?;
-
-                // If the value of the new position is less than value of the old position, consider it risk decreasing
-                if quote_asset_amount_after_close < base_asset_value {
-                    potentially_risk_increasing = false;
-                }
-
-                let (_, base_asset_amount_closed) =
-                    controller::position::close(user, market, market_position, now)?;
-                let base_asset_amount_closed = base_asset_amount_closed.unsigned_abs();
-
-                let base_asset_amount_opened = controller::position::increase(
                     direction,
-                    quote_asset_amount_after_close,
                     market,
+                    user,
                     market_position,
+                    mark_price_before,
                     now,
-                )?
-                .unsigned_abs();
+                )?;
 
-                base_asset_amount = base_asset_amount_closed
-                    .checked_add(base_asset_amount_opened)
-                    .ok_or_else(math_error!())?;
-            }
+            potentially_risk_increasing = _potentially_risk_increasing;
+            base_asset_amount = _base_asset_amount;
+            quote_asset_amount = _quote_asset_amount;
         }
 
         // Collect data about position/market after trade is executed so that it can be stored in trade history
@@ -627,28 +592,22 @@ pub mod clearing_house {
             let market = &mut ctx.accounts.markets.load_mut()?.markets
                 [Markets::index_from_u64(market_index)];
             mark_price_after = market.amm.mark_price()?;
-            let (_oracle_price_after, _oracle_mark_spread_after, _oracle_mark_spread_pct_after) =
-                amm::calculate_oracle_mark_spread_pct(
-                    &market.amm,
-                    &ctx.accounts.oracle,
-                    0,
-                    clock_slot,
-                    Some(mark_price_after),
-                )?;
-            oracle_price_after = _oracle_price_after;
-            oracle_mark_spread_pct_after = _oracle_mark_spread_pct_after;
+            let oracle_price_data = &market
+                .amm
+                .get_oracle_price(&ctx.accounts.oracle, clock_slot)?;
+            oracle_mark_spread_pct_after = amm::calculate_oracle_mark_spread_pct(
+                &market.amm,
+                oracle_price_data,
+                0,
+                Some(mark_price_after),
+            )?;
+            oracle_price_after = oracle_price_data.price;
         }
 
         // Trade fails if it's risk increasing and it brings the user below the initial margin ratio level
-        let (
-            _total_collateral_after,
-            _unrealized_pnl_after,
-            _base_asset_value_after,
-            margin_ratio_after,
-        ) = calculate_margin_ratio(user, user_positions, &ctx.accounts.markets.load()?)?;
-        if margin_ratio_after < ctx.accounts.state.margin_ratio_initial
-            && potentially_risk_increasing
-        {
+        let meets_initial_margin_requirement =
+            meets_initial_margin_requirement(user, user_positions, &ctx.accounts.markets.load()?)?;
+        if !meets_initial_margin_requirement && potentially_risk_increasing {
             return Err(ErrorCode::InsufficientCollateral.into());
         }
 
@@ -661,7 +620,7 @@ pub mod clearing_house {
             &ctx.accounts.authority.key(),
         )?;
         let (user_fee, fee_to_market, token_discount, referrer_reward, referee_discount) =
-            fees::calculate(
+            fees::calculate_fee_for_market_order(
                 quote_asset_amount,
                 &ctx.accounts.state.fee_structure,
                 discount_token,
@@ -763,33 +722,15 @@ pub mod clearing_house {
         });
 
         // If the user adds a limit price to their trade, check that their entry price is better than the limit price
-        if limit_price != 0 {
-            let market =
-                &ctx.accounts.markets.load()?.markets[Markets::index_from_u64(market_index)];
-
-            let quote_asset_reserve_amount = math::quote_asset::asset_to_reserve_amount(
+        if limit_price != 0
+            && !limit_price_satisfied(
+                limit_price,
                 quote_asset_amount,
-                market.amm.peg_multiplier,
-            )?;
-
-            let entry_price = amm::calculate_price(
-                quote_asset_reserve_amount,
                 base_asset_amount,
-                market.amm.peg_multiplier,
-            )?;
-
-            match direction {
-                PositionDirection::Long => {
-                    if entry_price > limit_price {
-                        return Err(ErrorCode::SlippageOutsideLimit.into());
-                    }
-                }
-                PositionDirection::Short => {
-                    if entry_price < limit_price {
-                        return Err(ErrorCode::SlippageOutsideLimit.into());
-                    }
-                }
-            }
+                direction,
+            )?
+        {
+            return Err(ErrorCode::SlippageOutsideLimit.into());
         }
 
         // Try to update the funding rate at the end of every trade
@@ -801,12 +742,13 @@ pub mod clearing_house {
             controller::funding::update_funding_rate(
                 market_index,
                 market,
-                &price_oracle,
+                price_oracle,
                 now,
                 clock_slot,
                 funding_rate_history,
                 &ctx.accounts.state.oracle_guard_rails,
                 ctx.accounts.state.funding_paused,
+                Some(mark_price_before),
             )?;
         }
 
@@ -840,33 +782,32 @@ pub mod clearing_house {
             now,
         )?;
 
-        // Try to find user's position for specified market. Return Err if there is none
-        let market_position = user_positions
-            .positions
-            .iter_mut()
-            .find(|market_position| market_position.is_for(market_index));
-        if market_position.is_none() {
-            return Err(ErrorCode::UserHasNoPositionInMarket.into());
-        }
-        let market_position = market_position.unwrap();
+        let position_index = get_position_index(user_positions, market_index)?;
+        let market_position = &mut user_positions.positions[position_index];
 
         let market =
             &mut ctx.accounts.markets.load_mut()?.markets[Markets::index_from_u64(market_index)];
 
         // Collect data about market before trade is executed so that it can be stored in trade history
         let mark_price_before = market.amm.mark_price()?;
-        let (_, _, oracle_mark_spread_pct_before) =
-            amm::calculate_oracle_mark_spread_pct(
-                &market.amm,
-                &ctx.accounts.oracle,
-                0,
-                clock_slot,
-                Some(mark_price_before),
-            )?;
+        let oracle_price_data = &market
+            .amm
+            .get_oracle_price(&ctx.accounts.oracle, clock_slot)?;
+        let oracle_mark_spread_pct_before = amm::calculate_oracle_mark_spread_pct(
+            &market.amm,
+            oracle_price_data,
+            0,
+            Some(mark_price_before),
+        )?;
         let direction_to_close =
             math::position::direction_to_close_position(market_position.base_asset_amount);
-        let (quote_asset_amount, base_asset_amount) =
-            controller::position::close(user, market, market_position, now)?;
+        let (quote_asset_amount, base_asset_amount) = controller::position::close(
+            user,
+            market,
+            market_position,
+            now,
+            Some(mark_price_before),
+        )?;
         let base_asset_amount = base_asset_amount.unsigned_abs();
 
         // Calculate the fee to charge the user
@@ -878,7 +819,7 @@ pub mod clearing_house {
             &ctx.accounts.authority.key(),
         )?;
         let (user_fee, fee_to_market, token_discount, referrer_reward, referee_discount) =
-            fees::calculate(
+            fees::calculate_fee_for_market_order(
                 quote_asset_amount,
                 &ctx.accounts.state.fee_structure,
                 discount_token,
@@ -928,23 +869,22 @@ pub mod clearing_house {
         let mark_price_after = market.amm.mark_price()?;
         let price_oracle = &ctx.accounts.oracle;
 
-        let (oracle_price_after, _oracle_mark_spread_after, oracle_mark_spread_pct_after) =
-            amm::calculate_oracle_mark_spread_pct(
-                &market.amm,
-                &ctx.accounts.oracle,
-                0,
-                clock_slot,
-                Some(mark_price_after),
-            )?;
+        let oracle_mark_spread_pct_after = amm::calculate_oracle_mark_spread_pct(
+            &market.amm,
+            oracle_price_data,
+            0,
+            Some(mark_price_after),
+        )?;
+        let oracle_price_after = oracle_price_data.price;
 
         let is_oracle_valid = amm::is_oracle_valid(
-            &market.amm,
-            &ctx.accounts.oracle,
-            clock_slot,
+            oracle_price_data,
             &ctx.accounts.state.oracle_guard_rails.validity,
         )?;
         if is_oracle_valid {
-            amm::update_oracle_price_twap(&mut market.amm, now, oracle_price_after)?;
+            let normalised_oracle_price =
+                normalise_oracle_price(&market.amm, oracle_price_data, Some(mark_price_before))?;
+            amm::update_oracle_price_twap(&mut market.amm, now, normalised_oracle_price)?;
         }
 
         // Trade fails if the trade is risk increasing and it pushes to mark price too far
@@ -992,12 +932,188 @@ pub mod clearing_house {
         controller::funding::update_funding_rate(
             market_index,
             market,
-            &price_oracle,
+            price_oracle,
             now,
             clock_slot,
             funding_rate_history,
             &ctx.accounts.state.oracle_guard_rails,
             ctx.accounts.state.funding_paused,
+            Some(mark_price_before),
+        )?;
+
+        Ok(())
+    }
+
+    #[allow(unused_must_use)]
+    #[access_control(
+        market_initialized(&ctx.accounts.markets, params.market_index)
+    )]
+    pub fn place_order<'info>(ctx: Context<PlaceOrder>, params: OrderParams) -> ProgramResult {
+        let account_info_iter = &mut ctx.remaining_accounts.iter();
+        let discount_token = get_discount_token(
+            params.optional_accounts.discount_token,
+            account_info_iter,
+            &ctx.accounts.state.discount_mint,
+            ctx.accounts.authority.key,
+        )?;
+        let referrer = get_referrer(
+            params.optional_accounts.referrer,
+            account_info_iter,
+            &ctx.accounts.user.key(),
+            None,
+        )?;
+
+        if params.order_type == OrderType::Market {
+            return Err(ErrorCode::MarketOrderMustBeInPlaceAndFill.into());
+        }
+
+        controller::orders::place_order(
+            &ctx.accounts.state,
+            &ctx.accounts.order_state,
+            &mut ctx.accounts.user,
+            &ctx.accounts.user_positions,
+            &ctx.accounts.markets,
+            &ctx.accounts.user_orders,
+            &ctx.accounts.funding_payment_history,
+            &ctx.accounts.order_history,
+            discount_token,
+            &referrer,
+            &Clock::get()?,
+            params,
+        )?;
+
+        Ok(())
+    }
+
+    pub fn cancel_order(ctx: Context<CancelOrder>, order_id: u128) -> ProgramResult {
+        controller::orders::cancel_order_by_order_id(
+            order_id,
+            &mut ctx.accounts.user,
+            &ctx.accounts.user_positions,
+            &ctx.accounts.markets,
+            &ctx.accounts.user_orders,
+            &ctx.accounts.funding_payment_history,
+            &ctx.accounts.order_history,
+            &Clock::get()?,
+        )?;
+
+        Ok(())
+    }
+
+    pub fn cancel_order_by_user_id(ctx: Context<CancelOrder>, user_order_id: u8) -> ProgramResult {
+        controller::orders::cancel_order_by_user_order_id(
+            user_order_id,
+            &mut ctx.accounts.user,
+            &ctx.accounts.user_positions,
+            &ctx.accounts.markets,
+            &ctx.accounts.user_orders,
+            &ctx.accounts.funding_payment_history,
+            &ctx.accounts.order_history,
+            &Clock::get()?,
+        )?;
+
+        Ok(())
+    }
+
+    #[access_control(
+        exchange_not_paused(&ctx.accounts.state)
+    )]
+    pub fn fill_order<'info>(ctx: Context<FillOrder>, order_id: u128) -> ProgramResult {
+        let account_info_iter = &mut ctx.remaining_accounts.iter();
+        let referrer = get_referrer_for_fill_order(
+            account_info_iter,
+            &ctx.accounts.user.key(),
+            order_id,
+            &ctx.accounts.user_orders,
+        )?;
+
+        let base_asset_amount = controller::orders::fill_order(
+            order_id,
+            &ctx.accounts.state,
+            &ctx.accounts.order_state,
+            &mut ctx.accounts.user,
+            &ctx.accounts.user_positions,
+            &ctx.accounts.markets,
+            &ctx.accounts.oracle,
+            &ctx.accounts.user_orders,
+            &mut ctx.accounts.filler,
+            &ctx.accounts.funding_payment_history,
+            &ctx.accounts.trade_history,
+            &ctx.accounts.order_history,
+            &ctx.accounts.funding_rate_history,
+            referrer,
+            &Clock::get()?,
+        )?;
+
+        if base_asset_amount == 0 {
+            return Err(print_error!(ErrorCode::CouldNotFillOrder)().into());
+        }
+
+        Ok(())
+    }
+
+    #[allow(unused_must_use)]
+    #[access_control(
+        exchange_not_paused(&ctx.accounts.state) &&
+        market_initialized(&ctx.accounts.markets, params.market_index) &&
+        valid_oracle_for_market(&ctx.accounts.oracle, &ctx.accounts.markets, params.market_index)
+    )]
+    pub fn place_and_fill_order<'info>(
+        ctx: Context<PlaceAndFillOrder>,
+        params: OrderParams,
+    ) -> ProgramResult {
+        let account_info_iter = &mut ctx.remaining_accounts.iter();
+        let discount_token = get_discount_token(
+            params.optional_accounts.discount_token,
+            account_info_iter,
+            &ctx.accounts.state.discount_mint,
+            ctx.accounts.authority.key,
+        )?;
+        let referrer = get_referrer(
+            params.optional_accounts.referrer,
+            account_info_iter,
+            &ctx.accounts.user.key(),
+            None,
+        )?;
+
+        controller::orders::place_order(
+            &ctx.accounts.state,
+            &ctx.accounts.order_state,
+            &mut ctx.accounts.user,
+            &ctx.accounts.user_positions,
+            &ctx.accounts.markets,
+            &ctx.accounts.user_orders,
+            &ctx.accounts.funding_payment_history,
+            &ctx.accounts.order_history,
+            discount_token,
+            &referrer,
+            &Clock::get()?,
+            params,
+        )?;
+
+        let order_id;
+        {
+            let order_history = &ctx.accounts.order_history.load()?;
+            order_id = order_history.last_order_id;
+        }
+
+        let user = &mut ctx.accounts.user;
+        controller::orders::fill_order(
+            order_id,
+            &ctx.accounts.state,
+            &ctx.accounts.order_state,
+            user,
+            &ctx.accounts.user_positions,
+            &ctx.accounts.markets,
+            &ctx.accounts.oracle,
+            &ctx.accounts.user_orders,
+            &mut user.clone(),
+            &ctx.accounts.funding_payment_history,
+            &ctx.accounts.trade_history,
+            &ctx.accounts.order_history,
+            &ctx.accounts.funding_rate_history,
+            referrer,
+            &Clock::get()?,
         )?;
 
         Ok(())
@@ -1025,57 +1141,176 @@ pub mod clearing_house {
             now,
         )?;
 
+        let LiquidationStatus {
+            liquidation_type,
+            total_collateral,
+            adjusted_total_collateral,
+            unrealized_pnl,
+            base_asset_value,
+            market_statuses,
+            mut margin_requirement,
+            margin_ratio,
+        } = calculate_liquidation_status(
+            user,
+            user_positions,
+            &ctx.accounts.markets.load()?,
+            ctx.remaining_accounts,
+            &ctx.accounts.state.oracle_guard_rails,
+            clock_slot,
+        )?;
+
         // Verify that the user is in liquidation territory
         let collateral = user.collateral;
-        let (total_collateral, unrealized_pnl, base_asset_value, margin_ratio) =
-            calculate_margin_ratio(user, user_positions, &ctx.accounts.markets.load()?)?;
-        if margin_ratio > ctx.accounts.state.margin_ratio_partial {
+        if liquidation_type == LiquidationType::NONE {
             msg!("total_collateral {}", total_collateral);
-            msg!("unrealized_pnl {}", unrealized_pnl);
-            msg!("base_asset_value {}", base_asset_value);
-            msg!("margin ratio {}", margin_ratio);
+            msg!("adjusted_total_collateral {}", adjusted_total_collateral);
+            msg!("margin_requirement {}", margin_requirement);
             return Err(ErrorCode::SufficientCollateral.into());
         }
+
+        let is_dust_position = adjusted_total_collateral <= QUOTE_PRECISION;
 
         // Keep track to the value of positions closed. For full liquidation this is the user's entire position,
         // for partial it is less (it's based on the clearing house state)
         let mut base_asset_value_closed: u128 = 0;
-        let is_full_liquidation = margin_ratio <= ctx.accounts.state.margin_ratio_maintenance;
+        let mut liquidation_fee = 0_u128;
+        // have to fully liquidate dust positions to make it worth it for liquidators
+        let is_full_liquidation = liquidation_type == LiquidationType::FULL || is_dust_position;
         if is_full_liquidation {
             let markets = &mut ctx.accounts.markets.load_mut()?;
-            for market_position in user_positions.positions.iter_mut() {
-                if market_position.base_asset_amount == 0 {
+
+            let maximum_liquidation_fee = total_collateral
+                .checked_mul(state.full_liquidation_penalty_percentage_numerator)
+                .ok_or_else(math_error!())?
+                .checked_div(state.full_liquidation_penalty_percentage_denominator)
+                .ok_or_else(math_error!())?;
+            for market_status in market_statuses.iter() {
+                if market_status.base_asset_value == 0 {
                     continue;
                 }
 
-                let market =
-                    &mut markets.markets[Markets::index_from_u64(market_position.market_index)];
+                let market = markets.get_market_mut(market_status.market_index);
+                let mark_price_before = market_status.mark_price_before;
+                let oracle_status = &market_status.oracle_status;
 
-                // Block the liquidation if the oracle is invalid or the oracle and mark are too divergent
-                let oracle_account_info = ctx
-                    .remaining_accounts
-                    .iter()
-                    .find(|account_info| account_info.key.eq(&market.amm.oracle))
-                    .ok_or(ErrorCode::OracleNotFound)?;
-                let (liquidations_blocked, oracle_price) = math::oracle::block_operation(
-                    &market.amm,
-                    &oracle_account_info,
-                    clock_slot,
-                    &state.oracle_guard_rails,
-                    None,
+                // if the oracle is invalid and the mark moves too far from twap, dont liquidate
+                let oracle_is_valid = oracle_status.is_valid;
+                if !oracle_is_valid {
+                    let mark_twap_divergence =
+                        calculate_mark_twap_spread_pct(&market.amm, mark_price_before)?;
+                    let mark_twap_too_divergent =
+                        mark_twap_divergence.unsigned_abs() >= MAX_MARK_TWAP_DIVERGENCE;
+
+                    if mark_twap_too_divergent {
+                        let market_index = market_status.market_index;
+                        msg!(
+                            "mark_twap_divergence {} for market {}",
+                            mark_twap_divergence,
+                            market_index
+                        );
+                        continue;
+                    }
+                }
+
+                let market_position = &mut user_positions
+                    .positions
+                    .iter_mut()
+                    .find(|position| position.market_index == market_status.market_index)
+                    .unwrap();
+
+                let mark_price_before_i128 = cast_to_i128(mark_price_before)?;
+                let close_position_slippage = match market_status.close_position_slippage {
+                    Some(close_position_slippage) => close_position_slippage,
+                    None => calculate_slippage(
+                        market_status.base_asset_value,
+                        market_position.base_asset_amount.unsigned_abs(),
+                        mark_price_before_i128,
+                    )?,
+                };
+                let close_position_slippage_pct =
+                    calculate_slippage_pct(close_position_slippage, mark_price_before_i128)?;
+
+                let close_slippage_pct_too_large = close_position_slippage_pct
+                    > MAX_LIQUIDATION_SLIPPAGE
+                    || close_position_slippage_pct < -MAX_LIQUIDATION_SLIPPAGE;
+
+                let oracle_mark_divergence_after_close = if !close_slippage_pct_too_large {
+                    oracle_status
+                        .oracle_mark_spread_pct
+                        .checked_add(close_position_slippage_pct)
+                        .ok_or_else(math_error!())?
+                } else if close_position_slippage_pct > 0 {
+                    oracle_status
+                        .oracle_mark_spread_pct
+                        // approximates price impact based on slippage
+                        .checked_add(MAX_LIQUIDATION_SLIPPAGE * 2)
+                        .ok_or_else(math_error!())?
+                } else {
+                    oracle_status
+                        .oracle_mark_spread_pct
+                        // approximates price impact based on slippage
+                        .checked_sub(MAX_LIQUIDATION_SLIPPAGE * 2)
+                        .ok_or_else(math_error!())?
+                };
+
+                let oracle_mark_too_divergent_after_close = is_oracle_mark_too_divergent(
+                    oracle_mark_divergence_after_close,
+                    &state.oracle_guard_rails.price_divergence,
                 )?;
-                if liquidations_blocked {
-                    return Err(ErrorCode::LiquidationsBlockedByOracle.into());
+
+                // if closing pushes outside the oracle mark threshold, don't liquidate
+                if oracle_is_valid && oracle_mark_too_divergent_after_close {
+                    // but only skip the liquidation if it makes the divergence worse
+                    if oracle_status.oracle_mark_spread_pct.unsigned_abs()
+                        < oracle_mark_divergence_after_close.unsigned_abs()
+                    {
+                        let market_index = market_position.market_index;
+                        msg!(
+                            "oracle_mark_divergence_after_close {} for market {}",
+                            oracle_mark_divergence_after_close,
+                            market_index,
+                        );
+                        continue;
+                    }
                 }
 
                 let direction_to_close =
                     math::position::direction_to_close_position(market_position.base_asset_amount);
 
-                let mark_price_before = market.amm.mark_price()?;
-                let (base_asset_value, base_asset_amount) =
-                    controller::position::close(user, market, market_position, now)?;
+                // just reduce position if position is too big
+                let (quote_asset_amount, base_asset_amount) = if close_slippage_pct_too_large {
+                    let quote_asset_amount = market_status
+                        .base_asset_value
+                        .checked_mul(MAX_LIQUIDATION_SLIPPAGE_U128)
+                        .ok_or_else(math_error!())?
+                        .checked_div(close_position_slippage_pct.unsigned_abs())
+                        .ok_or_else(math_error!())?;
+
+                    let base_asset_amount = controller::position::reduce(
+                        direction_to_close,
+                        quote_asset_amount,
+                        user,
+                        market,
+                        market_position,
+                        now,
+                        Some(mark_price_before),
+                    )?;
+
+                    (quote_asset_amount, base_asset_amount)
+                } else {
+                    controller::position::close(
+                        user,
+                        market,
+                        market_position,
+                        now,
+                        Some(mark_price_before),
+                    )?
+                };
+
                 let base_asset_amount = base_asset_amount.unsigned_abs();
-                base_asset_value_closed += base_asset_value;
+                base_asset_value_closed = base_asset_value_closed
+                    .checked_add(quote_asset_amount)
+                    .ok_or_else(math_error!())?;
                 let mark_price_after = market.amm.mark_price()?;
 
                 let record_id = trade_history.next_record_id();
@@ -1086,7 +1321,7 @@ pub mod clearing_house {
                     user: *user.to_account_info().key,
                     direction: direction_to_close,
                     base_asset_amount,
-                    quote_asset_amount: base_asset_value,
+                    quote_asset_amount,
                     mark_price_before,
                     mark_price_after,
                     fee: 0,
@@ -1095,57 +1330,170 @@ pub mod clearing_house {
                     referee_discount: 0,
                     liquidation: true,
                     market_index: market_position.market_index,
-                    oracle_price,
+                    oracle_price: market_status.oracle_status.price_data.price,
                 });
+
+                margin_requirement = margin_requirement
+                    .checked_sub(
+                        market_status
+                            .maintenance_margin_requirement
+                            .checked_mul(quote_asset_amount)
+                            .ok_or_else(math_error!())?
+                            .checked_div(market_status.base_asset_value)
+                            .ok_or_else(math_error!())?,
+                    )
+                    .ok_or_else(math_error!())?;
+
+                let market_liquidation_fee = maximum_liquidation_fee
+                    .checked_mul(quote_asset_amount)
+                    .ok_or_else(math_error!())?
+                    .checked_div(base_asset_value)
+                    .ok_or_else(math_error!())?;
+
+                liquidation_fee = liquidation_fee
+                    .checked_add(market_liquidation_fee)
+                    .ok_or_else(math_error!())?;
+
+                let adjusted_total_collateral_after_fee = adjusted_total_collateral
+                    .checked_sub(liquidation_fee)
+                    .ok_or_else(math_error!())?;
+
+                if !is_dust_position && margin_requirement < adjusted_total_collateral_after_fee {
+                    break;
+                }
             }
         } else {
             let markets = &mut ctx.accounts.markets.load_mut()?;
-            for market_position in user_positions.positions.iter_mut() {
-                if market_position.base_asset_amount == 0 {
+
+            let maximum_liquidation_fee = total_collateral
+                .checked_mul(state.partial_liquidation_penalty_percentage_numerator)
+                .ok_or_else(math_error!())?
+                .checked_div(state.partial_liquidation_penalty_percentage_denominator)
+                .ok_or_else(math_error!())?;
+            let maximum_base_asset_value_closed = base_asset_value
+                .checked_mul(state.partial_liquidation_close_percentage_numerator)
+                .ok_or_else(math_error!())?
+                .checked_div(state.partial_liquidation_close_percentage_denominator)
+                .ok_or_else(math_error!())?;
+            for market_status in market_statuses.iter() {
+                if market_status.base_asset_value == 0 {
                     continue;
                 }
 
-                let market =
-                    &mut markets.markets[Markets::index_from_u64(market_position.market_index)];
+                let oracle_status = &market_status.oracle_status;
+                let market = markets.get_market_mut(market_status.market_index);
+                let mark_price_before = market_status.mark_price_before;
 
-                let mark_price_before = market.amm.mark_price()?;
+                let oracle_is_valid = oracle_status.is_valid;
+                if !oracle_is_valid {
+                    let mark_twap_divergence =
+                        calculate_mark_twap_spread_pct(&market.amm, mark_price_before)?;
+                    let mark_twap_too_divergent =
+                        mark_twap_divergence.unsigned_abs() >= MAX_MARK_TWAP_DIVERGENCE;
 
-                let oracle_account_info = ctx
-                    .remaining_accounts
-                    .iter()
-                    .find(|account_info| account_info.key.eq(&market.amm.oracle))
-                    .ok_or(ErrorCode::OracleNotFound)?;
-                let (liquidations_blocked, oracle_price) = math::oracle::block_operation(
-                    &market.amm,
-                    &oracle_account_info,
-                    clock_slot,
-                    &state.oracle_guard_rails,
-                    Some(mark_price_before),
-                )?;
-                if liquidations_blocked {
-                    return Err(ErrorCode::LiquidationsBlockedByOracle.into());
+                    if mark_twap_too_divergent {
+                        let market_index = market_status.market_index;
+                        msg!(
+                            "mark_twap_divergence {} for market {}",
+                            mark_twap_divergence,
+                            market_index
+                        );
+                        continue;
+                    }
                 }
 
-                let (base_asset_value, _pnl) =
-                    calculate_base_asset_value_and_pnl(market_position, &market.amm)?;
+                let market_position = &mut user_positions
+                    .positions
+                    .iter_mut()
+                    .find(|position| position.market_index == market_status.market_index)
+                    .unwrap();
 
-                let base_asset_value_to_close = base_asset_value
-                    .checked_mul(state.partial_liquidation_close_percentage_numerator.into())
+                let mut quote_asset_amount = market_status
+                    .base_asset_value
+                    .checked_mul(state.partial_liquidation_close_percentage_numerator)
                     .ok_or_else(math_error!())?
-                    .checked_div(
-                        state
-                            .partial_liquidation_close_percentage_denominator
-                            .into(),
-                    )
+                    .checked_div(state.partial_liquidation_close_percentage_denominator)
                     .ok_or_else(math_error!())?;
-                base_asset_value_closed += base_asset_value_to_close;
+
+                let mark_price_before_i128 = cast_to_i128(mark_price_before)?;
+                let reduce_position_slippage = match market_status.close_position_slippage {
+                    Some(close_position_slippage) => close_position_slippage.div(4),
+                    None => calculate_slippage(
+                        market_status.base_asset_value,
+                        market_position.base_asset_amount.unsigned_abs(),
+                        mark_price_before_i128,
+                    )?
+                    .div(4),
+                };
+
+                let reduce_position_slippage_pct =
+                    calculate_slippage_pct(reduce_position_slippage, mark_price_before_i128)?;
+
+                msg!(
+                    "reduce_position_slippage_pct {}",
+                    reduce_position_slippage_pct
+                );
+
+                let reduce_slippage_pct_too_large = reduce_position_slippage_pct
+                    > MAX_LIQUIDATION_SLIPPAGE
+                    || reduce_position_slippage_pct < -MAX_LIQUIDATION_SLIPPAGE;
+
+                let oracle_mark_divergence_after_reduce = if !reduce_slippage_pct_too_large {
+                    oracle_status
+                        .oracle_mark_spread_pct
+                        .checked_add(reduce_position_slippage_pct)
+                        .ok_or_else(math_error!())?
+                } else if reduce_position_slippage_pct > 0 {
+                    oracle_status
+                        .oracle_mark_spread_pct
+                        // approximates price impact based on slippage
+                        .checked_add(MAX_LIQUIDATION_SLIPPAGE * 2)
+                        .ok_or_else(math_error!())?
+                } else {
+                    oracle_status
+                        .oracle_mark_spread_pct
+                        // approximates price impact based on slippage
+                        .checked_sub(MAX_LIQUIDATION_SLIPPAGE * 2)
+                        .ok_or_else(math_error!())?
+                };
+
+                let oracle_mark_too_divergent_after_reduce = is_oracle_mark_too_divergent(
+                    oracle_mark_divergence_after_reduce,
+                    &state.oracle_guard_rails.price_divergence,
+                )?;
+
+                // if reducing pushes outside the oracle mark threshold, don't liquidate
+                if oracle_is_valid && oracle_mark_too_divergent_after_reduce {
+                    // but only skip the liquidation if it makes the divergence worse
+                    if oracle_status.oracle_mark_spread_pct.unsigned_abs()
+                        < oracle_mark_divergence_after_reduce.unsigned_abs()
+                    {
+                        msg!(
+                            "oracle_mark_spread_pct_after_reduce {}",
+                            oracle_mark_divergence_after_reduce
+                        );
+                        return Err(ErrorCode::OracleMarkSpreadLimit.into());
+                    }
+                }
+
+                if reduce_slippage_pct_too_large {
+                    quote_asset_amount = quote_asset_amount
+                        .checked_mul(MAX_LIQUIDATION_SLIPPAGE_U128)
+                        .ok_or_else(math_error!())?
+                        .checked_div(reduce_position_slippage_pct.unsigned_abs())
+                        .ok_or_else(math_error!())?;
+                }
+
+                base_asset_value_closed = base_asset_value_closed
+                    .checked_add(quote_asset_amount)
+                    .ok_or_else(math_error!())?;
 
                 let direction_to_reduce =
                     math::position::direction_to_close_position(market_position.base_asset_amount);
 
-                let base_asset_amount_change = controller::position::reduce(
+                let base_asset_amount = controller::position::reduce(
                     direction_to_reduce,
-                    base_asset_value_to_close,
+                    quote_asset_amount,
                     user,
                     market,
                     market_position,
@@ -1155,6 +1503,7 @@ pub mod clearing_house {
                 .unsigned_abs();
 
                 let mark_price_after = market.amm.mark_price()?;
+
                 let record_id = trade_history.next_record_id();
                 trade_history.append(TradeRecord {
                     ts: now,
@@ -1162,8 +1511,8 @@ pub mod clearing_house {
                     user_authority: user.authority,
                     user: *user.to_account_info().key,
                     direction: direction_to_reduce,
-                    base_asset_amount: base_asset_amount_change,
-                    quote_asset_amount: base_asset_value_to_close,
+                    base_asset_amount,
+                    quote_asset_amount,
                     mark_price_before,
                     mark_price_after,
                     fee: 0,
@@ -1172,32 +1521,43 @@ pub mod clearing_house {
                     referee_discount: 0,
                     liquidation: true,
                     market_index: market_position.market_index,
-                    oracle_price,
+                    oracle_price: market_status.oracle_status.price_data.price,
                 });
+
+                margin_requirement = margin_requirement
+                    .checked_sub(
+                        market_status
+                            .partial_margin_requirement
+                            .checked_mul(quote_asset_amount)
+                            .ok_or_else(math_error!())?
+                            .checked_div(market_status.base_asset_value)
+                            .ok_or_else(math_error!())?,
+                    )
+                    .ok_or_else(math_error!())?;
+
+                let market_liquidation_fee = maximum_liquidation_fee
+                    .checked_mul(quote_asset_amount)
+                    .ok_or_else(math_error!())?
+                    .checked_div(maximum_base_asset_value_closed)
+                    .ok_or_else(math_error!())?;
+
+                liquidation_fee = liquidation_fee
+                    .checked_add(market_liquidation_fee)
+                    .ok_or_else(math_error!())?;
+
+                let adjusted_total_collateral_after_fee = adjusted_total_collateral
+                    .checked_sub(liquidation_fee)
+                    .ok_or_else(math_error!())?;
+
+                if margin_requirement < adjusted_total_collateral_after_fee {
+                    break;
+                }
             }
         }
 
-        let liquidation_fee = if is_full_liquidation {
-            user.collateral
-                .checked_mul(state.full_liquidation_penalty_percentage_numerator.into())
-                .ok_or_else(math_error!())?
-                .checked_div(state.full_liquidation_penalty_percentage_denominator.into())
-                .ok_or_else(math_error!())?
-        } else {
-            total_collateral
-                .checked_mul(
-                    state
-                        .partial_liquidation_penalty_percentage_numerator
-                        .into(),
-                )
-                .ok_or_else(math_error!())?
-                .checked_div(
-                    state
-                        .partial_liquidation_penalty_percentage_denominator
-                        .into(),
-                )
-                .ok_or_else(math_error!())?
-        };
+        if base_asset_value_closed == 0 {
+            return Err(print_error!(ErrorCode::NoPositionsLiquidatable)().into());
+        }
 
         let (withdrawal_amount, _) = calculate_withdrawal_amounts(
             cast(liquidation_fee)?,
@@ -1394,7 +1754,10 @@ pub mod clearing_house {
         let market =
             &mut ctx.accounts.markets.load_mut()?.markets[Markets::index_from_u64(market_index)];
         let price_oracle = &ctx.accounts.oracle;
-        let (oracle_price, _, _, _, _) = market.amm.get_oracle_price(price_oracle, 0)?;
+        let OraclePriceData {
+            price: oracle_price,
+            ..
+        } = market.amm.get_oracle_price(price_oracle, 0)?;
 
         let peg_multiplier_before = market.amm.peg_multiplier;
         let base_asset_reserve_before = market.amm.base_asset_reserve;
@@ -1436,11 +1799,93 @@ pub mod clearing_house {
             open_interest: market.open_interest,
             total_fee: market.amm.total_fee,
             total_fee_minus_distributions: market.amm.total_fee_minus_distributions,
-            adjustment_cost: adjustment_cost,
+            adjustment_cost,
             oracle_price,
             trade_record: 0,
             padding: [0; 5],
         });
+
+        Ok(())
+    }
+
+    #[allow(unused_must_use)]
+    #[access_control(
+        market_initialized(&ctx.accounts.markets, market_index) &&
+        valid_oracle_for_market(&ctx.accounts.oracle, &ctx.accounts.markets, market_index)
+     )]
+    pub fn update_amm_oracle_twap(ctx: Context<RepegCurve>, market_index: u64) -> ProgramResult {
+        // allow update to amm's oracle twap iff price gap is reduced and thus more tame funding
+        // otherwise if oracle error or funding flip: set oracle twap to mark twap (0 gap)
+
+        let clock = Clock::get()?;
+        let now = clock.unix_timestamp;
+        let clock_slot = clock.slot;
+
+        let market =
+            &mut ctx.accounts.markets.load_mut()?.markets[Markets::index_from_u64(market_index)];
+        let price_oracle = &ctx.accounts.oracle;
+        let oracle_price_data = &market.amm.get_oracle_price(price_oracle, clock_slot)?;
+        let oracle_twap = oracle_price_data.twap;
+
+        let is_oracle_valid = amm::is_oracle_valid(
+            oracle_price_data,
+            &ctx.accounts.state.oracle_guard_rails.validity,
+        )?;
+
+        if is_oracle_valid {
+            let oracle_mark_gap_before = cast_to_i128(market.amm.last_mark_price_twap)?
+                .checked_sub(market.amm.last_oracle_price_twap)
+                .ok_or_else(math_error!())?;
+
+            let oracle_mark_gap_after = cast_to_i128(market.amm.last_mark_price_twap)?
+                .checked_sub(oracle_twap)
+                .ok_or_else(math_error!())?;
+
+            if (oracle_mark_gap_after > 0 && oracle_mark_gap_before < 0)
+                || (oracle_mark_gap_after < 0 && oracle_mark_gap_before > 0)
+            {
+                market.amm.last_oracle_price_twap = cast_to_i128(market.amm.last_mark_price_twap)?;
+                market.amm.last_oracle_price_twap_ts = now;
+            } else if oracle_mark_gap_after.unsigned_abs() <= oracle_mark_gap_before.unsigned_abs()
+            {
+                market.amm.last_oracle_price_twap = oracle_twap;
+                market.amm.last_oracle_price_twap_ts = now;
+            } else {
+                return Err(ErrorCode::OracleMarkSpreadLimit.into());
+            }
+        } else {
+            return Err(ErrorCode::InvalidOracle.into());
+        }
+
+        Ok(())
+    }
+
+    #[allow(unused_must_use)]
+    #[access_control(
+        market_initialized(&ctx.accounts.markets, market_index) &&
+        valid_oracle_for_market(&ctx.accounts.oracle, &ctx.accounts.markets, market_index)
+     )]
+    pub fn reset_amm_oracle_twap(ctx: Context<RepegCurve>, market_index: u64) -> ProgramResult {
+        // if oracle is invalid, failsafe to reset amm oracle_twap to the mark_twap
+
+        let clock = Clock::get()?;
+        let now = clock.unix_timestamp;
+        let clock_slot = clock.slot;
+
+        let market =
+            &mut ctx.accounts.markets.load_mut()?.markets[Markets::index_from_u64(market_index)];
+        let price_oracle = &ctx.accounts.oracle;
+        let oracle_price_data = &market.amm.get_oracle_price(price_oracle, clock_slot)?;
+
+        let is_oracle_valid = amm::is_oracle_valid(
+            oracle_price_data,
+            &ctx.accounts.state.oracle_guard_rails.validity,
+        )?;
+
+        if !is_oracle_valid {
+            market.amm.last_oracle_price_twap = cast_to_i128(market.amm.last_mark_price_twap)?;
+            market.amm.last_oracle_price_twap_ts = now;
+        }
 
         Ok(())
     }
@@ -1473,6 +1918,24 @@ pub mod clearing_house {
             ctx.remaining_accounts,
             optional_accounts,
         )
+    }
+
+    pub fn initialize_user_orders(
+        ctx: Context<InitializeUserOrders>,
+        _user_orders_nonce: u8,
+    ) -> ProgramResult {
+        let orders = &mut ctx.accounts.user_orders.load_init()?;
+        orders.user = ctx.accounts.user.key();
+        Ok(())
+    }
+
+    pub fn initialize_user_orders_with_explicit_payer(
+        ctx: Context<InitializeUserOrdersWithExplicitPayer>,
+        _user_orders_nonce: u8,
+    ) -> ProgramResult {
+        let orders = &mut ctx.accounts.user_orders.load_init()?;
+        orders.user = ctx.accounts.user.key();
+        Ok(())
     }
 
     pub fn delete_user(ctx: Context<DeleteUser>) -> ProgramResult {
@@ -1529,6 +1992,7 @@ pub mod clearing_house {
             funding_rate_history,
             &ctx.accounts.state.oracle_guard_rails,
             ctx.accounts.state.funding_paused,
+            None,
         )?;
 
         Ok(())
@@ -1614,7 +2078,10 @@ pub mod clearing_house {
         let total_fee = amm.total_fee;
         let total_fee_minus_distributions = amm.total_fee_minus_distributions;
 
-        let (oracle_price, _, _, _, _) = amm.get_oracle_price(&ctx.accounts.oracle, 0)?;
+        let OraclePriceData {
+            price: oracle_price,
+            ..
+        } = amm.get_oracle_price(&ctx.accounts.oracle, 0)?;
 
         let curve_history = &mut ctx.accounts.curve_history.load_mut()?;
         let record_id = curve_history.next_record_id();
@@ -1683,15 +2150,27 @@ pub mod clearing_house {
         Ok(())
     }
 
+    #[access_control(
+        market_initialized(&ctx.accounts.markets, market_index)
+    )]
     pub fn update_margin_ratio(
-        ctx: Context<AdminUpdateState>,
-        margin_ratio_initial: u128,
-        margin_ratio_partial: u128,
-        margin_ratio_maintenance: u128,
+        ctx: Context<AdminUpdateMarket>,
+        market_index: u64,
+        margin_ratio_initial: u32,
+        margin_ratio_partial: u32,
+        margin_ratio_maintenance: u32,
     ) -> ProgramResult {
-        ctx.accounts.state.margin_ratio_initial = margin_ratio_initial;
-        ctx.accounts.state.margin_ratio_partial = margin_ratio_partial;
-        ctx.accounts.state.margin_ratio_maintenance = margin_ratio_maintenance;
+        validate_margin(
+            margin_ratio_initial,
+            margin_ratio_partial,
+            margin_ratio_maintenance,
+        )?;
+
+        let market =
+            &mut ctx.accounts.markets.load_mut()?.markets[Markets::index_from_u64(market_index)];
+        market.margin_ratio_initial = margin_ratio_initial;
+        market.margin_ratio_partial = margin_ratio_partial;
+        market.margin_ratio_maintenance = margin_ratio_maintenance;
         Ok(())
     }
 
@@ -1762,6 +2241,14 @@ pub mod clearing_house {
         Ok(())
     }
 
+    pub fn update_order_filler_reward_structure(
+        ctx: Context<AdminUpdateOrderState>,
+        order_filler_reward_structure: OrderFillerRewardStructure,
+    ) -> ProgramResult {
+        ctx.accounts.order_state.order_filler_reward_structure = order_filler_reward_structure;
+        Ok(())
+    }
+
     pub fn update_oracle_guard_rails(
         ctx: Context<AdminUpdateState>,
         oracle_guard_rails: OracleGuardRails,
@@ -1789,14 +2276,28 @@ pub mod clearing_house {
     #[access_control(
         market_initialized(&ctx.accounts.markets, market_index)
     )]
-    pub fn update_market_minimum_trade_size(
+    pub fn update_market_minimum_quote_asset_trade_size(
         ctx: Context<AdminUpdateMarket>,
         market_index: u64,
         minimum_trade_size: u128,
     ) -> ProgramResult {
         let market =
             &mut ctx.accounts.markets.load_mut()?.markets[Markets::index_from_u64(market_index)];
-        market.amm.minimum_trade_size = minimum_trade_size;
+        market.amm.minimum_quote_asset_trade_size = minimum_trade_size;
+        Ok(())
+    }
+
+    #[access_control(
+        market_initialized(&ctx.accounts.markets, market_index)
+    )]
+    pub fn update_market_minimum_base_asset_trade_size(
+        ctx: Context<AdminUpdateMarket>,
+        market_index: u64,
+        minimum_trade_size: u128,
+    ) -> ProgramResult {
+        let market =
+            &mut ctx.accounts.markets.load_mut()?.markets[Markets::index_from_u64(market_index)];
+        market.amm.minimum_base_asset_trade_size = minimum_trade_size;
         Ok(())
     }
 
@@ -1870,14 +2371,14 @@ fn valid_oracle_for_market(
     Ok(())
 }
 
-fn exchange_not_paused(state: &Box<Account<State>>) -> Result<()> {
+fn exchange_not_paused(state: &Account<State>) -> Result<()> {
     if state.exchange_paused {
         return Err(ErrorCode::ExchangePaused.into());
     }
     Ok(())
 }
 
-fn admin_controls_prices(state: &Box<Account<State>>) -> Result<()> {
+fn admin_controls_prices(state: &Account<State>) -> Result<()> {
     if !state.admin_controls_prices {
         return Err(ErrorCode::AdminControlsPricesDisabled.into());
     }

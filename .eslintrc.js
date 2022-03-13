@@ -1,8 +1,9 @@
-{
+module.exports = {
 	"root": true,
 	"parser": "@typescript-eslint/parser",
 	"env": {
-		"browser": true
+		"browser": true,
+		"node": true
 	},
 	"ignorePatterns": ["**/lib", "**/node_modules", "migrations"],
 	"plugins": [],
@@ -26,11 +27,19 @@
 		"@typescript-eslint/no-var-requires": 0,
 		"@typescript-eslint/no-empty-function": 0,
 		"no-mixed-spaces-and-tabs": [2, "smart-tabs"],
-		"semi": 2
-	},
-	"settings": {
-		"react": {
-			"version": "detect"
-		}
+		"no-prototype-builtins": "off",
+		"semi": 2,
+		"no-restricted-imports": [
+			"error",
+			{
+				"patterns": [
+					{
+						// Restrict importing BN from bn.js
+						"group": ["bn.js"],
+						"message": "Import BN from @drift-labs/sdk instead",
+					}
+				],
+			},
+		],
 	}
-}
+};

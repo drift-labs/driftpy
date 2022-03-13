@@ -8,11 +8,15 @@ import { Program } from '@project-serum/anchor';
 import StrictEventEmitter from 'strict-event-emitter-types';
 import { EventEmitter } from 'events';
 import { PublicKey } from '@solana/web3.js';
-import { getUserAccountPublicKey } from '../addresses';
+import {
+	getUserAccountPublicKey,
+	getUserOrdersAccountPublicKey,
+} from '../addresses';
 import { WebSocketAccountSubscriber } from './webSocketAccountSubscriber';
-import { UserAccount, UserPositionsAccount } from '../types';
+import { UserAccount, UserOrdersAccount, UserPositionsAccount } from '../types';
+import { ClearingHouseConfigType } from '../factory/clearingHouse';
 
-export class DefaultUserAccountSubscriber implements UserAccountSubscriber {
+export class WebSocketUserAccountSubscriber implements UserAccountSubscriber {
 	isSubscribed: boolean;
 	program: Program;
 	eventEmitter: StrictEventEmitter<EventEmitter, UserAccountEvents>;
@@ -20,6 +24,9 @@ export class DefaultUserAccountSubscriber implements UserAccountSubscriber {
 
 	userDataAccountSubscriber: AccountSubscriber<UserAccount>;
 	userPositionsAccountSubscriber: AccountSubscriber<UserPositionsAccount>;
+	userOrdersAccountSubscriber: AccountSubscriber<UserOrdersAccount>;
+
+	type: ClearingHouseConfigType = 'websocket';
 
 	public constructor(program: Program, authority: PublicKey) {
 		this.isSubscribed = false;
@@ -61,6 +68,23 @@ export class DefaultUserAccountSubscriber implements UserAccountSubscriber {
 			}
 		);
 
+		const userOrdersPublicKey = await getUserOrdersAccountPublicKey(
+			this.program.programId,
+			userPublicKey
+		);
+
+		this.userOrdersAccountSubscriber = new WebSocketAccountSubscriber(
+			'userOrders',
+			this.program,
+			userOrdersPublicKey
+		);
+		await this.userOrdersAccountSubscriber.subscribe(
+			(data: UserOrdersAccount) => {
+				this.eventEmitter.emit('userOrdersData', data);
+				this.eventEmitter.emit('update');
+			}
+		);
+
 		this.eventEmitter.emit('update');
 		this.isSubscribed = true;
 		return true;
@@ -70,6 +94,7 @@ export class DefaultUserAccountSubscriber implements UserAccountSubscriber {
 		await Promise.all([
 			this.userDataAccountSubscriber.fetch(),
 			this.userPositionsAccountSubscriber.fetch(),
+			this.userOrdersAccountSubscriber.fetch(),
 		]);
 	}
 
@@ -78,8 +103,11 @@ export class DefaultUserAccountSubscriber implements UserAccountSubscriber {
 			return;
 		}
 
-		this.userDataAccountSubscriber.unsubscribe();
-		this.userPositionsAccountSubscriber.unsubscribe();
+		await Promise.all([
+			this.userDataAccountSubscriber.unsubscribe(),
+			this.userPositionsAccountSubscriber.unsubscribe(),
+			await this.userOrdersAccountSubscriber.unsubscribe(),
+		]);
 
 		this.isSubscribed = false;
 	}
@@ -100,5 +128,9 @@ export class DefaultUserAccountSubscriber implements UserAccountSubscriber {
 	public getUserPositionsAccount(): UserPositionsAccount {
 		this.assertIsSubscribed();
 		return this.userPositionsAccountSubscriber.data;
+	}
+
+	public getUserOrdersAccount(): UserOrdersAccount {
+		return this.userOrdersAccountSubscriber.data;
 	}
 }

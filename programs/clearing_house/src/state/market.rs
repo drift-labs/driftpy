@@ -14,15 +14,23 @@ pub struct Markets {
 
 impl Default for Markets {
     fn default() -> Self {
-        return Markets {
+        Markets {
             markets: [Market::default(); 64],
-        };
+        }
     }
 }
 
 impl Markets {
     pub fn index_from_u64(index: u64) -> usize {
-        return std::convert::TryInto::try_into(index).unwrap();
+        std::convert::TryInto::try_into(index).unwrap()
+    }
+
+    pub fn get_market(&self, index: u64) -> &Market {
+        &self.markets[Markets::index_from_u64(index)]
+    }
+
+    pub fn get_market_mut(&mut self, index: u64) -> &mut Market {
+        &mut self.markets[Markets::index_from_u64(index)]
     }
 }
 
@@ -35,9 +43,12 @@ pub struct Market {
     pub base_asset_amount: i128, // net market bias
     pub open_interest: u128,     // number of users in a position
     pub amm: AMM,
+    pub margin_ratio_initial: u32,
+    pub margin_ratio_partial: u32,
+    pub margin_ratio_maintenance: u32,
 
     // upgrade-ability
-    pub padding0: u128,
+    pub padding0: u32,
     pub padding1: u128,
     pub padding2: u128,
     pub padding3: u128,
@@ -79,15 +90,15 @@ pub struct AMM {
     pub total_fee: u128,
     pub total_fee_minus_distributions: u128,
     pub total_fee_withdrawn: u128,
-    pub minimum_trade_size: u128,
+    pub minimum_quote_asset_trade_size: u128,
     pub last_oracle_price_twap_ts: i64,
+    pub last_oracle_price: i128,
+    pub minimum_base_asset_trade_size: u128,
 
     // upgrade-ability
-    pub padding0: u64,
-    pub padding1: u128,
+    pub padding1: u64,
     pub padding2: u128,
     pub padding3: u128,
-    pub padding4: u128,
 }
 
 impl AMM {
@@ -106,7 +117,7 @@ impl AMM {
     ) -> ClearingHouseResult<(i128, i128, u128, u128, i64)> {
         let pyth_price_data = price_oracle
             .try_borrow_data()
-            .or(Err(ErrorCode::UnableToLoadOracle.into()))?;
+            .or(Err(ErrorCode::UnableToLoadOracle))?;
         let price_data = pyth_client::cast::<pyth_client::Price>(&pyth_price_data);
 
         let oracle_price = cast_to_i128(price_data.agg.price)?;
@@ -157,31 +168,39 @@ impl AMM {
             .checked_sub(cast(price_data.valid_slot)?)
             .ok_or_else(math_error!())?;
 
-        return Ok((
+        Ok((
             oracle_price_scaled,
             oracle_twap_scaled,
             oracle_conf_scaled,
             oracle_twac_scaled,
             oracle_delay,
-        ));
+        ))
     }
 
     pub fn get_oracle_price(
         &self,
         price_oracle: &AccountInfo,
         clock_slot: u64,
-    ) -> ClearingHouseResult<(i128, i128, u128, u128, i64)> {
-        let (oracle_px, oracle_twap, oracle_conf, oracle_twac, oracle_delay) =
-            match self.oracle_source {
-                OracleSource::Pyth => self.get_pyth_price(price_oracle, clock_slot)?,
-                OracleSource::Switchboard => (0, 0, 0, 0, 0),
-            };
-        return Ok((
-            oracle_px,
-            oracle_twap,
-            oracle_conf,
-            oracle_twac,
-            oracle_delay,
-        ));
+    ) -> ClearingHouseResult<OraclePriceData> {
+        let (price, twap, confidence, twap_confidence, delay) = match self.oracle_source {
+            OracleSource::Pyth => self.get_pyth_price(price_oracle, clock_slot)?,
+            OracleSource::Switchboard => (0, 0, 0, 0, 0),
+        };
+        Ok(OraclePriceData {
+            price,
+            twap,
+            confidence,
+            twap_confidence,
+            delay,
+        })
     }
+}
+
+#[derive(Default, Clone, Copy, Debug)]
+pub struct OraclePriceData {
+    pub price: i128,
+    pub twap: i128,
+    pub confidence: u128,
+    pub twap_confidence: u128,
+    pub delay: i64,
 }
