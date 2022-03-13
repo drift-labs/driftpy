@@ -52,7 +52,6 @@ def calculate_swap_output(
         )
         new_input_asset_reserve = input_asset_reserve - swap_amount
 
-
     new_output_asset_reserve = invariant / new_input_asset_reserve
     return [new_input_asset_reserve, new_output_asset_reserve]
 

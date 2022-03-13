@@ -267,10 +267,10 @@ class LiquidationRecord:
 
 @_rust_enum
 class OrderType:
+    MARKET = constructor()
     LIMIT = constructor()
     TRIGGER_MARKET = constructor()
     TRIGGER_LIMIT = constructor()
-    MARKET = constructor()
 
 
 @_rust_enum
@@ -345,6 +345,7 @@ class Order:
     oracle_price_offset: int
 
 
+@dataclass
 class OrderParams:
     order_type: OrderType
     user_order_id: int
@@ -363,10 +364,7 @@ class OrderParams:
     # upgradable
     padding0: bool
     padding1: int
-    # optional_accounts: {
-    # 	discount_token: bool
-    # 	referrer: bool
-    # }
+    optional_accounts: dict
 
 
 @dataclass

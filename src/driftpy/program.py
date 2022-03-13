@@ -35,7 +35,7 @@ def load_program(env: str, wallet_path=None):
         p = Provider.env()
     else:
         if "ANCHOR_WALLET" not in os.environ:
-            print('No solana wallet specified/found. Read-Only mode.')
+            print("No solana wallet specified/found. Read-Only mode.")
             p = Provider.readonly(url=os.environ["ANCHOR_PROVIDER_URL"])
         else:
             p = Provider.env()
@@ -46,7 +46,7 @@ def load_program(env: str, wallet_path=None):
             # )
 
     # Address of the deployed program.
-    program = Program(IDL_JSON, PublicKey(CH_PID),  p)
+    program = Program(IDL_JSON, PublicKey(CH_PID), p)
     return program
 
 

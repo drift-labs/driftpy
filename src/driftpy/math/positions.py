@@ -56,10 +56,13 @@ def calculate_base_asset_value(market: Market, user_position: MarketPosition) ->
         ) / AMM_TIMES_PEG_TO_QUOTE_PRECISION_RATIO
     else:
         # PositionDirection.LONG:
-        result = ((
-            (new_quote_asset_reserve - market.amm.quote_asset_reserve)
-            * market.amm.peg_multiplier
-        ) / AMM_TIMES_PEG_TO_QUOTE_PRECISION_RATIO) + 1.0
+        result = (
+            (
+                (new_quote_asset_reserve - market.amm.quote_asset_reserve)
+                * market.amm.peg_multiplier
+            )
+            / AMM_TIMES_PEG_TO_QUOTE_PRECISION_RATIO
+        ) + 1.0
 
     return result
 

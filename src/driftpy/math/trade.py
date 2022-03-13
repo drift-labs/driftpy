@@ -42,6 +42,9 @@ def calculate_trade_acquired_amounts(
     acquired_base = market.amm.base_asset_reserve - new_base_asset_reserve
     acquired_quote = market.amm.quote_asset_reserve - new_quote_asset_reserve
 
+    if input_asset_type == AssetType.BASE and direction == PositionDirection.LONG:
+        acquired_quote -= 1  # round up
+
     return [acquired_base, acquired_quote]
 
 
@@ -142,7 +145,7 @@ def calculate_target_price_trade(
         trade_size = 0
         return [direction, trade_size, target_price, target_price]
 
-    if(base_size !=0):
+    if base_size != 0:
         entry_price = trade_size * AMM_TO_QUOTE_PRECISION_RATIO / abs(base_size)
     else:
         entry_price = 0

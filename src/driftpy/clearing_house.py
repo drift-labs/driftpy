@@ -2,7 +2,6 @@ from dataclasses import dataclass
 import json
 from importlib import resources
 from typing import Optional, TypeVar, Type, cast
-import driftpy
 from solana.publickey import PublicKey
 from solana.keypair import Keypair
 from solana.transaction import Transaction, TransactionSignature, TransactionInstruction
