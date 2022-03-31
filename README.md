@@ -16,6 +16,12 @@ pip install driftpy
 
 Note: requires Python >= 3.9.
 
+## Examples
+
+[Arbitrage Trading](https://github.com/0xbigz/driftpy-arb)
+
+[Querying and Visualization](https://gist.github.com/mcclurejt/b244d4ca8b0000ce5078ef8f60e937d9)
+
 ## Development
 
 ### Development Setup
@@ -24,12 +30,15 @@ If you want to contribute to DriftPy, follow these steps to get set up:
 
 1. Install [poetry](https://python-poetry.org/docs/#installation)
 2. Install dev dependencies:
+
 ```sh
 poetry install
 
 ```
+
 3. Install [nox-poetry](https://github.com/cjolowicz/nox-poetry) (note: do not use Poetry to install this, see [here](https://medium.com/@cjolowicz/nox-is-a-part-of-your-global-developer-environment-like-poetry-pre-commit-pyenv-or-pipx-1cdeba9198bd))
 4. Activate the poetry shell:
+
 ```sh
 poetry shell
 
@@ -53,13 +62,13 @@ DriftPy ships with IDL files for the user's convenience. These live at `src/drif
 1. Make sure CHANGELOG.md is updated.
 2. Run `bumpversion major|minor|patch` to update the version number locally and create a tagged commit.
 3. Run `git push origin <version_number>` to push the tag to GitHub.
-4. After merging your PR on GitHub, create a new release at https://github.com/drift-labs/driftpy/releases. 
-The CI process will upload a new version of the package to PyPI.
+4. After merging your PR on GitHub, create a new release at https://github.com/drift-labs/driftpy/releases.
+   The CI process will upload a new version of the package to PyPI.
 
 ### Updating the `drift-core` subtree
 
 - This repo pulls in the main Drift repo using [git subtree](https://www.atlassian.com/git/tutorials/git-subtree).
-Follow that linked tutorial if you want to see how it was done.
+  Follow that linked tutorial if you want to see how it was done.
 
 The short answer:
 `git subtree pull --prefix drift-core drift-protocol mainnet-beta --squash`
