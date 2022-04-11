@@ -91,6 +91,7 @@ class ClearingHouse:
         """
         self.program = program
         self.pdas = pdas
+        self.user_account = None
 
     def _find_program_address(self, seeds: list[bytes]) -> tuple[PublicKey, int]:
         return PublicKey.find_program_address(seeds, self.program.program_id)
@@ -506,6 +507,16 @@ class ClearingHouse:
             "discount_token": False,
             "referrer": False,
         }
+
+        markets_account_to_use = (
+            await self.get_markets_account()
+            if markets_account is None
+            else markets_account
+        )
+        price_oracle = markets_account_to_use.markets[
+            order_params.market_index
+        ].amm.oracle
+
         remaining_accounts = []
         if discount_token:
             optional_accounts["discount_token"] = True
@@ -525,15 +536,15 @@ class ClearingHouse:
                     is_signer=False,
                 )
             )
+        if order_params.oracle_price_offset != 0:
+            remaining_accounts.append(
+                AccountMeta(
+                    pubkey=price_oracle,
+                    is_writable=False,
+                    is_signer=False,
+                )
+            )
 
-        markets_account_to_use = (
-            await self.get_markets_account()
-            if markets_account is None
-            else markets_account
-        )
-        price_oracle = markets_account_to_use.markets[
-            order_params.market_index
-        ].amm.oracle
 
         state = (
             await self.get_state_account() if state_account is None else state_account
@@ -659,14 +670,16 @@ class ClearingHouse:
     async def cancel_order(
         self,
         order_id: int,
+        oracle: PublicKey = None,
     ) -> TransactionSignature:
-        ix = await self.get_cancel_order_ix(order_id)
+        ix = await self.get_cancel_order_ix(order_id, oracle)
         tx = Transaction().add(ix)
         return await self.program.provider.send(tx)
 
     async def get_cancel_order_ix(
         self,
         order_id: int,
+        oracle: PublicKey = None,
         user_account: Optional[User] = None,
         state_account: Optional[StateAccount] = None,
         orders_state_account: Optional[OrderState] = None,
@@ -683,6 +696,15 @@ class ClearingHouse:
             if orders_state_account is None
             else orders_state_account
         )
+        remaining_accounts = []
+        if oracle is not None:
+            remaining_accounts.append(
+                AccountMeta(
+                    pubkey=oracle,
+                    is_writable=False,
+                    is_signer=False,
+                )
+            )
 
         return self.program.instruction["cancel_order"](
             order_id,
@@ -699,12 +721,18 @@ class ClearingHouse:
                     "order_state": self.get_order_state_public_key(),
                     "order_history": orders_state.order_history,
                 },
+            remaining_accounts=remaining_accounts,
+
             ),
         )
 
     async def get_user_account(self) -> User:
+        if self.user_account is not None:
+            return self.user_account
+
         user_account_pubkey = self.get_user_account_public_key()
-        return cast(User, await self.program.account["User"].fetch(user_account_pubkey))
+        self.user_account = cast(User, await self.program.account["User"].fetch(user_account_pubkey))
+        return self.user_account
 
     async def get_close_position_ix(
         self,
