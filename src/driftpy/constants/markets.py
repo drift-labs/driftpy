@@ -142,4 +142,13 @@ MARKETS: list[Market] = [
         # launchTs: 1649105516000,
 		# oracleSource: OracleSource.PYTH,    
     ),
+     Market(
+        symbol="SRM-PERP",
+        base_asset_symbol="SRM",
+        market_index=17,
+        devnet_pyth_oracle="992moaMQKs32GKZ9dxi8keyM2bUmbrwBZpK4p2K6X5Vs",
+        mainnet_pyth_oracle="3NBReDRTLKMQEKiLD5tGcx4kXbTf88b7f2xLS9UuGjym",
+        # launchTs: 1649105516000,
+		# oracleSource: OracleSource.PYTH,
+    ),
 ]
