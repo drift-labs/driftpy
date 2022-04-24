@@ -151,4 +151,13 @@ MARKETS: list[Market] = [
         # launchTs: 1649105516000,
 		# oracleSource: OracleSource.PYTH,
     ),
+     Market(
+        symbol="GMT-PERP",
+        base_asset_symbol="GMT",
+        market_index=18,
+        devnet_pyth_oracle="7GBoA2oGXMTepYjFgrdHyYVGcPs4FWskUF7S1dGzQsY9",
+        mainnet_pyth_oracle="81kbdwDfTNsg4d5D1BxE9FHEdxEMk8xCJUj5ujjWQyvd",
+        # launchTs: 1649105516000,
+		# oracleSource: OracleSource.PYTH,
+    ),
 ]

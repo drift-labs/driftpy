@@ -96,11 +96,12 @@ class ClearingHouseUser:
 
         pnl = 0
         for position in positions_account.positions:
-            if market_index is not None and position.market_index == market_index:
-                market = await self.clearing_house.get_market(
-                    position.market_index
-                )  # todo repeat querying
-                pnl += calculate_position_pnl(market, position)
+            if position.base_asset_amount!=0:
+                if market_index is None or position.market_index == int(market_index):
+                    market = await self.clearing_house.get_market(
+                        position.market_index
+                    )  # todo repeat querying
+                    pnl += calculate_position_pnl(market, position)
 
         return pnl
 
@@ -123,11 +124,12 @@ class ClearingHouseUser:
         positions_account = await self.get_user_positions_account()
         value = 0
         for position in positions_account.positions:
-            if market_index is not None and position.market_index == market_index:
-                market = await self.clearing_house.get_market(
-                    position.market_index
-                )  # todo repeat querying
-                value += calculate_base_asset_value(market, position)
+            if position.base_asset_amount!=0:
+                if market_index is None or position.market_index == int(market_index):
+                    market = await self.clearing_house.get_market(
+                        position.market_index
+                    )  # todo repeat querying
+                    pnl += calculate_position_pnl(market, position)
         return value
 
     async def get_margin_ratio(self):
