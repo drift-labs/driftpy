@@ -160,4 +160,13 @@ MARKETS: list[Market] = [
         # launchTs: 1649105516000,
 		# oracleSource: OracleSource.PYTH,
     ),
+     Market(
+        symbol="CRV-PERP",
+        base_asset_symbol="CRV",
+        market_index=19,
+        devnet_pyth_oracle="AuEiE5XG5kD1NFoKgEPrWuN9CdT44A3K7yGDuiUPvh9S",
+        mainnet_pyth_oracle="61NzdQ9y6KhMhWxyJ8kXEe25NxdixVL1YUnGYLDMaUxH",
+        # launchTs: 1649105516000,
+		# oracleSource: OracleSource.PYTH,
+    ),
 ]

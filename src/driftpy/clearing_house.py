@@ -479,6 +479,18 @@ class ClearingHouse:
             ),
         )
 
+    async def place_orders(
+        self,
+        order_params_list: list[OrderParams],
+        discount_token: Optional[PublicKey] = None,
+        referrer: Optional[PublicKey] = None,
+    ) -> TransactionSignature:
+        tx = Transaction()
+        for order_params in order_params_list:
+            ix = await self.get_place_order_ix(order_params, discount_token, referrer)
+            tx = tx.add(ix)
+        return await self.program.provider.send(tx)
+
     async def place_order(
         self,
         order_params: OrderParams,
