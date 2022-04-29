@@ -82,7 +82,7 @@ class ClearingHouseUser:
 
         return orders_account
 
-    async def get_user_position(self, market_index) -> MarketPosition:
+    async def get_user_position(self, market_index: int) -> MarketPosition:
         positions_account = await self.get_user_positions_account()
         for position in positions_account.positions:
             if position.market_index == market_index:
@@ -91,7 +91,8 @@ class ClearingHouseUser:
             market_index, 0, 0, 0, 0, 0, 0, 0, 0, 0, PublicKey(0), 0, 0
         )
 
-    async def get_unrealised_pnl(self, market_index=None):
+    async def get_unrealised_pnl(self, market_index: int=None):
+        assert(market_index is None or str(market_index).isdigit())
         positions_account = await self.get_user_positions_account()
 
         pnl = 0
@@ -120,7 +121,8 @@ class ClearingHouseUser:
 
         return value
 
-    async def get_position_value(self, market_index=None):
+    async def get_position_value(self, market_index: int=None):
+        assert(market_index is None or str(market_index).isdigit())
         positions_account = await self.get_user_positions_account()
         value = 0
         for position in positions_account.positions:
@@ -129,7 +131,7 @@ class ClearingHouseUser:
                     market = await self.clearing_house.get_market(
                         position.market_index
                     )  # todo repeat querying
-                    pnl += calculate_position_pnl(market, position)
+                    value += calculate_base_asset_value(market, position)
         return value
 
     async def get_margin_ratio(self):
