@@ -20,7 +20,7 @@ from anchorpy.utils.token import get_token_account
 
 from driftpy.admin import Admin
 from driftpy.constants.markets import MARKETS
-from driftpy.constants.numeric_constants import MARK_PRICE_PRECISION, MAX_LEVERAGE
+from driftpy.constants.numeric_constants import MARK_PRICE_PRECISION
 from driftpy.types import (
     PositionDirection,
     StateAccount,
@@ -38,12 +38,13 @@ MARKET_INDEX = 0
 
 
 def calculate_trade_amount(amount_of_collateral: int) -> int:
+    TARGET_LEVERAGE = 5
     one_mantissa = 100000
     fee = one_mantissa / 1000
     trade_amount = (
         amount_of_collateral
-        * MAX_LEVERAGE
-        * (one_mantissa - MAX_LEVERAGE * fee)
+        * TARGET_LEVERAGE
+        * (one_mantissa - TARGET_LEVERAGE * fee)
         / one_mantissa
     )
     return int(trade_amount)

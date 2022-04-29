@@ -133,7 +133,10 @@ class AMM:
     total_fee_minus_distributions: int
     total_fee_withdrawn: int
     total_fee: int
-    minimum_trade_size: int
+    minimum_quote_asset_trade_size: int
+    minimum_base_asset_trade_size: int
+    last_oracle_price: int
+    base_spread: int
 
 
 @dataclass
@@ -144,6 +147,9 @@ class Market:
     base_asset_amount_short: int
     initialized: bool
     open_interest: int
+    margin_ratio_initial: int
+    margin_ratio_maintenance: int
+    margin_ratio_partial: int
 
 
 @dataclass
