@@ -160,13 +160,22 @@ MARKETS: list[Market] = [
         # launchTs: 1649105516000,
 		# oracleSource: OracleSource.PYTH,
     ),
-     Market(
+    Market(
         symbol="CRV-PERP",
         base_asset_symbol="CRV",
         market_index=19,
         devnet_pyth_oracle="AuEiE5XG5kD1NFoKgEPrWuN9CdT44A3K7yGDuiUPvh9S",
         mainnet_pyth_oracle="61NzdQ9y6KhMhWxyJ8kXEe25NxdixVL1YUnGYLDMaUxH",
         # launchTs: 1649105516000,
+		# oracleSource: OracleSource.PYTH,
+    ),
+     Market(
+        symbol="FTM-PERP",
+        base_asset_symbol="FTM",
+        market_index=20,
+		devnet_pyth_oracle='BTwrLU4so1oJMViWA3BTzh8YmFwiLZ6CL4U3JryG7Q5S',
+		mainnet_pyth_oracle='7Dn52EY5EGE8Nvvw98KVMGPWTiTGn3PF4y24TVLyXdT9',
+		# launchTs: 1651559653000,
 		# oracleSource: OracleSource.PYTH,
     ),
 ]
