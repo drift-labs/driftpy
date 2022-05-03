@@ -90,7 +90,7 @@ class ClearingHouseUser:
         )
 
     async def get_unrealised_pnl(self, market_index: int=None):
-        assert(market_index is None or int(market_index))
+        assert(market_index is None or int(market_index) >= 0)
         positions_account = await self.get_user_positions_account()
 
         pnl = 0
@@ -124,7 +124,7 @@ class ClearingHouseUser:
         return value
 
     async def get_position_value(self, market_index: int=None):
-        assert(market_index is None or int(market_index))
+        assert(market_index is None or int(market_index) >= 0)
         positions_account = await self.get_user_positions_account()
         value = 0
         for position in positions_account.positions:
