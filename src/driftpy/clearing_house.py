@@ -318,22 +318,28 @@ class ClearingHouse:
 
         return tx_sig, user_account_public_key
 
-    def get_user_account_public_key(self) -> PublicKey:
+    def get_user_account_public_key(self, pk=None) -> PublicKey:
         """Get the address for the Clearing House User's account.
 
         NOT the user's wallet address.
         """
+        if pk is None:
+            pk = self.program.provider.wallet.public_key
+            
         return get_user_account_public_key_and_nonce(
-            self.program.program_id, self.program.provider.wallet.public_key
+            self.program.program_id, pk
         )[0]
 
-    def get_user_orders_public_key(self) -> PublicKey:
+    def get_user_orders_public_key(self, pk=None) -> PublicKey:
         """Get the address for the Clearing House User's order account.
 
         NOT the user's wallet address.
         """
+        if pk is None:
+            pk = self.program.provider.wallet.public_key
+            
         return get_user_orders_account_public_key_and_nonce(
-            self.program.program_id, self.program.provider.wallet.public_key
+            self.program.program_id, pk
         )[0]
 
     def get_order_state_public_key(self) -> PublicKey:
