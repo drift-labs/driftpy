@@ -241,6 +241,7 @@ pub mod clearing_house {
         amm_quote_asset_reserve: u128,
         amm_periodicity: i64,
         amm_peg_multiplier: u128,
+        oracle_source: OracleSource, 
         margin_ratio_initial: u32,
         margin_ratio_partial: u32,
         margin_ratio_maintenance: u32,
@@ -282,7 +283,7 @@ pub mod clearing_house {
 
         validate_margin(
             margin_ratio_initial,
-            margin_ratio_initial,
+            margin_ratio_partial, 
             margin_ratio_maintenance,
         )?;
 
@@ -302,7 +303,7 @@ pub mod clearing_house {
             padding4: 0,
             amm: AMM {
                 oracle: *ctx.accounts.oracle.key,
-                oracle_source: OracleSource::Pyth,
+                oracle_source: oracle_source,
                 base_asset_reserve: amm_base_asset_reserve,
                 quote_asset_reserve: amm_quote_asset_reserve,
                 cumulative_repeg_rebate_long: 0,

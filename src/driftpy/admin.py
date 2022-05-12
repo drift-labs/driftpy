@@ -15,7 +15,7 @@ from driftpy.clearing_house import (
     get_clearing_house_state_account_public_key_and_nonce,
 )
 from driftpy.constants.numeric_constants import PEG_PRECISION
-
+from driftpy.types import OracleSource
 
 class Admin(ClearingHouse):
     @classmethod
@@ -146,16 +146,25 @@ class Admin(ClearingHouse):
         quote_asset_reserve: int,
         periodicity: int,
         peg_multiplier: int = PEG_PRECISION,
+        oracle_source: OracleSource = OracleSource.Pyth(),
+        margin_ratio_initial: int = 2000,
+        margin_ratio_partial: int = 625,
+        margin_ratio_maintenance: int = 500
     ) -> TransactionSignature:
         markets_account = await self.get_markets_account()
         if markets_account.markets[market_index].initialized:
             raise ValueError(f"MarketIndex {market_index} already initialized")
+        
         return await self.program.rpc["initialize_market"](
             market_index,
             base_asset_reserve,
             quote_asset_reserve,
             periodicity,
             peg_multiplier,
+            oracle_source,
+            margin_ratio_initial,
+            margin_ratio_partial,
+            margin_ratio_maintenance,
             ctx=Context(
                 accounts={
                     "state": self.pdas.state,

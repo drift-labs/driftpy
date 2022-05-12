@@ -738,8 +738,8 @@ class ClearingHouse:
             ),
         )
 
-    async def get_user_account(self) -> User:
-        if self.user_account is not None:
+    async def get_user_account(self, hit_cache=True) -> User:
+        if hit_cache and self.user_account is not None:
             return self.user_account
 
         user_account_pubkey = self.get_user_account_public_key()
