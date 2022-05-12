@@ -678,6 +678,59 @@ class ClearingHouse:
                 remaining_accounts=remaining_accounts,
             ),
         )
+        
+    async def cancel_all_orders(
+        self,
+        best_effort: bool,
+        user_account: Optional[User] = None,
+        state_account: Optional[StateAccount] = None,
+        orders_state_account: Optional[OrderState] = None,
+    ) -> TransactionInstruction:
+        ix = await self.cancel_all_orders_ix(
+            best_effort,
+            user_account,
+            state_account,
+            orders_state_account,
+        )
+        tx = Transaction().add(ix)
+        return await self.program.provider.send(tx)
+    
+    async def cancel_all_orders_ix(
+        self,
+        best_effort: bool,
+        user_account: Optional[User] = None,
+        state_account: Optional[StateAccount] = None,
+        orders_state_account: Optional[OrderState] = None,
+    ) -> TransactionInstruction:
+        user_account_public_key = self.get_user_account_public_key()
+        user_account_to_use = (
+            await self.get_user_account() if user_account is None else user_account
+        )
+        state = (
+            await self.get_state_account() if state_account is None else state_account
+        )
+        orders_state = (
+            await self.get_orders_state_account() if orders_state_account is None
+            else orders_state_account
+        )
+
+        return self.program.instruction["cancel_all_orders"](
+            best_effort,
+            ctx=Context(
+                accounts={
+                    "state": self.pdas.state,
+                    "user": user_account_public_key,
+                    "authority": self.program.provider.wallet.public_key,
+                    "markets": state.markets,
+                    "user_orders": self.get_user_orders_public_key(),
+                    "user_positions": user_account_to_use.positions,
+                    "funding_payment_history": state.funding_payment_history,
+                    "funding_rate_history": state.funding_rate_history,
+                    "order_state": self.get_order_state_public_key(),
+                    "order_history": orders_state.order_history,
+                }
+            )
+        )
 
     async def cancel_order(
         self,

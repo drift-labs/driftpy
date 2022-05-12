@@ -19,7 +19,7 @@ def event_loop():
     loop.close()
 
 
-workspace = workspace_fixture("./drift-core", scope="session")
+workspace = workspace_fixture("./protocol-v1/", scope="session")
 
 
 @fixture(scope="session")
