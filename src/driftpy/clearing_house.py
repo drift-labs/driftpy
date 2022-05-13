@@ -695,7 +695,7 @@ class ClearingHouse:
         tx = Transaction().add(ix)
         return await self.program.provider.send(tx)
     
-    async def cancel_all_orders_ix(
+    async def get_cancel_all_orders_ix(
         self,
         best_effort: bool,
         user_account: Optional[User] = None,
