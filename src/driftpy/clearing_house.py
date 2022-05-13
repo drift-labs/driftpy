@@ -686,7 +686,7 @@ class ClearingHouse:
         state_account: Optional[StateAccount] = None,
         orders_state_account: Optional[OrderState] = None,
     ) -> TransactionInstruction:
-        ix = await self.cancel_all_orders_ix(
+        ix = await self.get_cancel_all_orders_ix(
             best_effort,
             user_account,
             state_account,
