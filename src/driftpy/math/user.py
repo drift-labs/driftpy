@@ -27,7 +27,7 @@ def calculate_unrealised_pnl(user_position: UserPositions, markets: MarketsAccou
     for position in user_position:
         if position.base_asset_amount!=0:
             if market_index is None or position.market_index == int(market_index):
-                market = markets[market_index]
+                market = markets[position.market_index]
                 pnl += calculate_position_pnl(market, position)
 
     return pnl
@@ -37,7 +37,7 @@ def calculate_unrealised_pnl(user_position: UserPositions, markets: MarketsAccou
     for position in user_position:
         if position.base_asset_amount!=0:
             if market_index is None or position.market_index == int(market_index):
-                market = markets[market_index]
+                market = markets[position.market_index]
                 pnl += calculate_position_pnl(market, position)
 
     return pnl
@@ -56,7 +56,7 @@ def get_position_value(user_position: UserPositions, markets: MarketsAccount, ma
         for position in user_position:
             if position.base_asset_amount!=0:
                 if market_index is None or position.market_index == int(market_index):
-                    market = markets[market_index]
+                    market = markets[position.market_index]
                     value += calculate_base_asset_value(market, position)
         return value
 
