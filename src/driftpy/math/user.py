@@ -1,12 +1,13 @@
-from driftpy.src.driftpy.types import User, UserPositions
 from driftpy.types import (
     PositionDirection,
     Market,
     MarketsAccount,
     MarketPosition,
+    User, UserPositions
 )
 
-from driftpy.math.amm import calculate_mark_price, calculate_amm_reserves_after_swap, get_swap_direction
+from driftpy.math.market import calculate_mark_price
+from driftpy.math.amm import calculate_amm_reserves_after_swap, get_swap_direction
 from driftpy.math.positions import calculate_position_pnl, calculate_base_asset_value
 from driftpy.constants.numeric_constants import (
     MARK_PRICE_PRECISION,
@@ -23,28 +24,28 @@ from driftpy.math.amm import AssetType
 
 def calculate_unrealised_pnl(user_position: UserPositions, markets: MarketsAccount, market_index:int=None) -> int:
     pnl = 0
-    for position in user_position.positions:
+    for position in user_position:
         if position.base_asset_amount!=0:
             if market_index is None or position.market_index == int(market_index):
-                market = markets.markets[market_index]
+                market = markets[market_index]
                 pnl += calculate_position_pnl(market, position)
 
     return pnl
 
 def calculate_unrealised_pnl(user_position: UserPositions, markets: MarketsAccount, market_index:int=None) -> int:
     pnl = 0
-    for position in user_position.positions:
+    for position in user_position:
         if position.base_asset_amount!=0:
             if market_index is None or position.market_index == int(market_index):
-                market = markets.markets[market_index]
+                market = markets[market_index]
                 pnl += calculate_position_pnl(market, position)
 
     return pnl
 
 def get_total_position_value(user_position: UserPositions, markets: MarketsAccount,):
         value = 0
-        for position in user_position.positions:
-            market = markets.markets[position.market_index]
+        for position in user_position:
+            market = markets[position.market_index]
             value += calculate_base_asset_value(market, position)
 
         return value
@@ -52,10 +53,10 @@ def get_total_position_value(user_position: UserPositions, markets: MarketsAccou
 def get_position_value(user_position: UserPositions, markets: MarketsAccount, market_index:int):
         assert(market_index is None or int(market_index) >= 0)
         value = 0
-        for position in user_position.positions:
+        for position in user_position:
             if position.base_asset_amount!=0:
                 if market_index is None or position.market_index == int(market_index):
-                    market = markets.markets[market_index]
+                    market = markets[market_index]
                     value += calculate_base_asset_value(market, position)
         return value
 
@@ -64,22 +65,27 @@ def get_total_collateral(user_account: User, markets: MarketsAccount):
         return collateral + calculate_unrealised_pnl(user_account.positions, markets) 
 
 def get_margin_ratio(user_account: User, markets: MarketsAccount):
-        return get_total_collateral(user_account, markets) / get_total_position_value(user_account.positions, markets)
+        tpv = get_total_position_value(user_account.positions, markets)
+        if tpv > 0:
+            return get_total_collateral(user_account, markets) / tpv
+        else:
+            return 1e9
 
 def get_leverage(user_account: User, markets: MarketsAccount):
         return get_total_position_value(user_account.positions, markets) / get_total_collateral(user_account, markets)
 
 def get_free_collateral(user_account: User, markets: MarketsAccount):
-        return get_total_collateral(user_account, markets) - (get_margin_requirement('initial'))
+        return get_total_collateral(user_account, markets) - \
+        (get_margin_requirement(user_account.positions, markets, 'initial'))
 
 def get_margin_requirement(user_position: UserPositions, markets: MarketsAccount, kind: str):
         assert(kind in ['initial','partial', 'maintenance'])
         
         positions_account = user_position
         value = 0
-        for position in positions_account.positions:
+        for position in positions_account:
             if position.base_asset_amount!=0:
-                market = markets.markets[position.market_index]
+                market = markets[position.market_index]
                 mr = None
                 if kind == 'partial':
                     mr = market.margin_ratio_partial
@@ -108,7 +114,7 @@ def liquidation_price(user_account: User, markets: MarketsAccount, market_index:
 
         # this_level = partial_lev #if partial else maint_lev
 
-        market = markets.markets[market_index]
+        market = markets[market_index]
 
         position = user_account.positions
         if position.base_asset_amount > 0 and tpv < free_collateral:
