@@ -1,3 +1,4 @@
+from email.mime import base
 from driftpy.constants.numeric_constants import (
     # MARK_PRICE_PRECISION,
     PEG_PRECISION,
@@ -113,6 +114,26 @@ def get_swap_direction(
         return SwapDirection.REMOVE
 
     return SwapDirection.ADD
+
+
+def calculate_spread_reserves(
+    amm,
+    position_direction: PositionDirection):
+    BID_ASK_SPREAD_PRECISION = 1_000_000
+    base_spread = amm.base_spread
+
+    quote_asset_reserve_delta = 0
+    if base_spread > 0:
+        quote_asset_reserve_delta = amm.quote_asset_reserve / (BID_ASK_SPREAD_PRECISION / (base_spread / 4))
+    
+
+    if position_direction == PositionDirection.LONG:
+        quote_asset_reserve = amm.quote_asset_reserve + quote_asset_reserve_delta
+    else:
+        quote_asset_reserve = amm.quote_asset_reserve - quote_asset_reserve_delta
+
+    base_asset_reserve = (amm.sqrt_k**2)/quote_asset_reserve
+    return base_asset_reserve, quote_asset_reserve
 
 
 # async def main():
