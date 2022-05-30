@@ -115,28 +115,42 @@ class AMM:
     base_asset_reserve: int
     sqrt_k: int
     cumulative_funding_rate: int
+
     last_funding_rate: int
     last_funding_rate_ts: int
+
     last_mark_price_twap: int
     last_mark_price_twap_ts: int
+
     last_oracle_price_twap: int
     last_oracle_price_twap_ts: int
+
     oracle: PublicKey
     oracle_source: OracleSource
     funding_period: int
     quote_asset_reserve: int
     peg_multiplier: int
+
     cumulative_funding_rate_long: int
     cumulative_funding_rate_short: int
     cumulative_repeg_rebate_long: int
     cumulative_repeg_rebate_short: int
+
     total_fee_minus_distributions: int
     total_fee_withdrawn: int
     total_fee: int
+
     minimum_quote_asset_trade_size: int
     minimum_base_asset_trade_size: int
+
     last_oracle_price: int
     base_spread: int
+
+    last_mark_price_std: int
+    last_oracle_price_raw: int
+    last_oracle_price_conf: int
+    last_buy_intensity: int
+    last_sell_intensity: int
 
 
 @dataclass
