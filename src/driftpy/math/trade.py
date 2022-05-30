@@ -1,10 +1,12 @@
 import math
+from xmlrpc.client import boolean
 from driftpy.math.amm import (
     calculate_price,
     calculate_amm_reserves_after_swap,
+    calculate_spread_reserves,
     get_swap_direction,
 )
-from driftpy.math.market import calculate_mark_price
+from driftpy.math.market import calculate_ask_price, calculate_bid_price, calculate_mark_price
 
 from driftpy.constants.numeric_constants import (
     MARK_PRICE_PRECISION,
@@ -14,7 +16,7 @@ from driftpy.constants.numeric_constants import (
 
 # from driftpy.src.driftpy.constants.numeric_constants import AMM_RESERVE_PRECISION
 
-from driftpy.types import PositionDirection, Market, AssetType
+from driftpy.types import PositionDirection, Market, AssetType, AMM
 
 
 """"""
@@ -25,25 +27,38 @@ def calculate_trade_acquired_amounts(
     amount: int,
     market: Market,
     input_asset_type=AssetType,
+    use_spread: boolean = True,
 ):
     if amount == 0:
         return [0, 0]
+
+    amm = None
+    if use_spread:
+        base_asset_reserve, quote_asset_reserve = calculate_spread_reserves(
+                market.amm,
+                direction
+            )
+        amm = AMM(base_asset_reserve, quote_asset_reserve, sqrt_k=market.amm.sqrt_k, peg_multiplier=market.amm.peg_multiplier)
+    else:
+        amm = market.amm
+
+
 
     [
         new_quote_asset_reserve,
         new_base_asset_reserve,
     ] = calculate_amm_reserves_after_swap(
-        market.amm,
+        amm,
         input_asset_type,
         amount,
         get_swap_direction(input_asset_type, direction),
     )
 
-    acquired_base = market.amm.base_asset_reserve - new_base_asset_reserve
-    acquired_quote = market.amm.quote_asset_reserve - new_quote_asset_reserve
+    acquired_base = amm.base_asset_reserve - new_base_asset_reserve
+    acquired_quote = amm.quote_asset_reserve - new_quote_asset_reserve
 
-    if input_asset_type == AssetType.BASE and direction == PositionDirection.LONG:
-        acquired_quote -= 1  # round up
+    # if input_asset_type == AssetType.BASE and direction == PositionDirection.LONG:
+    #     acquired_quote -= 1  # round up
 
     return [acquired_base, acquired_quote]
 
@@ -56,9 +71,18 @@ def calculate_trade_slippage(
     amount: int,
     market: Market,
     input_asset_type: AssetType,
-):
+    use_spread: boolean = True,
 
-    old_price = calculate_mark_price(market)
+):
+    old_price = None
+    if use_spread:
+        if direction == PositionDirection.LONG:
+            old_price = calculate_ask_price(market)
+        else:
+            old_price = calculate_bid_price(market)
+    else:
+        old_price = calculate_mark_price(market)
+
     if amount == 0:
         return [0, 0, old_price, old_price]
 
@@ -71,9 +95,19 @@ def calculate_trade_slippage(
         market.amm.peg_multiplier,
     )
 
+    amm = None
+    if use_spread:
+        base_asset_reserve, quote_asset_reserve = calculate_spread_reserves(
+                market.amm,
+                direction
+            )
+        amm = AMM(base_asset_reserve, quote_asset_reserve, sqrt_k=market.amm.sqrt_k, peg_multiplier=market.amm.peg_multiplier)
+    else:
+        amm = market.amm
+
     new_price = calculate_price(
-        market.amm.base_asset_reserve - acquired_base,
-        market.amm.quote_asset_reserve - acquired_quote,
+        amm.base_asset_reserve - acquired_base,
+        amm.quote_asset_reserve - acquired_quote,
         market.amm.peg_multiplier,
     )
 
@@ -90,10 +124,12 @@ def calculate_trade_slippage(
 
 
 def calculate_target_price_trade(
-    market: Market, target_price: float, output_asset_type: AssetType
+    market: Market, target_price: float, output_asset_type: AssetType, use_spread: boolean = True
 ):
 
     mark_price_before = calculate_mark_price(market) * MARK_PRICE_PRECISION
+    bid_price_before = calculate_bid_price(market) * MARK_PRICE_PRECISION
+    ask_price_before = calculate_ask_price(market) * MARK_PRICE_PRECISION
 
     # if target_price > mark_price_before:
     #     price_gap = target_price - mark_price_before
@@ -102,8 +138,16 @@ def calculate_target_price_trade(
     #     price_gap = mark_price_before - target_price
     #     target_price = mark_price_before - price_gap
 
-    base_asset_reserve_before = market.amm.base_asset_reserve
-    quote_asset_reserve_before = market.amm.quote_asset_reserve
+    
+    if use_spread:
+        base_asset_reserve_before, quote_asset_reserve_before = calculate_spread_reserves(
+                market.amm,
+                direction
+            )        
+    else:
+        base_asset_reserve_before = market.amm.base_asset_reserve
+        quote_asset_reserve_before = market.amm.quote_asset_reserve
+
     peg = market.amm.peg_multiplier
     invariant = (float(market.amm.sqrt_k)) ** 2
     k = invariant * MARK_PRICE_PRECISION
