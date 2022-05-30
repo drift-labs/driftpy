@@ -131,10 +131,12 @@ def calculate_target_price_trade(
     bid_price_before = calculate_bid_price(market) * MARK_PRICE_PRECISION
     ask_price_before = calculate_ask_price(market) * MARK_PRICE_PRECISION
 
-    # if target_price > mark_price_before:
+    if target_price > mark_price_before:
     #     price_gap = target_price - mark_price_before
     #     target_price = mark_price_before + price_gap
-    # else:
+        direction = PositionDirection.LONG
+    else:
+        direction = PositionDirection.SHORT
     #     price_gap = mark_price_before - target_price
     #     target_price = mark_price_before - price_gap
 
@@ -153,7 +155,18 @@ def calculate_target_price_trade(
     k = invariant * MARK_PRICE_PRECISION
     bias_modifier = 0
 
-    if mark_price_before > target_price:
+    
+    if (
+        use_spread and
+        target_price < ask_price_before and
+        target_price > bid_price_before):
+        if mark_price_before > target_price:
+            direction = PositionDirection.SHORT
+        else:
+            direction = PositionDirection.LONG
+        tradeSize = 0
+        return [direction, tradeSize, target_price, target_price];
+    elif mark_price_before > target_price:
         base_asset_reserve_after = (
             math.sqrt((k / target_price) * (peg / PEG_PRECISION) - bias_modifier) - 1
         )
