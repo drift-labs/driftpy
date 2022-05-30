@@ -118,13 +118,16 @@ def get_swap_direction(
 
 def calculate_spread_reserves(
     amm,
-    position_direction: PositionDirection):
-    BID_ASK_SPREAD_PRECISION = 1_000_000
-    base_spread = amm.base_spread
+    position_direction: PositionDirection,
+    spread = None
+    ):
+    BID_ASK_SPREAD_PRECISION = 1_000_000 #this is 100% (thus 1_000 = .1%)
+    if spread is None:
+        spread = amm.base_spread
 
     quote_asset_reserve_delta = 0
-    if base_spread > 0:
-        quote_asset_reserve_delta = amm.quote_asset_reserve / (BID_ASK_SPREAD_PRECISION / (base_spread / 4))
+    if spread > 0:
+        quote_asset_reserve_delta = amm.quote_asset_reserve / (BID_ASK_SPREAD_PRECISION / (spread / 4))
     
 
     if position_direction == PositionDirection.LONG:
