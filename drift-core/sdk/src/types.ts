@@ -40,6 +40,7 @@ export class OrderDiscountTier {
 export class OrderAction {
 	static readonly PLACE = { place: {} };
 	static readonly CANCEL = { cancel: {} };
+	static readonly EXPIRE = { expire: {} };
 	static readonly FILL = { fill: {} };
 }
 
@@ -153,7 +154,7 @@ export type TradeRecord = {
 	markPriceBefore: BN;
 	markPriceAfter: BN;
 	fee: BN;
-	referrerReward: BN;
+	quoteAssetAmountSurplus: BN;
 	refereeDiscount: BN;
 	tokenDiscount: BN;
 	marketIndex: BN;
@@ -217,6 +218,7 @@ export type OrderRecord = {
 	fee: BN;
 	fillerReward: BN;
 	tradeRecordId: BN;
+	quoteAssetAmountSurplus: BN;
 };
 
 export type StateAccount = {
@@ -266,6 +268,13 @@ export type OrderStateAccount = {
 	minOrderQuoteAssetAmount: BN;
 };
 
+export type SettlementStateAccount = {
+	totalSettlementValue: BN;
+	collateralAvailableToClaim: BN;
+	collateralClaimed: BN;
+	enabled: boolean;
+};
+
 export type MarketsAccount = {
 	markets: Market[];
 };
@@ -307,6 +316,7 @@ export type AMM = {
 	minimumQuoteAssetTradeSize: BN;
 	minimumBaseAssetTradeSize: BN;
 	lastOraclePrice: BN;
+	baseSpread: number;
 };
 
 // # User Account Types
@@ -329,9 +339,15 @@ export type UserAccount = {
 	cumulativeDeposits: BN;
 	positions: PublicKey;
 	totalFeePaid: BN;
+	totalFeeRebate: BN;
 	totalTokenDiscount: BN;
 	totalReferralReward: BN;
 	totalRefereeDiscount: BN;
+	settledPositionValue: BN;
+	collateralClaimed: BN;
+	lastCollateralAvailableToClaim: BN;
+	forgoPositionSettlement: number;
+	hasSettledPosition: number;
 };
 
 export type UserOrdersAccount = {

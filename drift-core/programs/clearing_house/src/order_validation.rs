@@ -1,39 +1,31 @@
 use crate::controller::position::PositionDirection;
-use crate::error::*;
+use crate::error::{ClearingHouseResult, ErrorCode};
 use crate::math::constants::*;
 use crate::math::quote_asset::asset_to_reserve_amount;
-use crate::state::market::Market;
+use crate::state::market::{Market, Markets};
 use crate::state::order_state::OrderState;
 use crate::state::user_orders::{Order, OrderTriggerCondition, OrderType};
 
+use crate::context::OrderParams;
+use crate::math::orders::calculate_base_asset_amount_to_trade_for_limit;
+use crate::state::user::{MarketPosition, User, UserPositions};
 use solana_program::msg;
+
+use crate::math::margin::meets_initial_margin_requirement;
+use std::cell::{Ref, RefMut};
 use std::ops::Div;
 
 pub fn validate_order(
     order: &Order,
     market: &Market,
     order_state: &OrderState,
+    valid_oracle_price: Option<i128>,
 ) -> ClearingHouseResult {
     match order.order_type {
         OrderType::Market => validate_market_order(order, market)?,
-        OrderType::Limit => validate_limit_order(order, market, order_state)?,
+        OrderType::Limit => validate_limit_order(order, market, order_state, valid_oracle_price)?,
         OrderType::TriggerMarket => validate_trigger_market_order(order, market, order_state)?,
         OrderType::TriggerLimit => validate_trigger_limit_order(order, market, order_state)?,
-    }
-
-    if order.immediate_or_cancel {
-        msg!("immediate_or_cancel not supported yet");
-        return Err(ErrorCode::InvalidOrder);
-    }
-
-    if order.post_only {
-        msg!("post_only not supported yet");
-        return Err(ErrorCode::InvalidOrder);
-    }
-
-    if order.oracle_price_offset != 0 {
-        msg!("oracle_price_offset not supported yet");
-        return Err(ErrorCode::InvalidOrder);
     }
 
     Ok(())
@@ -56,6 +48,21 @@ fn validate_market_order(order: &Order, market: &Market) -> ClearingHouseResult 
         return Err(ErrorCode::InvalidOrder);
     }
 
+    if order.post_only {
+        msg!("Market order can not be post only");
+        return Err(ErrorCode::InvalidOrder);
+    }
+
+    if order.has_oracle_price_offset() {
+        msg!("Market order can not have oracle offset");
+        return Err(ErrorCode::InvalidOrder);
+    }
+
+    if order.immediate_or_cancel {
+        msg!("Market order can not be immediate or cancel");
+        return Err(ErrorCode::InvalidOrder);
+    }
+
     Ok(())
 }
 
@@ -63,12 +70,23 @@ fn validate_limit_order(
     order: &Order,
     market: &Market,
     order_state: &OrderState,
+    valid_oracle_price: Option<i128>,
 ) -> ClearingHouseResult {
     validate_base_asset_amount(order, market)?;
 
-    if order.price == 0 {
+    if order.price == 0 && !order.has_oracle_price_offset() {
         msg!("Limit order price == 0");
         return Err(ErrorCode::InvalidOrder);
+    }
+
+    if order.has_oracle_price_offset() {
+        if order.post_only && order.price == 0 {
+            msg!("Limit order price must not be 0 for post only oracle offset order");
+            return Err(ErrorCode::InvalidOrder);
+        } else if !order.post_only && order.price != 0 {
+            msg!("Limit order price must be 0 for taker oracle offset order");
+            return Err(ErrorCode::InvalidOrder);
+        }
     }
 
     if order.trigger_price > 0 {
@@ -81,16 +99,38 @@ fn validate_limit_order(
         return Err(ErrorCode::InvalidOrder);
     }
 
-    let approximate_market_value = order
-        .price
+    if order.post_only {
+        validate_post_only_order(order, market, valid_oracle_price)?;
+    }
+
+    let limit_price = order.get_limit_price(valid_oracle_price)?;
+    let approximate_market_value = limit_price
         .checked_mul(order.base_asset_amount)
-        .or(Some(u128::MAX))
-        .unwrap()
+        .unwrap_or(u128::MAX)
         .div(AMM_RESERVE_PRECISION)
         .div(MARK_PRICE_PRECISION / QUOTE_PRECISION);
 
     if approximate_market_value < order_state.min_order_quote_asset_amount {
         msg!("Order value < $0.50 ({:?})", approximate_market_value);
+        return Err(ErrorCode::InvalidOrder);
+    }
+
+    Ok(())
+}
+
+fn validate_post_only_order(
+    order: &Order,
+    market: &Market,
+    valid_oracle_price: Option<i128>,
+) -> ClearingHouseResult {
+    let base_asset_amount_market_can_fill =
+        calculate_base_asset_amount_to_trade_for_limit(order, market, valid_oracle_price)?;
+
+    if base_asset_amount_market_can_fill != 0 {
+        msg!(
+            "Post-only order can immediately fill {} base asset amount",
+            base_asset_amount_market_can_fill
+        );
         return Err(ErrorCode::InvalidOrder);
     }
 
@@ -119,6 +159,16 @@ fn validate_trigger_limit_order(
         return Err(ErrorCode::InvalidOrder);
     }
 
+    if order.post_only {
+        msg!("Trigger limit order can not be post only");
+        return Err(ErrorCode::InvalidOrder);
+    }
+
+    if order.has_oracle_price_offset() {
+        msg!("Trigger limit can not have oracle offset");
+        return Err(ErrorCode::InvalidOrder);
+    }
+
     match order.trigger_condition {
         OrderTriggerCondition::Above => {
             if order.direction == PositionDirection::Long && order.price < order.trigger_price {
@@ -137,8 +187,7 @@ fn validate_trigger_limit_order(
     let approximate_market_value = order
         .price
         .checked_mul(order.base_asset_amount)
-        .or(Some(u128::MAX))
-        .unwrap()
+        .unwrap_or(u128::MAX)
         .div(AMM_RESERVE_PRECISION)
         .div(MARK_PRICE_PRECISION / QUOTE_PRECISION);
 
@@ -172,11 +221,20 @@ fn validate_trigger_market_order(
         return Err(ErrorCode::InvalidOrder);
     }
 
+    if order.post_only {
+        msg!("Trigger market order can not be post only");
+        return Err(ErrorCode::InvalidOrder);
+    }
+
+    if order.has_oracle_price_offset() {
+        msg!("Trigger market order can not have oracle offset");
+        return Err(ErrorCode::InvalidOrder);
+    }
+
     let approximate_market_value = order
         .trigger_price
         .checked_mul(order.base_asset_amount)
-        .or(Some(u128::MAX))
-        .unwrap()
+        .unwrap_or(u128::MAX)
         .div(AMM_RESERVE_PRECISION)
         .div(MARK_PRICE_PRECISION / QUOTE_PRECISION);
 
@@ -218,4 +276,90 @@ fn validate_quote_asset_amount(order: &Order, market: &Market) -> ClearingHouseR
     }
 
     Ok(())
+}
+
+pub fn check_if_order_can_be_canceled(
+    order: &Order,
+    user: &User,
+    user_positions: &RefMut<UserPositions>,
+    markets: &Ref<Markets>,
+    valid_oracle_price: Option<i128>,
+) -> ClearingHouseResult<bool> {
+    if !order.post_only {
+        return Ok(true);
+    }
+
+    let base_asset_amount_market_can_fill = calculate_base_asset_amount_to_trade_for_limit(
+        order,
+        markets.get_market(order.market_index),
+        valid_oracle_price,
+    )?;
+
+    if base_asset_amount_market_can_fill > 0 {
+        let meets_initial_margin_requirement =
+            meets_initial_margin_requirement(user, user_positions, markets)?;
+
+        if meets_initial_margin_requirement {
+            msg!(
+                "Cant cancel as post only order={:?} can be filled for {:?} base asset amount",
+                order.order_id,
+                base_asset_amount_market_can_fill,
+            );
+
+            return Ok(false);
+        }
+    }
+
+    Ok(true)
+}
+
+pub fn validate_order_can_be_canceled(
+    order: &Order,
+    user: &User,
+    user_positions: &RefMut<UserPositions>,
+    markets: &Ref<Markets>,
+    valid_oracle_price: Option<i128>,
+) -> ClearingHouseResult {
+    let is_cancelable =
+        check_if_order_can_be_canceled(order, user, user_positions, markets, valid_oracle_price)?;
+
+    if !is_cancelable {
+        return Err(ErrorCode::CantCancelPostOnlyOrder);
+    }
+
+    Ok(())
+}
+
+pub fn get_base_asset_amount_for_order(
+    params: &OrderParams,
+    market: &Market,
+    position: &MarketPosition,
+) -> u128 {
+    // if the order isnt reduce only or it doesnt specify base asset amount, return early
+    if !params.reduce_only || params.base_asset_amount == 0 {
+        return params.base_asset_amount;
+    }
+
+    // check that order reduces existing position
+    if params.direction == PositionDirection::Long && position.base_asset_amount >= 0 {
+        return params.base_asset_amount;
+    }
+    if params.direction == PositionDirection::Short && position.base_asset_amount <= 0 {
+        return params.base_asset_amount;
+    }
+
+    // find the absolute difference between order base asset amount and order base asset amount
+    let current_position_size = position.base_asset_amount.unsigned_abs();
+    let difference = if current_position_size >= params.base_asset_amount {
+        current_position_size - params.base_asset_amount
+    } else {
+        params.base_asset_amount - current_position_size
+    };
+
+    // if it leaves less than the markets minimum base size, round the order size to be the same as current position
+    if difference <= market.amm.minimum_base_asset_trade_size {
+        current_position_size
+    } else {
+        params.base_asset_amount
+    }
 }

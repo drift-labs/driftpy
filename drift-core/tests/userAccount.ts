@@ -12,7 +12,7 @@ import { assert } from 'chai';
 import { MAX_LEVERAGE, PositionDirection } from '../sdk/src';
 
 describe('User Account', () => {
-	const provider = anchor.Provider.local();
+	const provider = anchor.AnchorProvider.local();
 	const connection = provider.connection;
 	anchor.setProvider(provider);
 	const chProgram = anchor.workspace.ClearingHouse as Program;
@@ -92,7 +92,7 @@ describe('User Account', () => {
 	) => {
 		// todo: dont hate me
 		await userAccount.fetchAccounts();
-		const buyingPower = userAccount.getBuyingPower();
+		const buyingPower = userAccount.getBuyingPower(new BN(0));
 		assert(buyingPower.eq(expectedBuyingPower));
 		const pnl = userAccount.getUnrealizedPNL();
 		assert(pnl.eq(expectedPNL));

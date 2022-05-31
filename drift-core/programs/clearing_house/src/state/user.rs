@@ -1,33 +1,45 @@
 use anchor_lang::prelude::*;
 
+// space: 224
 #[account]
 #[derive(Default)]
+#[repr(packed)]
 pub struct User {
     pub authority: Pubkey,
     pub collateral: u128,
     pub cumulative_deposits: i128,
-    pub total_fee_paid: u128,
+    pub total_fee_paid: u64,
+    pub total_fee_rebate: u64,
     pub total_token_discount: u128,
     pub total_referral_reward: u128,
     pub total_referee_discount: u128,
     pub positions: Pubkey,
 
+    // position settlement
+    pub settled_position_value: u128,
+    pub collateral_claimed: u64,
+    pub last_collateral_available_to_claim: u64,
+    pub forgo_position_settlement: u8,
+    pub has_settled_position: u8,
+
     // upgrade-ability
-    pub padding0: u128,
     pub padding1: u128,
-    pub padding2: u128,
-    pub padding3: u128,
+    pub padding2: [u8; 14],
 }
 
+// space: 1072
 #[account(zero_copy)]
 #[derive(Default)]
+#[repr(packed)]
 pub struct UserPositions {
     pub user: Pubkey,
     pub positions: [MarketPosition; 5],
 }
 
+// SPACE: 1040
 #[zero_copy]
 #[derive(Default)]
+#[repr(packed)]
 pub struct MarketPosition {
     pub market_index: u64,
     pub base_asset_amount: i128,

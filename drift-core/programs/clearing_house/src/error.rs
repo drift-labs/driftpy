@@ -2,7 +2,7 @@ use anchor_lang::prelude::*;
 
 pub type ClearingHouseResult<T = ()> = std::result::Result<T, ErrorCode>;
 
-#[error]
+#[error_code]
 pub enum ErrorCode {
     #[msg("Clearing house not collateral account owner")]
     InvalidCollateralAccountAuthority,
@@ -120,6 +120,20 @@ pub enum ErrorCode {
     NoPositionsLiquidatable,
     #[msg("Invalid Margin Ratio")]
     InvalidMarginRatio,
+    #[msg("Cant Cancel Post Only Order")]
+    CantCancelPostOnlyOrder,
+    #[msg("InvalidOracleOffset")]
+    InvalidOracleOffset,
+    #[msg("CantExpireOrders")]
+    CantExpireOrders,
+    #[msg("UserMustForgoSettlement")]
+    UserMustForgoSettlement,
+    #[msg("NoAvailableCollateralToBeClaimed")]
+    NoAvailableCollateralToBeClaimed,
+    #[msg("SettlementNotEnabled")]
+    SettlementNotEnabled,
+    #[msg("MustCallSettlePositionFirst")]
+    MustCallSettlePositionFirst,
 }
 
 #[macro_export]
@@ -137,7 +151,7 @@ macro_rules! print_error {
 macro_rules! math_error {
     () => {{
         || {
-            let error_code = ErrorCode::MathError;
+            let error_code = $crate::error::ErrorCode::MathError;
             msg!("Error {} thrown at {}:{}", error_code, file!(), line!());
             error_code
         }

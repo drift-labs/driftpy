@@ -1,4 +1,4 @@
-use crate::error::*;
+use crate::error::{ClearingHouseResult, ErrorCode};
 use crate::math::collateral::calculate_updated_collateral;
 use crate::math::constants::MARGIN_PRECISION;
 use crate::math::position::{
@@ -21,12 +21,20 @@ use solana_program::msg;
 use std::collections::BTreeMap;
 use std::ops::Div;
 
-pub fn meets_initial_margin_requirement(
+#[derive(Copy, Clone)]
+pub enum MarginType {
+    Init,
+    Partial,
+    Maint,
+}
+
+pub fn calculate_margin_requirement_and_total_collateral(
     user: &User,
-    user_positions: &RefMut<UserPositions>,
-    markets: &Ref<Markets>,
-) -> ClearingHouseResult<bool> {
-    let mut initial_margin_requirement: u128 = 0;
+    user_positions: &UserPositions,
+    markets: &Markets,
+    margin_type: MarginType,
+) -> ClearingHouseResult<(u128, u128)> {
+    let mut margin_requirement: u128 = 0;
     let mut unrealized_pnl: i128 = 0;
 
     for market_position in user_positions.positions.iter() {
@@ -39,10 +47,12 @@ pub fn meets_initial_margin_requirement(
         let (position_base_asset_value, position_unrealized_pnl) =
             calculate_base_asset_value_and_pnl(market_position, amm)?;
 
-        initial_margin_requirement = initial_margin_requirement
+        let margin_ratio = market.get_margin_ratio(margin_type);
+
+        margin_requirement = margin_requirement
             .checked_add(
                 position_base_asset_value
-                    .checked_mul(market.margin_ratio_initial.into())
+                    .checked_mul(margin_ratio.into())
                     .ok_or_else(math_error!())?,
             )
             .ok_or_else(math_error!())?;
@@ -52,13 +62,49 @@ pub fn meets_initial_margin_requirement(
             .ok_or_else(math_error!())?;
     }
 
+    let total_collateral = calculate_updated_collateral(user.collateral, unrealized_pnl)?;
+
+    Ok((margin_requirement, total_collateral))
+}
+
+pub fn meets_initial_margin_requirement(
+    user: &User,
+    user_positions: &RefMut<UserPositions>,
+    markets: &Ref<Markets>,
+) -> ClearingHouseResult<bool> {
+    let (mut initial_margin_requirement, total_collateral) =
+        calculate_margin_requirement_and_total_collateral(
+            user,
+            user_positions,
+            markets,
+            MarginType::Init,
+        )?;
+
     initial_margin_requirement = initial_margin_requirement
         .checked_div(MARGIN_PRECISION)
         .ok_or_else(math_error!())?;
 
-    let total_collateral = calculate_updated_collateral(user.collateral, unrealized_pnl)?;
-
     Ok(total_collateral >= initial_margin_requirement)
+}
+
+pub fn meets_partial_margin_requirement(
+    user: &User,
+    user_positions: &RefMut<UserPositions>,
+    markets: &Ref<Markets>,
+) -> ClearingHouseResult<bool> {
+    let (mut partial_margin_requirement, total_collateral) =
+        calculate_margin_requirement_and_total_collateral(
+            user,
+            user_positions,
+            markets,
+            MarginType::Partial,
+        )?;
+
+    partial_margin_requirement = partial_margin_requirement
+        .checked_div(MARGIN_PRECISION)
+        .ok_or_else(math_error!())?;
+
+    Ok(total_collateral >= partial_margin_requirement)
 }
 
 #[derive(PartialEq)]

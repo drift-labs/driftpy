@@ -1,6 +1,7 @@
 import { Commitment, Connection, PublicKey } from '@solana/web3.js';
 import { v4 as uuidv4 } from 'uuid';
 import { AccountData } from './types';
+import { promiseTimeout } from '../util/promiseTimeout';
 
 type AccountToLoad = {
 	publicKey: PublicKey;
@@ -8,6 +9,8 @@ type AccountToLoad = {
 };
 
 const GET_MULTIPLE_ACCOUNTS_CHUNK_SIZE = 99;
+
+const oneMinute = 60 * 1000;
 
 export class BulkAccountLoader {
 	connection: Connection;
@@ -20,7 +23,8 @@ export class BulkAccountLoader {
 	// to handle clients spamming load
 	loadPromise?: Promise<void>;
 	loadPromiseResolver: () => void;
-	loggingEnabled = false;
+	lastTimeLoadingPromiseCleared = Date.now();
+	mostRecentSlot = 0;
 
 	public constructor(
 		connection: Connection,
@@ -95,15 +99,18 @@ export class BulkAccountLoader {
 
 	public async load(): Promise<void> {
 		if (this.loadPromise) {
-			return this.loadPromise;
+			const now = Date.now();
+			if (now - this.lastTimeLoadingPromiseCleared > oneMinute) {
+				this.loadPromise = undefined;
+			} else {
+				return this.loadPromise;
+			}
 		}
+
 		this.loadPromise = new Promise((resolver) => {
 			this.loadPromiseResolver = resolver;
 		});
-
-		if (this.loggingEnabled) {
-			console.log('Loading accounts');
-		}
+		this.lastTimeLoadingPromiseCleared = Date.now();
 
 		try {
 			const chunks = this.chunks(
@@ -140,13 +147,22 @@ export class BulkAccountLoader {
 			{ commitment: this.commitment },
 		];
 
-		// @ts-ignore
-		const rpcResponse = await this.connection._rpcRequest(
-			'getMultipleAccounts',
-			args
+		const rpcResponse: any | null = await promiseTimeout(
+			// @ts-ignore
+			this.connection._rpcRequest('getMultipleAccounts', args),
+			10 * 1000 // 30 second timeout
 		);
 
+		if (rpcResponse === null) {
+			this.log('request to rpc timed out');
+			return;
+		}
+
 		const newSlot = rpcResponse.result.context.slot;
+
+		if (newSlot > this.mostRecentSlot) {
+			this.mostRecentSlot = newSlot;
+		}
 
 		for (const i in accountsToLoad) {
 			const accountToLoad = accountsToLoad[i];
@@ -200,10 +216,6 @@ export class BulkAccountLoader {
 			return;
 		}
 
-		if (this.loggingEnabled) {
-			console.log(`startPolling`);
-		}
-
 		this.intervalId = setInterval(this.load.bind(this), this.pollingFrequency);
 	}
 
@@ -211,10 +223,18 @@ export class BulkAccountLoader {
 		if (this.intervalId) {
 			clearInterval(this.intervalId);
 			this.intervalId = undefined;
+		}
+	}
 
-			if (this.loggingEnabled) {
-				console.log(`stopPolling`);
-			}
+	public log(msg: string): void {
+		console.log(msg);
+	}
+
+	public updatePollingFrequency(pollingFrequency: number): void {
+		this.stopPolling();
+		this.pollingFrequency = pollingFrequency;
+		if (this.accountsToLoad.size > 0) {
+			this.startPolling();
 		}
 	}
 }
