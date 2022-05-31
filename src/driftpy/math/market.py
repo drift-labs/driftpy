@@ -9,10 +9,20 @@ def calculate_mark_price(market):
         market.amm.peg_multiplier,
     )
 
+
 def calculate_bid_price(market):
-    base_asset_reserves, quote_asset_reserves = calculate_spread_reserves(market.amm, PositionDirection.SHORT)
-    return calculate_price(base_asset_reserves, quote_asset_reserves, market.amm.peg_multiplier)
+    base_asset_reserves, quote_asset_reserves = calculate_spread_reserves(
+        market.amm, PositionDirection.SHORT
+    )
+    return calculate_price(
+        base_asset_reserves, quote_asset_reserves, market.amm.peg_multiplier
+    )
+
 
 def calculate_ask_price(market):
-    base_asset_reserves, quote_asset_reserves = calculate_spread_reserves(market.amm, PositionDirection.LONG)
-    return calculate_price(base_asset_reserves, quote_asset_reserves, market.amm.peg_multiplier)
+    base_asset_reserves, quote_asset_reserves = calculate_spread_reserves(
+        market.amm, PositionDirection.LONG
+    )
+    return calculate_price(
+        base_asset_reserves, quote_asset_reserves, market.amm.peg_multiplier
+    )

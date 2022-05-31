@@ -113,7 +113,7 @@ MARKETS: list[Market] = [
         devnet_pyth_oracle="WMW5xc3HypXwTnPesyUT49uLsyHwNURsWAEk39onKuk",
         mainnet_pyth_oracle="WMW5xc3HypXwTnPesyUT49uLsyHwNURsWAEk39onKuk",
         # launchTs: 1647543166000,
-		# oracleSource: OracleSource.SWITCHBOARD,    
+        # oracleSource: OracleSource.SWITCHBOARD,
     ),
     Market(
         symbol="APE-PERP",
@@ -122,7 +122,7 @@ MARKETS: list[Market] = [
         devnet_pyth_oracle="AwH6kBrJbkL9JTeqRd7Q59EdWh6UjPtoqoA5M4x4K2fA",
         mainnet_pyth_oracle="74zeQpprjNtEghGiC3VEPsR9y4kR2GTd4Rq9YVk9tnjz",
         # launchTs: 1648475932000,
-		# oracleSource: OracleSource.SWITCHBOARD,    
+        # oracleSource: OracleSource.SWITCHBOARD,
     ),
     Market(
         symbol="DOGE-PERP",
@@ -131,7 +131,7 @@ MARKETS: list[Market] = [
         devnet_pyth_oracle="4L6YhY8VvUgmqG5MvJkUJATtzB2rFqdrJwQCmFLv4Jzy",
         mainnet_pyth_oracle="FsSM3s38PX9K7Dn6eGzuE29S2Dsk1Sss1baytTQdCaQj",
         # launchTs: 1648607439000,
-		# oracleSource: OracleSource.PYTH,    
+        # oracleSource: OracleSource.PYTH,
     ),
     Market(
         symbol="NEAR-PERP",
@@ -140,25 +140,25 @@ MARKETS: list[Market] = [
         devnet_pyth_oracle="3gnSbT7bhoTdGkFVZc1dW1PvjreWzpUNUD5ppXwv1N59",
         mainnet_pyth_oracle="ECSFWQ1bnnpqPVvoy9237t2wddZAaHisW88mYxuEHKWf",
         # launchTs: 1649105516000,
-		# oracleSource: OracleSource.PYTH,    
+        # oracleSource: OracleSource.PYTH,
     ),
-     Market(
+    Market(
         symbol="SRM-PERP",
         base_asset_symbol="SRM",
         market_index=17,
         devnet_pyth_oracle="992moaMQKs32GKZ9dxi8keyM2bUmbrwBZpK4p2K6X5Vs",
         mainnet_pyth_oracle="3NBReDRTLKMQEKiLD5tGcx4kXbTf88b7f2xLS9UuGjym",
         # launchTs: 1649105516000,
-		# oracleSource: OracleSource.PYTH,
+        # oracleSource: OracleSource.PYTH,
     ),
-     Market(
+    Market(
         symbol="GMT-PERP",
         base_asset_symbol="GMT",
         market_index=18,
         devnet_pyth_oracle="7GBoA2oGXMTepYjFgrdHyYVGcPs4FWskUF7S1dGzQsY9",
         mainnet_pyth_oracle="81kbdwDfTNsg4d5D1BxE9FHEdxEMk8xCJUj5ujjWQyvd",
         # launchTs: 1649105516000,
-		# oracleSource: OracleSource.PYTH,
+        # oracleSource: OracleSource.PYTH,
     ),
     Market(
         symbol="CRV-PERP",
@@ -167,15 +167,15 @@ MARKETS: list[Market] = [
         devnet_pyth_oracle="AuEiE5XG5kD1NFoKgEPrWuN9CdT44A3K7yGDuiUPvh9S",
         mainnet_pyth_oracle="61NzdQ9y6KhMhWxyJ8kXEe25NxdixVL1YUnGYLDMaUxH",
         # launchTs: 1649105516000,
-		# oracleSource: OracleSource.PYTH,
+        # oracleSource: OracleSource.PYTH,
     ),
-     Market(
+    Market(
         symbol="FTM-PERP",
         base_asset_symbol="FTM",
         market_index=20,
-		devnet_pyth_oracle='BTwrLU4so1oJMViWA3BTzh8YmFwiLZ6CL4U3JryG7Q5S',
-		mainnet_pyth_oracle='7Dn52EY5EGE8Nvvw98KVMGPWTiTGn3PF4y24TVLyXdT9',
-		# launchTs: 1651559653000,
-		# oracleSource: OracleSource.PYTH,
+        devnet_pyth_oracle="BTwrLU4so1oJMViWA3BTzh8YmFwiLZ6CL4U3JryG7Q5S",
+        mainnet_pyth_oracle="7Dn52EY5EGE8Nvvw98KVMGPWTiTGn3PF4y24TVLyXdT9",
+        # launchTs: 1651559653000,
+        # oracleSource: OracleSource.PYTH,
     ),
 ]

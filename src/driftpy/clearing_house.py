@@ -557,7 +557,6 @@ class ClearingHouse:
                 )
             )
 
-
         state = (
             await self.get_state_account() if state_account is None else state_account
         )
@@ -733,8 +732,7 @@ class ClearingHouse:
                     "order_state": self.get_order_state_public_key(),
                     "order_history": orders_state.order_history,
                 },
-            remaining_accounts=remaining_accounts,
-
+                remaining_accounts=remaining_accounts,
             ),
         )
 
@@ -743,7 +741,9 @@ class ClearingHouse:
             return self.user_account
 
         user_account_pubkey = self.get_user_account_public_key()
-        self.user_account = cast(User, await self.program.account["User"].fetch(user_account_pubkey))
+        self.user_account = cast(
+            User, await self.program.account["User"].fetch(user_account_pubkey)
+        )
         return self.user_account
 
     async def get_close_position_ix(

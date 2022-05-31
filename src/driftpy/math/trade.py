@@ -6,7 +6,11 @@ from driftpy.math.amm import (
     calculate_spread_reserves,
     get_swap_direction,
 )
-from driftpy.math.market import calculate_ask_price, calculate_bid_price, calculate_mark_price
+from driftpy.math.market import (
+    calculate_ask_price,
+    calculate_bid_price,
+    calculate_mark_price,
+)
 
 from driftpy.constants.numeric_constants import (
     MARK_PRICE_PRECISION,
@@ -35,14 +39,16 @@ def calculate_trade_acquired_amounts(
     amm = None
     if use_spread:
         base_asset_reserve, quote_asset_reserve = calculate_spread_reserves(
-                market.amm,
-                direction
-            )
-        amm = AMM(base_asset_reserve, quote_asset_reserve, sqrt_k=market.amm.sqrt_k, peg_multiplier=market.amm.peg_multiplier)
+            market.amm, direction
+        )
+        amm = AMM(
+            base_asset_reserve,
+            quote_asset_reserve,
+            sqrt_k=market.amm.sqrt_k,
+            peg_multiplier=market.amm.peg_multiplier,
+        )
     else:
         amm = market.amm
-
-
 
     [
         new_quote_asset_reserve,
@@ -72,7 +78,6 @@ def calculate_trade_slippage(
     market: Market,
     input_asset_type: AssetType,
     use_spread: boolean = True,
-
 ):
     old_price = None
     if use_spread:
@@ -98,10 +103,14 @@ def calculate_trade_slippage(
     amm = None
     if use_spread:
         base_asset_reserve, quote_asset_reserve = calculate_spread_reserves(
-                market.amm,
-                direction
-            )
-        amm = AMM(base_asset_reserve, quote_asset_reserve, sqrt_k=market.amm.sqrt_k, peg_multiplier=market.amm.peg_multiplier)
+            market.amm, direction
+        )
+        amm = AMM(
+            base_asset_reserve,
+            quote_asset_reserve,
+            sqrt_k=market.amm.sqrt_k,
+            peg_multiplier=market.amm.peg_multiplier,
+        )
     else:
         amm = market.amm
 
@@ -124,7 +133,10 @@ def calculate_trade_slippage(
 
 
 def calculate_target_price_trade(
-    market: Market, target_price: float, output_asset_type: AssetType, use_spread: boolean = True
+    market: Market,
+    target_price: float,
+    output_asset_type: AssetType,
+    use_spread: boolean = True,
 ):
 
     mark_price_before = calculate_mark_price(market) * MARK_PRICE_PRECISION
@@ -132,20 +144,19 @@ def calculate_target_price_trade(
     ask_price_before = calculate_ask_price(market) * MARK_PRICE_PRECISION
 
     if target_price > mark_price_before:
-    #     price_gap = target_price - mark_price_before
-    #     target_price = mark_price_before + price_gap
+        #     price_gap = target_price - mark_price_before
+        #     target_price = mark_price_before + price_gap
         direction = PositionDirection.LONG
     else:
         direction = PositionDirection.SHORT
     #     price_gap = mark_price_before - target_price
     #     target_price = mark_price_before - price_gap
 
-    
     if use_spread:
-        base_asset_reserve_before, quote_asset_reserve_before = calculate_spread_reserves(
-                market.amm,
-                direction
-            )        
+        (
+            base_asset_reserve_before,
+            quote_asset_reserve_before,
+        ) = calculate_spread_reserves(market.amm, direction)
     else:
         base_asset_reserve_before = market.amm.base_asset_reserve
         quote_asset_reserve_before = market.amm.quote_asset_reserve
@@ -155,17 +166,17 @@ def calculate_target_price_trade(
     k = invariant * MARK_PRICE_PRECISION
     bias_modifier = 0
 
-    
     if (
-        use_spread and
-        target_price < ask_price_before and
-        target_price > bid_price_before):
+        use_spread
+        and target_price < ask_price_before
+        and target_price > bid_price_before
+    ):
         if mark_price_before > target_price:
             direction = PositionDirection.SHORT
         else:
             direction = PositionDirection.LONG
         tradeSize = 0
-        return [direction, tradeSize, target_price, target_price];
+        return [direction, tradeSize, target_price, target_price]
     elif mark_price_before > target_price:
         base_asset_reserve_after = (
             math.sqrt((k / target_price) * (peg / PEG_PRECISION) - bias_modifier) - 1

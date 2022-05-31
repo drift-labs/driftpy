@@ -89,13 +89,13 @@ class ClearingHouseUser:
             market_index, 0, 0, 0, 0, 0, 0, 0, 0, 0, PublicKey(0), 0, 0
         )
 
-    async def get_unrealised_pnl(self, market_index: int=None):
-        assert(market_index is None or int(market_index) >= 0)
+    async def get_unrealised_pnl(self, market_index: int = None):
+        assert market_index is None or int(market_index) >= 0
         positions_account = await self.get_user_positions_account()
 
         pnl = 0
         for position in positions_account.positions:
-            if position.base_asset_amount!=0:
+            if position.base_asset_amount != 0:
                 if market_index is None or position.market_index == int(market_index):
                     market = await self.clearing_house.get_market(
                         position.market_index
@@ -123,12 +123,12 @@ class ClearingHouseUser:
 
         return value
 
-    async def get_position_value(self, market_index: int=None):
-        assert(market_index is None or int(market_index) >= 0)
+    async def get_position_value(self, market_index: int = None):
+        assert market_index is None or int(market_index) >= 0
         positions_account = await self.get_user_positions_account()
         value = 0
         for position in positions_account.positions:
-            if position.base_asset_amount!=0:
+            if position.base_asset_amount != 0:
                 if market_index is None or position.market_index == int(market_index):
                     market = await self.clearing_house.get_market(
                         position.market_index
@@ -146,33 +146,35 @@ class ClearingHouseUser:
 
     async def get_free_collateral(self):
         return (await self.get_total_collateral()) - (
-            (await self.get_margin_requirement('initial')) 
+            (await self.get_margin_requirement("initial"))
         )
 
     async def get_margin_requirement(self, kind):
-        assert(kind in ['initial','partial', 'maintenance'])
-        
+        assert kind in ["initial", "partial", "maintenance"]
+
         positions_account = await self.get_user_positions_account()
         value = 0
         for position in positions_account.positions:
-            if position.base_asset_amount!=0:
+            if position.base_asset_amount != 0:
                 market = await self.clearing_house.get_market(
                     position.market_index
                 )  # todo repeat querying
 
                 mr = None
-                if kind == 'partial':
+                if kind == "partial":
                     mr = market.margin_ratio_partial
-                elif kind == 'initial':
+                elif kind == "initial":
                     mr = market.margin_ratio_initial
                 else:
                     mr = market.margin_ratio_maintenance
 
-                value += (calculate_base_asset_value(market, position) *  (mr / 10000))
+                value += calculate_base_asset_value(market, position) * (mr / 10000)
         return value
 
     async def can_be_liquidated(self):
-        return (await self.get_total_collateral() <= await self.get_margin_requirement('partial'))
+        return await self.get_total_collateral() <= await self.get_margin_requirement(
+            "partial"
+        )
 
     async def liquidation_price(self, market_index: int):
         # todo
