@@ -52,11 +52,21 @@ export class PollingUserAccountSubscriber implements UserAccountSubscriber {
 		}
 
 		await this.addToAccountLoader();
-		await this.fetchIfUnloaded();
-		this.eventEmitter.emit('update');
 
-		this.isSubscribed = true;
-		return true;
+		let subscriptionSucceeded = false;
+		let retries = 0;
+		while (!subscriptionSucceeded && retries < 5) {
+			await this.fetchIfUnloaded();
+			subscriptionSucceeded = this.didSubscriptionSucceed();
+			retries++;
+		}
+
+		if (subscriptionSucceeded) {
+			this.eventEmitter.emit('update');
+		}
+
+		this.isSubscribed = subscriptionSucceeded;
+		return subscriptionSucceeded;
 	}
 
 	async addToAccountLoader(userPublicKeys?: UserPublicKeys): Promise<void> {
@@ -166,6 +176,18 @@ export class PollingUserAccountSubscriber implements UserAccountSubscriber {
 				].coder.accounts.decode(capitalize(accountToPoll.key), buffer);
 			}
 		}
+	}
+
+	didSubscriptionSucceed(): boolean {
+		let success = true;
+		for (const [_, accountToPoll] of this.accountsToPoll) {
+			// userOrders may not exist
+			if (accountToPoll.key !== 'userOrders' && !this[accountToPoll.key]) {
+				success = false;
+				break;
+			}
+		}
+		return success;
 	}
 
 	async unsubscribe(): Promise<void> {

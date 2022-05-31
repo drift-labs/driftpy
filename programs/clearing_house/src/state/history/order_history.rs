@@ -3,6 +3,7 @@ use anchor_lang::prelude::*;
 use borsh::{BorshDeserialize, BorshSerialize};
 
 #[account(zero_copy)]
+#[repr(packed)]
 pub struct OrderHistory {
     head: u64,
     pub last_order_id: u128,
@@ -34,6 +35,7 @@ impl OrderHistory {
 
 #[zero_copy]
 #[derive(Default)]
+#[repr(packed)]
 pub struct OrderRecord {
     pub ts: i64,
     pub record_id: u128,
@@ -45,9 +47,10 @@ pub struct OrderRecord {
     pub trade_record_id: u128,
     pub base_asset_amount_filled: u128,
     pub quote_asset_amount_filled: u128,
-    pub fee: u128,
+    pub fee: i128,
     pub filler_reward: u128,
-    pub padding: [u64; 10],
+    pub quote_asset_amount_surplus: u128,
+    pub padding: [u64; 8],
 }
 
 #[derive(Clone, Copy, BorshSerialize, BorshDeserialize, PartialEq)]
@@ -55,6 +58,7 @@ pub enum OrderAction {
     Place,
     Cancel,
     Fill,
+    Expire,
 }
 
 impl Default for OrderAction {

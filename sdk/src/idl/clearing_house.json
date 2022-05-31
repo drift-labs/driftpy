@@ -7,7 +7,7 @@
       "accounts": [
         {
           "name": "admin",
-          "isMut": false,
+          "isMut": true,
           "isSigner": true
         },
         {
@@ -131,7 +131,7 @@
       "accounts": [
         {
           "name": "admin",
-          "isMut": false,
+          "isMut": true,
           "isSigner": true
         },
         {
@@ -211,6 +211,12 @@
         {
           "name": "ammPegMultiplier",
           "type": "u128"
+        },
+        {
+          "name": "oracleSource",
+          "type": {
+            "defined": "OracleSource"
+          }
         },
         {
           "name": "marginRatioInitial",
@@ -670,6 +676,174 @@
           "type": "u8"
         }
       ]
+    },
+    {
+      "name": "cancelAllOrders",
+      "accounts": [
+        {
+          "name": "state",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "orderState",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "user",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "authority",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "markets",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "userPositions",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "userOrders",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "fundingPaymentHistory",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "orderHistory",
+          "isMut": true,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "bestEffort",
+          "type": "bool"
+        }
+      ]
+    },
+    {
+      "name": "cancelOrdersByMarketAndSide",
+      "accounts": [
+        {
+          "name": "state",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "orderState",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "user",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "authority",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "markets",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "userPositions",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "userOrders",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "fundingPaymentHistory",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "orderHistory",
+          "isMut": true,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "bestEffort",
+          "type": "bool"
+        },
+        {
+          "name": "marketIndexOnly",
+          "type": "u64"
+        },
+        {
+          "name": "directionOnly",
+          "type": {
+            "defined": "PositionDirection"
+          }
+        }
+      ]
+    },
+    {
+      "name": "expireOrders",
+      "accounts": [
+        {
+          "name": "state",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "orderState",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "authority",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "filler",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "user",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "userPositions",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "userOrders",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "orderHistory",
+          "isMut": true,
+          "isSigner": false
+        }
+      ],
+      "args": []
     },
     {
       "name": "fillOrder",
@@ -1312,7 +1486,7 @@
         },
         {
           "name": "authority",
-          "isMut": false,
+          "isMut": true,
           "isSigner": true
         },
         {
@@ -1378,27 +1552,6 @@
           "type": "u8"
         }
       ]
-    },
-    {
-      "name": "deleteUser",
-      "accounts": [
-        {
-          "name": "user",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "userPositions",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "authority",
-          "isMut": false,
-          "isSigner": true
-        }
-      ],
-      "args": []
     },
     {
       "name": "settleFundingPayment",
@@ -1824,6 +1977,36 @@
       ]
     },
     {
+      "name": "updateMarketBaseSpread",
+      "accounts": [
+        {
+          "name": "admin",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "state",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "markets",
+          "isMut": true,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "marketIndex",
+          "type": "u64"
+        },
+        {
+          "name": "baseSpread",
+          "type": "u16"
+        }
+      ]
+    },
+    {
       "name": "updateMarketMinimumBaseAssetTradeSize",
       "accounts": [
         {
@@ -1994,6 +2177,259 @@
           "type": "bool"
         }
       ]
+    },
+    {
+      "name": "adminUpdateUserForgoSettlement",
+      "accounts": [
+        {
+          "name": "admin",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "state",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "user",
+          "isMut": true,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "updateUserForgoSettlement",
+      "accounts": [
+        {
+          "name": "authority",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "user",
+          "isMut": true,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "initializeSettlementState",
+      "accounts": [
+        {
+          "name": "admin",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "state",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "settlementState",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "rent",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "collateralVault",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "collateralToBeSettled",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "updateSettlementState",
+      "accounts": [
+        {
+          "name": "admin",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "state",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "settlementState",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "collateralVault",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "updateSettlementStateEnabled",
+      "accounts": [
+        {
+          "name": "admin",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "state",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "settlementState",
+          "isMut": true,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "enabled",
+          "type": "bool"
+        }
+      ]
+    },
+    {
+      "name": "settlePosition",
+      "accounts": [
+        {
+          "name": "state",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "settlementState",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "user",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "authority",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "userPositions",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "markets",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "fundingPaymentHistory",
+          "isMut": true,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "claimCollateral",
+      "accounts": [
+        {
+          "name": "state",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "settlementState",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "user",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "authority",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "collateralVault",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "collateralVaultAuthority",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "userCollateralAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "transferFromInsuranceVaultToCollateralVault",
+      "accounts": [
+        {
+          "name": "state",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "admin",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "collateralVault",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "insuranceVault",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "insuranceVaultAuthority",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": []
     }
   ],
   "accounts": [
@@ -2213,6 +2649,30 @@
       }
     },
     {
+      "name": "SettlementState",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "totalSettlementValue",
+            "type": "u64"
+          },
+          {
+            "name": "collateralAvailableToClaim",
+            "type": "u64"
+          },
+          {
+            "name": "collateralClaimed",
+            "type": "u64"
+          },
+          {
+            "name": "enabled",
+            "type": "bool"
+          }
+        ]
+      }
+    },
+    {
       "name": "State",
       "type": {
         "kind": "struct",
@@ -2426,7 +2886,11 @@
           },
           {
             "name": "totalFeePaid",
-            "type": "u128"
+            "type": "u64"
+          },
+          {
+            "name": "totalFeeRebate",
+            "type": "u64"
           },
           {
             "name": "totalTokenDiscount",
@@ -2445,8 +2909,24 @@
             "type": "publicKey"
           },
           {
-            "name": "padding0",
+            "name": "settledPositionValue",
             "type": "u128"
+          },
+          {
+            "name": "collateralClaimed",
+            "type": "u64"
+          },
+          {
+            "name": "lastCollateralAvailableToClaim",
+            "type": "u64"
+          },
+          {
+            "name": "forgoPositionSettlement",
+            "type": "u8"
+          },
+          {
+            "name": "hasSettledPosition",
+            "type": "u8"
           },
           {
             "name": "padding1",
@@ -2454,11 +2934,12 @@
           },
           {
             "name": "padding2",
-            "type": "u128"
-          },
-          {
-            "name": "padding3",
-            "type": "u128"
+            "type": {
+              "array": [
+                "u8",
+                14
+              ]
+            }
           }
         ]
       }
@@ -2610,7 +3091,7 @@
           },
           {
             "name": "oraclePriceOffset",
-            "type": "u128"
+            "type": "i128"
           },
           {
             "name": "padding0",
@@ -3184,8 +3665,16 @@
             "type": "u128"
           },
           {
+            "name": "baseSpread",
+            "type": "u16"
+          },
+          {
+            "name": "padding0",
+            "type": "u16"
+          },
+          {
             "name": "padding1",
-            "type": "u64"
+            "type": "u32"
           },
           {
             "name": "padding2",
@@ -3249,10 +3738,14 @@
           },
           {
             "name": "fee",
-            "type": "u128"
+            "type": "i128"
           },
           {
             "name": "fillerReward",
+            "type": "u128"
+          },
+          {
+            "name": "quoteAssetAmountSurplus",
             "type": "u128"
           },
           {
@@ -3260,7 +3753,7 @@
             "type": {
               "array": [
                 "u64",
-                10
+                8
               ]
             }
           }
@@ -3496,10 +3989,10 @@
           },
           {
             "name": "fee",
-            "type": "u128"
+            "type": "i128"
           },
           {
-            "name": "referrerReward",
+            "name": "quoteAssetAmountSurplus",
             "type": "u128"
           },
           {
@@ -3648,7 +4141,7 @@
           },
           {
             "name": "fee",
-            "type": "u128"
+            "type": "i128"
           },
           {
             "name": "direction",
@@ -3747,6 +4240,226 @@
       }
     },
     {
+      "name": "ErrorCode",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "InvalidCollateralAccountAuthority"
+          },
+          {
+            "name": "InvalidInsuranceAccountAuthority"
+          },
+          {
+            "name": "InsufficientDeposit"
+          },
+          {
+            "name": "InsufficientCollateral"
+          },
+          {
+            "name": "SufficientCollateral"
+          },
+          {
+            "name": "MaxNumberOfPositions"
+          },
+          {
+            "name": "AdminControlsPricesDisabled"
+          },
+          {
+            "name": "MarketIndexNotInitialized"
+          },
+          {
+            "name": "MarketIndexAlreadyInitialized"
+          },
+          {
+            "name": "UserAccountAndUserPositionsAccountMismatch"
+          },
+          {
+            "name": "UserHasNoPositionInMarket"
+          },
+          {
+            "name": "InvalidInitialPeg"
+          },
+          {
+            "name": "InvalidRepegRedundant"
+          },
+          {
+            "name": "InvalidRepegDirection"
+          },
+          {
+            "name": "InvalidRepegProfitability"
+          },
+          {
+            "name": "SlippageOutsideLimit"
+          },
+          {
+            "name": "TradeSizeTooSmall"
+          },
+          {
+            "name": "InvalidUpdateK"
+          },
+          {
+            "name": "AdminWithdrawTooLarge"
+          },
+          {
+            "name": "MathError"
+          },
+          {
+            "name": "BnConversionError"
+          },
+          {
+            "name": "ClockUnavailable"
+          },
+          {
+            "name": "UnableToLoadOracle"
+          },
+          {
+            "name": "OracleMarkSpreadLimit"
+          },
+          {
+            "name": "HistoryAlreadyInitialized"
+          },
+          {
+            "name": "ExchangePaused"
+          },
+          {
+            "name": "InvalidWhitelistToken"
+          },
+          {
+            "name": "WhitelistTokenNotFound"
+          },
+          {
+            "name": "InvalidDiscountToken"
+          },
+          {
+            "name": "DiscountTokenNotFound"
+          },
+          {
+            "name": "InvalidReferrer"
+          },
+          {
+            "name": "ReferrerNotFound"
+          },
+          {
+            "name": "InvalidOracle"
+          },
+          {
+            "name": "OracleNotFound"
+          },
+          {
+            "name": "LiquidationsBlockedByOracle"
+          },
+          {
+            "name": "UserMaxDeposit"
+          },
+          {
+            "name": "CantDeleteUserWithCollateral"
+          },
+          {
+            "name": "InvalidFundingProfitability"
+          },
+          {
+            "name": "CastingFailure"
+          },
+          {
+            "name": "InvalidOrder"
+          },
+          {
+            "name": "UserHasNoOrder"
+          },
+          {
+            "name": "OrderAmountTooSmall"
+          },
+          {
+            "name": "MaxNumberOfOrders"
+          },
+          {
+            "name": "OrderDoesNotExist"
+          },
+          {
+            "name": "OrderNotOpen"
+          },
+          {
+            "name": "CouldNotFillOrder"
+          },
+          {
+            "name": "ReduceOnlyOrderIncreasedRisk"
+          },
+          {
+            "name": "OrderStateAlreadyInitialized"
+          },
+          {
+            "name": "UnableToLoadAccountLoader"
+          },
+          {
+            "name": "TradeSizeTooLarge"
+          },
+          {
+            "name": "UnableToWriteToRemainingAccount"
+          },
+          {
+            "name": "UserCantReferThemselves"
+          },
+          {
+            "name": "DidNotReceiveExpectedReferrer"
+          },
+          {
+            "name": "CouldNotDeserializeReferrer"
+          },
+          {
+            "name": "MarketOrderMustBeInPlaceAndFill"
+          },
+          {
+            "name": "UserOrderIdAlreadyInUse"
+          },
+          {
+            "name": "NoPositionsLiquidatable"
+          },
+          {
+            "name": "InvalidMarginRatio"
+          },
+          {
+            "name": "CantCancelPostOnlyOrder"
+          },
+          {
+            "name": "InvalidOracleOffset"
+          },
+          {
+            "name": "CantExpireOrders"
+          },
+          {
+            "name": "UserMustForgoSettlement"
+          },
+          {
+            "name": "NoAvailableCollateralToBeClaimed"
+          },
+          {
+            "name": "SettlementNotEnabled"
+          },
+          {
+            "name": "MustCallSettlePositionFirst"
+          }
+        ]
+      }
+    },
+    {
+      "name": "MarginType",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Init"
+          },
+          {
+            "name": "Partial"
+          },
+          {
+            "name": "Maint"
+          }
+        ]
+      }
+    },
+    {
       "name": "LiquidationType",
       "type": {
         "kind": "enum",
@@ -3790,6 +4503,9 @@
           },
           {
             "name": "Fill"
+          },
+          {
+            "name": "Expire"
           }
         ]
       }
@@ -3878,298 +4594,6 @@
           }
         ]
       }
-    }
-  ],
-  "errors": [
-    {
-      "code": 6000,
-      "name": "InvalidCollateralAccountAuthority",
-      "msg": "Clearing house not collateral account owner"
-    },
-    {
-      "code": 6001,
-      "name": "InvalidInsuranceAccountAuthority",
-      "msg": "Clearing house not insurance account owner"
-    },
-    {
-      "code": 6002,
-      "name": "InsufficientDeposit",
-      "msg": "Insufficient deposit"
-    },
-    {
-      "code": 6003,
-      "name": "InsufficientCollateral",
-      "msg": "Insufficient collateral"
-    },
-    {
-      "code": 6004,
-      "name": "SufficientCollateral",
-      "msg": "Sufficient collateral"
-    },
-    {
-      "code": 6005,
-      "name": "MaxNumberOfPositions",
-      "msg": "Max number of positions taken"
-    },
-    {
-      "code": 6006,
-      "name": "AdminControlsPricesDisabled",
-      "msg": "Admin Controls Prices Disabled"
-    },
-    {
-      "code": 6007,
-      "name": "MarketIndexNotInitialized",
-      "msg": "Market Index Not Initialized"
-    },
-    {
-      "code": 6008,
-      "name": "MarketIndexAlreadyInitialized",
-      "msg": "Market Index Already Initialized"
-    },
-    {
-      "code": 6009,
-      "name": "UserAccountAndUserPositionsAccountMismatch",
-      "msg": "User Account And User Positions Account Mismatch"
-    },
-    {
-      "code": 6010,
-      "name": "UserHasNoPositionInMarket",
-      "msg": "User Has No Position In Market"
-    },
-    {
-      "code": 6011,
-      "name": "InvalidInitialPeg",
-      "msg": "Invalid Initial Peg"
-    },
-    {
-      "code": 6012,
-      "name": "InvalidRepegRedundant",
-      "msg": "AMM repeg already configured with amt given"
-    },
-    {
-      "code": 6013,
-      "name": "InvalidRepegDirection",
-      "msg": "AMM repeg incorrect repeg direction"
-    },
-    {
-      "code": 6014,
-      "name": "InvalidRepegProfitability",
-      "msg": "AMM repeg out of bounds pnl"
-    },
-    {
-      "code": 6015,
-      "name": "SlippageOutsideLimit",
-      "msg": "Slippage Outside Limit Price"
-    },
-    {
-      "code": 6016,
-      "name": "TradeSizeTooSmall",
-      "msg": "Trade Size Too Small"
-    },
-    {
-      "code": 6017,
-      "name": "InvalidUpdateK",
-      "msg": "Price change too large when updating K"
-    },
-    {
-      "code": 6018,
-      "name": "AdminWithdrawTooLarge",
-      "msg": "Admin tried to withdraw amount larger than fees collected"
-    },
-    {
-      "code": 6019,
-      "name": "MathError",
-      "msg": "Math Error"
-    },
-    {
-      "code": 6020,
-      "name": "BnConversionError",
-      "msg": "Conversion to u128/u64 failed with an overflow or underflow"
-    },
-    {
-      "code": 6021,
-      "name": "ClockUnavailable",
-      "msg": "Clock unavailable"
-    },
-    {
-      "code": 6022,
-      "name": "UnableToLoadOracle",
-      "msg": "Unable To Load Oracles"
-    },
-    {
-      "code": 6023,
-      "name": "OracleMarkSpreadLimit",
-      "msg": "Oracle/Mark Spread Too Large"
-    },
-    {
-      "code": 6024,
-      "name": "HistoryAlreadyInitialized",
-      "msg": "Clearing House history already initialized"
-    },
-    {
-      "code": 6025,
-      "name": "ExchangePaused",
-      "msg": "Exchange is paused"
-    },
-    {
-      "code": 6026,
-      "name": "InvalidWhitelistToken",
-      "msg": "Invalid whitelist token"
-    },
-    {
-      "code": 6027,
-      "name": "WhitelistTokenNotFound",
-      "msg": "Whitelist token not found"
-    },
-    {
-      "code": 6028,
-      "name": "InvalidDiscountToken",
-      "msg": "Invalid discount token"
-    },
-    {
-      "code": 6029,
-      "name": "DiscountTokenNotFound",
-      "msg": "Discount token not found"
-    },
-    {
-      "code": 6030,
-      "name": "InvalidReferrer",
-      "msg": "Invalid referrer"
-    },
-    {
-      "code": 6031,
-      "name": "ReferrerNotFound",
-      "msg": "Referrer not found"
-    },
-    {
-      "code": 6032,
-      "name": "InvalidOracle",
-      "msg": "InvalidOracle"
-    },
-    {
-      "code": 6033,
-      "name": "OracleNotFound",
-      "msg": "OracleNotFound"
-    },
-    {
-      "code": 6034,
-      "name": "LiquidationsBlockedByOracle",
-      "msg": "Liquidations Blocked By Oracle"
-    },
-    {
-      "code": 6035,
-      "name": "UserMaxDeposit",
-      "msg": "Can not deposit more than max deposit"
-    },
-    {
-      "code": 6036,
-      "name": "CantDeleteUserWithCollateral",
-      "msg": "Can not delete user that still has collateral"
-    },
-    {
-      "code": 6037,
-      "name": "InvalidFundingProfitability",
-      "msg": "AMM funding out of bounds pnl"
-    },
-    {
-      "code": 6038,
-      "name": "CastingFailure",
-      "msg": "Casting Failure"
-    },
-    {
-      "code": 6039,
-      "name": "InvalidOrder",
-      "msg": "Invalid Order"
-    },
-    {
-      "code": 6040,
-      "name": "UserHasNoOrder",
-      "msg": "User has no order"
-    },
-    {
-      "code": 6041,
-      "name": "OrderAmountTooSmall",
-      "msg": "Order Amount Too Small"
-    },
-    {
-      "code": 6042,
-      "name": "MaxNumberOfOrders",
-      "msg": "Max number of orders taken"
-    },
-    {
-      "code": 6043,
-      "name": "OrderDoesNotExist",
-      "msg": "Order does not exist"
-    },
-    {
-      "code": 6044,
-      "name": "OrderNotOpen",
-      "msg": "Order not open"
-    },
-    {
-      "code": 6045,
-      "name": "CouldNotFillOrder",
-      "msg": "CouldNotFillOrder"
-    },
-    {
-      "code": 6046,
-      "name": "ReduceOnlyOrderIncreasedRisk",
-      "msg": "Reduce only order increased risk"
-    },
-    {
-      "code": 6047,
-      "name": "OrderStateAlreadyInitialized",
-      "msg": "Order state already initialized"
-    },
-    {
-      "code": 6048,
-      "name": "UnableToLoadAccountLoader",
-      "msg": "Unable to load AccountLoader"
-    },
-    {
-      "code": 6049,
-      "name": "TradeSizeTooLarge",
-      "msg": "Trade Size Too Large"
-    },
-    {
-      "code": 6050,
-      "name": "UnableToWriteToRemainingAccount",
-      "msg": "Unable to write to remaining account"
-    },
-    {
-      "code": 6051,
-      "name": "UserCantReferThemselves",
-      "msg": "User cant refer themselves"
-    },
-    {
-      "code": 6052,
-      "name": "DidNotReceiveExpectedReferrer",
-      "msg": "Did not receive expected referrer"
-    },
-    {
-      "code": 6053,
-      "name": "CouldNotDeserializeReferrer",
-      "msg": "Could not deserialize referrer"
-    },
-    {
-      "code": 6054,
-      "name": "MarketOrderMustBeInPlaceAndFill",
-      "msg": "Market order must be in place and fill"
-    },
-    {
-      "code": 6055,
-      "name": "UserOrderIdAlreadyInUse",
-      "msg": "User Order Id Already In Use"
-    },
-    {
-      "code": 6056,
-      "name": "NoPositionsLiquidatable",
-      "msg": "No positions liquidatable"
-    },
-    {
-      "code": 6057,
-      "name": "InvalidMarginRatio",
-      "msg": "Invalid Margin Ratio"
     }
   ]
 }

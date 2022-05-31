@@ -8,8 +8,9 @@ import {
 	SignatureResult,
 	Transaction,
 	TransactionSignature,
+	Connection,
 } from '@solana/web3.js';
-import { Provider } from '@project-serum/anchor';
+import { AnchorProvider } from '@project-serum/anchor';
 import assert from 'assert';
 import bs58 from 'bs58';
 
@@ -21,18 +22,21 @@ type ResolveReference = {
 };
 
 export class RetryTxSender implements TxSender {
-	provider: Provider;
+	provider: AnchorProvider;
 	timeout: number;
 	retrySleep: number;
+	additionalConnections: Connection[];
 
 	public constructor(
-		provider: Provider,
+		provider: AnchorProvider,
 		timeout?: number,
-		retrySleep?: number
+		retrySleep?: number,
+		additionalConnections = new Array<Connection>()
 	) {
 		this.provider = provider;
 		this.timeout = timeout ?? DEFAULT_TIMEOUT;
 		this.retrySleep = retrySleep ?? DEFAULT_RETRY;
+		this.additionalConnections = additionalConnections;
 	}
 
 	async send(
@@ -54,6 +58,7 @@ export class RetryTxSender implements TxSender {
 
 		const txid: TransactionSignature =
 			await this.provider.connection.sendRawTransaction(rawTransaction, opts);
+		this.sendToAdditionalConnections(rawTransaction, opts);
 
 		let done = false;
 		const resolveReference: ResolveReference = {
@@ -76,6 +81,7 @@ export class RetryTxSender implements TxSender {
 							console.error(e);
 							stopWaiting();
 						});
+					this.sendToAdditionalConnections(rawTransaction, opts);
 				}
 			}
 		})();
@@ -130,32 +136,43 @@ export class RetryTxSender implements TxSender {
 		const start = Date.now();
 		const subscriptionCommitment = commitment || this.provider.opts.commitment;
 
-		let subscriptionId;
+		const subscriptionIds = new Array<number>();
+		const connections = [
+			this.provider.connection,
+			...this.additionalConnections,
+		];
 		let response: RpcResponseAndContext<SignatureResult> | null = null;
-		const confirmPromise = new Promise((resolve, reject) => {
-			try {
-				subscriptionId = this.provider.connection.onSignature(
-					signature,
-					(result: SignatureResult, context: Context) => {
-						subscriptionId = undefined;
-						response = {
-							context,
-							value: result,
-						};
-						resolve(null);
-					},
-					subscriptionCommitment
-				);
-			} catch (err) {
-				reject(err);
-			}
+		const promises = connections.map((connection, i) => {
+			let subscriptionId;
+			const confirmPromise = new Promise((resolve, reject) => {
+				try {
+					subscriptionId = connection.onSignature(
+						signature,
+						(result: SignatureResult, context: Context) => {
+							subscriptionIds[i] = undefined;
+							response = {
+								context,
+								value: result,
+							};
+							resolve(null);
+						},
+						subscriptionCommitment
+					);
+				} catch (err) {
+					reject(err);
+				}
+			});
+			subscriptionIds.push(subscriptionId);
+			return confirmPromise;
 		});
 
 		try {
-			await this.promiseTimeout(confirmPromise, this.timeout);
+			await this.promiseTimeout(promises, this.timeout);
 		} finally {
-			if (subscriptionId) {
-				this.provider.connection.removeSignatureListener(subscriptionId);
+			for (const [i, subscriptionId] of subscriptionIds.entries()) {
+				if (subscriptionId) {
+					connections[i].removeSignatureListener(subscriptionId);
+				}
 			}
 		}
 
@@ -182,15 +199,44 @@ export class RetryTxSender implements TxSender {
 		});
 	}
 
-	promiseTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T | null> {
+	promiseTimeout<T>(
+		promises: Promise<T>[],
+		timeoutMs: number
+	): Promise<T | null> {
 		let timeoutId: ReturnType<typeof setTimeout>;
 		const timeoutPromise: Promise<null> = new Promise((resolve) => {
 			timeoutId = setTimeout(() => resolve(null), timeoutMs);
 		});
 
-		return Promise.race([promise, timeoutPromise]).then((result: T | null) => {
-			clearTimeout(timeoutId);
-			return result;
+		return Promise.race([...promises, timeoutPromise]).then(
+			(result: T | null) => {
+				clearTimeout(timeoutId);
+				return result;
+			}
+		);
+	}
+
+	sendToAdditionalConnections(rawTx: Buffer, opts: ConfirmOptions): void {
+		this.additionalConnections.map((connection) => {
+			connection.sendRawTransaction(rawTx, opts).catch((e) => {
+				console.error(
+					// @ts-ignore
+					`error sending tx to additional connection ${connection._rpcEndpoint}`
+				);
+				console.error(e);
+			});
 		});
+	}
+
+	public addAdditionalConnection(newConnection: Connection): void {
+		const alreadyUsingConnection =
+			this.additionalConnections.filter((connection) => {
+				// @ts-ignore
+				return connection._rpcEndpoint === newConnection.rpcEndpoint;
+			}).length > 0;
+
+		if (!alreadyUsingConnection) {
+			this.additionalConnections.push(newConnection);
+		}
 	}
 }

@@ -12,7 +12,7 @@ pub fn initialize(
     authority: &Signer,
     remaining_accounts: &[AccountInfo],
     optional_accounts: InitializeUserOptionalAccounts,
-) -> ProgramResult {
+) -> Result<()> {
     if !state.whitelist_mint.eq(&Pubkey::default()) {
         let whitelist_token =
             get_whitelist_token(optional_accounts, remaining_accounts, &state.whitelist_mint)?;
@@ -36,10 +36,13 @@ pub fn initialize(
     user.cumulative_deposits = 0;
     user.positions = *user_positions.to_account_info().key;
 
-    user.padding0 = 0;
+    user.collateral_claimed = 0;
+    user.last_collateral_available_to_claim = 0;
+    user.forgo_position_settlement = 0;
+    user.has_settled_position = 0;
+
     user.padding1 = 0;
-    user.padding2 = 0;
-    user.padding3 = 0;
+    user.padding2 = [0; 14];
 
     let user_positions = &mut user_positions.load_init()?;
     user_positions.user = *user.to_account_info().key;

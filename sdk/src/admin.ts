@@ -12,12 +12,14 @@ import {
 	OracleSource,
 	OrderFillerRewardStructure,
 } from './types';
-import { BN, Provider } from '@project-serum/anchor';
+import { BN, AnchorProvider } from '@project-serum/anchor';
 import * as anchor from '@project-serum/anchor';
 import {
 	getClearingHouseStateAccountPublicKey,
 	getClearingHouseStateAccountPublicKeyAndNonce,
 	getOrderStateAccountPublicKeyAndNonce,
+	getSettlementStatePublicKey,
+	getUserAccountPublicKey,
 } from './addresses';
 import { TOKEN_PROGRAM_ID } from '@solana/spl-token';
 import { ClearingHouse } from './clearingHouse';
@@ -34,7 +36,7 @@ export class Admin extends ClearingHouse {
 		connection: Connection,
 		wallet: IWallet,
 		clearingHouseProgramId: PublicKey,
-		opts: ConfirmOptions = Provider.defaultOptions()
+		opts: ConfirmOptions = AnchorProvider.defaultOptions()
 	): Admin {
 		const config = getWebSocketClearingHouseConfig(
 			connection,
@@ -217,6 +219,7 @@ export class Admin extends ClearingHouse {
 		quoteAssetReserve: BN,
 		periodicity: BN,
 		pegMultiplier: BN = PEG_PRECISION,
+		oracleSource: OracleSource = OracleSource.PYTH,
 		marginRatioInitial = 2000,
 		marginRatioPartial = 625,
 		marginRatioMaintenance = 500
@@ -231,6 +234,7 @@ export class Admin extends ClearingHouse {
 			quoteAssetReserve,
 			periodicity,
 			pegMultiplier,
+			oracleSource,
 			marginRatioInitial,
 			marginRatioPartial,
 			marginRatioMaintenance,
@@ -486,6 +490,23 @@ export class Admin extends ClearingHouse {
 		);
 	}
 
+	public async updateMarketBaseSpread(
+		marketIndex: BN,
+		baseSpread: number
+	): Promise<TransactionSignature> {
+		return await this.program.rpc.updateMarketBaseSpread(
+			marketIndex,
+			baseSpread,
+			{
+				accounts: {
+					admin: this.wallet.publicKey,
+					state: await this.getStatePublicKey(),
+					markets: this.getStateAccount().markets,
+				},
+			}
+		);
+	}
+
 	public async updatePartialLiquidationClosePercentage(
 		numerator: BN,
 		denominator: BN
@@ -711,6 +732,87 @@ export class Admin extends ClearingHouse {
 			accounts: {
 				admin: this.wallet.publicKey,
 				state: await this.getStatePublicKey(),
+			},
+		});
+	}
+
+	public async transferFromInsuranceVaultToCollateralVault(): Promise<TransactionSignature> {
+		const state = await this.getStateAccount();
+		return await this.program.rpc.transferFromInsuranceVaultToCollateralVault({
+			accounts: {
+				admin: this.wallet.publicKey,
+				state: await this.getStatePublicKey(),
+				insuranceVault: state.insuranceVault,
+				insuranceVaultAuthority: state.insuranceVaultAuthority,
+				collateralVault: state.collateralVault,
+				tokenProgram: TOKEN_PROGRAM_ID,
+			},
+		});
+	}
+
+	public async adminUpdateUserForgoSettlement(
+		authority: PublicKey
+	): Promise<TransactionSignature> {
+		const user = await getUserAccountPublicKey(
+			this.program.programId,
+			authority
+		);
+
+		return await this.program.rpc.adminUpdateUserForgoSettlement({
+			accounts: {
+				admin: this.wallet.publicKey,
+				state: await this.getStatePublicKey(),
+				user: user,
+			},
+		});
+	}
+
+	public async initializeSettlementState(): Promise<TransactionSignature> {
+		const settlementState = await getSettlementStatePublicKey(
+			this.program.programId
+		);
+
+		const settlementSize = await this.getTotalSettlementSize();
+
+		return await this.program.rpc.initializeSettlementState(settlementSize, {
+			accounts: {
+				admin: this.wallet.publicKey,
+				state: await this.getStatePublicKey(),
+				settlementState: settlementState,
+				rent: SYSVAR_RENT_PUBKEY,
+				systemProgram: anchor.web3.SystemProgram.programId,
+				collateralVault: (await this.getStateAccount()).collateralVault,
+			},
+		});
+	}
+
+	public async updateSettlementState(): Promise<TransactionSignature> {
+		const settlementState = await getSettlementStatePublicKey(
+			this.program.programId
+		);
+
+		return await this.program.rpc.updateSettlementState({
+			accounts: {
+				admin: this.wallet.publicKey,
+				state: await this.getStatePublicKey(),
+				settlementState: settlementState,
+				collateralVault: (await this.getStateAccount()).collateralVault,
+			},
+		});
+	}
+
+	public async updateSettlementStateEnabled(
+		enabled: boolean
+	): Promise<TransactionSignature> {
+		const settlementState = await getSettlementStatePublicKey(
+			this.program.programId
+		);
+
+		return await this.program.rpc.updateSettlementStateEnabled(enabled, {
+			accounts: {
+				admin: this.wallet.publicKey,
+				state: await this.getStatePublicKey(),
+				settlementState: settlementState,
 			},
 		});
 	}
