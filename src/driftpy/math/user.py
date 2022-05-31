@@ -21,6 +21,7 @@ from driftpy.constants.numeric_constants import (
     AMM_TIMES_PEG_TO_QUOTE_PRECISION_RATIO,
 )
 
+import numpy as np
 from driftpy.math.amm import AssetType
 
 
@@ -85,7 +86,7 @@ def get_margin_ratio(user_account: User, markets: MarketsAccount):
     if tpv > 0:
         return get_total_collateral(user_account, markets) / tpv
     else:
-        return 1e9
+        return np.nan
 
 
 def get_leverage(user_account: User, markets: MarketsAccount):

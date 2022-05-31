@@ -19,11 +19,11 @@ def calculate_terminal_price(market):
         SwapDirection.ADD if market.base_asset_amount > 0 else SwapDirection.REMOVE
     )
 
-    new_base_asset_amount, new_quote_asset_amount = calculate_swap_output(
+    new_quote_asset_amount, new_base_asset_amount = calculate_swap_output(
         market.amm.base_asset_reserve,
         abs(market.base_asset_amount),
         swap_direction,
-        market.amm.sqrt_k ** 2,
+        market.amm.sqrt_k,
     )
     # print(new_quote_asset_amount/new_base_asset_amount)
 
@@ -37,8 +37,9 @@ def calculate_terminal_price(market):
 
 
 def calculate_swap_output(
-    input_asset_reserve, swap_amount, swap_direction: SwapDirection, invariant
+    swap_amount, input_asset_reserve, swap_direction: SwapDirection, invariant_sqrt
 ):
+    invariant = invariant_sqrt*invariant_sqrt
     assert swap_direction in [
         SwapDirection.ADD,
         SwapDirection.REMOVE,
@@ -54,7 +55,7 @@ def calculate_swap_output(
         new_input_asset_reserve = input_asset_reserve - swap_amount
 
     new_output_asset_reserve = invariant / new_input_asset_reserve
-    return [new_input_asset_reserve, new_output_asset_reserve]
+    return [new_output_asset_reserve, new_input_asset_reserve]
 
 
 def calculate_amm_reserves_after_swap(
@@ -68,11 +69,11 @@ def calculate_amm_reserves_after_swap(
 
         # if swap_direction == PositionDirection.SHORT:
         #     swap_amount = swap_amount * (-1)
-        [new_quote_asset_reserve, new_base_asset_reserve] = calculate_swap_output(
-            amm.quote_asset_reserve,
+        [new_base_asset_reserve, new_quote_asset_reserve] = calculate_swap_output(
             swap_amount,
+            amm.quote_asset_reserve,
             swap_direction,
-            (amm.sqrt_k) ** 2,
+            amm.sqrt_k,
         )
 
     else:
@@ -80,11 +81,11 @@ def calculate_amm_reserves_after_swap(
         # if swap_direction == PositionDirection.LONG:
         #     swap_amount = swap_amount * (-1)
         # print(swap_amount, amm)
-        [new_base_asset_reserve, new_quote_asset_reserve] = calculate_swap_output(
-            amm.base_asset_reserve,
+        [new_quote_asset_reserve, new_base_asset_reserve] = calculate_swap_output(
             swap_amount,
+            amm.base_asset_reserve,
             swap_direction,
-            (amm.sqrt_k) ** 2,
+            amm.sqrt_k,
         )
 
     return [new_quote_asset_reserve, new_base_asset_reserve]
@@ -126,13 +127,15 @@ def calculate_spread_reserves(amm, position_direction: PositionDirection, spread
         quote_asset_reserve_delta = amm.quote_asset_reserve / (
             BID_ASK_SPREAD_PRECISION / (spread / 4)
         )
+    # print(quote_asset_reserve_delta)
 
     if position_direction == PositionDirection.LONG:
         quote_asset_reserve = amm.quote_asset_reserve + quote_asset_reserve_delta
     else:
         quote_asset_reserve = amm.quote_asset_reserve - quote_asset_reserve_delta
 
-    base_asset_reserve = (amm.sqrt_k ** 2) / quote_asset_reserve
+    base_asset_reserve = (amm.sqrt_k * amm.sqrt_k) / quote_asset_reserve
+    # print(base_asset_reserve, quote_asset_reserve, amm.sqrt_k)
     return base_asset_reserve, quote_asset_reserve
 
 
