@@ -1,11 +1,18 @@
 from email.mime import base
+from operator import pos
 from driftpy.constants.numeric_constants import (
-    # MARK_PRICE_PRECISION,
     PEG_PRECISION,
     AMM_TIMES_PEG_TO_QUOTE_PRECISION_RATIO,
+    MARK_PRICE_PRECISION
 )
-from driftpy.types import PositionDirection, AssetType, SwapDirection
+from driftpy.types import PositionDirection, AssetType, SwapDirection, AMM
 
+def calculate_mark_price_amm(amm: AMM):
+    return calculate_price(
+        amm.base_asset_reserve,
+        amm.quote_asset_reserve,
+        amm.peg_multiplier,
+    )
 
 def calculate_price(base_asset_amount, quote_asset_amount, peg_multiplier):
     if abs(base_asset_amount) <= 0:
@@ -119,8 +126,32 @@ def get_swap_direction(
 
 def calculate_spread_reserves(amm, position_direction: PositionDirection, spread=None):
     BID_ASK_SPREAD_PRECISION = 1_000_000  # this is 100% (thus 1_000 = .1%)
+    mark_price = calculate_mark_price_amm(amm)
     if spread is None:
         spread = amm.base_spread
+
+    if 'InventorySkew' in amm.strategies:
+        effective_position =  (amm.sqrt_k - amm.base_asset_reserve)
+        if position_direction == PositionDirection.LONG:
+            spread *= min(4, max(1,  (1 - effective_position/(amm.sqrt_k/100))))
+        else:
+            spread *= min(4, max(1, (1 + effective_position/(amm.sqrt_k/100))))
+    if 'OracleRetreat' in amm.strategies:
+        pct_delta =  float(amm.last_oracle_price - mark_price)/mark_price
+        # print(amm.last_oracle_price, mark_price, pct_delta, spread)
+        if pct_delta > 0 and position_direction == PositionDirection.LONG:
+            spread += abs(pct_delta)*1e6*2
+        elif pct_delta < 0 and position_direction == PositionDirection.SHORT:
+            spread += abs(pct_delta)*1e6*2
+        else:
+            #no retreat
+            pass
+            
+    if 'VolatilityScale' in amm.strategies:
+        spread *= min(2, max(1, amm.mark_std))
+
+
+    amm.last_spread = spread
 
     quote_asset_reserve_delta = 0
     if spread > 0:
