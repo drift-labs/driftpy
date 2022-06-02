@@ -14,6 +14,25 @@ def calculate_mark_price_amm(amm: AMM):
         amm.peg_multiplier,
     )
 
+def calculate_bid_price_amm(amm: AMM, oracle_price=None):
+    base_asset_reserves, quote_asset_reserves = calculate_spread_reserves(
+        amm, PositionDirection.SHORT,
+        oracle_price=oracle_price
+    )
+    return calculate_price(
+        base_asset_reserves, quote_asset_reserves, amm.peg_multiplier
+    )
+
+
+def calculate_ask_price_amm(amm: AMM, oracle_price=None):
+    base_asset_reserves, quote_asset_reserves = calculate_spread_reserves(
+        amm, PositionDirection.LONG,
+        oracle_price=oracle_price
+    )
+    return calculate_price(
+        base_asset_reserves, quote_asset_reserves, amm.peg_multiplier
+    )
+
 def calculate_price(base_asset_amount, quote_asset_amount, peg_multiplier):
     if abs(base_asset_amount) <= 0:
         return 0
@@ -66,7 +85,7 @@ def calculate_swap_output(
 
 
 def calculate_amm_reserves_after_swap(
-    amm, input_asset_type: AssetType, swap_amount, swap_direction: SwapDirection
+    amm, input_asset_type: AssetType, swap_amount, swap_direction: SwapDirection,
 ):
 
     if input_asset_type == AssetType.QUOTE:
@@ -124,7 +143,7 @@ def get_swap_direction(
     return SwapDirection.ADD
 
 
-def calculate_spread_reserves(amm, position_direction: PositionDirection, spread=None):
+def calculate_spread_reserves(amm, position_direction: PositionDirection, spread=None, oracle_price=None):
     BID_ASK_SPREAD_PRECISION = 1_000_000  # this is 100% (thus 1_000 = .1%)
     mark_price = calculate_mark_price_amm(amm)
     if spread is None:
@@ -137,19 +156,21 @@ def calculate_spread_reserves(amm, position_direction: PositionDirection, spread
         else:
             spread *= min(4, max(1, (1 + effective_position/(amm.sqrt_k/100))))
     if 'OracleRetreat' in amm.strategies:
-        pct_delta =  float(amm.last_oracle_price - mark_price)/mark_price
+        if oracle_price is None:
+            oracle_price = amm.last_oracle_price 
+        pct_delta =  float(oracle_price - mark_price)/mark_price
         # print(amm.last_oracle_price, mark_price, pct_delta, spread)
         if pct_delta > 0 and position_direction == PositionDirection.LONG:
-            spread += abs(pct_delta)*1e6*2
+            spread = max(spread, abs(pct_delta)*1e6*1.99)
         elif pct_delta < 0 and position_direction == PositionDirection.SHORT:
-            spread += abs(pct_delta)*1e6*2
+            spread = max(spread, abs(pct_delta)*1e6*1.99)
+
         else:
             #no retreat
             pass
             
     if 'VolatilityScale' in amm.strategies:
         spread *= min(2, max(1, amm.mark_std))
-
 
     amm.last_spread = spread
 

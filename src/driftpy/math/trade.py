@@ -137,11 +137,12 @@ def calculate_target_price_trade(
     target_price: float,
     output_asset_type: AssetType,
     use_spread: boolean = True,
+    oracle_price=None,
 ):
 
     mark_price_before = calculate_mark_price(market) * MARK_PRICE_PRECISION
-    bid_price_before = calculate_bid_price(market) * MARK_PRICE_PRECISION
-    ask_price_before = calculate_ask_price(market) * MARK_PRICE_PRECISION
+    bid_price_before = calculate_bid_price(market, oracle_price) * MARK_PRICE_PRECISION
+    ask_price_before = calculate_ask_price(market, oracle_price) * MARK_PRICE_PRECISION
 
     if target_price > mark_price_before:
         #     price_gap = target_price - mark_price_before
@@ -156,7 +157,7 @@ def calculate_target_price_trade(
         (
             base_asset_reserve_before,
             quote_asset_reserve_before,
-        ) = calculate_spread_reserves(market.amm, direction)
+        ) = calculate_spread_reserves(market.amm, direction, oracle_price=oracle_price)
     else:
         base_asset_reserve_before = market.amm.base_asset_reserve
         quote_asset_reserve_before = market.amm.quote_asset_reserve
