@@ -181,7 +181,8 @@ def calculate_buyout_cost(market, market_index, new_peg, sqrt_k):
 
 
 def calculate_repeg_cost(market, new_peg):
-    k = market.amm.sqrt_k ** 2
+    #todo strange rounding issues here
+    k = int(market.amm.sqrt_k) ** 2
     new_quote_reserves = k / (market.amm.base_asset_reserve + market.base_asset_amount)
     delta_quote_reserves = new_quote_reserves - market.amm.quote_asset_reserve
     cost2 = (

@@ -34,15 +34,17 @@ def calculate_capped_funding(market: Market):
     larger_side = max(
         abs(market.base_asset_amount_short), market.base_asset_amount_long
     )
-
+    
     next_funding = calculate_oracle_mark_spread_owed(market)
     funding_fee_pool = calculate_funding_fee_pool(market)
 
-    capped_funding = (
-        smaller_side * next_funding
-        + funding_fee_pool * MARK_PRICE_PRECISION * AMM_RESERVE_PRECISION
-    ) / larger_side
-
+    if larger_side != 0:
+        capped_funding = (
+            smaller_side * next_funding
+            + funding_fee_pool * MARK_PRICE_PRECISION * AMM_RESERVE_PRECISION
+        ) / larger_side
+    else:
+        capped_funding = next_funding
     # estimated capped amount above estimated next amount, then not a cap
     if abs(capped_funding) >= abs(next_funding):
         capped_funding = next_funding

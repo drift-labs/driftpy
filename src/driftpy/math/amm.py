@@ -161,9 +161,9 @@ def calculate_spread_reserves(amm, position_direction: PositionDirection, spread
         pct_delta =  float(oracle_price - mark_price)/mark_price
         # print(amm.last_oracle_price, mark_price, pct_delta, spread)
         if pct_delta > 0 and position_direction == PositionDirection.LONG:
-            spread = max(spread, abs(pct_delta)*1e6*1.99)
+            spread = max(spread, abs(pct_delta)*1e6*2)
         elif pct_delta < 0 and position_direction == PositionDirection.SHORT:
-            spread = max(spread, abs(pct_delta)*1e6*1.99)
+            spread = max(spread, abs(pct_delta)*1e6*2)
 
         else:
             #no retreat
