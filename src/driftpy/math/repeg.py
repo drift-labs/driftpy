@@ -1,9 +1,5 @@
-from driftpy.math.amm import (
-    calculate_swap_output,
-    calculate_amm_reserves_after_swap,
-    get_swap_direction,
-)
-from driftpy.math.amm import calculate_swap_output, calculate_terminal_price
+
+from driftpy.math.amm import calculate_terminal_price, calculate_budgeted_repeg
 from driftpy.math.trade import (
     calculate_trade_slippage,
     calculate_target_price_trade,
@@ -185,9 +181,10 @@ def calculate_repeg_cost(market, new_peg):
     k = int(market.amm.sqrt_k) ** 2
     new_quote_reserves = k / (market.amm.base_asset_reserve + market.base_asset_amount)
     delta_quote_reserves = new_quote_reserves - market.amm.quote_asset_reserve
+
     cost2 = (
-        delta_quote_reserves
-        * (market.amm.peg_multiplier - new_peg)
+        (delta_quote_reserves
+        * (market.amm.peg_multiplier - new_peg))
         / AMM_TIMES_PEG_TO_QUOTE_PRECISION_RATIO
     )
 
@@ -225,27 +222,7 @@ def calculate_budgeted_k(market, cost):
     return p
 
 
-def calculate_budgeted_repeg(market, cost):
-    target_px = market.amm.last_oracle_price / 1e10
-    C = cost
-    x = market.amm.base_asset_reserve / 1e13
-    y = market.amm.quote_asset_reserve / 1e13
-    d = market.base_asset_amount / 1e13
-    Q = market.amm.peg_multiplier / 1e3
-    k = (market.amm.sqrt_k / 1e13) ** 2
 
-    dqar = y - (k / (x + d))
-    # print('dqar', dqar)
-
-    target_peg = target_px * x / y
-
-    if dqar != 0:
-        new_peg = Q + (C / dqar)
-    else:
-        new_peg = target_peg
-    new_peg = min(new_peg, target_peg)
-    print("new_peg", new_peg)
-    return new_peg
 
 
 def calculate_freepeg_cost(market, market_index, target_price, bonus=0):

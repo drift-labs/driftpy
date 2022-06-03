@@ -140,7 +140,7 @@ def calculate_target_price_trade(
     oracle_price=None,
 ):
 
-    mark_price_before = calculate_mark_price(market) * MARK_PRICE_PRECISION
+    mark_price_before = calculate_mark_price(market, oracle_price) * MARK_PRICE_PRECISION
     bid_price_before = calculate_bid_price(market, oracle_price) * MARK_PRICE_PRECISION
     ask_price_before = calculate_ask_price(market, oracle_price) * MARK_PRICE_PRECISION
 
