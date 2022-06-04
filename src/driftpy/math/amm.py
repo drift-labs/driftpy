@@ -187,7 +187,7 @@ def calculate_budgeted_repeg(market, cost, target_px=None, pay_only=True):
     # print("new_peg", new_peg, target_peg)
     return new_peg
 
-def calculate_peg_multiplier(market, oracle_price=None, now=None, delay=None):
+def calculate_peg_multiplier(market, oracle_price=None, now=None, delay=None, budget_cost=None):
     #todo: make amm have all the vars needed
     
     if oracle_price is None:
@@ -204,8 +204,9 @@ def calculate_peg_multiplier(market, oracle_price=None, now=None, delay=None):
     else:
         target_px = oracle_price
 
-    budget_cost = max(0, (market.amm.total_fee_minus_distributions/1e6)/2)
-    # print('budget to repeg:', budget_cost, 'to target_price', target_px)
+    if budget_cost is None:
+        budget_cost = max(0, (market.amm.total_fee_minus_distributions/1e6)/2)
+        # print('budget to repeg:', budget_cost, 'to target_price', target_px)
 
     new_peg = int(calculate_budgeted_repeg(market, budget_cost , target_px=target_px)*1e3)
     return new_peg
