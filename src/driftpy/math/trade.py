@@ -4,6 +4,7 @@ from driftpy.math.amm import (
     calculate_price,
     calculate_amm_reserves_after_swap,
     calculate_spread_reserves,
+    calculate_peg_multiplier,
     get_swap_direction,
 )
 from driftpy.math.market import (
@@ -154,6 +155,7 @@ def calculate_target_price_trade(
     #     target_price = mark_price_before - price_gap
 
     if use_spread:
+        # print(direction)
         (
             base_asset_reserve_before,
             quote_asset_reserve_before,
@@ -162,7 +164,7 @@ def calculate_target_price_trade(
         base_asset_reserve_before = market.amm.base_asset_reserve
         quote_asset_reserve_before = market.amm.quote_asset_reserve
 
-    peg = market.amm.peg_multiplier
+    peg = calculate_peg_multiplier(market, oracle_price)
     invariant = (float(market.amm.sqrt_k)) ** 2
     k = invariant * MARK_PRICE_PRECISION
     bias_modifier = 0
@@ -180,7 +182,7 @@ def calculate_target_price_trade(
         return [direction, tradeSize, target_price, target_price]
     elif mark_price_before > target_price:
         base_asset_reserve_after = (
-            math.sqrt((k / target_price) * (peg / PEG_PRECISION) - bias_modifier) - 1
+            math.sqrt((k / target_price) * (float(peg) / PEG_PRECISION) - bias_modifier) - 1
         )
         quote_asset_reserve_after = (
             k / MARK_PRICE_PRECISION
@@ -192,10 +194,10 @@ def calculate_target_price_trade(
             * (peg / float(PEG_PRECISION))
         ) / AMM_TO_QUOTE_PRECISION_RATIO
         base_size = base_asset_reserve_after - base_asset_reserve_before
-
+        print(trade_size, base_size)
     elif mark_price_before < target_price:
         base_asset_reserve_after = (
-            math.sqrt((k / target_price) * (peg / PEG_PRECISION) + bias_modifier) + 1
+            math.sqrt((k / target_price) * (float(peg) / PEG_PRECISION) + bias_modifier) + 1
         )
         quote_asset_reserve_after = (
             k / MARK_PRICE_PRECISION
@@ -204,7 +206,7 @@ def calculate_target_price_trade(
         direction = PositionDirection.LONG
         trade_size = (
             (quote_asset_reserve_after - quote_asset_reserve_before)
-            * (peg / PEG_PRECISION)
+            * (float(peg) / PEG_PRECISION)
         ) / AMM_TO_QUOTE_PRECISION_RATIO
         base_size = base_asset_reserve_before - base_asset_reserve_after
 
@@ -215,9 +217,25 @@ def calculate_target_price_trade(
         return [direction, trade_size, target_price, target_price]
 
     if base_size != 0:
-        entry_price = trade_size * AMM_TO_QUOTE_PRECISION_RATIO / abs(base_size)
+        entry_price = trade_size * AMM_TO_QUOTE_PRECISION_RATIO / base_size
+
+        if direction == PositionDirection.SHORT:
+            print(mark_price_before/1e10, bid_price_before/1e10, target_price/1e10, entry_price)
+            print(base_asset_reserve_before)
+            print((
+            math.sqrt((k / target_price) * (float(peg) / PEG_PRECISION) - bias_modifier) - 1
+        ) - base_asset_reserve_before)
+            print((
+                math.sqrt((k / (entry_price*1e10)) * (float(peg) / PEG_PRECISION) - bias_modifier) - 1
+            ) - base_asset_reserve_before)
+            # assert(entry_price*1e10 >= target_price)
+        else:
+            print(target_price/1e10, entry_price)
+            # assert(entry_price*1e10 <= target_price)
     else:
         entry_price = 0
+    
+
 
     if output_asset_type == AssetType.QUOTE:
         return [

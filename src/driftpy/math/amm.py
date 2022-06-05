@@ -189,7 +189,9 @@ def calculate_budgeted_repeg(market, cost, target_px=None, pay_only=True):
 
 def calculate_peg_multiplier(market, oracle_price=None, now=None, delay=None, budget_cost=None):
     #todo: make amm have all the vars needed
-    
+    if 'PrePeg' not in market.amm.strategies:
+        return market.amm.peg_multiplier
+        
     if oracle_price is None:
         oracle_price = market.amm.last_oracle_price 
         if delay is None:
