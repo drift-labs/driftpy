@@ -160,11 +160,14 @@ def calculate_target_price_trade(
             base_asset_reserve_before,
             quote_asset_reserve_before,
         ) = calculate_spread_reserves(market.amm, direction, oracle_price=oracle_price)
+        # print(market.amm.strategies)        
     else:
         base_asset_reserve_before = market.amm.base_asset_reserve
         quote_asset_reserve_before = market.amm.quote_asset_reserve
 
-    peg = calculate_peg_multiplier(market, oracle_price)
+    peg = calculate_peg_multiplier(market.amm, oracle_price)
+
+    # print(direction, mark_price_before/1e10, peg/1e3)
     invariant = (float(market.amm.sqrt_k)) ** 2
     k = invariant * MARK_PRICE_PRECISION
     bias_modifier = 0
@@ -191,10 +194,9 @@ def calculate_target_price_trade(
         direction = PositionDirection.SHORT
         trade_size = (
             (quote_asset_reserve_before - quote_asset_reserve_after)
-            * (peg / float(PEG_PRECISION))
+            * (float(peg) / PEG_PRECISION)
         ) / AMM_TO_QUOTE_PRECISION_RATIO
         base_size = base_asset_reserve_after - base_asset_reserve_before
-        print(trade_size, base_size)
     elif mark_price_before < target_price:
         base_asset_reserve_after = (
             math.sqrt((k / target_price) * (float(peg) / PEG_PRECISION) + bias_modifier) + 1
@@ -206,10 +208,10 @@ def calculate_target_price_trade(
         direction = PositionDirection.LONG
         trade_size = (
             (quote_asset_reserve_after - quote_asset_reserve_before)
-            * (float(peg) / PEG_PRECISION)
+            * ((peg) / PEG_PRECISION)
         ) / AMM_TO_QUOTE_PRECISION_RATIO
         base_size = base_asset_reserve_before - base_asset_reserve_after
-
+        print('ARB LONG', peg/PEG_PRECISION, base_size/1e13, trade_size/1e6)
     else:
         # no trade, market is at target
         direction = PositionDirection.LONG
@@ -218,19 +220,30 @@ def calculate_target_price_trade(
 
     if base_size != 0:
         entry_price = trade_size * AMM_TO_QUOTE_PRECISION_RATIO / base_size
+        print('CUR PRICE:', quote_asset_reserve_before/base_asset_reserve_before*market.amm.peg_multiplier/1e3,
+         '->', quote_asset_reserve_before/base_asset_reserve_before*peg/1e3)
 
-        if direction == PositionDirection.SHORT:
-            print(mark_price_before/1e10, bid_price_before/1e10, target_price/1e10, entry_price)
-            print(base_asset_reserve_before)
-            print((
-            math.sqrt((k / target_price) * (float(peg) / PEG_PRECISION) - bias_modifier) - 1
-        ) - base_asset_reserve_before)
-            print((
-                math.sqrt((k / (entry_price*1e10)) * (float(peg) / PEG_PRECISION) - bias_modifier) - 1
-            ) - base_asset_reserve_before)
-            # assert(entry_price*1e10 >= target_price)
-        else:
-            print(target_price/1e10, entry_price)
+        print(peg, market.amm.peg_multiplier, direction)
+        # if direction == PositionDirection.SHORT:
+        #     print(mark_price_before/1e10, bid_price_before/1e10, target_price/1e10, entry_price)
+        #     print(base_asset_reserve_before)
+        #     print((
+        #     math.sqrt((k / target_price) * (float(peg) / PEG_PRECISION) - bias_modifier) - 1
+        # ) - base_asset_reserve_before)
+        #     print((
+        #         math.sqrt((k / (entry_price*1e10)) * (float(peg) / PEG_PRECISION) - bias_modifier) - 1
+        #     ) - base_asset_reserve_before)
+        #     assert(entry_price*1e10 >= target_price)
+        # else:
+        #     print(direction, mark_price_before/1e10, ask_price_before/1e10, target_price/1e10, entry_price)
+        #     print(base_asset_reserve_before)
+        #     print(market.amm.sqrt_k)
+        #     print((
+        #     math.sqrt((k / target_price) * (float(peg) / PEG_PRECISION) - bias_modifier) - 1
+        # ) - base_asset_reserve_before)
+        #     print((
+        #         math.sqrt((k / (entry_price*1e10)) * (float(peg) / PEG_PRECISION) - bias_modifier) - 1
+        #     ) - base_asset_reserve_before)
             # assert(entry_price*1e10 <= target_price)
     else:
         entry_price = 0

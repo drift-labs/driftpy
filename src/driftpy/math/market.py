@@ -6,7 +6,7 @@ def calculate_mark_price(market, oracle_price=None):
     dynamic_peg = 'PrePeg' in market.amm.strategies
 
     if dynamic_peg:
-        peg = calculate_peg_multiplier(market, oracle_price)
+        peg = calculate_peg_multiplier(market.amm, oracle_price)
     else:
         peg = market.amm.peg_multiplier
 
@@ -21,7 +21,7 @@ def calculate_bid_price(market, oracle_price=None):
     dynamic_peg = 'PrePeg' in market.amm.strategies
 
     if dynamic_peg:
-        peg = calculate_peg_multiplier(market, oracle_price)
+        peg = calculate_peg_multiplier(market.amm, oracle_price)
     else:
         peg = market.amm.peg_multiplier
 
@@ -42,7 +42,7 @@ def calculate_ask_price(market, oracle_price=None):
     dynamic_peg = 'PrePeg' in market.amm.strategies
 
     if dynamic_peg:
-        peg = calculate_peg_multiplier(market, oracle_price)
+        peg = calculate_peg_multiplier(market.amm, oracle_price)
     else:
         peg = market.amm.peg_multiplier
 
