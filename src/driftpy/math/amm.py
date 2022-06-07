@@ -233,17 +233,6 @@ def calculate_spread_reserves(amm, position_direction: PositionDirection, oracle
     mark_price = calculate_mark_price_amm(amm, oracle_price=oracle_price)
     spread = amm.base_spread
 
-    if 'VolatilityScale' in amm.strategies:
-        spread *= min(2, max(1, amm.mark_std))
-
-    if 'InventorySkew' in amm.strategies:
-        effective_position =  (amm.sqrt_k - amm.base_asset_reserve)
-        if position_direction == PositionDirection.LONG:
-            # print((1 + (effective_position/(amm.sqrt_k/10000))))
-            spread *= min(20, max(1,  (1 + (effective_position/(amm.sqrt_k/10000)))))
-        else:
-            spread *= min(20, max(1, (1 - effective_position/(amm.sqrt_k/10000))))
-
     if 'OracleRetreat' in amm.strategies:
         if oracle_price is None:
             oracle_price = amm.last_oracle_price 
@@ -253,10 +242,21 @@ def calculate_spread_reserves(amm, position_direction: PositionDirection, oracle
             spread = max(spread, abs(pct_delta)*1e6*2)
         elif pct_delta < 0 and position_direction == PositionDirection.SHORT:
             spread = max(spread, abs(pct_delta)*1e6*2)
-
         else:
             #no retreat
             pass
+
+    if 'VolatilityScale' in amm.strategies:
+        spread *= min(2, max(1, amm.mark_std))
+
+    if 'InventorySkew' in amm.strategies:
+        max_scale = 20 if 'OracleRetreat' not in amm.strategies else 2
+        effective_position = amm.net_base_asset_amount #(amm.sqrt_k - amm.base_asset_reserve)
+        if position_direction == PositionDirection.LONG:
+            # print((1 + (effective_position/(amm.sqrt_k/10000))))
+            spread *= min(max_scale, max(1,  (1 + (effective_position/(amm.sqrt_k/10000)))))
+        else:
+            spread *= min(max_scale, max(1, (1 - effective_position/(amm.sqrt_k/10000))))
 
     amm.last_spread = spread
 

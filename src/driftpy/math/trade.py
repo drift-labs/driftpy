@@ -224,8 +224,7 @@ def calculate_target_price_trade(
          '->', quote_asset_reserve_before/base_asset_reserve_before*peg/1e3)
 
         print(peg, market.amm.peg_multiplier, direction)
-        # if direction == PositionDirection.SHORT:
-        #     print(mark_price_before/1e10, bid_price_before/1e10, target_price/1e10, entry_price)
+        if direction == PositionDirection.SHORT:
         #     print(base_asset_reserve_before)
         #     print((
         #     math.sqrt((k / target_price) * (float(peg) / PEG_PRECISION) - bias_modifier) - 1
@@ -233,9 +232,12 @@ def calculate_target_price_trade(
         #     print((
         #         math.sqrt((k / (entry_price*1e10)) * (float(peg) / PEG_PRECISION) - bias_modifier) - 1
         #     ) - base_asset_reserve_before)
-        #     assert(entry_price*1e10 >= target_price)
-        # else:
-        #     print(direction, mark_price_before/1e10, ask_price_before/1e10, target_price/1e10, entry_price)
+            if not (entry_price*1e10 >= target_price):
+                #problem!
+                print(direction, mark_price_before/1e10, bid_price_before/1e10, target_price/1e10, entry_price)
+                tradeSize = 0
+                return [direction, tradeSize, target_price, target_price]
+        else:
         #     print(base_asset_reserve_before)
         #     print(market.amm.sqrt_k)
         #     print((
@@ -244,7 +246,11 @@ def calculate_target_price_trade(
         #     print((
         #         math.sqrt((k / (entry_price*1e10)) * (float(peg) / PEG_PRECISION) - bias_modifier) - 1
         #     ) - base_asset_reserve_before)
-            # assert(entry_price*1e10 <= target_price)
+            if not (entry_price*1e10 <= target_price):
+                #problem!
+                print(direction, mark_price_before/1e10, ask_price_before/1e10, target_price/1e10, entry_price)
+                tradeSize = 0
+                return [direction, tradeSize, target_price, target_price]
     else:
         entry_price = 0
     
