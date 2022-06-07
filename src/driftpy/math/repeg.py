@@ -233,10 +233,11 @@ def calculate_freepeg_cost(market, market_index, target_price, bonus=0):
     # print(p)
 
     bonly, market2 = calculate_curve_op_cost(market, market_index, p, 1 / p)
-
+    print(bonly, p)
+    assert(False)
     pk = 1
     new_peg = market.amm.peg_multiplier
-
+    print('SEE', bonly)
     if bonly < 0:
         print(bonly)
         bonus = 0

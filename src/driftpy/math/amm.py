@@ -60,8 +60,8 @@ def calculate_terminal_price(market):
     )
 
     new_quote_asset_amount, new_base_asset_amount = calculate_swap_output(
-        market.amm.base_asset_reserve,
         abs(market.base_asset_amount),
+        market.amm.base_asset_reserve,
         swap_direction,
         market.amm.sqrt_k,
     )
@@ -250,7 +250,7 @@ def calculate_spread_reserves(amm, position_direction: PositionDirection, oracle
         spread *= min(2, max(1, amm.mark_std))
 
     if 'InventorySkew' in amm.strategies:
-        max_scale = 20 if 'OracleRetreat' not in amm.strategies else 2
+        max_scale = 20 if 'OracleRetreat' not in amm.strategies else 1.1
         effective_position = amm.net_base_asset_amount #(amm.sqrt_k - amm.base_asset_reserve)
         if position_direction == PositionDirection.LONG:
             # print((1 + (effective_position/(amm.sqrt_k/10000))))

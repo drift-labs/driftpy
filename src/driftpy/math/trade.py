@@ -11,6 +11,8 @@ from driftpy.math.market import (
     calculate_ask_price,
     calculate_bid_price,
     calculate_mark_price,
+    calculate_bid_ask_price,
+    calculate_candidate_amm,
 )
 
 from driftpy.constants.numeric_constants import (
@@ -18,8 +20,6 @@ from driftpy.constants.numeric_constants import (
     PEG_PRECISION,
     AMM_TO_QUOTE_PRECISION_RATIO,
 )
-
-# from driftpy.src.driftpy.constants.numeric_constants import AMM_RESERVE_PRECISION
 
 from driftpy.types import PositionDirection, Market, AssetType, AMM
 
@@ -140,10 +140,13 @@ def calculate_target_price_trade(
     use_spread: boolean = True,
     oracle_price=None,
 ):
-
     mark_price_before = calculate_mark_price(market, oracle_price) * MARK_PRICE_PRECISION
-    bid_price_before = calculate_bid_price(market, oracle_price) * MARK_PRICE_PRECISION
-    ask_price_before = calculate_ask_price(market, oracle_price) * MARK_PRICE_PRECISION
+    bid_price_before, ask_price_before = calculate_bid_ask_price(market, oracle_price) 
+    bid_price_before *= MARK_PRICE_PRECISION
+    ask_price_before *= MARK_PRICE_PRECISION
+
+    # bid_price_before = calculate_bid_price(market, oracle_price) * MARK_PRICE_PRECISION
+    # ask_price_before = calculate_ask_price(market, oracle_price) * MARK_PRICE_PRECISION
 
     if target_price > mark_price_before:
         #     price_gap = target_price - mark_price_before
@@ -154,18 +157,21 @@ def calculate_target_price_trade(
     #     price_gap = mark_price_before - target_price
     #     target_price = mark_price_before - price_gap
 
+
+    candidate_amm = calculate_candidate_amm(market, oracle_price)
+    peg = candidate_amm.peg_multiplier
+
     if use_spread:
         # print(direction)
         (
             base_asset_reserve_before,
             quote_asset_reserve_before,
-        ) = calculate_spread_reserves(market.amm, direction, oracle_price=oracle_price)
+        ) = calculate_spread_reserves(candidate_amm, direction, oracle_price=oracle_price)
         # print(market.amm.strategies)        
     else:
         base_asset_reserve_before = market.amm.base_asset_reserve
         quote_asset_reserve_before = market.amm.quote_asset_reserve
 
-    peg = calculate_peg_multiplier(market.amm, oracle_price)
 
     # print(direction, mark_price_before/1e10, peg/1e3)
     invariant = (float(market.amm.sqrt_k)) ** 2
@@ -220,6 +226,9 @@ def calculate_target_price_trade(
 
     if base_size != 0:
         entry_price = trade_size * AMM_TO_QUOTE_PRECISION_RATIO / base_size
+
+        print(quote_asset_reserve_before, base_asset_reserve_before, peg)
+
         print('CUR PRICE:', quote_asset_reserve_before/base_asset_reserve_before*market.amm.peg_multiplier/1e3,
          '->', quote_asset_reserve_before/base_asset_reserve_before*peg/1e3)
 
@@ -234,8 +243,10 @@ def calculate_target_price_trade(
         #     ) - base_asset_reserve_before)
             if not (entry_price*1e10 >= target_price):
                 #problem!
-                print(direction, mark_price_before/1e10, bid_price_before/1e10, target_price/1e10, entry_price)
+                print('ERR:', direction, mark_price_before/1e10, bid_price_before/1e10, target_price/1e10, entry_price)
                 tradeSize = 0
+                assert(False)
+
                 return [direction, tradeSize, target_price, target_price]
         else:
         #     print(base_asset_reserve_before)
@@ -248,8 +259,9 @@ def calculate_target_price_trade(
         #     ) - base_asset_reserve_before)
             if not (entry_price*1e10 <= target_price):
                 #problem!
-                print(direction, mark_price_before/1e10, ask_price_before/1e10, target_price/1e10, entry_price)
+                print('ERR:', direction, mark_price_before/1e10, ask_price_before/1e10, target_price/1e10, entry_price)
                 tradeSize = 0
+                assert(False)
                 return [direction, tradeSize, target_price, target_price]
     else:
         entry_price = 0
