@@ -137,6 +137,10 @@ def calculate_candidate_amm(market, oracle_price=None):
     candidate_amm.base_asset_reserve *= base_scale
     candidate_amm.quote_asset_reserve *= quote_scale
     candidate_amm.peg_multiplier = peg
+    if base_scale != 1 or quote_scale != 1:
+        candidate_amm.sqrt_k = np.sqrt(candidate_amm.base_asset_reserve * candidate_amm.quote_asset_reserve)
+
+    
     return candidate_amm
 
 def calculate_long_short_reserves_and_peg(market, oracle_price=None):

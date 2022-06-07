@@ -161,12 +161,14 @@ def calculate_target_price_trade(
     candidate_amm = calculate_candidate_amm(market, oracle_price)
     peg = candidate_amm.peg_multiplier
 
+    print(candidate_amm.base_asset_reserve, candidate_amm.quote_asset_reserve)
     if use_spread:
         # print(direction)
         (
             base_asset_reserve_before,
             quote_asset_reserve_before,
         ) = calculate_spread_reserves(candidate_amm, direction, oracle_price=oracle_price)
+        print(base_asset_reserve_before, quote_asset_reserve_before)
         # print(market.amm.strategies)        
     else:
         base_asset_reserve_before = market.amm.base_asset_reserve
@@ -203,6 +205,8 @@ def calculate_target_price_trade(
             * (float(peg) / PEG_PRECISION)
         ) / AMM_TO_QUOTE_PRECISION_RATIO
         base_size = base_asset_reserve_after - base_asset_reserve_before
+        print('ARB SHORT', peg/PEG_PRECISION, base_size/1e13, trade_size/1e6)
+
     elif mark_price_before < target_price:
         base_asset_reserve_after = (
             math.sqrt((k / target_price) * (float(peg) / PEG_PRECISION) + bias_modifier) + 1
@@ -245,7 +249,7 @@ def calculate_target_price_trade(
                 #problem!
                 print('ERR:', direction, mark_price_before/1e10, bid_price_before/1e10, target_price/1e10, entry_price)
                 tradeSize = 0
-                assert(False)
+                # assert(False)
 
                 return [direction, tradeSize, target_price, target_price]
         else:
@@ -261,7 +265,7 @@ def calculate_target_price_trade(
                 #problem!
                 print('ERR:', direction, mark_price_before/1e10, ask_price_before/1e10, target_price/1e10, entry_price)
                 tradeSize = 0
-                assert(False)
+                # assert(False)
                 return [direction, tradeSize, target_price, target_price]
     else:
         entry_price = 0
