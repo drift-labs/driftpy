@@ -179,7 +179,7 @@ def calculate_budgeted_repeg(amm, cost, target_px=None, pay_only=False):
 
     peg_change_direction = target_peg - Q
 
-    use_target_peg = not (dqar > 0 and peg_change_direction > 0) or (dqar < 0 and peg_change_direction < 0)
+    use_target_peg = (dqar > 0 and peg_change_direction > 0) or (dqar < 0 and peg_change_direction < 0)
 
     if dqar != 0 and not use_target_peg:
         new_peg = Q + (C / dqar)
@@ -203,29 +203,32 @@ def calculate_budgeted_repeg(amm, cost, target_px=None, pay_only=False):
 
 def calculate_peg_multiplier(amm, oracle_price=None, now=None, delay=None, budget_cost=None):
     #todo: make amm have all the vars needed
-    if 'PrePeg' not in amm.strategies:
+    if 'PrePeg' in amm.strategies:
+        if oracle_price is None:
+            oracle_price = amm.last_oracle_price 
+            if delay is None:
+                if now is not None:
+                    delay = now - amm.last_oracle_price_twap_ts
+                else:
+                    delay = 100            
+            # delay_discount = 1/(delay*delay/2)
+            # last_mark = calculate_mark_price_amm(market.amm)
+            # target_px = last_mark + ((oracle_price-last_mark)*delay_discount)
+            target_px = oracle_price
+        else:
+            target_px = oracle_price
+
+        if budget_cost is None:
+            budget_cost = max(0, (amm.total_fee_minus_distributions/1e6)/2)
+            # print('budget to repeg:', budget_cost, 'to target_price', target_px)
+
+        new_peg = int(calculate_budgeted_repeg(amm, budget_cost, target_px=target_px)*1e3)
+        return new_peg
+    elif 'PreFreePeg' in amm.strategies:
+        return int(oracle_price*1e3)
+    else:
         return amm.peg_multiplier
 
-    if oracle_price is None:
-        oracle_price = amm.last_oracle_price 
-        if delay is None:
-            if now is not None:
-                delay = now - amm.last_oracle_price_twap_ts
-            else:
-                delay = 100            
-        # delay_discount = 1/(delay*delay/2)
-        # last_mark = calculate_mark_price_amm(market.amm)
-        # target_px = last_mark + ((oracle_price-last_mark)*delay_discount)
-        target_px = oracle_price
-    else:
-        target_px = oracle_price
-
-    if budget_cost is None:
-        budget_cost = max(0, (amm.total_fee_minus_distributions/1e6)/2)
-        # print('budget to repeg:', budget_cost, 'to target_price', target_px)
-
-    new_peg = int(calculate_budgeted_repeg(amm, budget_cost , target_px=target_px)*1e3)
-    return new_peg
 
 
 def calculate_spread_reserves(amm, position_direction: PositionDirection, oracle_price=None):
@@ -250,13 +253,22 @@ def calculate_spread_reserves(amm, position_direction: PositionDirection, oracle
         spread *= min(2, max(1, amm.mark_std))
 
     if 'InventorySkew' in amm.strategies:
-        max_scale = 20 if 'OracleRetreat' not in amm.strategies else 1.1
+        max_scale = 20 # if 'OracleRetreat' not in amm.strategies else 20
+
         effective_position = amm.net_base_asset_amount #(amm.sqrt_k - amm.base_asset_reserve)
-        if position_direction == PositionDirection.LONG:
-            # print((1 + (effective_position/(amm.sqrt_k/10000))))
-            spread *= min(max_scale, max(1,  (1 + (effective_position/(amm.sqrt_k/10000)))))
+        effective_value = mark_price * (effective_position/1e13)
+
+        if amm.total_fee_minus_distributions > 0:
+            effective_leverage =  effective_value/(amm.total_fee_minus_distributions/1e6)
+            if position_direction == PositionDirection.LONG:
+                # print((1 + (effective_position/(amm.sqrt_k/10000))))
+                spread *= min(max_scale, max(1,  (1 + effective_leverage)))
+            else:
+                spread *= min(max_scale, max(1, (1 - effective_leverage)))
         else:
-            spread *= min(max_scale, max(1, (1 - effective_position/(amm.sqrt_k/10000))))
+            spread *= max_scale
+
+       
 
     amm.last_spread = spread
 

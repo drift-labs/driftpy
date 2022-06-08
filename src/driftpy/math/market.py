@@ -6,7 +6,6 @@ import numpy as np
 from driftpy.math.positions import calculate_base_asset_value, calculate_position_pnl
 
 def calculate_freepeg_cost(market, target_price, bonus=0):
-
     def calculate_budgeted_k(market, cost):
         if cost == 0:
             return 1
@@ -19,8 +18,9 @@ def calculate_freepeg_cost(market, target_price, bonus=0):
 
         numer = y * d * d * Q - C * d * (x + d)
         denom = C * x * (x + d) + y * d * d * Q
-        # print(C, x, y, d, Q)
-        # print(numer, denom)
+        print('budget k params', C, x, y, d, Q)
+        print(y * d * d * Q , C * d * (x + d), C * x * (x + d))
+        print(numer, denom)
         p = numer / denom
         return p
 
@@ -49,11 +49,12 @@ def calculate_freepeg_cost(market, target_price, bonus=0):
         current_value = calculate_base_asset_value(market, net_user_position)
 
         marketNewK = copy.deepcopy(market)
-        marketNewK.amm.base_asset_reserve *= base_p
-        marketNewK.amm.quote_asset_reserve *= quote_p
+        marketNewK.amm.base_asset_reserve *= float(base_p)
+        marketNewK.amm.quote_asset_reserve *= float(quote_p)
         if new_peg is not None:
             # print('Alter Peg', new_peg)
             marketNewK.amm.peg_multiplier = new_peg
+            # print(new_peg)
 
         marketNewK.amm.sqrt_k = np.sqrt(
             marketNewK.amm.base_asset_reserve * marketNewK.amm.quote_asset_reserve
@@ -77,24 +78,36 @@ def calculate_freepeg_cost(market, target_price, bonus=0):
 
         return cost / 1e6, marketNewK
 
-    mark = calculate_mark_price(market)
+    # mark = calculate_mark_price(market)
     # price_div = (mark - target_price) / mark
-    p = np.sqrt(mark) / np.sqrt(target_price)
+    p = 1.0 #np.sqrt(mark) / np.sqrt(target_price)
 
-    bonly, market2 = calculate_curve_op_cost(market, p, 1 / p)
+    # bonly, market2 = calculate_curve_op_cost(market, p, 1 / p)
+    new_peg = int(target_price*1e3)
+    bonly, market2 = calculate_curve_op_cost(market, p, 1/p, new_peg)
     # print(bonly, p)
     # assert(False)
     pk = 1
-    new_peg = market.amm.peg_multiplier
+    # new_peg = market.amm.peg_multiplier
 
     if bonly < 0:
-        print(bonly)
+        # print('SWAP PROVIDED', bonly)
         bonus = 0
         # pk = calculate_budgeted_k(market2, bonly/2)#**(1+price_div)
+        new_peg = calculate_budgeted_repeg(market2.amm, -bonly, target_price) * 1e3
+        # print('new peg for freepeg', new_peg)
+    elif bonly > bonus:
+        # print('SWAP COSTED', bonly, 'more than bonus', bonus)
 
-        new_peg = calculate_budgeted_repeg(market2.amm, bonly, target_price) * 1e3
+        budget_k = bonly-bonus
+        # print('budget_k', bonly,'-', bonus)
+        # only decrease k by 1% at most
+        pk = max(.985, calculate_budgeted_k(market2, budget_k))  # **(1+price_div)
     else:
-        pk = calculate_budgeted_k(market2, bonly + bonus)  # **(1+price_div)
+        pass
+        # print('skip k/peg change')
+        # print('SWAP COSTED', bonly, 'less than bonus', bonus)
+
 
     # print(p,':', bonly, p)
     # print(new_peg, pk)
@@ -113,6 +126,12 @@ def calculate_freepeg_cost(market, target_price, bonus=0):
 
     base_scale = pk * p
     quote_scale = pk * 1 / p
+    if(pk!=1):
+        print('P, PK:', p, pk)
+    # assert(base_scale>.5)
+    
+    # if(bonly3>0):
+    #     print('FREEPEG COST', bonly3)
 
     return bonly3, base_scale, quote_scale, new_peg
 
@@ -125,17 +144,19 @@ def calculate_candidate_amm(market, oracle_price=None):
     base_scale = 1
     quote_scale = 1
 
+    budget_cost = max(0, (market.amm.total_fee_minus_distributions/1e6)/2)
+    # print('BUDGET_COST', budget_cost)
     if prepeg:
-        peg = calculate_peg_multiplier(market.amm, oracle_price)
+        peg = calculate_peg_multiplier(market.amm, oracle_price, budget_cost=budget_cost)
     elif prefreepeg:
-        freepeg_cost, base_scale, quote_scale, peg = calculate_freepeg_cost(market, oracle_price)
+        freepeg_cost, base_scale, quote_scale, peg = calculate_freepeg_cost(market, oracle_price, bonus=budget_cost)
         # print(freepeg_cost, 'is cost to freepeg')
     else:
         peg = market.amm.peg_multiplier
 
     candidate_amm = copy.deepcopy(market.amm)
-    candidate_amm.base_asset_reserve *= base_scale
-    candidate_amm.quote_asset_reserve *= quote_scale
+    candidate_amm.base_asset_reserve *= float(base_scale)
+    candidate_amm.quote_asset_reserve *= float(quote_scale)
     candidate_amm.peg_multiplier = peg
     if base_scale != 1 or quote_scale != 1:
         candidate_amm.sqrt_k = np.sqrt(candidate_amm.base_asset_reserve * candidate_amm.quote_asset_reserve)
