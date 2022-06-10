@@ -4,6 +4,7 @@ import copy
 from solana.publickey import PublicKey
 import numpy as np
 from driftpy.math.positions import calculate_base_asset_value, calculate_position_pnl
+from driftpy.constants.numeric_constants import AMM_TIMES_PEG_TO_QUOTE_PRECISION_RATIO, PEG_PRECISION
 
 def calculate_freepeg_cost(market, target_price, bonus=0):
     def calculate_budgeted_k(market, cost):
@@ -18,123 +19,55 @@ def calculate_freepeg_cost(market, target_price, bonus=0):
 
         numer = y * d * d * Q - C * d * (x + d)
         denom = C * x * (x + d) + y * d * d * Q
-        print('budget k params', C, x, y, d, Q)
+        # print('budget k params', C, x, y, d, Q)
         print(y * d * d * Q , C * d * (x + d), C * x * (x + d))
         print(numer, denom)
         p = numer / denom
         return p
 
-    def calculate_curve_op_cost(market, base_p, quote_p, new_peg=None):
-        #     print(market)
-        # print(base_p, quote_p)
-        if not (base_p > 0 and quote_p > 0):
-            print(base_p, quote_p)
-            assert False
-        net_user_position = MarketPosition(
-            market.market_index,
-            market.amm.net_base_asset_amount,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            PublicKey(0),
-            0,
-            0,
+    def calculate_repeg_cost(market, new_peg):
+        k = int(market.amm.sqrt_k) ** 2
+        new_quote_reserves = k / (market.amm.base_asset_reserve + market.base_asset_amount)
+        delta_quote_reserves = new_quote_reserves - market.amm.quote_asset_reserve
+
+        cost2 = (
+            (delta_quote_reserves
+            * (market.amm.peg_multiplier - new_peg))
+            / AMM_TIMES_PEG_TO_QUOTE_PRECISION_RATIO
         )
 
-        current_value = calculate_base_asset_value(market, net_user_position)
-
-        marketNewK = copy.deepcopy(market)
-        marketNewK.amm.base_asset_reserve *= float(base_p)
-        marketNewK.amm.quote_asset_reserve *= float(quote_p)
-        if new_peg is not None:
-            # print('Alter Peg', new_peg)
-            marketNewK.amm.peg_multiplier = new_peg
-            # print(new_peg)
-
-        marketNewK.amm.sqrt_k = np.sqrt(
-            marketNewK.amm.base_asset_reserve * marketNewK.amm.quote_asset_reserve
+        mark_delta = (
+            (market.amm.quote_asset_reserve / market.amm.base_asset_reserve)
+            * (new_peg - market.amm.peg_multiplier)
+            / PEG_PRECISION
         )
 
-        net_user_position.quote_asset_amount = current_value
+        return cost2 / 1e6, mark_delta
 
-        # print(marketNewK.amm.base_asset_reserve, net_user_position.base_asset_amount)
-        cost = calculate_position_pnl(marketNewK, net_user_position, False)
-        # print(cost)
+    def calculate_k_cost(market, p):
+        x = market.amm.base_asset_reserve / 1e13
+        y = market.amm.quote_asset_reserve / 1e13
+        d = market.base_asset_amount / 1e13
+        Q = market.amm.peg_multiplier / 1e3
 
-        old_price = calculate_mark_price(market)
-        new_price = calculate_mark_price(marketNewK)
-        # print('mark price:', old_price, '->', new_price, '(%.5f pct)' % ((old_price/new_price - 1)*100))
+        cost = -((1 / (x + d) - p / (x * p + d)) * y * d * Q)
+        return cost
 
-        old_price = calculate_terminal_price(market)
-        new_price = calculate_terminal_price(marketNewK)
-        # print('terminal price:', old_price, '->', new_price, '(%.5f pct)' % ((old_price/new_price - 1)*100))
+    pk = 1.0
+    new_peg = target_price * market.amm.base_asset_reserve/market.amm.quote_asset_reserve
+    optimal_peg_cost, _ = calculate_repeg_cost(market, int(new_peg*1e3))
+    if bonus < optimal_peg_cost:
+        print('MUST LOWER K FOR FREEPEG')
+        deficit = bonus - optimal_peg_cost
+        pk = max(.985, calculate_budgeted_k(market, -deficit))
+        deficit_madeup = -calculate_k_cost(market, pk)
+        print(deficit_madeup, pk)
+        assert(deficit_madeup > 0)
+        freepeg_cost = bonus+deficit_madeup
+        new_peg = calculate_budgeted_repeg(market.amm, freepeg_cost, target_price)
+        return freepeg_cost, pk, pk, int(new_peg*1e3)
 
-        # print('sqrt k:', market.amm.sqrt_k/1e13, '->', marketNewK.amm.sqrt_k/1e13)
-
-        return cost / 1e6, marketNewK
-
-    # mark = calculate_mark_price(market)
-    # price_div = (mark - target_price) / mark
-    p = 1.0 #np.sqrt(mark) / np.sqrt(target_price)
-
-    # bonly, market2 = calculate_curve_op_cost(market, p, 1 / p)
-    new_peg = int(target_price*1e3)
-    bonly, market2 = calculate_curve_op_cost(market, p, 1/p, new_peg)
-    # print(bonly, p)
-    # assert(False)
-    pk = 1
-    # new_peg = market.amm.peg_multiplier
-
-    if bonly < 0:
-        # print('SWAP PROVIDED', bonly)
-        bonus = 0
-        # pk = calculate_budgeted_k(market2, bonly/2)#**(1+price_div)
-        new_peg = calculate_budgeted_repeg(market2.amm, -bonly, target_price) * 1e3
-        # print('new peg for freepeg', new_peg)
-    elif bonly > bonus:
-        # print('SWAP COSTED', bonly, 'more than bonus', bonus)
-
-        budget_k = bonly-bonus
-        # print('budget_k', bonly,'-', bonus)
-        # only decrease k by 1% at most
-        pk = max(.985, calculate_budgeted_k(market2, budget_k))  # **(1+price_div)
-    else:
-        pass
-        # print('skip k/peg change')
-        # print('SWAP COSTED', bonly, 'less than bonus', bonus)
-
-
-    # print(p,':', bonly, p)
-    # print(new_peg, pk)
-    if not pk > 0:
-        # print(bonly, bonus, p,1/p)
-        print("pk error:", pk)
-        return 0, 1, 1, new_peg
-        # assert(False)
-
-    # print('------')
-    bonly3, market3 = calculate_curve_op_cost(
-        market, pk * p, pk * 1 / p, new_peg
-    )
-    # konly = calculate_k_cost(market, pk)
-    # print(p,':', bonly, pk)
-
-    base_scale = pk * p
-    quote_scale = pk * 1 / p
-    if(pk!=1):
-        print('P, PK:', p, pk)
-    # assert(base_scale>.5)
-    
-    # if(bonly3>0):
-    #     print('FREEPEG COST', bonly3)
-
-    return bonly3, base_scale, quote_scale, new_peg
-
+    return optimal_peg_cost, pk, pk, int(new_peg*1e3)
 
 
 def calculate_candidate_amm(market, oracle_price=None):
