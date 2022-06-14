@@ -179,7 +179,7 @@ def calculate_budgeted_repeg(amm, cost, target_px=None, pay_only=False):
 
     peg_change_direction = target_peg - Q
 
-    use_target_peg = (dqar > 0 and peg_change_direction > 0) or (dqar < 0 and peg_change_direction < 0)
+    use_target_peg = (dqar < 0 and peg_change_direction > 0) or (dqar > 0 and peg_change_direction < 0)
 
     if dqar != 0 and not use_target_peg:
         new_peg = Q + (C / dqar)
@@ -253,7 +253,7 @@ def calculate_spread_reserves(amm, position_direction: PositionDirection, oracle
         spread *= min(2, max(1, amm.mark_std))
 
     if 'InventorySkew' in amm.strategies:
-        max_scale = 20 # if 'OracleRetreat' not in amm.strategies else 20
+        max_scale = 5 # if 'OracleRetreat' not in amm.strategies else 20
 
         effective_position = amm.net_base_asset_amount #(amm.sqrt_k - amm.base_asset_reserve)
         effective_value = mark_price * (effective_position/1e13)
