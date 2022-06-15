@@ -219,13 +219,21 @@ def calculate_peg_multiplier(amm, oracle_price=None, now=None, delay=None, budge
             target_px = oracle_price
 
         if budget_cost is None:
-            budget_cost = max(0, (amm.total_fee_minus_distributions/1e6)/2)
+            fee_pool = (amm.total_fee_minus_distributions/1e6) - (amm.total_fee/1e6)/2
+            budget_cost = max(0, fee_pool)
             # print('budget to repeg:', budget_cost, 'to target_price', target_px)
 
         new_peg = int(calculate_budgeted_repeg(amm, budget_cost, target_px=target_px)*1e3)
         return new_peg
     elif 'PreFreePeg' in amm.strategies:
-        return int(oracle_price*1e3)
+        target_px = oracle_price
+
+        if budget_cost is None:
+            fee_pool = (amm.total_fee_minus_distributions/1e6) - (amm.total_fee/1e6)/2
+            budget_cost = max(0, fee_pool)
+
+        new_peg = int(calculate_budgeted_repeg(amm, budget_cost, target_px=target_px)*1e3)
+        return new_peg
     else:
         return amm.peg_multiplier
 
@@ -241,10 +249,11 @@ def calculate_spread_reserves(amm, position_direction: PositionDirection, oracle
             oracle_price = amm.last_oracle_price 
         pct_delta =  float(oracle_price - mark_price)/mark_price
         # print(amm.last_oracle_price, mark_price, pct_delta, spread)
-        if pct_delta > 0 and position_direction == PositionDirection.LONG:
-            spread = max(spread, abs(pct_delta)*1e6*2)
-        elif pct_delta < 0 and position_direction == PositionDirection.SHORT:
-            spread = max(spread, abs(pct_delta)*1e6*2)
+        if (pct_delta > 0 and position_direction == PositionDirection.LONG) \
+            or (pct_delta < 0 and position_direction == PositionDirection.SHORT):
+            oracle_spread = abs(pct_delta)*1e6*2
+            if oracle_spread > spread:
+                spread = oracle_spread * 2
         else:
             #no retreat
             pass
@@ -256,10 +265,17 @@ def calculate_spread_reserves(amm, position_direction: PositionDirection, oracle
         max_scale = 5 # if 'OracleRetreat' not in amm.strategies else 20
 
         effective_position = amm.net_base_asset_amount #(amm.sqrt_k - amm.base_asset_reserve)
-        effective_value = mark_price * (effective_position/1e13)
 
+        net_cost_basis = (amm.quote_asset_amount_long - (amm.quote_asset_amount_short))/1e6
+        net_base_asset_value = (amm.quote_asset_reserve - amm.terminal_quote_asset_reserve)/1e13 * amm.peg_multiplier/1e3
+        local_base_asset_value = mark_price * (effective_position/1e13)
+
+        local_pnl = local_base_asset_value - net_cost_basis
+        net_pnl = net_base_asset_value - net_cost_basis
+        print('local pnl: ', local_pnl, 'net pnl:', net_pnl)
         if amm.total_fee_minus_distributions > 0:
-            effective_leverage =  effective_value/(amm.total_fee_minus_distributions/1e6)
+            effective_leverage =  (local_pnl-net_pnl)/(amm.total_fee_minus_distributions/1e6)
+            print('effective_leverage:', effective_leverage)
             if position_direction == PositionDirection.LONG:
                 # print((1 + (effective_position/(amm.sqrt_k/10000))))
                 spread *= min(max_scale, max(1,  (1 + effective_leverage)))

@@ -77,7 +77,9 @@ def calculate_candidate_amm(market, oracle_price=None):
     base_scale = 1
     quote_scale = 1
 
-    budget_cost = max(0, (market.amm.total_fee_minus_distributions/1e6)/2)
+    budget_cost = None# max(0, (market.amm.total_fee_minus_distributions/1e6)/2)
+    fee_pool = (market.amm.total_fee_minus_distributions/1e6) - (market.amm.total_fee/1e6)/2
+    budget_cost = max(0, fee_pool)
     # print('BUDGET_COST', budget_cost)
     if prepeg:
         peg = calculate_peg_multiplier(market.amm, oracle_price, budget_cost=budget_cost)
@@ -94,7 +96,8 @@ def calculate_candidate_amm(market, oracle_price=None):
     if base_scale != 1 or quote_scale != 1:
         candidate_amm.sqrt_k = np.sqrt(candidate_amm.base_asset_reserve * candidate_amm.quote_asset_reserve)
 
-    
+    candidate_amm.terminal_quote_asset_reserve = (candidate_amm.sqrt_k**2)/(candidate_amm.base_asset_reserve+
+    candidate_amm.net_base_asset_amount)
     return candidate_amm
 
 def calculate_long_short_reserves_and_peg(market, oracle_price=None):
