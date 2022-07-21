@@ -24,6 +24,8 @@ Note: requires Python >= 3.9.
 
 ## Development
 
+- run `git submodule init` and `git submodule update` to get the protocol-v1 codebase
+
 ### Development Setup
 
 If you want to contribute to DriftPy, follow these steps to get set up:
