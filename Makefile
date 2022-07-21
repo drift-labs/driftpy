@@ -1,6 +1,6 @@
 test:
 	poetry run nox
-	poetry run pytest -vv
+	poetry run pytest -v
 
 lint:
 	poetry run black --check --diff src tests
