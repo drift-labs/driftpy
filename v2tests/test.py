@@ -130,7 +130,7 @@ async def usdc_mint(provider: Provider) -> Keypair:
     return fake_usdc_mint
 
 
-@async_fixture(scope="module")
+@async_fixture(scope="session")
 async def user_usdc_account(
     usdc_mint: Keypair,
     provider: Provider,
@@ -261,10 +261,40 @@ async def test_usdc_deposit(
     await clearing_house.deposit(
         USDC_AMOUNT, 
         0, 
-        user_usdc_account, 
+        user_usdc_account.public_key, 
+        user_initialized=True
     )
     user_account = await get_user_account(
         clearing_house.program, 
         clearing_house.authority
     )
-    print(user_account.bank_balances[0].balance)
+    assert user_account.bank_balances[0].balance == USDC_AMOUNT
+
+from time import sleep
+@mark.asyncio
+async def test_add_remove_liquidity(
+    clearing_house: Admin,
+):
+    n_shares = 10 
+    await clearing_house.add_liquidity(
+        n_shares, 
+        0
+    )
+    user_account = await get_user_account(
+        clearing_house.program, 
+        clearing_house.authority
+    )
+    assert user_account.positions[0].lp_shares == n_shares
+    
+    # wait the cool down 
+    sleep(2)
+
+    await clearing_house.remove_liquidity(
+        n_shares, 
+        0
+    )
+    user_account = await get_user_account(
+        clearing_house.program, 
+        clearing_house.authority
+    )
+    assert user_account.positions[0].lp_shares == 0

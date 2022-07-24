@@ -10,6 +10,7 @@ from solana.sysvar import SYSVAR_RENT_PUBKEY
 from solana.transaction import AccountMeta
 from spl.token.constants import TOKEN_PROGRAM_ID
 from anchorpy import Program, Context, Idl
+from struct import pack_into 
 
 from driftpy.addresses import (
     get_market_public_key,
@@ -62,6 +63,8 @@ from driftpy.accounts import (
     get_user_account
 )
 
+DEFAULT_USER_NAME = 'Main Account'
+
 def is_available(position: MarketPosition): 
     return (
         position.base_asset_amount == 0 and
@@ -95,7 +98,7 @@ class ClearingHouse:
         self.program_id = program.program_id
         self.authority = program.provider.wallet.public_key
 
-    async def send_ix(self, ixs: list[TransactionInstruction]):
+    async def send_ixs(self, ixs: list[TransactionInstruction]):
         tx = Transaction()
         for ix in ixs:
             tx.add(ix)
@@ -106,11 +109,12 @@ class ClearingHouse:
         user_id: int = 0 
     ):
         ix = self.get_initialize_user_instructions(user_id)
-        return await self.send_ix([ix])
+        return await self.send_ixs([ix])
 
     def get_initialize_user_instructions(
         self,
         user_id: int = 0, 
+        name: str = DEFAULT_USER_NAME
     ) -> TransactionInstruction:
         user_public_key = get_user_account_public_key(
             self.program_id, 
@@ -121,9 +125,26 @@ class ClearingHouse:
             self.program_id
         )
 
+        if len(name) > 32: 
+            raise Exception("name too long")
+
+        name_bytes = bytearray(32)
+        pack_into(f'{len(name)}s', name_bytes, 0, name.encode('utf-8'))
+        offset = len(name)
+        for _ in range(32 - len(name)):
+            pack_into('1s', name_bytes, offset, ' '.encode('utf-8'))
+            offset += 1
+
+        str_name_bytes = name_bytes.hex()
+        name_byte_array = []
+        for i in range(0, len(str_name_bytes), 2):
+            name_byte_array.append(
+                int(str_name_bytes[i:i+2], 16)
+            )
+
         initialize_user_account_ix = self.program.instruction["initialize_user"](
             user_id,
-            [0] * 32,
+            name_byte_array,
             ctx=Context(
                 accounts={
                     "user": user_public_key,
@@ -142,6 +163,8 @@ class ClearingHouse:
         writable_market_index: int = None, 
         writable_bank_index: int = None, 
         user_id = 0,
+        include_oracles: bool = True,
+        include_banks: bool = True,
     ):
         user_account = await get_user_account(
             self.program, 
@@ -166,11 +189,13 @@ class ClearingHouse:
                 is_signer=False, 
                 is_writable=is_writable,
             )
-            oracle_map[market.pubkey] = AccountMeta(
-                pubkey=market.amm.oracle, 
-                is_signer=False, 
-                is_writable=False
-            )
+
+            if include_oracles:
+                oracle_map[str(market.pubkey)] = AccountMeta(
+                    pubkey=market.amm.oracle, 
+                    is_signer=False, 
+                    is_writable=False
+                )
 
         async def track_bank(
             bank_index, 
@@ -185,8 +210,9 @@ class ClearingHouse:
                 is_signer=False, 
                 is_writable=is_writable,
             )
-            if bank_index != 0:
-                oracle_map[bank.pubkey] = AccountMeta(
+
+            if bank_index != 0 and include_oracles:
+                oracle_map[str(bank.pubkey)] = AccountMeta(
                     pubkey=bank.amm.oracle, 
                     is_signer=False, 
                     is_writable=False
@@ -197,15 +223,16 @@ class ClearingHouse:
                 market_index = position.market_index
                 await track_market(market_index, is_writable=True)
 
-        if writable_market_index: 
+        if writable_market_index is not None: 
             await track_market(writable_market_index, is_writable=True)
 
-        for bank_balance in user_account.bank_balances:
-            if bank_balance.balance != 0: 
-                await track_bank(bank_balance.bank_index, is_writable=False)
+        if include_banks:
+            for bank_balance in user_account.bank_balances:
+                if bank_balance.balance != 0: 
+                    await track_bank(bank_balance.bank_index, is_writable=False)
 
-        if writable_bank_index: 
-            await track_bank(writable_bank_index, is_writable=True)
+            if writable_bank_index is not None: 
+                await track_bank(writable_bank_index, is_writable=True)
 
         remaining_accounts = [
             *oracle_map.values(), 
@@ -232,7 +259,7 @@ class ClearingHouse:
             reduce_only,
             user_initialized,
         )
-        return await self.send_ix([ix])
+        return await self.send_ixs([ix])
 
     async def get_deposit_collateral_ix(
         self,
@@ -250,7 +277,7 @@ class ClearingHouse:
             ) 
         else: 
             raise Exception("not implemented...")
-
+                    
         bank = await get_bank_account(
             self.program, 
             bank_index
@@ -273,6 +300,86 @@ class ClearingHouse:
                     "user_token_account": user_token_account, 
                     "authority": self.authority, 
                     "token_program": TOKEN_PROGRAM_ID 
+                },
+                remaining_accounts=remaining_accounts
+            ),
+        )
+    
+    async def add_liquidity(
+        self, 
+        amount: int, 
+        market_index: int, 
+        user_id: int = 0
+    ):  
+        ix = await self.get_add_liquidity_ix(
+            amount, market_index, user_id
+        )
+        return await self.send_ixs([ix])
+
+    async def get_add_liquidity_ix(
+        self, 
+        amount: int, 
+        market_index: int, 
+        user_id: int = 0
+    ):  
+        remaining_accounts = await self.get_remaining_accounts(
+            writable_market_index=market_index
+        ) 
+        user_account_public_key = get_user_account_public_key(
+            self.program_id, 
+            self.authority, 
+            user_id
+        )
+
+        return self.program.instruction["add_liquidity"](
+            amount, 
+            market_index,
+            ctx=Context(
+                accounts={
+                    "state": get_state_public_key(self.program_id), 
+                    "user": user_account_public_key, 
+                    "authority": self.authority, 
+                },
+                remaining_accounts=remaining_accounts
+            ),
+        )
+
+    async def remove_liquidity(
+        self, 
+        amount: int, 
+        market_index: int, 
+        user_id: int = 0
+    ):  
+        ix = await self.get_remove_liquidity_ix(
+            amount, market_index, user_id
+        )
+        return await self.send_ixs([ix])
+
+    async def get_remove_liquidity_ix(
+        self, 
+        amount: int, 
+        market_index: int, 
+        user_id: int = 0
+    ):  
+        remaining_accounts = await self.get_remaining_accounts(
+            writable_market_index=market_index, 
+            include_oracles=False, 
+            include_banks=False,
+        ) 
+        user_account_public_key = get_user_account_public_key(
+            self.program_id, 
+            self.authority, 
+            user_id
+        )
+
+        return self.program.instruction["remove_liquidity"](
+            amount, 
+            market_index,
+            ctx=Context(
+                accounts={
+                    "state": get_state_public_key(self.program_id), 
+                    "user": user_account_public_key, 
+                    "authority": self.authority, 
                 },
                 remaining_accounts=remaining_accounts
             ),
