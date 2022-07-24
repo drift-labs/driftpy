@@ -16,10 +16,6 @@ from driftpy.constants.numeric_constants import (
 
 from driftpy.types import PositionDirection, Market, AssetType
 
-
-""""""
-
-
 def calculate_trade_acquired_amounts(
     direction: PositionDirection,
     amount: int,

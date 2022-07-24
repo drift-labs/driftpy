@@ -1,5 +1,5 @@
 {
-  "version": "0.0.0",
+  "version": "0.1.0",
   "name": "mock_usdc_faucet",
   "instructions": [
     {
@@ -12,7 +12,7 @@
         },
         {
           "name": "admin",
-          "isMut": false,
+          "isMut": true,
           "isSigner": true
         },
         {
@@ -103,17 +103,14 @@
   ],
   "errors": [
     {
-      "code": 300,
+      "code": 6000,
       "name": "InvalidMintAccountAuthority",
       "msg": "Program not mint authority"
     },
     {
-      "code": 301,
+      "code": 6001,
       "name": "Unauthorized",
       "msg": "Signer must be MockUSDCFaucet admin"
     }
-  ],
-  "metadata": {
-    "address": "2z2DLVD3tBWc86pbvvy5qN31v1NXprM6zA5MDr2FMx64"
-  }
+  ]
 }

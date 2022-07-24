@@ -7,6 +7,7 @@ from solana.publickey import PublicKey
 from solana.system_program import create_account, CreateAccountParams
 from anchorpy import Program, Context
 
+
 async def create_price_feed(
     oracle_program: Program,
     init_price: int,

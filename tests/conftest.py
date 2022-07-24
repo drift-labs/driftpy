@@ -10,24 +10,15 @@ from spl.token._layouts import MINT_LAYOUT
 from spl.token.async_client import AsyncToken
 from spl.token.instructions import initialize_mint, InitializeMintParams
 
+workspace = workspace_fixture(
+    "protocol-v2", build_cmd="anchor build --skip-lint"
+)
 
-@fixture(scope="session")
-def event_loop():
-    """Create an instance of the default event loop for each test case."""
-    loop = asyncio.get_event_loop_policy().new_event_loop()  # noqa: DAR301
-    yield loop
-    loop.close()
-
-
-workspace = workspace_fixture("./protocol-v1/", scope="session")
-
-
-@fixture(scope="session")
+@fixture(scope="module")
 def provider(workspace: WorkspaceType) -> Provider:
     return workspace["clearing_house"].provider
 
-
-@async_fixture(scope="session")
+@async_fixture(scope="module")
 async def usdc_mint(provider: Provider) -> Keypair:
     fake_usdc_mint = Keypair()
     params = CreateAccountParams(
