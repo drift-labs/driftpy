@@ -60,7 +60,7 @@ class Admin(ClearingHouse):
             admin_controls_prices,
             ctx=Context(
                 accounts={
-                    "admin": self.program.provider.wallet.public_key,
+                    "admin": self.authority,
                     "state": state_public_key,
                     "quote_asset_mint": usdc_mint,
                     "insurance_vault": insurance_vault_public_key,
@@ -104,7 +104,7 @@ class Admin(ClearingHouse):
             margin_ratio_maintenance,
             ctx=Context(
                 accounts={
-                    "admin": self.program.provider.wallet.public_key,
+                    "admin": self.authority,
                     "state": state_public_key,
                     "oracle": price_oracle,
                     "market": market_pubkey,
@@ -155,7 +155,7 @@ class Admin(ClearingHouse):
             maintenance_liability_weight,
             ctx=Context(
                 accounts={
-                    "admin": self.program.provider.wallet.public_key,
+                    "admin": self.authority,
                     "state": state_public_key,
                     "bank": bank_public_key,
                     "bank_vault": bank_vault_public_key,
@@ -165,6 +165,22 @@ class Admin(ClearingHouse):
                     "rent": SYSVAR_RENT_PUBKEY, 
                     "system_program": SYS_PROGRAM_ID,
                     "token_program": TOKEN_PROGRAM_ID,
+                }
+            )
+        )
+
+    async def update_auction_duration(
+        self, 
+        min_duration: int, 
+        max_duration: int, 
+    ): 
+        return await self.program.rpc["update_auction_duration"](
+            min_duration, 
+            max_duration,
+            ctx=Context(
+                accounts={
+                    "admin": self.authority,
+                    "state": get_state_public_key(self.program_id),
                 }
             )
         )

@@ -12,6 +12,7 @@ from spl.token.constants import TOKEN_PROGRAM_ID
 from anchorpy import Program, Context, Idl
 from struct import pack_into 
 
+from driftpy.constants.numeric_constants import QUOTE_ASSET_BANK_INDEX
 from driftpy.addresses import (
     get_market_public_key,
     get_bank_public_key,
@@ -55,6 +56,7 @@ from driftpy.types import (
     Bank,
     AMM,
     Market,
+    MakerInfo
 )
 
 from driftpy.accounts import (
@@ -71,6 +73,7 @@ def is_available(position: MarketPosition):
         position.open_orders == 0 and 
         position.lp_shares == 0
     )
+    
 
 class ClearingHouse:
     """This class is the main way to interact with Drift Protocol.
@@ -375,6 +378,69 @@ class ClearingHouse:
         return self.program.instruction["remove_liquidity"](
             amount, 
             market_index,
+            ctx=Context(
+                accounts={
+                    "state": get_state_public_key(self.program_id), 
+                    "user": user_account_public_key, 
+                    "authority": self.authority, 
+                },
+                remaining_accounts=remaining_accounts
+            ),
+        )
+
+    async def open_position(
+        self,
+        direction: PositionDirection, 
+        amount: int, 
+        market_index: int,
+        limit_price: int = 0 
+    ): 
+       return await self.place_and_take(
+            OrderParams(
+                order_type=OrderType.MARKET(), 
+                direction=direction, 
+                market_index=market_index, 
+                base_asset_amount=amount,
+                price=limit_price
+            )
+       ) 
+
+    async def place_and_take(
+        self,
+        order_params: OrderParams,
+        maker_info: MakerInfo = None,
+    ):
+        return await self.send_ixs(
+            [await self.get_place_and_take_ix(order_params, maker_info)]
+        )
+
+    async def get_place_and_take_ix(
+        self,
+        order_params: OrderParams,
+        maker_info: MakerInfo = None,
+    ):
+        user_account_public_key = get_user_account_public_key(
+            self.program_id, 
+            self.authority
+        )
+
+        remaining_accounts = await self.get_remaining_accounts(
+            writable_market_index=order_params.market_index, 
+            writable_bank_index=QUOTE_ASSET_BANK_INDEX
+        ) 
+
+        maker_order_id = None 
+        if maker_info is not None: 
+            maker_order_id = maker_info.order.order_id
+            remaining_accounts.append(AccountMeta(
+                pubkey=maker_info.maker, 
+                is_signer=False, 
+                is_writable=True
+            ))
+
+        return self.program.instruction["place_and_take"](
+            order_params,
+            maker_order_id,
             ctx=Context(
                 accounts={
                     "state": get_state_public_key(self.program_id), 

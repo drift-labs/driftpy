@@ -190,28 +190,35 @@ class Order:
 
 @dataclass
 class OrderParamsOptionalAccounts:
-    discount_token: bool
-    referrer: bool
+    discount_token: bool = False
+    referrer: bool = False
 
 @dataclass
 class OrderParams:
+    # necessary 
     order_type: OrderType
     direction: PositionDirection
-    user_order_id: int
-    quote_asset_amount: int
-    base_asset_amount: int
-    price: int
     market_index: int
-    reduce_only: bool
-    post_only: bool
-    immediate_or_cancel: bool
-    trigger_price: int
-    trigger_condition: OrderTriggerCondition
-    optional_accounts: OrderParamsOptionalAccounts
-    position_limit: int
-    oracle_price_offset: int
-    padding0: bool
-    padding1: bool
+    base_asset_amount: int
+    # optional 
+    user_order_id: int = 0 
+    price: int = 0 
+    reduce_only: bool = False
+    post_only: bool = False
+    immediate_or_cancel: bool = False
+    trigger_price: int = 0 
+    trigger_condition: OrderTriggerCondition = OrderTriggerCondition.ABOVE()
+    position_limit: int = 0
+    oracle_price_offset: int = 0
+    auction_duration: int = 0
+    padding0: bool = 0 
+    padding1: bool = 0 
+    optional_accounts: OrderParamsOptionalAccounts = OrderParamsOptionalAccounts()
+
+@dataclass
+class MakerInfo:
+    maker: PublicKey
+    order: Order
 
 @dataclass
 class OrderFillerRewardStructure:

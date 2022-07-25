@@ -34,7 +34,7 @@ from anchorpy import Program, Provider, WorkspaceType
 from anchorpy.utils.token import get_token_account
 
 from driftpy.admin import Admin
-from driftpy.constants.numeric_constants import MARK_PRICE_PRECISION
+from driftpy.constants.numeric_constants import MARK_PRICE_PRECISION, AMM_RESERVE_PRECISION
 from driftpy.clearing_house import ClearingHouse
 
 from driftpy.addresses import (
@@ -298,3 +298,25 @@ async def test_add_remove_liquidity(
         clearing_house.authority
     )
     assert user_account.positions[0].lp_shares == 0
+
+@mark.asyncio
+async def test_open_position(
+    clearing_house: Admin,
+):
+    await clearing_house.update_auction_duration(
+        0, 0
+    )
+
+    baa = 10 * AMM_RESERVE_PRECISION
+    await clearing_house.open_position(
+        PositionDirection.LONG(), 
+        baa, 
+        0, 
+    )
+    
+    user_account = await get_user_account(
+        clearing_house.program, 
+        clearing_house.authority
+    )
+    assert user_account.positions[0].base_asset_amount == baa
+    assert user_account.positions[0].quote_asset_amount > 0
