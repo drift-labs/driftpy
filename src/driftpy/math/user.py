@@ -1,32 +1,23 @@
 from driftpy.types import (
-    PositionDirection,
-    Market,
-    MarketsAccount,
-    MarketPosition,
     User,
-    UserPositions,
+    MarketPosition,
+    Market, 
 )
+from collections.abc import Mapping
 
 from driftpy.math.market import calculate_mark_price
 from driftpy.math.amm import calculate_amm_reserves_after_swap, get_swap_direction
 from driftpy.math.positions import calculate_position_pnl, calculate_base_asset_value
 from driftpy.constants.numeric_constants import (
     MARK_PRICE_PRECISION,
-    # PEG_PRECISION,
     AMM_RESERVE_PRECISION,
-    # QUOTE_PRECISION,
-    FUNDING_PRECISION,
-    PRICE_TO_QUOTE_PRECISION,
     AMM_TO_QUOTE_PRECISION_RATIO,
     AMM_TIMES_PEG_TO_QUOTE_PRECISION_RATIO,
 )
-
 import numpy as np
-from driftpy.math.amm import AssetType
-
 
 def calculate_unrealised_pnl(
-    user_position: UserPositions, markets: MarketsAccount, market_index: int = None
+    user_position: list[MarketPosition], markets: Mapping[int, Market], market_index: int = None
 ) -> int:
     pnl = 0
     for position in user_position:
@@ -36,24 +27,10 @@ def calculate_unrealised_pnl(
                 pnl += calculate_position_pnl(market, position)
 
     return pnl
-
-
-def calculate_unrealised_pnl(
-    user_position: UserPositions, markets: MarketsAccount, market_index: int = None
-) -> int:
-    pnl = 0
-    for position in user_position:
-        if position.base_asset_amount != 0:
-            if market_index is None or position.market_index == int(market_index):
-                market = markets[position.market_index]
-                pnl += calculate_position_pnl(market, position)
-
-    return pnl
-
 
 def get_total_position_value(
-    user_position: UserPositions,
-    markets: MarketsAccount,
+    user_position: list[MarketPosition],
+    markets: Mapping[int, Market],
 ):
     value = 0
     for position in user_position:
@@ -64,7 +41,7 @@ def get_total_position_value(
 
 
 def get_position_value(
-    user_position: UserPositions, markets: MarketsAccount, market_index: int
+    user_position: list[MarketPosition], markets: Mapping[int, Market], market_index: int
 ):
     assert market_index is None or int(market_index) >= 0
     value = 0
@@ -76,12 +53,12 @@ def get_position_value(
     return value
 
 
-def get_total_collateral(user_account: User, markets: MarketsAccount):
+def get_total_collateral(user_account: User, markets: Mapping[int, Market]):
     collateral = user_account.collateral
     return collateral + calculate_unrealised_pnl(user_account.positions, markets)
 
 
-def get_margin_ratio(user_account: User, markets: MarketsAccount):
+def get_margin_ratio(user_account: User, markets: Mapping[int, Market]):
     tpv = get_total_position_value(user_account.positions, markets)
     if tpv > 0:
         return get_total_collateral(user_account, markets) / tpv
@@ -89,20 +66,20 @@ def get_margin_ratio(user_account: User, markets: MarketsAccount):
         return np.nan
 
 
-def get_leverage(user_account: User, markets: MarketsAccount):
+def get_leverage(user_account: User, markets: Mapping[int, Market]):
     return get_total_position_value(
         user_account.positions, markets
     ) / get_total_collateral(user_account, markets)
 
 
-def get_free_collateral(user_account: User, markets: MarketsAccount):
+def get_free_collateral(user_account: User, markets: Mapping[int, Market]):
     return get_total_collateral(user_account, markets) - (
         get_margin_requirement(user_account.positions, markets, "initial")
     )
 
 
 def get_margin_requirement(
-    user_position: UserPositions, markets: MarketsAccount, kind: str
+    user_position: list[MarketPosition], markets: Mapping[int, Market], kind: str
 ):
     assert kind in ["initial", "partial", "maintenance"]
 
@@ -122,13 +99,13 @@ def get_margin_requirement(
     return value
 
 
-def can_be_liquidated(user_account: User, markets: MarketsAccount):
+def can_be_liquidated(user_account: User, markets: Mapping[int, Market]):
     return get_total_collateral(user_account, markets) < (
         get_margin_requirement("partial")
     )
 
 
-def liquidation_price(user_account: User, markets: MarketsAccount, market_index: int):
+def liquidation_price(user_account: User, markets: Mapping[int, Market], market_index: int):
     # todo
 
     tc = get_total_collateral(user_account, markets)

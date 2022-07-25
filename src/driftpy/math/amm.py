@@ -1,18 +1,15 @@
-from email.mime import base
-from operator import pos
 from driftpy.constants.numeric_constants import (
     PEG_PRECISION,
     AMM_TIMES_PEG_TO_QUOTE_PRECISION_RATIO,
-    MARK_PRICE_PRECISION
 )
 from driftpy.types import PositionDirection, AssetType, SwapDirection, AMM
 
-# def calculate_mark_price_amm(amm: AMM):
-#     return calculate_price(
-#         amm.base_asset_reserve,
-#         amm.quote_asset_reserve,
-#         amm.peg_multiplier,
-#     )
+def calculate_mark_price_amm(amm: AMM):
+    return calculate_price(
+        amm.base_asset_reserve,
+        amm.quote_asset_reserve,
+        amm.peg_multiplier,
+    )
 
 def calculate_mark_price_amm(amm, oracle_price=None):
     dynamic_peg = 'PrePeg' in amm.strategies
@@ -101,26 +98,18 @@ def calculate_swap_output(
 def calculate_amm_reserves_after_swap(
     amm, input_asset_type: AssetType, swap_amount, swap_direction: SwapDirection,
 ):
-
     if input_asset_type == AssetType.QUOTE:
         swap_amount = (
             swap_amount * AMM_TIMES_PEG_TO_QUOTE_PRECISION_RATIO / amm.peg_multiplier
         )
 
-        # if swap_direction == PositionDirection.SHORT:
-        #     swap_amount = swap_amount * (-1)
         [new_base_asset_reserve, new_quote_asset_reserve] = calculate_swap_output(
             swap_amount,
             amm.quote_asset_reserve,
             swap_direction,
             amm.sqrt_k,
         )
-
     else:
-        # swap_amount = swap_amount * PEG_PRECISION
-        # if swap_direction == PositionDirection.LONG:
-        #     swap_amount = swap_amount * (-1)
-        # print(swap_amount, amm)
         [new_quote_asset_reserve, new_base_asset_reserve] = calculate_swap_output(
             swap_amount,
             amm.base_asset_reserve,

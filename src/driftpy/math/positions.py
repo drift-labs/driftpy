@@ -1,16 +1,5 @@
 from driftpy.types import (
     PositionDirection,
-    # StateAccount,
-    # MarketsAccount,
-    # Market,
-    # FundingPaymentHistoryAccount,
-    # FundingRateHistoryAccount,
-    # TradeHistoryAccount,
-    # LiquidationHistoryAccount,
-    # DepositHistoryAccount,
-    # ExtendedCurveHistoryAccount,
-    # User,
-    # UserPositions,
     Market,
     MarketPosition,
 )
@@ -18,11 +7,9 @@ from driftpy.types import (
 from driftpy.math.amm import calculate_amm_reserves_after_swap, get_swap_direction
 from driftpy.constants.numeric_constants import (
     MARK_PRICE_PRECISION,
-    # PEG_PRECISION,
     AMM_RESERVE_PRECISION,
-    # QUOTE_PRECISION,
-    FUNDING_PRECISION,
-    PRICE_TO_QUOTE_PRECISION,
+    FUNDING_PAYMENT_PRECISION,
+    PRICE_TO_QUOTE_PRECISION_RATIO,
     AMM_TO_QUOTE_PRECISION_RATIO,
     AMM_TIMES_PEG_TO_QUOTE_PRECISION_RATIO,
 )
@@ -84,7 +71,7 @@ def calculate_position_pnl(
 
     if with_funding:
         funding_rate_pnl = 0.0
-        pnl += funding_rate_pnl / float(PRICE_TO_QUOTE_PRECISION)
+        pnl += funding_rate_pnl / float(PRICE_TO_QUOTE_PRECISION_RATIO)
 
     return pnl
 
@@ -105,7 +92,7 @@ def calculate_position_funding_pnl(market: Market, market_position: MarketPositi
         market_position.last_cumulative_funding_rate - amm_cum_funding_rate
     ) * market_position.base_asset_amount
 
-    funding_pnl /= float(AMM_RESERVE_PRECISION * FUNDING_PRECISION)
+    funding_pnl /= float(AMM_RESERVE_PRECISION * FUNDING_PAYMENT_PRECISION)
 
     return funding_pnl
 
