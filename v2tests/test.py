@@ -285,13 +285,17 @@ async def test_add_remove_liquidity(
         clearing_house.authority
     )
     assert user_account.positions[0].lp_shares == n_shares
+
+    await clearing_house.settle_lp(
+        clearing_house.authority, 
+        0
+    )
     
     # wait the cool down 
     sleep(2)
 
     await clearing_house.remove_liquidity(
-        n_shares, 
-        0
+        n_shares, 0
     )
     user_account = await get_user_account(
         clearing_house.program, 
@@ -300,7 +304,7 @@ async def test_add_remove_liquidity(
     assert user_account.positions[0].lp_shares == 0
 
 @mark.asyncio
-async def test_open_position(
+async def test_open_close_position(
     clearing_house: Admin,
 ):
     await clearing_house.update_auction_duration(
@@ -320,3 +324,14 @@ async def test_open_position(
     )
     assert user_account.positions[0].base_asset_amount == baa
     assert user_account.positions[0].quote_asset_amount > 0
+
+    await clearing_house.close_position(
+        0
+    )
+
+    user_account = await get_user_account(
+        clearing_house.program, 
+        clearing_house.authority
+    )
+    assert user_account.positions[0].base_asset_amount == 0
+    assert user_account.positions[0].quote_asset_amount == 0
