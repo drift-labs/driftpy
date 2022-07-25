@@ -1,7 +1,7 @@
 # from turtle import pos
 from driftpy.clearing_house import ClearingHouse
 from solana.publickey import PublicKey
-from typing import cast
+from typing import cast, Optional
 from driftpy.types import (
     # PositionDirection,
     # StateAccount,
@@ -40,7 +40,11 @@ class ClearingHouseUser:
     [create][driftpy.clearing_house.ClearingHouse.create] method.
     """
 
-    def __init__(self, clearing_house: ClearingHouse, authority: PublicKey):
+    def __init__(
+        self,
+        clearing_house: ClearingHouse,
+        authority: Optional[PublicKey] = None,
+    ):
         """Initialize the ClearingHouse object.
 
         Note: you probably want to use
@@ -49,13 +53,16 @@ class ClearingHouseUser:
 
         Args:
             clearing_house: The Drift ClearingHouse object.
-            authority: user authority to focus on
+            authority: user authority to focus on (if None, the clearing 
+            house's .program.provider.wallet.pk is used as the auth)
         """
         self.clearing_house = clearing_house
         self.authority = authority
 
     async def get_user_account(self):
-        user_account = await self.clearing_house.get_user_account()
+        user_account = await self.clearing_house.get_user_account(
+            self.authority
+        )
         return user_account
 
     async def get_user_positions_account(self) -> UserPositions:
@@ -70,7 +77,9 @@ class ClearingHouseUser:
         return positions_account
 
     async def get_user_orders_account(self) -> UserOrdersAccount:
-        user_orders_account = self.clearing_house.get_user_orders_public_key()
+        user_orders_account = self.clearing_house.get_user_orders_public_key(
+            self.authority
+        )
         orders_account = cast(
             UserOrdersAccount,
             await self.clearing_house.program.account["UserOrders"].fetch(
@@ -105,11 +114,13 @@ class ClearingHouseUser:
         return pnl
 
     async def get_collateral(self):
-        collateral = (await self.clearing_house.get_user_account()).collateral
+        collateral = (await self.clearing_house.get_user_account(
+            self.authority
+        )).collateral
         return collateral
 
     async def get_total_collateral(self):
-        collateral = (await self.clearing_house.get_user_account()).collateral
+        collateral = await self.get_collateral()
         return collateral + await self.get_unrealised_pnl()
 
     async def get_total_position_value(self):

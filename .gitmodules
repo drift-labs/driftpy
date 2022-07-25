@@ -1,0 +1,3 @@
+[submodule "protocol-v2"]
+	path = protocol-v2
+	url = https://github.com/drift-labs/protocol-v2.git

@@ -11,184 +11,176 @@ from anchorpy import Program, Provider, Context
 
 from driftpy.clearing_house import (
     ClearingHouse,
-    T,
-    get_clearing_house_state_account_public_key_and_nonce,
 )
 from driftpy.constants.numeric_constants import PEG_PRECISION
-
+from driftpy.types import OracleSource
+from driftpy.addresses import (
+    get_market_public_key,
+    get_bank_public_key,
+    get_bank_vault_public_key,
+    get_bank_vault_authority_public_key,
+    get_state_public_key,
+    get_user_account_public_key,
+) 
+from driftpy.accounts import ( 
+    get_state_account
+)
+from driftpy.constants.numeric_constants import ( 
+    BANK_INTEREST_PRECISION, 
+    BANK_WEIGHT_PRECISION, 
+)
 
 class Admin(ClearingHouse):
-    @classmethod
-    async def from_(cls: Type[T], program_id: PublicKey, provider: Provider) -> T:
-        idl = cls.local_idl()
-        program = Program(idl, program_id, provider)
-        return await cls.create(program)
 
-    @classmethod
     async def initialize(
-        cls: Type[T],
-        program: Program,
+        self, 
         usdc_mint: PublicKey,
         admin_controls_prices: bool,
     ) -> tuple[TransactionSignature, TransactionSignature]:
-        state_account_rpc_response = await program.provider.connection.get_account_info(
-            cls._get_state_pubkey(program)
+
+        state_account_rpc_response = await self.program.provider.connection.get_account_info(
+            get_state_public_key(self.program_id)
         )
         if state_account_rpc_response["result"]["value"] is not None:
             raise RuntimeError("Clearing house already initialized")
 
-        (
-            collateral_vault_public_key,
-            collateral_vault_nonce,
-        ) = PublicKey.find_program_address([b"collateral_vault"], program.program_id)
+        insurance_vault_public_key = PublicKey.find_program_address(
+            [b"insurance_vault"],
+            self.program_id
+        )[0]
 
-        collateral_vault_authority, _, = PublicKey.find_program_address(
-            [bytes(collateral_vault_public_key)], program.program_id
-        )
+        insurance_vault_authority_public_key = PublicKey.find_program_address(
+            [bytes(insurance_vault_public_key)],
+            self.program_id
+        )[0]
 
-        (
-            insurance_vault_public_key,
-            insurance_vault_nonce,
-        ) = PublicKey.find_program_address([b"insurance_vault"], program.program_id)
+        state_public_key = get_state_public_key(self.program_id) 
 
-        insurance_vault_authority, _ = PublicKey.find_program_address(
-            [bytes(insurance_vault_public_key)], program.program_id
-        )
-
-        markets = Keypair()
-        deposit_history = Keypair()
-        funding_rate_history = Keypair()
-        funding_payment_history = Keypair()
-        trade_history = Keypair()
-        liquidation_history = Keypair()
-        curve_history = Keypair()
-
-        (
-            clearing_house_state_public_key,
-            clearing_house_nonce,
-        ) = get_clearing_house_state_account_public_key_and_nonce(program.program_id)
-        initialize_tx_sig = await program.rpc["initialize"](
-            clearing_house_nonce,
-            collateral_vault_nonce,
-            insurance_vault_nonce,
+        initialize_tx_sig = await self.program.rpc["initialize"](
             admin_controls_prices,
             ctx=Context(
                 accounts={
-                    "admin": program.provider.wallet.public_key,
-                    "state": clearing_house_state_public_key,
-                    "collateral_mint": usdc_mint,
-                    "collateral_vault": collateral_vault_public_key,
-                    "collateral_vault_authority": collateral_vault_authority,
+                    "admin": self.authority,
+                    "state": state_public_key,
+                    "quote_asset_mint": usdc_mint,
                     "insurance_vault": insurance_vault_public_key,
-                    "insurance_vault_authority": insurance_vault_authority,
-                    "markets": markets.public_key,
+                    "insurance_vault_authority": insurance_vault_authority_public_key,
                     "rent": SYSVAR_RENT_PUBKEY,
                     "system_program": SYS_PROGRAM_ID,
                     "token_program": TOKEN_PROGRAM_ID,
                 },
-                pre_instructions=[
-                    await program.account["Markets"].create_instruction(markets),
-                ],
-                signers=[markets],
             ),
         )
 
-        initialize_history_tx_sig = await program.rpc["initialize_history"](
-            ctx=Context(
-                accounts={
-                    "admin": program.provider.wallet.public_key,
-                    "state": clearing_house_state_public_key,
-                    "deposit_history": deposit_history.public_key,
-                    "funding_rate_history": funding_rate_history.public_key,
-                    "funding_payment_history": funding_payment_history.public_key,
-                    "trade_history": trade_history.public_key,
-                    "liquidation_history": liquidation_history.public_key,
-                    "curve_history": curve_history.public_key,
-                    "rent": SYSVAR_RENT_PUBKEY,
-                    "system_program": SYS_PROGRAM_ID,
-                },
-                pre_instructions=await asyncio.gather(
-                    program.account["FundingRateHistory"].create_instruction(
-                        funding_rate_history
-                    ),
-                    program.account["FundingPaymentHistory"].create_instruction(
-                        funding_payment_history
-                    ),
-                    program.account["TradeHistory"].create_instruction(trade_history),
-                    program.account["LiquidationHistory"].create_instruction(
-                        liquidation_history
-                    ),
-                    program.account["DepositHistory"].create_instruction(
-                        deposit_history
-                    ),
-                    program.account["ExtendedCurveHistory"].create_instruction(
-                        curve_history
-                    ),
-                ),
-                signers=[
-                    deposit_history,
-                    funding_payment_history,
-                    trade_history,
-                    liquidation_history,
-                    funding_rate_history,
-                    curve_history,
-                ],
-            )
-        )
-
-        return initialize_tx_sig, initialize_history_tx_sig
+        return initialize_tx_sig 
 
     async def initialize_market(
         self,
-        market_index: int,
         price_oracle: PublicKey,
         base_asset_reserve: int,
         quote_asset_reserve: int,
         periodicity: int,
         peg_multiplier: int = PEG_PRECISION,
+        oracle_source: OracleSource = OracleSource.Pyth(),
+        margin_ratio_initial: int = 2000,
+        margin_ratio_partial: int = 625,
+        margin_ratio_maintenance: int = 500
     ) -> TransactionSignature:
-        markets_account = await self.get_markets_account()
-        if markets_account.markets[market_index].initialized:
-            raise ValueError(f"MarketIndex {market_index} already initialized")
+        state_public_key = get_state_public_key(self.program.program_id)
+        state = await get_state_account(self.program)
+        market_pubkey = get_market_public_key(
+            self.program.program_id,
+            state.number_of_markets, 
+        )
+
         return await self.program.rpc["initialize_market"](
-            market_index,
             base_asset_reserve,
             quote_asset_reserve,
             periodicity,
             peg_multiplier,
+            oracle_source,
+            margin_ratio_initial,
+            margin_ratio_partial,
+            margin_ratio_maintenance,
             ctx=Context(
                 accounts={
-                    "state": self.pdas.state,
-                    "admin": self.program.provider.wallet.public_key,
+                    "admin": self.authority,
+                    "state": state_public_key,
                     "oracle": price_oracle,
-                    "markets": self.pdas.markets,
+                    "market": market_pubkey,
+                    "rent": SYSVAR_RENT_PUBKEY, 
+                    "system_program": SYS_PROGRAM_ID,
                 }
             ),
         )
-
-    async def repeg_amm_curve(
+	
+    async def initialize_bank(
         self,
-        new_peg: int,
-        market_index: int,
-    ) -> TransactionSignature:
-        markets_account = await self.get_markets_account()
-        market_data = markets_account.markets[market_index]
+		mint: PublicKey,
+		optimal_utilization: int = BANK_INTEREST_PRECISION // 2,
+		optimal_rate: int = BANK_INTEREST_PRECISION,
+		max_rate: int = BANK_INTEREST_PRECISION,
+		oracle: PublicKey = PublicKey([0] * PublicKey.LENGTH),
+		oracle_source: OracleSource = OracleSource.QuoteAsset(),
+		initial_asset_weight: int = BANK_WEIGHT_PRECISION,
+		maintenance_asset_weight: int = BANK_WEIGHT_PRECISION,
+		initial_liability_weight: int = BANK_WEIGHT_PRECISION,
+		maintenance_liability_weight: int = BANK_WEIGHT_PRECISION
+	):
+        state_public_key = get_state_public_key(self.program_id)
+        state = await get_state_account(self.program)
+        bank_index = state.number_of_banks
 
-        if not market_data.initialized:
-            raise ValueError(f"MarketIndex {market_index} is not initialized")
+        bank_public_key = get_bank_public_key(
+            self.program_id,
+            bank_index
+        )
+        bank_vault_public_key = get_bank_vault_public_key(
+            self.program_id, 
+            bank_index
+        )
+        bank_vault_authority_public_key = get_bank_vault_authority_public_key(
+            self.program_id, 
+            bank_index
+        )
 
-        amm_data = market_data.amm
-
-        return await self.program.rpc["repeg_amm_curve"](
-            new_peg,
-            market_index,
+        return await self.program.rpc["initialize_bank"](
+            optimal_utilization,
+            optimal_rate,
+            max_rate,
+            oracle_source,
+            initial_asset_weight,
+            maintenance_asset_weight,
+            initial_liability_weight,
+            maintenance_liability_weight,
             ctx=Context(
                 accounts={
-                    "state": self.pdas.state,
-                    "admin": self.program.provider.wallet.public_key,
-                    "oracle": amm_data.oracle,
-                    "markets": self.pdas.markets,
-                    "curve_history": self.pdas.extended_curve_history,
+                    "admin": self.authority,
+                    "state": state_public_key,
+                    "bank": bank_public_key,
+                    "bank_vault": bank_vault_public_key,
+                    "bank_vault_authority": bank_vault_authority_public_key,
+                    "bank_mint": mint,
+                    "oracle": oracle,
+                    "rent": SYSVAR_RENT_PUBKEY, 
+                    "system_program": SYS_PROGRAM_ID,
+                    "token_program": TOKEN_PROGRAM_ID,
                 }
-            ),
+            )
+        )
+
+    async def update_auction_duration(
+        self, 
+        min_duration: int, 
+        max_duration: int, 
+    ): 
+        return await self.program.rpc["update_auction_duration"](
+            min_duration, 
+            max_duration,
+            ctx=Context(
+                accounts={
+                    "admin": self.authority,
+                    "state": get_state_public_key(self.program_id),
+                }
+            )
         )

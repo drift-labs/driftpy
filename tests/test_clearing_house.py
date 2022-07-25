@@ -372,15 +372,17 @@ async def reduce_long_position(
 
 @mark.asyncio
 async def test_reduce_long_position(
-    reduce_long_position: Admin, initialized_user_account_with_deposit: PublicKey
+    reduce_long_position: Admin, 
+    initialized_user_account_with_deposit: PublicKey
 ) -> None:
     user_account_public_key = initialized_user_account_with_deposit
     clearing_house = reduce_long_position
-    user = await clearing_house.get_user_account()
+    user = await clearing_house.get_user_account(hit_cache=False)
     user_positions_account = cast(
         UserPositions,
         await clearing_house.program.account["UserPositions"].fetch(user.positions),
     )
+
     assert user_positions_account.positions[0].quote_asset_amount == 24876238
     assert user_positions_account.positions[0].base_asset_amount == 248737625303142
     assert user.collateral == 9926613
@@ -422,7 +424,7 @@ async def test_reverse_long_position(
 ):
     user_account_public_key = initialized_user_account_with_deposit
     clearing_house = reverse_long_position
-    user = await clearing_house.get_user_account()
+    user = await clearing_house.get_user_account(hit_cache=False)
     user_positions_account = cast(
         UserPositions,
         await clearing_house.program.account["UserPositions"].fetch(user.positions),
@@ -463,7 +465,7 @@ async def test_close_position(
 ) -> None:
     user_account_public_key = initialized_user_account_with_deposit
     clearing_house = close_position
-    user = await clearing_house.get_user_account()
+    user = await clearing_house.get_user_account(hit_cache=False)
     user_positions_account = cast(
         UserPositions,
         await clearing_house.program.account["UserPositions"].fetch(user.positions),
@@ -486,5 +488,5 @@ async def test_close_position(
     assert trade_history_account.trade_records[3].record_id == 4
     assert trade_history_account.trade_records[3].base_asset_amount == 248762375928202
     assert trade_history_account.trade_records[2].liquidation is False
-    assert trade_history_account.trade_records[3].quote_asset_amount == 24875000
+    assert trade_history_account.trade_records[3].quote_asset_amount == 24875001
     assert trade_history_account.trade_records[3].market_index == MARKET_INDEX
