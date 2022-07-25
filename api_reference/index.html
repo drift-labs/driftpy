@@ -1,0 +1,2215 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+        <link rel="canonical" href="https://drift-labs.github.io/driftpy/api_reference/">
+      
+      <link rel="icon" href="../img/drift.png">
+      <meta name="generator" content="mkdocs-1.2.3, mkdocs-material-8.2.5">
+    
+    
+      
+        <title>API Reference - DriftPy</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.2d9f7617.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.e6a45f82.min.css">
+        
+      
+    
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
+    
+      <link rel="stylesheet" href="../css/mkdocstrings.css">
+    
+      <link rel="stylesheet" href="../css/custom.css">
+    
+    <script>__md_scope=new URL("..",location),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="deep-purple" data-md-color-accent="">
+  
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&"object"==typeof palette.color)for(var key of Object.keys(palette.color))document.body.setAttribute("data-md-color-"+key,palette.color[key])</script>
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#api-reference" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="DriftPy" class="md-header__button md-logo" aria-label="DriftPy" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m16 11.78 4.24-7.33 1.73 1-5.23 9.05-6.51-3.75L5.46 19H22v2H2V3h2v14.54L9.5 8l6.5 3.78z"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            DriftPy
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              API Reference
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      <form class="md-header__option" data-md-component="palette">
+        
+          
+          
+          <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="deep-purple" data-md-color-accent=""  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_1">
+          
+            <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_2" hidden>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 6H7c-3.31 0-6 2.69-6 6s2.69 6 6 6h10c3.31 0 6-2.69 6-6s-2.69-6-6-6zm0 10H7c-2.21 0-4-1.79-4-4s1.79-4 4-4h10c2.21 0 4 1.79 4 4s-1.79 4-4 4zM7 9c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+            </label>
+          
+        
+          
+          
+          <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="" data-md-color-accent=""  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_2">
+          
+            <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_1" hidden>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 7H7a5 5 0 0 0-5 5 5 5 0 0 0 5 5h10a5 5 0 0 0 5-5 5 5 0 0 0-5-5m0 8a3 3 0 0 1-3-3 3 3 0 0 1 3-3 3 3 0 0 1 3 3 3 3 0 0 1-3 3z"/></svg>
+            </label>
+          
+        
+      </form>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5z"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" aria-label="Clear" tabindex="-1">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/drift-labs/driftpy/" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.0.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    drift-labs/driftpy
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="DriftPy" class="md-nav__button md-logo" aria-label="DriftPy" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m16 11.78 4.24-7.33 1.73 1-5.23 9.05-6.51-3.75L5.46 19H22v2H2V3h2v14.54L9.5 8l6.5 3.78z"/></svg>
+
+    </a>
+    DriftPy
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/drift-labs/driftpy/" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.0.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    drift-labs/driftpy
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        Introduction
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+    
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          API Reference
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        API Reference
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#driftpy.clearing_house" class="md-nav__link">
+    clearing_house
+  </a>
+  
+    <nav class="md-nav" aria-label="clearing_house">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#driftpy.clearing_house.DEFAULT_USER_NAME" class="md-nav__link">
+    DEFAULT_USER_NAME
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#driftpy.clearing_house.ClearingHouse" class="md-nav__link">
+    ClearingHouse
+  </a>
+  
+    <nav class="md-nav" aria-label="ClearingHouse">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#driftpy.clearing_house.ClearingHouse.__init__" class="md-nav__link">
+    __init__()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#driftpy.clearing_house.ClearingHouse.add_liquidity" class="md-nav__link">
+    add_liquidity()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#driftpy.clearing_house.ClearingHouse.close_position" class="md-nav__link">
+    close_position()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#driftpy.clearing_house.ClearingHouse.deposit" class="md-nav__link">
+    deposit()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#driftpy.clearing_house.ClearingHouse.get_add_liquidity_ix" class="md-nav__link">
+    get_add_liquidity_ix()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#driftpy.clearing_house.ClearingHouse.get_deposit_collateral_ix" class="md-nav__link">
+    get_deposit_collateral_ix()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#driftpy.clearing_house.ClearingHouse.get_initialize_user_instructions" class="md-nav__link">
+    get_initialize_user_instructions()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#driftpy.clearing_house.ClearingHouse.get_place_and_take_ix" class="md-nav__link">
+    get_place_and_take_ix()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#driftpy.clearing_house.ClearingHouse.get_remaining_accounts" class="md-nav__link">
+    get_remaining_accounts()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#driftpy.clearing_house.ClearingHouse.get_remove_liquidity_ix" class="md-nav__link">
+    get_remove_liquidity_ix()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#driftpy.clearing_house.ClearingHouse.get_settle_lp_ix" class="md-nav__link">
+    get_settle_lp_ix()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#driftpy.clearing_house.ClearingHouse.get_user_position" class="md-nav__link">
+    get_user_position()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#driftpy.clearing_house.ClearingHouse.intialize_user" class="md-nav__link">
+    intialize_user()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#driftpy.clearing_house.ClearingHouse.open_position" class="md-nav__link">
+    open_position()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#driftpy.clearing_house.ClearingHouse.place_and_take" class="md-nav__link">
+    place_and_take()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#driftpy.clearing_house.ClearingHouse.remove_liquidity" class="md-nav__link">
+    remove_liquidity()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#driftpy.clearing_house.ClearingHouse.send_ixs" class="md-nav__link">
+    send_ixs()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#driftpy.clearing_house.ClearingHouse.settle_lp" class="md-nav__link">
+    settle_lp()
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#driftpy.clearing_house.is_available" class="md-nav__link">
+    is_available()
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#driftpy.clearing_house" class="md-nav__link">
+    clearing_house
+  </a>
+  
+    <nav class="md-nav" aria-label="clearing_house">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#driftpy.clearing_house.DEFAULT_USER_NAME" class="md-nav__link">
+    DEFAULT_USER_NAME
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#driftpy.clearing_house.ClearingHouse" class="md-nav__link">
+    ClearingHouse
+  </a>
+  
+    <nav class="md-nav" aria-label="ClearingHouse">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#driftpy.clearing_house.ClearingHouse.__init__" class="md-nav__link">
+    __init__()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#driftpy.clearing_house.ClearingHouse.add_liquidity" class="md-nav__link">
+    add_liquidity()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#driftpy.clearing_house.ClearingHouse.close_position" class="md-nav__link">
+    close_position()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#driftpy.clearing_house.ClearingHouse.deposit" class="md-nav__link">
+    deposit()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#driftpy.clearing_house.ClearingHouse.get_add_liquidity_ix" class="md-nav__link">
+    get_add_liquidity_ix()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#driftpy.clearing_house.ClearingHouse.get_deposit_collateral_ix" class="md-nav__link">
+    get_deposit_collateral_ix()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#driftpy.clearing_house.ClearingHouse.get_initialize_user_instructions" class="md-nav__link">
+    get_initialize_user_instructions()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#driftpy.clearing_house.ClearingHouse.get_place_and_take_ix" class="md-nav__link">
+    get_place_and_take_ix()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#driftpy.clearing_house.ClearingHouse.get_remaining_accounts" class="md-nav__link">
+    get_remaining_accounts()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#driftpy.clearing_house.ClearingHouse.get_remove_liquidity_ix" class="md-nav__link">
+    get_remove_liquidity_ix()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#driftpy.clearing_house.ClearingHouse.get_settle_lp_ix" class="md-nav__link">
+    get_settle_lp_ix()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#driftpy.clearing_house.ClearingHouse.get_user_position" class="md-nav__link">
+    get_user_position()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#driftpy.clearing_house.ClearingHouse.intialize_user" class="md-nav__link">
+    intialize_user()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#driftpy.clearing_house.ClearingHouse.open_position" class="md-nav__link">
+    open_position()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#driftpy.clearing_house.ClearingHouse.place_and_take" class="md-nav__link">
+    place_and_take()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#driftpy.clearing_house.ClearingHouse.remove_liquidity" class="md-nav__link">
+    remove_liquidity()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#driftpy.clearing_house.ClearingHouse.send_ixs" class="md-nav__link">
+    send_ixs()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#driftpy.clearing_house.ClearingHouse.settle_lp" class="md-nav__link">
+    settle_lp()
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#driftpy.clearing_house.is_available" class="md-nav__link">
+    is_available()
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          <div class="md-content" data-md-component="content">
+            <article class="md-content__inner md-typeset">
+              
+                
+<a href="https://github.com/drift-labs/driftpy/edit/master/docs/api_reference.md" title="Edit this page" class="md-content__button md-icon">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25z"/></svg>
+</a>
+
+
+
+<h1 id="api-reference">API Reference</h1>
+
+
+  <div class="doc doc-object doc-module">
+
+
+
+<h2 id="driftpy.clearing_house" class="doc doc-heading">
+        <code>clearing_house</code>
+
+
+
+</h2>
+
+    <div class="doc doc-contents first">
+
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+  <div class="doc doc-object doc-attribute">
+
+
+
+<h3 id="driftpy.clearing_house.DEFAULT_USER_NAME" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">DEFAULT_USER_NAME</span></code>
+
+
+</h3>
+
+    <div class="doc doc-contents ">
+
+    </div>
+
+  </div>
+
+
+
+
+  <div class="doc doc-object doc-class">
+
+
+
+<h3 id="driftpy.clearing_house.ClearingHouse" class="doc doc-heading">
+        <code>
+ClearingHouse        </code>
+
+
+
+</h3>
+
+    <div class="doc doc-contents ">
+
+      <p>This class is the main way to interact with Drift Protocol.</p>
+<p>It allows you to subscribe to the various accounts where the Market's state is
+stored, as well as: opening positions, liquidating, settling funding, depositing &amp;
+withdrawing, and more.</p>
+<p>The default way to construct a ClearingHouse instance is using the
+[create][driftpy.clearing_house.ClearingHouse.create] method.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>driftpy/clearing_house.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">ClearingHouse</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;This class is the main way to interact with Drift Protocol.</span>
+
+<span class="sd">    It allows you to subscribe to the various accounts where the Market&#39;s state is</span>
+<span class="sd">    stored, as well as: opening positions, liquidating, settling funding, depositing &amp;</span>
+<span class="sd">    withdrawing, and more.</span>
+
+<span class="sd">    The default way to construct a ClearingHouse instance is using the</span>
+<span class="sd">    [create][driftpy.clearing_house.ClearingHouse.create] method.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">program</span><span class="p">:</span> <span class="n">Program</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Initialize the ClearingHouse object.</span>
+
+<span class="sd">        Note: you probably want to use</span>
+<span class="sd">        [create][driftpy.clearing_house.ClearingHouse.create]</span>
+<span class="sd">        instead of this method.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            program: The AnchorPy program object.</span>
+<span class="sd">            pdas: The required PDAs for the ClearingHouse object.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">program</span> <span class="o">=</span> <span class="n">program</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">program_id</span> <span class="o">=</span> <span class="n">program</span><span class="o">.</span><span class="n">program_id</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">authority</span> <span class="o">=</span> <span class="n">program</span><span class="o">.</span><span class="n">provider</span><span class="o">.</span><span class="n">wallet</span><span class="o">.</span><span class="n">public_key</span>
+
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">send_ixs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ixs</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">TransactionInstruction</span><span class="p">]):</span>
+        <span class="n">tx</span> <span class="o">=</span> <span class="n">Transaction</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">ix</span> <span class="ow">in</span> <span class="n">ixs</span><span class="p">:</span>
+            <span class="n">tx</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">ix</span><span class="p">)</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">program</span><span class="o">.</span><span class="n">provider</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="n">tx</span><span class="p">)</span>
+
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">intialize_user</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> 
+        <span class="n">user_id</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span> 
+    <span class="p">):</span>
+        <span class="n">ix</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_initialize_user_instructions</span><span class="p">(</span><span class="n">user_id</span><span class="p">)</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">send_ixs</span><span class="p">([</span><span class="n">ix</span><span class="p">])</span>
+
+    <span class="k">def</span> <span class="nf">get_initialize_user_instructions</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">user_id</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> 
+        <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">DEFAULT_USER_NAME</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TransactionInstruction</span><span class="p">:</span>
+        <span class="n">user_public_key</span> <span class="o">=</span> <span class="n">get_user_account_public_key</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">program_id</span><span class="p">,</span> 
+            <span class="bp">self</span><span class="o">.</span><span class="n">authority</span><span class="p">,</span>
+            <span class="n">user_id</span>
+        <span class="p">)</span>
+        <span class="n">state_public_key</span> <span class="o">=</span> <span class="n">get_state_public_key</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">program_id</span>
+        <span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">name</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">32</span><span class="p">:</span> 
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;name too long&quot;</span><span class="p">)</span>
+
+        <span class="n">name_bytes</span> <span class="o">=</span> <span class="nb">bytearray</span><span class="p">(</span><span class="mi">32</span><span class="p">)</span>
+        <span class="n">pack_into</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">name</span><span class="p">)</span><span class="si">}</span><span class="s1">s&#39;</span><span class="p">,</span> <span class="n">name_bytes</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">name</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s1">&#39;utf-8&#39;</span><span class="p">))</span>
+        <span class="n">offset</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">32</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="n">name</span><span class="p">)):</span>
+            <span class="n">pack_into</span><span class="p">(</span><span class="s1">&#39;1s&#39;</span><span class="p">,</span> <span class="n">name_bytes</span><span class="p">,</span> <span class="n">offset</span><span class="p">,</span> <span class="s1">&#39; &#39;</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s1">&#39;utf-8&#39;</span><span class="p">))</span>
+            <span class="n">offset</span> <span class="o">+=</span> <span class="mi">1</span>
+
+        <span class="n">str_name_bytes</span> <span class="o">=</span> <span class="n">name_bytes</span><span class="o">.</span><span class="n">hex</span><span class="p">()</span>
+        <span class="n">name_byte_array</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">str_name_bytes</span><span class="p">),</span> <span class="mi">2</span><span class="p">):</span>
+            <span class="n">name_byte_array</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="nb">int</span><span class="p">(</span><span class="n">str_name_bytes</span><span class="p">[</span><span class="n">i</span><span class="p">:</span><span class="n">i</span><span class="o">+</span><span class="mi">2</span><span class="p">],</span> <span class="mi">16</span><span class="p">)</span>
+            <span class="p">)</span>
+
+        <span class="n">initialize_user_account_ix</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">program</span><span class="o">.</span><span class="n">instruction</span><span class="p">[</span><span class="s2">&quot;initialize_user&quot;</span><span class="p">](</span>
+            <span class="n">user_id</span><span class="p">,</span>
+            <span class="n">name_byte_array</span><span class="p">,</span>
+            <span class="n">ctx</span><span class="o">=</span><span class="n">Context</span><span class="p">(</span>
+                <span class="n">accounts</span><span class="o">=</span><span class="p">{</span>
+                    <span class="s2">&quot;user&quot;</span><span class="p">:</span> <span class="n">user_public_key</span><span class="p">,</span>
+                    <span class="s2">&quot;authority&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">authority</span><span class="p">,</span>
+                    <span class="s2">&quot;payer&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">authority</span><span class="p">,</span> 
+                    <span class="s2">&quot;rent&quot;</span><span class="p">:</span> <span class="n">SYSVAR_RENT_PUBKEY</span><span class="p">,</span>
+                    <span class="s2">&quot;system_program&quot;</span><span class="p">:</span> <span class="n">SYS_PROGRAM_ID</span><span class="p">,</span>
+                    <span class="s2">&quot;state&quot;</span><span class="p">:</span> <span class="n">state_public_key</span><span class="p">,</span>
+                <span class="p">},</span>
+            <span class="p">),</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">initialize_user_account_ix</span>
+
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">get_remaining_accounts</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">writable_market_index</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> 
+        <span class="n">writable_bank_index</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> 
+        <span class="n">user_id</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+        <span class="n">include_oracles</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">include_banks</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">user_public_key</span><span class="p">:</span> <span class="n">PublicKey</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="k">if</span> <span class="n">user_public_key</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span> 
+            <span class="n">user_public_key</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">authority</span>
+
+        <span class="n">user_account</span> <span class="o">=</span> <span class="k">await</span> <span class="n">get_user_account</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">program</span><span class="p">,</span> 
+            <span class="n">user_public_key</span><span class="p">,</span> 
+            <span class="n">user_id</span>
+        <span class="p">)</span>
+
+        <span class="n">oracle_map</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">bank_map</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">market_map</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="k">async</span> <span class="k">def</span> <span class="nf">track_market</span><span class="p">(</span>
+            <span class="n">market_index</span><span class="p">,</span>
+            <span class="n">is_writable</span>
+        <span class="p">):</span>
+            <span class="n">market</span> <span class="o">=</span> <span class="k">await</span> <span class="n">get_market_account</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">program</span><span class="p">,</span> 
+                <span class="n">market_index</span>
+            <span class="p">)</span>
+            <span class="n">market_map</span><span class="p">[</span><span class="n">market_index</span><span class="p">]</span> <span class="o">=</span> <span class="n">AccountMeta</span><span class="p">(</span>
+                <span class="n">pubkey</span><span class="o">=</span><span class="n">market</span><span class="o">.</span><span class="n">pubkey</span><span class="p">,</span> 
+                <span class="n">is_signer</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> 
+                <span class="n">is_writable</span><span class="o">=</span><span class="n">is_writable</span><span class="p">,</span>
+            <span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">include_oracles</span><span class="p">:</span>
+                <span class="n">oracle_map</span><span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">market</span><span class="o">.</span><span class="n">pubkey</span><span class="p">)]</span> <span class="o">=</span> <span class="n">AccountMeta</span><span class="p">(</span>
+                    <span class="n">pubkey</span><span class="o">=</span><span class="n">market</span><span class="o">.</span><span class="n">amm</span><span class="o">.</span><span class="n">oracle</span><span class="p">,</span> 
+                    <span class="n">is_signer</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> 
+                    <span class="n">is_writable</span><span class="o">=</span><span class="kc">False</span>
+                <span class="p">)</span>
+
+        <span class="k">async</span> <span class="k">def</span> <span class="nf">track_bank</span><span class="p">(</span>
+            <span class="n">bank_index</span><span class="p">,</span> 
+            <span class="n">is_writable</span>
+        <span class="p">):</span>
+            <span class="n">bank</span> <span class="o">=</span> <span class="k">await</span> <span class="n">get_bank_account</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">program</span><span class="p">,</span> 
+                <span class="n">bank_index</span>
+            <span class="p">)</span>
+            <span class="n">bank_map</span><span class="p">[</span><span class="n">bank_index</span><span class="p">]</span> <span class="o">=</span> <span class="n">AccountMeta</span><span class="p">(</span>
+                <span class="n">pubkey</span><span class="o">=</span><span class="n">bank</span><span class="o">.</span><span class="n">pubkey</span><span class="p">,</span> 
+                <span class="n">is_signer</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> 
+                <span class="n">is_writable</span><span class="o">=</span><span class="n">is_writable</span><span class="p">,</span>
+            <span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">bank_index</span> <span class="o">!=</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">include_oracles</span><span class="p">:</span>
+                <span class="n">oracle_map</span><span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">bank</span><span class="o">.</span><span class="n">pubkey</span><span class="p">)]</span> <span class="o">=</span> <span class="n">AccountMeta</span><span class="p">(</span>
+                    <span class="n">pubkey</span><span class="o">=</span><span class="n">bank</span><span class="o">.</span><span class="n">amm</span><span class="o">.</span><span class="n">oracle</span><span class="p">,</span> 
+                    <span class="n">is_signer</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> 
+                    <span class="n">is_writable</span><span class="o">=</span><span class="kc">False</span>
+                <span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">position</span> <span class="ow">in</span> <span class="n">user_account</span><span class="o">.</span><span class="n">positions</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">is_available</span><span class="p">(</span><span class="n">position</span><span class="p">):</span>
+                <span class="n">market_index</span> <span class="o">=</span> <span class="n">position</span><span class="o">.</span><span class="n">market_index</span>
+                <span class="k">await</span> <span class="n">track_market</span><span class="p">(</span><span class="n">market_index</span><span class="p">,</span> <span class="n">is_writable</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">writable_market_index</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span> 
+            <span class="k">await</span> <span class="n">track_market</span><span class="p">(</span><span class="n">writable_market_index</span><span class="p">,</span> <span class="n">is_writable</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">include_banks</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">bank_balance</span> <span class="ow">in</span> <span class="n">user_account</span><span class="o">.</span><span class="n">bank_balances</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">bank_balance</span><span class="o">.</span><span class="n">balance</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span> 
+                    <span class="k">await</span> <span class="n">track_bank</span><span class="p">(</span><span class="n">bank_balance</span><span class="o">.</span><span class="n">bank_index</span><span class="p">,</span> <span class="n">is_writable</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">writable_bank_index</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span> 
+                <span class="k">await</span> <span class="n">track_bank</span><span class="p">(</span><span class="n">writable_bank_index</span><span class="p">,</span> <span class="n">is_writable</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="n">remaining_accounts</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="o">*</span><span class="n">oracle_map</span><span class="o">.</span><span class="n">values</span><span class="p">(),</span> 
+            <span class="o">*</span><span class="n">bank_map</span><span class="o">.</span><span class="n">values</span><span class="p">(),</span> 
+            <span class="o">*</span><span class="n">market_map</span><span class="o">.</span><span class="n">values</span><span class="p">()</span>   
+        <span class="p">]</span>
+
+        <span class="k">return</span> <span class="n">remaining_accounts</span>
+
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">deposit</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">amount</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">bank_index</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> 
+        <span class="n">user_token_account</span><span class="p">:</span> <span class="n">PublicKey</span><span class="p">,</span> 
+        <span class="n">user_id</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> 
+        <span class="n">reduce_only</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> 
+        <span class="n">user_initialized</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">send_ixs</span><span class="p">([</span><span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_deposit_collateral_ix</span><span class="p">(</span>
+            <span class="n">amount</span><span class="p">,</span>
+            <span class="n">bank_index</span><span class="p">,</span>
+            <span class="n">user_token_account</span><span class="p">,</span>
+            <span class="n">user_id</span><span class="p">,</span>
+            <span class="n">reduce_only</span><span class="p">,</span>
+            <span class="n">user_initialized</span><span class="p">,</span>
+        <span class="p">)])</span>
+
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">get_deposit_collateral_ix</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">amount</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">bank_index</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> 
+        <span class="n">user_token_account</span><span class="p">:</span> <span class="n">PublicKey</span><span class="p">,</span> 
+        <span class="n">user_id</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> 
+        <span class="n">reduce_only</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> 
+        <span class="n">user_initialized</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TransactionInstruction</span><span class="p">:</span>
+
+        <span class="k">if</span> <span class="n">user_initialized</span><span class="p">:</span> 
+            <span class="n">remaining_accounts</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_remaining_accounts</span><span class="p">(</span>
+                <span class="n">writable_bank_index</span><span class="o">=</span><span class="n">bank_index</span>
+            <span class="p">)</span> 
+        <span class="k">else</span><span class="p">:</span> 
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;not implemented...&quot;</span><span class="p">)</span>
+
+        <span class="n">bank</span> <span class="o">=</span> <span class="k">await</span> <span class="n">get_bank_account</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">program</span><span class="p">,</span> 
+            <span class="n">bank_index</span>
+        <span class="p">)</span>
+        <span class="n">user_account_public_key</span> <span class="o">=</span> <span class="n">get_user_account_public_key</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">program_id</span><span class="p">,</span> 
+            <span class="bp">self</span><span class="o">.</span><span class="n">authority</span><span class="p">,</span> 
+            <span class="n">user_id</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">program</span><span class="o">.</span><span class="n">instruction</span><span class="p">[</span><span class="s2">&quot;deposit&quot;</span><span class="p">](</span>
+            <span class="n">bank_index</span><span class="p">,</span> 
+            <span class="n">amount</span><span class="p">,</span>
+            <span class="n">reduce_only</span><span class="p">,</span>
+            <span class="n">ctx</span><span class="o">=</span><span class="n">Context</span><span class="p">(</span>
+                <span class="n">accounts</span><span class="o">=</span><span class="p">{</span>
+                    <span class="s2">&quot;state&quot;</span><span class="p">:</span> <span class="n">get_state_public_key</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">program_id</span><span class="p">),</span> 
+                    <span class="s2">&quot;bank&quot;</span><span class="p">:</span> <span class="n">bank</span><span class="o">.</span><span class="n">pubkey</span><span class="p">,</span> 
+                    <span class="s2">&quot;bank_vault&quot;</span><span class="p">:</span> <span class="n">bank</span><span class="o">.</span><span class="n">vault</span><span class="p">,</span> 
+                    <span class="s2">&quot;user&quot;</span><span class="p">:</span> <span class="n">user_account_public_key</span><span class="p">,</span> 
+                    <span class="s2">&quot;user_token_account&quot;</span><span class="p">:</span> <span class="n">user_token_account</span><span class="p">,</span> 
+                    <span class="s2">&quot;authority&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">authority</span><span class="p">,</span> 
+                    <span class="s2">&quot;token_program&quot;</span><span class="p">:</span> <span class="n">TOKEN_PROGRAM_ID</span> 
+                <span class="p">},</span>
+                <span class="n">remaining_accounts</span><span class="o">=</span><span class="n">remaining_accounts</span>
+            <span class="p">),</span>
+        <span class="p">)</span>
+
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">add_liquidity</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> 
+        <span class="n">amount</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> 
+        <span class="n">market_index</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> 
+        <span class="n">user_id</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="p">):</span>  
+        <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">send_ixs</span><span class="p">([</span><span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_add_liquidity_ix</span><span class="p">(</span>
+            <span class="n">amount</span><span class="p">,</span> <span class="n">market_index</span><span class="p">,</span> <span class="n">user_id</span>
+        <span class="p">)])</span>
+
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">get_add_liquidity_ix</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> 
+        <span class="n">amount</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> 
+        <span class="n">market_index</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> 
+        <span class="n">user_id</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="p">):</span>  
+        <span class="n">remaining_accounts</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_remaining_accounts</span><span class="p">(</span>
+            <span class="n">writable_market_index</span><span class="o">=</span><span class="n">market_index</span>
+        <span class="p">)</span> 
+        <span class="n">user_account_public_key</span> <span class="o">=</span> <span class="n">get_user_account_public_key</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">program_id</span><span class="p">,</span> 
+            <span class="bp">self</span><span class="o">.</span><span class="n">authority</span><span class="p">,</span> 
+            <span class="n">user_id</span>
+        <span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">program</span><span class="o">.</span><span class="n">instruction</span><span class="p">[</span><span class="s2">&quot;add_liquidity&quot;</span><span class="p">](</span>
+            <span class="n">amount</span><span class="p">,</span> 
+            <span class="n">market_index</span><span class="p">,</span>
+            <span class="n">ctx</span><span class="o">=</span><span class="n">Context</span><span class="p">(</span>
+                <span class="n">accounts</span><span class="o">=</span><span class="p">{</span>
+                    <span class="s2">&quot;state&quot;</span><span class="p">:</span> <span class="n">get_state_public_key</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">program_id</span><span class="p">),</span> 
+                    <span class="s2">&quot;user&quot;</span><span class="p">:</span> <span class="n">user_account_public_key</span><span class="p">,</span> 
+                    <span class="s2">&quot;authority&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">authority</span><span class="p">,</span> 
+                <span class="p">},</span>
+                <span class="n">remaining_accounts</span><span class="o">=</span><span class="n">remaining_accounts</span>
+            <span class="p">),</span>
+        <span class="p">)</span>
+
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">remove_liquidity</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> 
+        <span class="n">amount</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> 
+        <span class="n">market_index</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> 
+        <span class="n">user_id</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="p">):</span>  
+        <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">send_ixs</span><span class="p">([</span><span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_remove_liquidity_ix</span><span class="p">(</span>
+            <span class="n">amount</span><span class="p">,</span> <span class="n">market_index</span><span class="p">,</span> <span class="n">user_id</span>
+        <span class="p">)])</span>
+
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">get_remove_liquidity_ix</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> 
+        <span class="n">amount</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> 
+        <span class="n">market_index</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> 
+        <span class="n">user_id</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="p">):</span>  
+        <span class="n">remaining_accounts</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_remaining_accounts</span><span class="p">(</span>
+            <span class="n">writable_market_index</span><span class="o">=</span><span class="n">market_index</span><span class="p">,</span> 
+            <span class="n">include_oracles</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> 
+            <span class="n">include_banks</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="p">)</span> 
+        <span class="n">user_account_public_key</span> <span class="o">=</span> <span class="n">get_user_account_public_key</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">program_id</span><span class="p">,</span> 
+            <span class="bp">self</span><span class="o">.</span><span class="n">authority</span><span class="p">,</span> 
+            <span class="n">user_id</span>
+        <span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">program</span><span class="o">.</span><span class="n">instruction</span><span class="p">[</span><span class="s2">&quot;remove_liquidity&quot;</span><span class="p">](</span>
+            <span class="n">amount</span><span class="p">,</span> 
+            <span class="n">market_index</span><span class="p">,</span>
+            <span class="n">ctx</span><span class="o">=</span><span class="n">Context</span><span class="p">(</span>
+                <span class="n">accounts</span><span class="o">=</span><span class="p">{</span>
+                    <span class="s2">&quot;state&quot;</span><span class="p">:</span> <span class="n">get_state_public_key</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">program_id</span><span class="p">),</span> 
+                    <span class="s2">&quot;user&quot;</span><span class="p">:</span> <span class="n">user_account_public_key</span><span class="p">,</span> 
+                    <span class="s2">&quot;authority&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">authority</span><span class="p">,</span> 
+                <span class="p">},</span>
+                <span class="n">remaining_accounts</span><span class="o">=</span><span class="n">remaining_accounts</span>
+            <span class="p">),</span>
+        <span class="p">)</span>
+
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">open_position</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">direction</span><span class="p">:</span> <span class="n">PositionDirection</span><span class="p">,</span> 
+        <span class="n">amount</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> 
+        <span class="n">market_index</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">limit_price</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span> 
+    <span class="p">):</span> 
+       <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">place_and_take</span><span class="p">(</span>
+            <span class="n">OrderParams</span><span class="p">(</span>
+                <span class="n">order_type</span><span class="o">=</span><span class="n">OrderType</span><span class="o">.</span><span class="n">MARKET</span><span class="p">(),</span> 
+                <span class="n">direction</span><span class="o">=</span><span class="n">direction</span><span class="p">,</span> 
+                <span class="n">market_index</span><span class="o">=</span><span class="n">market_index</span><span class="p">,</span> 
+                <span class="n">base_asset_amount</span><span class="o">=</span><span class="n">amount</span><span class="p">,</span>
+                <span class="n">price</span><span class="o">=</span><span class="n">limit_price</span>
+            <span class="p">)</span>
+       <span class="p">)</span> 
+
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">place_and_take</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">order_params</span><span class="p">:</span> <span class="n">OrderParams</span><span class="p">,</span>
+        <span class="n">maker_info</span><span class="p">:</span> <span class="n">MakerInfo</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">send_ixs</span><span class="p">(</span>
+            <span class="p">[</span><span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_place_and_take_ix</span><span class="p">(</span><span class="n">order_params</span><span class="p">,</span> <span class="n">maker_info</span><span class="p">)]</span>
+        <span class="p">)</span>
+
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">get_place_and_take_ix</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">order_params</span><span class="p">:</span> <span class="n">OrderParams</span><span class="p">,</span>
+        <span class="n">maker_info</span><span class="p">:</span> <span class="n">MakerInfo</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="n">user_account_public_key</span> <span class="o">=</span> <span class="n">get_user_account_public_key</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">program_id</span><span class="p">,</span> 
+            <span class="bp">self</span><span class="o">.</span><span class="n">authority</span>
+        <span class="p">)</span>
+
+        <span class="n">remaining_accounts</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_remaining_accounts</span><span class="p">(</span>
+            <span class="n">writable_market_index</span><span class="o">=</span><span class="n">order_params</span><span class="o">.</span><span class="n">market_index</span><span class="p">,</span> 
+            <span class="n">writable_bank_index</span><span class="o">=</span><span class="n">QUOTE_ASSET_BANK_INDEX</span>
+        <span class="p">)</span> 
+
+        <span class="n">maker_order_id</span> <span class="o">=</span> <span class="kc">None</span> 
+        <span class="k">if</span> <span class="n">maker_info</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span> 
+            <span class="n">maker_order_id</span> <span class="o">=</span> <span class="n">maker_info</span><span class="o">.</span><span class="n">order</span><span class="o">.</span><span class="n">order_id</span>
+            <span class="n">remaining_accounts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">AccountMeta</span><span class="p">(</span>
+                <span class="n">pubkey</span><span class="o">=</span><span class="n">maker_info</span><span class="o">.</span><span class="n">maker</span><span class="p">,</span> 
+                <span class="n">is_signer</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> 
+                <span class="n">is_writable</span><span class="o">=</span><span class="kc">True</span>
+            <span class="p">))</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">program</span><span class="o">.</span><span class="n">instruction</span><span class="p">[</span><span class="s2">&quot;place_and_take&quot;</span><span class="p">](</span>
+            <span class="n">order_params</span><span class="p">,</span>
+            <span class="n">maker_order_id</span><span class="p">,</span>
+            <span class="n">ctx</span><span class="o">=</span><span class="n">Context</span><span class="p">(</span>
+                <span class="n">accounts</span><span class="o">=</span><span class="p">{</span>
+                    <span class="s2">&quot;state&quot;</span><span class="p">:</span> <span class="n">get_state_public_key</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">program_id</span><span class="p">),</span> 
+                    <span class="s2">&quot;user&quot;</span><span class="p">:</span> <span class="n">user_account_public_key</span><span class="p">,</span> 
+                    <span class="s2">&quot;authority&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">authority</span><span class="p">,</span> 
+                <span class="p">},</span>
+                <span class="n">remaining_accounts</span><span class="o">=</span><span class="n">remaining_accounts</span>
+            <span class="p">),</span>
+        <span class="p">)</span>
+
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">settle_lp</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">settlee_user_account_public_key</span><span class="p">:</span> <span class="n">PublicKey</span><span class="p">,</span> 
+        <span class="n">market_index</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="p">):</span> 
+        <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">send_ixs</span><span class="p">([</span><span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_settle_lp_ix</span><span class="p">(</span>
+            <span class="n">settlee_user_account_public_key</span><span class="p">,</span> 
+            <span class="n">market_index</span>
+        <span class="p">)])</span>
+
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">get_settle_lp_ix</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">settlee_user_account_public_key</span><span class="p">:</span> <span class="n">PublicKey</span><span class="p">,</span> 
+        <span class="n">market_index</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="n">remaining_accounts</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_remaining_accounts</span><span class="p">(</span>
+            <span class="n">writable_market_index</span><span class="o">=</span><span class="n">market_index</span><span class="p">,</span> 
+            <span class="n">include_banks</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> 
+            <span class="n">include_oracles</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+            <span class="n">user_public_key</span><span class="o">=</span><span class="n">settlee_user_account_public_key</span><span class="p">,</span>
+        <span class="p">)</span> 
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">program</span><span class="o">.</span><span class="n">instruction</span><span class="p">[</span><span class="s2">&quot;settle_lp&quot;</span><span class="p">](</span>
+            <span class="n">market_index</span><span class="p">,</span> 
+            <span class="n">ctx</span><span class="o">=</span><span class="n">Context</span><span class="p">(</span>
+                <span class="n">accounts</span><span class="o">=</span><span class="p">{</span>
+                    <span class="s2">&quot;state&quot;</span><span class="p">:</span> <span class="n">get_state_public_key</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">program_id</span><span class="p">),</span> 
+                    <span class="s2">&quot;user&quot;</span><span class="p">:</span> <span class="n">get_user_account_public_key</span><span class="p">(</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">program_id</span><span class="p">,</span> 
+                        <span class="n">settlee_user_account_public_key</span>
+                    <span class="p">),</span> 
+                <span class="p">},</span>
+                <span class="n">remaining_accounts</span><span class="o">=</span><span class="n">remaining_accounts</span>
+            <span class="p">),</span>
+        <span class="p">)</span>
+
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">get_user_position</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> 
+        <span class="n">market_index</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> 
+    <span class="p">):</span>
+        <span class="n">user</span> <span class="o">=</span> <span class="k">await</span> <span class="n">get_user_account</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">program</span><span class="p">,</span> 
+            <span class="bp">self</span><span class="o">.</span><span class="n">authority</span>
+        <span class="p">)</span>
+        <span class="k">for</span> <span class="n">position</span> <span class="ow">in</span> <span class="n">user</span><span class="o">.</span><span class="n">positions</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">position</span><span class="o">.</span><span class="n">market_index</span> <span class="o">==</span> <span class="n">market_index</span><span class="p">:</span>
+                <span class="k">break</span> 
+        <span class="k">assert</span> <span class="n">position</span><span class="o">.</span><span class="n">market_index</span> <span class="o">==</span> <span class="n">market_index</span><span class="p">,</span> <span class="s2">&quot;no position in market&quot;</span>
+
+        <span class="k">return</span> <span class="n">position</span>
+
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">close_position</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> 
+        <span class="n">market_index</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="p">):</span>
+        <span class="n">position</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_user_position</span><span class="p">(</span>
+            <span class="n">market_index</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="n">position</span><span class="o">.</span><span class="n">base_asset_amount</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> 
+
+        <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">place_and_take</span><span class="p">(</span><span class="n">OrderParams</span><span class="p">(</span>
+                <span class="n">order_type</span><span class="o">=</span><span class="n">OrderType</span><span class="o">.</span><span class="n">MARKET</span><span class="p">(),</span> 
+                <span class="n">direction</span><span class="o">=</span><span class="n">PositionDirection</span><span class="o">.</span><span class="n">LONG</span><span class="p">()</span> <span class="k">if</span> <span class="n">position</span><span class="o">.</span><span class="n">base_asset_amount</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="n">PositionDirection</span><span class="o">.</span><span class="n">SHORT</span><span class="p">(),</span> 
+                <span class="n">market_index</span><span class="o">=</span><span class="n">market_index</span><span class="p">,</span> 
+                <span class="n">base_asset_amount</span><span class="o">=</span><span class="n">position</span><span class="o">.</span><span class="n">base_asset_amount</span><span class="p">,</span>
+                <span class="n">price</span><span class="o">=</span><span class="mi">0</span>
+        <span class="p">))</span>
+</code></pre></div>
+        </details>
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+  <div class="doc doc-object doc-method">
+
+
+
+<h4 id="driftpy.clearing_house.ClearingHouse.__init__" class="doc doc-heading">
+<code class="highlight language-python"><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">program</span><span class="p">)</span></code>
+
+  <span class="doc doc-properties">
+      <small class="doc doc-property doc-property-special"><code>special</code></small>
+  </span>
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Initialize the ClearingHouse object.</p>
+<p>Note: you probably want to use
+[create][driftpy.clearing_house.ClearingHouse.create]
+instead of this method.</p>
+
+<p><strong>Parameters:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Description</th>
+      <th>Default</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>program</code></td>
+        <td><code>Program</code></td>
+        <td><p>The AnchorPy program object.</p></td>
+        <td><em>required</em></td>
+      </tr>
+      <tr>
+        <td><code>pdas</code></td>
+        <td></td>
+        <td><p>The required PDAs for the ClearingHouse object.</p></td>
+        <td><em>required</em></td>
+      </tr>
+  </tbody>
+</table>
+        <details class="quote">
+          <summary>Source code in <code>driftpy/clearing_house.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">program</span><span class="p">:</span> <span class="n">Program</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Initialize the ClearingHouse object.</span>
+
+<span class="sd">    Note: you probably want to use</span>
+<span class="sd">    [create][driftpy.clearing_house.ClearingHouse.create]</span>
+<span class="sd">    instead of this method.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        program: The AnchorPy program object.</span>
+<span class="sd">        pdas: The required PDAs for the ClearingHouse object.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">program</span> <span class="o">=</span> <span class="n">program</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">program_id</span> <span class="o">=</span> <span class="n">program</span><span class="o">.</span><span class="n">program_id</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">authority</span> <span class="o">=</span> <span class="n">program</span><span class="o">.</span><span class="n">provider</span><span class="o">.</span><span class="n">wallet</span><span class="o">.</span><span class="n">public_key</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-method">
+
+
+
+<h4 id="driftpy.clearing_house.ClearingHouse.add_liquidity" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">add_liquidity</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">amount</span><span class="p">,</span> <span class="n">market_index</span><span class="p">,</span> <span class="n">user_id</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span></code>
+
+  <span class="doc doc-properties">
+      <small class="doc doc-property doc-property-async"><code>async</code></small>
+  </span>
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+
+        <details class="quote">
+          <summary>Source code in <code>driftpy/clearing_house.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">add_liquidity</span><span class="p">(</span>
+    <span class="bp">self</span><span class="p">,</span> 
+    <span class="n">amount</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> 
+    <span class="n">market_index</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> 
+    <span class="n">user_id</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="p">):</span>  
+    <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">send_ixs</span><span class="p">([</span><span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_add_liquidity_ix</span><span class="p">(</span>
+        <span class="n">amount</span><span class="p">,</span> <span class="n">market_index</span><span class="p">,</span> <span class="n">user_id</span>
+    <span class="p">)])</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-method">
+
+
+
+<h4 id="driftpy.clearing_house.ClearingHouse.close_position" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">close_position</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">market_index</span><span class="p">)</span></code>
+
+  <span class="doc doc-properties">
+      <small class="doc doc-property doc-property-async"><code>async</code></small>
+  </span>
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+
+        <details class="quote">
+          <summary>Source code in <code>driftpy/clearing_house.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">close_position</span><span class="p">(</span>
+    <span class="bp">self</span><span class="p">,</span> 
+    <span class="n">market_index</span><span class="p">:</span> <span class="nb">int</span>
+<span class="p">):</span>
+    <span class="n">position</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_user_position</span><span class="p">(</span>
+        <span class="n">market_index</span>
+    <span class="p">)</span>
+    <span class="k">if</span> <span class="n">position</span><span class="o">.</span><span class="n">base_asset_amount</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">return</span> 
+
+    <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">place_and_take</span><span class="p">(</span><span class="n">OrderParams</span><span class="p">(</span>
+            <span class="n">order_type</span><span class="o">=</span><span class="n">OrderType</span><span class="o">.</span><span class="n">MARKET</span><span class="p">(),</span> 
+            <span class="n">direction</span><span class="o">=</span><span class="n">PositionDirection</span><span class="o">.</span><span class="n">LONG</span><span class="p">()</span> <span class="k">if</span> <span class="n">position</span><span class="o">.</span><span class="n">base_asset_amount</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="n">PositionDirection</span><span class="o">.</span><span class="n">SHORT</span><span class="p">(),</span> 
+            <span class="n">market_index</span><span class="o">=</span><span class="n">market_index</span><span class="p">,</span> 
+            <span class="n">base_asset_amount</span><span class="o">=</span><span class="n">position</span><span class="o">.</span><span class="n">base_asset_amount</span><span class="p">,</span>
+            <span class="n">price</span><span class="o">=</span><span class="mi">0</span>
+    <span class="p">))</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-method">
+
+
+
+<h4 id="driftpy.clearing_house.ClearingHouse.deposit" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">deposit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">amount</span><span class="p">,</span> <span class="n">bank_index</span><span class="p">,</span> <span class="n">user_token_account</span><span class="p">,</span> <span class="n">user_id</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">reduce_only</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">user_initialized</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></code>
+
+  <span class="doc doc-properties">
+      <small class="doc doc-property doc-property-async"><code>async</code></small>
+  </span>
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+
+        <details class="quote">
+          <summary>Source code in <code>driftpy/clearing_house.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">deposit</span><span class="p">(</span>
+    <span class="bp">self</span><span class="p">,</span>
+    <span class="n">amount</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">bank_index</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> 
+    <span class="n">user_token_account</span><span class="p">:</span> <span class="n">PublicKey</span><span class="p">,</span> 
+    <span class="n">user_id</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> 
+    <span class="n">reduce_only</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> 
+    <span class="n">user_initialized</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+<span class="p">):</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">send_ixs</span><span class="p">([</span><span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_deposit_collateral_ix</span><span class="p">(</span>
+        <span class="n">amount</span><span class="p">,</span>
+        <span class="n">bank_index</span><span class="p">,</span>
+        <span class="n">user_token_account</span><span class="p">,</span>
+        <span class="n">user_id</span><span class="p">,</span>
+        <span class="n">reduce_only</span><span class="p">,</span>
+        <span class="n">user_initialized</span><span class="p">,</span>
+    <span class="p">)])</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-method">
+
+
+
+<h4 id="driftpy.clearing_house.ClearingHouse.get_add_liquidity_ix" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">get_add_liquidity_ix</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">amount</span><span class="p">,</span> <span class="n">market_index</span><span class="p">,</span> <span class="n">user_id</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span></code>
+
+  <span class="doc doc-properties">
+      <small class="doc doc-property doc-property-async"><code>async</code></small>
+  </span>
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+
+        <details class="quote">
+          <summary>Source code in <code>driftpy/clearing_house.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">get_add_liquidity_ix</span><span class="p">(</span>
+    <span class="bp">self</span><span class="p">,</span> 
+    <span class="n">amount</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> 
+    <span class="n">market_index</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> 
+    <span class="n">user_id</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="p">):</span>  
+    <span class="n">remaining_accounts</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_remaining_accounts</span><span class="p">(</span>
+        <span class="n">writable_market_index</span><span class="o">=</span><span class="n">market_index</span>
+    <span class="p">)</span> 
+    <span class="n">user_account_public_key</span> <span class="o">=</span> <span class="n">get_user_account_public_key</span><span class="p">(</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">program_id</span><span class="p">,</span> 
+        <span class="bp">self</span><span class="o">.</span><span class="n">authority</span><span class="p">,</span> 
+        <span class="n">user_id</span>
+    <span class="p">)</span>
+
+    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">program</span><span class="o">.</span><span class="n">instruction</span><span class="p">[</span><span class="s2">&quot;add_liquidity&quot;</span><span class="p">](</span>
+        <span class="n">amount</span><span class="p">,</span> 
+        <span class="n">market_index</span><span class="p">,</span>
+        <span class="n">ctx</span><span class="o">=</span><span class="n">Context</span><span class="p">(</span>
+            <span class="n">accounts</span><span class="o">=</span><span class="p">{</span>
+                <span class="s2">&quot;state&quot;</span><span class="p">:</span> <span class="n">get_state_public_key</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">program_id</span><span class="p">),</span> 
+                <span class="s2">&quot;user&quot;</span><span class="p">:</span> <span class="n">user_account_public_key</span><span class="p">,</span> 
+                <span class="s2">&quot;authority&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">authority</span><span class="p">,</span> 
+            <span class="p">},</span>
+            <span class="n">remaining_accounts</span><span class="o">=</span><span class="n">remaining_accounts</span>
+        <span class="p">),</span>
+    <span class="p">)</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-method">
+
+
+
+<h4 id="driftpy.clearing_house.ClearingHouse.get_deposit_collateral_ix" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">get_deposit_collateral_ix</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">amount</span><span class="p">,</span> <span class="n">bank_index</span><span class="p">,</span> <span class="n">user_token_account</span><span class="p">,</span> <span class="n">user_id</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">reduce_only</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">user_initialized</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></code>
+
+  <span class="doc doc-properties">
+      <small class="doc doc-property doc-property-async"><code>async</code></small>
+  </span>
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+
+        <details class="quote">
+          <summary>Source code in <code>driftpy/clearing_house.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">get_deposit_collateral_ix</span><span class="p">(</span>
+    <span class="bp">self</span><span class="p">,</span>
+    <span class="n">amount</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">bank_index</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> 
+    <span class="n">user_token_account</span><span class="p">:</span> <span class="n">PublicKey</span><span class="p">,</span> 
+    <span class="n">user_id</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> 
+    <span class="n">reduce_only</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> 
+    <span class="n">user_initialized</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TransactionInstruction</span><span class="p">:</span>
+
+    <span class="k">if</span> <span class="n">user_initialized</span><span class="p">:</span> 
+        <span class="n">remaining_accounts</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_remaining_accounts</span><span class="p">(</span>
+            <span class="n">writable_bank_index</span><span class="o">=</span><span class="n">bank_index</span>
+        <span class="p">)</span> 
+    <span class="k">else</span><span class="p">:</span> 
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;not implemented...&quot;</span><span class="p">)</span>
+
+    <span class="n">bank</span> <span class="o">=</span> <span class="k">await</span> <span class="n">get_bank_account</span><span class="p">(</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">program</span><span class="p">,</span> 
+        <span class="n">bank_index</span>
+    <span class="p">)</span>
+    <span class="n">user_account_public_key</span> <span class="o">=</span> <span class="n">get_user_account_public_key</span><span class="p">(</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">program_id</span><span class="p">,</span> 
+        <span class="bp">self</span><span class="o">.</span><span class="n">authority</span><span class="p">,</span> 
+        <span class="n">user_id</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">program</span><span class="o">.</span><span class="n">instruction</span><span class="p">[</span><span class="s2">&quot;deposit&quot;</span><span class="p">](</span>
+        <span class="n">bank_index</span><span class="p">,</span> 
+        <span class="n">amount</span><span class="p">,</span>
+        <span class="n">reduce_only</span><span class="p">,</span>
+        <span class="n">ctx</span><span class="o">=</span><span class="n">Context</span><span class="p">(</span>
+            <span class="n">accounts</span><span class="o">=</span><span class="p">{</span>
+                <span class="s2">&quot;state&quot;</span><span class="p">:</span> <span class="n">get_state_public_key</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">program_id</span><span class="p">),</span> 
+                <span class="s2">&quot;bank&quot;</span><span class="p">:</span> <span class="n">bank</span><span class="o">.</span><span class="n">pubkey</span><span class="p">,</span> 
+                <span class="s2">&quot;bank_vault&quot;</span><span class="p">:</span> <span class="n">bank</span><span class="o">.</span><span class="n">vault</span><span class="p">,</span> 
+                <span class="s2">&quot;user&quot;</span><span class="p">:</span> <span class="n">user_account_public_key</span><span class="p">,</span> 
+                <span class="s2">&quot;user_token_account&quot;</span><span class="p">:</span> <span class="n">user_token_account</span><span class="p">,</span> 
+                <span class="s2">&quot;authority&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">authority</span><span class="p">,</span> 
+                <span class="s2">&quot;token_program&quot;</span><span class="p">:</span> <span class="n">TOKEN_PROGRAM_ID</span> 
+            <span class="p">},</span>
+            <span class="n">remaining_accounts</span><span class="o">=</span><span class="n">remaining_accounts</span>
+        <span class="p">),</span>
+    <span class="p">)</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-method">
+
+
+
+<h4 id="driftpy.clearing_house.ClearingHouse.get_initialize_user_instructions" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">get_initialize_user_instructions</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">user_id</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;Main Account&#39;</span><span class="p">)</span></code>
+
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+
+        <details class="quote">
+          <summary>Source code in <code>driftpy/clearing_house.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_initialize_user_instructions</span><span class="p">(</span>
+    <span class="bp">self</span><span class="p">,</span>
+    <span class="n">user_id</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> 
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">DEFAULT_USER_NAME</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TransactionInstruction</span><span class="p">:</span>
+    <span class="n">user_public_key</span> <span class="o">=</span> <span class="n">get_user_account_public_key</span><span class="p">(</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">program_id</span><span class="p">,</span> 
+        <span class="bp">self</span><span class="o">.</span><span class="n">authority</span><span class="p">,</span>
+        <span class="n">user_id</span>
+    <span class="p">)</span>
+    <span class="n">state_public_key</span> <span class="o">=</span> <span class="n">get_state_public_key</span><span class="p">(</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">program_id</span>
+    <span class="p">)</span>
+
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">name</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">32</span><span class="p">:</span> 
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;name too long&quot;</span><span class="p">)</span>
+
+    <span class="n">name_bytes</span> <span class="o">=</span> <span class="nb">bytearray</span><span class="p">(</span><span class="mi">32</span><span class="p">)</span>
+    <span class="n">pack_into</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">name</span><span class="p">)</span><span class="si">}</span><span class="s1">s&#39;</span><span class="p">,</span> <span class="n">name_bytes</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">name</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s1">&#39;utf-8&#39;</span><span class="p">))</span>
+    <span class="n">offset</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">32</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="n">name</span><span class="p">)):</span>
+        <span class="n">pack_into</span><span class="p">(</span><span class="s1">&#39;1s&#39;</span><span class="p">,</span> <span class="n">name_bytes</span><span class="p">,</span> <span class="n">offset</span><span class="p">,</span> <span class="s1">&#39; &#39;</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s1">&#39;utf-8&#39;</span><span class="p">))</span>
+        <span class="n">offset</span> <span class="o">+=</span> <span class="mi">1</span>
+
+    <span class="n">str_name_bytes</span> <span class="o">=</span> <span class="n">name_bytes</span><span class="o">.</span><span class="n">hex</span><span class="p">()</span>
+    <span class="n">name_byte_array</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">str_name_bytes</span><span class="p">),</span> <span class="mi">2</span><span class="p">):</span>
+        <span class="n">name_byte_array</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+            <span class="nb">int</span><span class="p">(</span><span class="n">str_name_bytes</span><span class="p">[</span><span class="n">i</span><span class="p">:</span><span class="n">i</span><span class="o">+</span><span class="mi">2</span><span class="p">],</span> <span class="mi">16</span><span class="p">)</span>
+        <span class="p">)</span>
+
+    <span class="n">initialize_user_account_ix</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">program</span><span class="o">.</span><span class="n">instruction</span><span class="p">[</span><span class="s2">&quot;initialize_user&quot;</span><span class="p">](</span>
+        <span class="n">user_id</span><span class="p">,</span>
+        <span class="n">name_byte_array</span><span class="p">,</span>
+        <span class="n">ctx</span><span class="o">=</span><span class="n">Context</span><span class="p">(</span>
+            <span class="n">accounts</span><span class="o">=</span><span class="p">{</span>
+                <span class="s2">&quot;user&quot;</span><span class="p">:</span> <span class="n">user_public_key</span><span class="p">,</span>
+                <span class="s2">&quot;authority&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">authority</span><span class="p">,</span>
+                <span class="s2">&quot;payer&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">authority</span><span class="p">,</span> 
+                <span class="s2">&quot;rent&quot;</span><span class="p">:</span> <span class="n">SYSVAR_RENT_PUBKEY</span><span class="p">,</span>
+                <span class="s2">&quot;system_program&quot;</span><span class="p">:</span> <span class="n">SYS_PROGRAM_ID</span><span class="p">,</span>
+                <span class="s2">&quot;state&quot;</span><span class="p">:</span> <span class="n">state_public_key</span><span class="p">,</span>
+            <span class="p">},</span>
+        <span class="p">),</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">initialize_user_account_ix</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-method">
+
+
+
+<h4 id="driftpy.clearing_house.ClearingHouse.get_place_and_take_ix" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">get_place_and_take_ix</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">order_params</span><span class="p">,</span> <span class="n">maker_info</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
+
+  <span class="doc doc-properties">
+      <small class="doc doc-property doc-property-async"><code>async</code></small>
+  </span>
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+
+        <details class="quote">
+          <summary>Source code in <code>driftpy/clearing_house.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">get_place_and_take_ix</span><span class="p">(</span>
+    <span class="bp">self</span><span class="p">,</span>
+    <span class="n">order_params</span><span class="p">:</span> <span class="n">OrderParams</span><span class="p">,</span>
+    <span class="n">maker_info</span><span class="p">:</span> <span class="n">MakerInfo</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">):</span>
+    <span class="n">user_account_public_key</span> <span class="o">=</span> <span class="n">get_user_account_public_key</span><span class="p">(</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">program_id</span><span class="p">,</span> 
+        <span class="bp">self</span><span class="o">.</span><span class="n">authority</span>
+    <span class="p">)</span>
+
+    <span class="n">remaining_accounts</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_remaining_accounts</span><span class="p">(</span>
+        <span class="n">writable_market_index</span><span class="o">=</span><span class="n">order_params</span><span class="o">.</span><span class="n">market_index</span><span class="p">,</span> 
+        <span class="n">writable_bank_index</span><span class="o">=</span><span class="n">QUOTE_ASSET_BANK_INDEX</span>
+    <span class="p">)</span> 
+
+    <span class="n">maker_order_id</span> <span class="o">=</span> <span class="kc">None</span> 
+    <span class="k">if</span> <span class="n">maker_info</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span> 
+        <span class="n">maker_order_id</span> <span class="o">=</span> <span class="n">maker_info</span><span class="o">.</span><span class="n">order</span><span class="o">.</span><span class="n">order_id</span>
+        <span class="n">remaining_accounts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">AccountMeta</span><span class="p">(</span>
+            <span class="n">pubkey</span><span class="o">=</span><span class="n">maker_info</span><span class="o">.</span><span class="n">maker</span><span class="p">,</span> 
+            <span class="n">is_signer</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> 
+            <span class="n">is_writable</span><span class="o">=</span><span class="kc">True</span>
+        <span class="p">))</span>
+
+    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">program</span><span class="o">.</span><span class="n">instruction</span><span class="p">[</span><span class="s2">&quot;place_and_take&quot;</span><span class="p">](</span>
+        <span class="n">order_params</span><span class="p">,</span>
+        <span class="n">maker_order_id</span><span class="p">,</span>
+        <span class="n">ctx</span><span class="o">=</span><span class="n">Context</span><span class="p">(</span>
+            <span class="n">accounts</span><span class="o">=</span><span class="p">{</span>
+                <span class="s2">&quot;state&quot;</span><span class="p">:</span> <span class="n">get_state_public_key</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">program_id</span><span class="p">),</span> 
+                <span class="s2">&quot;user&quot;</span><span class="p">:</span> <span class="n">user_account_public_key</span><span class="p">,</span> 
+                <span class="s2">&quot;authority&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">authority</span><span class="p">,</span> 
+            <span class="p">},</span>
+            <span class="n">remaining_accounts</span><span class="o">=</span><span class="n">remaining_accounts</span>
+        <span class="p">),</span>
+    <span class="p">)</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-method">
+
+
+
+<h4 id="driftpy.clearing_house.ClearingHouse.get_remaining_accounts" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">get_remaining_accounts</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">writable_market_index</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">writable_bank_index</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">user_id</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">include_oracles</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">include_banks</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">user_public_key</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
+
+  <span class="doc doc-properties">
+      <small class="doc doc-property doc-property-async"><code>async</code></small>
+  </span>
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+
+        <details class="quote">
+          <summary>Source code in <code>driftpy/clearing_house.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">get_remaining_accounts</span><span class="p">(</span>
+    <span class="bp">self</span><span class="p">,</span>
+    <span class="n">writable_market_index</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> 
+    <span class="n">writable_bank_index</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> 
+    <span class="n">user_id</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+    <span class="n">include_oracles</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="n">include_banks</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="n">user_public_key</span><span class="p">:</span> <span class="n">PublicKey</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">):</span>
+    <span class="k">if</span> <span class="n">user_public_key</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span> 
+        <span class="n">user_public_key</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">authority</span>
+
+    <span class="n">user_account</span> <span class="o">=</span> <span class="k">await</span> <span class="n">get_user_account</span><span class="p">(</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">program</span><span class="p">,</span> 
+        <span class="n">user_public_key</span><span class="p">,</span> 
+        <span class="n">user_id</span>
+    <span class="p">)</span>
+
+    <span class="n">oracle_map</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">bank_map</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">market_map</span> <span class="o">=</span> <span class="p">{}</span>
+
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">track_market</span><span class="p">(</span>
+        <span class="n">market_index</span><span class="p">,</span>
+        <span class="n">is_writable</span>
+    <span class="p">):</span>
+        <span class="n">market</span> <span class="o">=</span> <span class="k">await</span> <span class="n">get_market_account</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">program</span><span class="p">,</span> 
+            <span class="n">market_index</span>
+        <span class="p">)</span>
+        <span class="n">market_map</span><span class="p">[</span><span class="n">market_index</span><span class="p">]</span> <span class="o">=</span> <span class="n">AccountMeta</span><span class="p">(</span>
+            <span class="n">pubkey</span><span class="o">=</span><span class="n">market</span><span class="o">.</span><span class="n">pubkey</span><span class="p">,</span> 
+            <span class="n">is_signer</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> 
+            <span class="n">is_writable</span><span class="o">=</span><span class="n">is_writable</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">include_oracles</span><span class="p">:</span>
+            <span class="n">oracle_map</span><span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">market</span><span class="o">.</span><span class="n">pubkey</span><span class="p">)]</span> <span class="o">=</span> <span class="n">AccountMeta</span><span class="p">(</span>
+                <span class="n">pubkey</span><span class="o">=</span><span class="n">market</span><span class="o">.</span><span class="n">amm</span><span class="o">.</span><span class="n">oracle</span><span class="p">,</span> 
+                <span class="n">is_signer</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> 
+                <span class="n">is_writable</span><span class="o">=</span><span class="kc">False</span>
+            <span class="p">)</span>
+
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">track_bank</span><span class="p">(</span>
+        <span class="n">bank_index</span><span class="p">,</span> 
+        <span class="n">is_writable</span>
+    <span class="p">):</span>
+        <span class="n">bank</span> <span class="o">=</span> <span class="k">await</span> <span class="n">get_bank_account</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">program</span><span class="p">,</span> 
+            <span class="n">bank_index</span>
+        <span class="p">)</span>
+        <span class="n">bank_map</span><span class="p">[</span><span class="n">bank_index</span><span class="p">]</span> <span class="o">=</span> <span class="n">AccountMeta</span><span class="p">(</span>
+            <span class="n">pubkey</span><span class="o">=</span><span class="n">bank</span><span class="o">.</span><span class="n">pubkey</span><span class="p">,</span> 
+            <span class="n">is_signer</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> 
+            <span class="n">is_writable</span><span class="o">=</span><span class="n">is_writable</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">bank_index</span> <span class="o">!=</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">include_oracles</span><span class="p">:</span>
+            <span class="n">oracle_map</span><span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">bank</span><span class="o">.</span><span class="n">pubkey</span><span class="p">)]</span> <span class="o">=</span> <span class="n">AccountMeta</span><span class="p">(</span>
+                <span class="n">pubkey</span><span class="o">=</span><span class="n">bank</span><span class="o">.</span><span class="n">amm</span><span class="o">.</span><span class="n">oracle</span><span class="p">,</span> 
+                <span class="n">is_signer</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> 
+                <span class="n">is_writable</span><span class="o">=</span><span class="kc">False</span>
+            <span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">position</span> <span class="ow">in</span> <span class="n">user_account</span><span class="o">.</span><span class="n">positions</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">is_available</span><span class="p">(</span><span class="n">position</span><span class="p">):</span>
+            <span class="n">market_index</span> <span class="o">=</span> <span class="n">position</span><span class="o">.</span><span class="n">market_index</span>
+            <span class="k">await</span> <span class="n">track_market</span><span class="p">(</span><span class="n">market_index</span><span class="p">,</span> <span class="n">is_writable</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">writable_market_index</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span> 
+        <span class="k">await</span> <span class="n">track_market</span><span class="p">(</span><span class="n">writable_market_index</span><span class="p">,</span> <span class="n">is_writable</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">include_banks</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">bank_balance</span> <span class="ow">in</span> <span class="n">user_account</span><span class="o">.</span><span class="n">bank_balances</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">bank_balance</span><span class="o">.</span><span class="n">balance</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span> 
+                <span class="k">await</span> <span class="n">track_bank</span><span class="p">(</span><span class="n">bank_balance</span><span class="o">.</span><span class="n">bank_index</span><span class="p">,</span> <span class="n">is_writable</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">writable_bank_index</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span> 
+            <span class="k">await</span> <span class="n">track_bank</span><span class="p">(</span><span class="n">writable_bank_index</span><span class="p">,</span> <span class="n">is_writable</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="n">remaining_accounts</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="o">*</span><span class="n">oracle_map</span><span class="o">.</span><span class="n">values</span><span class="p">(),</span> 
+        <span class="o">*</span><span class="n">bank_map</span><span class="o">.</span><span class="n">values</span><span class="p">(),</span> 
+        <span class="o">*</span><span class="n">market_map</span><span class="o">.</span><span class="n">values</span><span class="p">()</span>   
+    <span class="p">]</span>
+
+    <span class="k">return</span> <span class="n">remaining_accounts</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-method">
+
+
+
+<h4 id="driftpy.clearing_house.ClearingHouse.get_remove_liquidity_ix" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">get_remove_liquidity_ix</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">amount</span><span class="p">,</span> <span class="n">market_index</span><span class="p">,</span> <span class="n">user_id</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span></code>
+
+  <span class="doc doc-properties">
+      <small class="doc doc-property doc-property-async"><code>async</code></small>
+  </span>
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+
+        <details class="quote">
+          <summary>Source code in <code>driftpy/clearing_house.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">get_remove_liquidity_ix</span><span class="p">(</span>
+    <span class="bp">self</span><span class="p">,</span> 
+    <span class="n">amount</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> 
+    <span class="n">market_index</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> 
+    <span class="n">user_id</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="p">):</span>  
+    <span class="n">remaining_accounts</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_remaining_accounts</span><span class="p">(</span>
+        <span class="n">writable_market_index</span><span class="o">=</span><span class="n">market_index</span><span class="p">,</span> 
+        <span class="n">include_oracles</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> 
+        <span class="n">include_banks</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="p">)</span> 
+    <span class="n">user_account_public_key</span> <span class="o">=</span> <span class="n">get_user_account_public_key</span><span class="p">(</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">program_id</span><span class="p">,</span> 
+        <span class="bp">self</span><span class="o">.</span><span class="n">authority</span><span class="p">,</span> 
+        <span class="n">user_id</span>
+    <span class="p">)</span>
+
+    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">program</span><span class="o">.</span><span class="n">instruction</span><span class="p">[</span><span class="s2">&quot;remove_liquidity&quot;</span><span class="p">](</span>
+        <span class="n">amount</span><span class="p">,</span> 
+        <span class="n">market_index</span><span class="p">,</span>
+        <span class="n">ctx</span><span class="o">=</span><span class="n">Context</span><span class="p">(</span>
+            <span class="n">accounts</span><span class="o">=</span><span class="p">{</span>
+                <span class="s2">&quot;state&quot;</span><span class="p">:</span> <span class="n">get_state_public_key</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">program_id</span><span class="p">),</span> 
+                <span class="s2">&quot;user&quot;</span><span class="p">:</span> <span class="n">user_account_public_key</span><span class="p">,</span> 
+                <span class="s2">&quot;authority&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">authority</span><span class="p">,</span> 
+            <span class="p">},</span>
+            <span class="n">remaining_accounts</span><span class="o">=</span><span class="n">remaining_accounts</span>
+        <span class="p">),</span>
+    <span class="p">)</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-method">
+
+
+
+<h4 id="driftpy.clearing_house.ClearingHouse.get_settle_lp_ix" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">get_settle_lp_ix</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">settlee_user_account_public_key</span><span class="p">,</span> <span class="n">market_index</span><span class="p">)</span></code>
+
+  <span class="doc doc-properties">
+      <small class="doc doc-property doc-property-async"><code>async</code></small>
+  </span>
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+
+        <details class="quote">
+          <summary>Source code in <code>driftpy/clearing_house.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">get_settle_lp_ix</span><span class="p">(</span>
+    <span class="bp">self</span><span class="p">,</span>
+    <span class="n">settlee_user_account_public_key</span><span class="p">:</span> <span class="n">PublicKey</span><span class="p">,</span> 
+    <span class="n">market_index</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+<span class="p">):</span>
+    <span class="n">remaining_accounts</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_remaining_accounts</span><span class="p">(</span>
+        <span class="n">writable_market_index</span><span class="o">=</span><span class="n">market_index</span><span class="p">,</span> 
+        <span class="n">include_banks</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> 
+        <span class="n">include_oracles</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">user_public_key</span><span class="o">=</span><span class="n">settlee_user_account_public_key</span><span class="p">,</span>
+    <span class="p">)</span> 
+
+    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">program</span><span class="o">.</span><span class="n">instruction</span><span class="p">[</span><span class="s2">&quot;settle_lp&quot;</span><span class="p">](</span>
+        <span class="n">market_index</span><span class="p">,</span> 
+        <span class="n">ctx</span><span class="o">=</span><span class="n">Context</span><span class="p">(</span>
+            <span class="n">accounts</span><span class="o">=</span><span class="p">{</span>
+                <span class="s2">&quot;state&quot;</span><span class="p">:</span> <span class="n">get_state_public_key</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">program_id</span><span class="p">),</span> 
+                <span class="s2">&quot;user&quot;</span><span class="p">:</span> <span class="n">get_user_account_public_key</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">program_id</span><span class="p">,</span> 
+                    <span class="n">settlee_user_account_public_key</span>
+                <span class="p">),</span> 
+            <span class="p">},</span>
+            <span class="n">remaining_accounts</span><span class="o">=</span><span class="n">remaining_accounts</span>
+        <span class="p">),</span>
+    <span class="p">)</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-method">
+
+
+
+<h4 id="driftpy.clearing_house.ClearingHouse.get_user_position" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">get_user_position</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">market_index</span><span class="p">)</span></code>
+
+  <span class="doc doc-properties">
+      <small class="doc doc-property doc-property-async"><code>async</code></small>
+  </span>
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+
+        <details class="quote">
+          <summary>Source code in <code>driftpy/clearing_house.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">get_user_position</span><span class="p">(</span>
+    <span class="bp">self</span><span class="p">,</span> 
+    <span class="n">market_index</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> 
+<span class="p">):</span>
+    <span class="n">user</span> <span class="o">=</span> <span class="k">await</span> <span class="n">get_user_account</span><span class="p">(</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">program</span><span class="p">,</span> 
+        <span class="bp">self</span><span class="o">.</span><span class="n">authority</span>
+    <span class="p">)</span>
+    <span class="k">for</span> <span class="n">position</span> <span class="ow">in</span> <span class="n">user</span><span class="o">.</span><span class="n">positions</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">position</span><span class="o">.</span><span class="n">market_index</span> <span class="o">==</span> <span class="n">market_index</span><span class="p">:</span>
+            <span class="k">break</span> 
+    <span class="k">assert</span> <span class="n">position</span><span class="o">.</span><span class="n">market_index</span> <span class="o">==</span> <span class="n">market_index</span><span class="p">,</span> <span class="s2">&quot;no position in market&quot;</span>
+
+    <span class="k">return</span> <span class="n">position</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-method">
+
+
+
+<h4 id="driftpy.clearing_house.ClearingHouse.intialize_user" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">intialize_user</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">user_id</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span></code>
+
+  <span class="doc doc-properties">
+      <small class="doc doc-property doc-property-async"><code>async</code></small>
+  </span>
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+
+        <details class="quote">
+          <summary>Source code in <code>driftpy/clearing_house.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">intialize_user</span><span class="p">(</span>
+    <span class="bp">self</span><span class="p">,</span> 
+    <span class="n">user_id</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span> 
+<span class="p">):</span>
+    <span class="n">ix</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_initialize_user_instructions</span><span class="p">(</span><span class="n">user_id</span><span class="p">)</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">send_ixs</span><span class="p">([</span><span class="n">ix</span><span class="p">])</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-method">
+
+
+
+<h4 id="driftpy.clearing_house.ClearingHouse.open_position" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">open_position</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">direction</span><span class="p">,</span> <span class="n">amount</span><span class="p">,</span> <span class="n">market_index</span><span class="p">,</span> <span class="n">limit_price</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span></code>
+
+  <span class="doc doc-properties">
+      <small class="doc doc-property doc-property-async"><code>async</code></small>
+  </span>
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+
+        <details class="quote">
+          <summary>Source code in <code>driftpy/clearing_house.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">open_position</span><span class="p">(</span>
+    <span class="bp">self</span><span class="p">,</span>
+    <span class="n">direction</span><span class="p">:</span> <span class="n">PositionDirection</span><span class="p">,</span> 
+    <span class="n">amount</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> 
+    <span class="n">market_index</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">limit_price</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span> 
+<span class="p">):</span> 
+   <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">place_and_take</span><span class="p">(</span>
+        <span class="n">OrderParams</span><span class="p">(</span>
+            <span class="n">order_type</span><span class="o">=</span><span class="n">OrderType</span><span class="o">.</span><span class="n">MARKET</span><span class="p">(),</span> 
+            <span class="n">direction</span><span class="o">=</span><span class="n">direction</span><span class="p">,</span> 
+            <span class="n">market_index</span><span class="o">=</span><span class="n">market_index</span><span class="p">,</span> 
+            <span class="n">base_asset_amount</span><span class="o">=</span><span class="n">amount</span><span class="p">,</span>
+            <span class="n">price</span><span class="o">=</span><span class="n">limit_price</span>
+        <span class="p">)</span>
+   <span class="p">)</span> 
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-method">
+
+
+
+<h4 id="driftpy.clearing_house.ClearingHouse.place_and_take" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">place_and_take</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">order_params</span><span class="p">,</span> <span class="n">maker_info</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
+
+  <span class="doc doc-properties">
+      <small class="doc doc-property doc-property-async"><code>async</code></small>
+  </span>
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+
+        <details class="quote">
+          <summary>Source code in <code>driftpy/clearing_house.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">place_and_take</span><span class="p">(</span>
+    <span class="bp">self</span><span class="p">,</span>
+    <span class="n">order_params</span><span class="p">:</span> <span class="n">OrderParams</span><span class="p">,</span>
+    <span class="n">maker_info</span><span class="p">:</span> <span class="n">MakerInfo</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">):</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">send_ixs</span><span class="p">(</span>
+        <span class="p">[</span><span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_place_and_take_ix</span><span class="p">(</span><span class="n">order_params</span><span class="p">,</span> <span class="n">maker_info</span><span class="p">)]</span>
+    <span class="p">)</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-method">
+
+
+
+<h4 id="driftpy.clearing_house.ClearingHouse.remove_liquidity" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">remove_liquidity</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">amount</span><span class="p">,</span> <span class="n">market_index</span><span class="p">,</span> <span class="n">user_id</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span></code>
+
+  <span class="doc doc-properties">
+      <small class="doc doc-property doc-property-async"><code>async</code></small>
+  </span>
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+
+        <details class="quote">
+          <summary>Source code in <code>driftpy/clearing_house.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">remove_liquidity</span><span class="p">(</span>
+    <span class="bp">self</span><span class="p">,</span> 
+    <span class="n">amount</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> 
+    <span class="n">market_index</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> 
+    <span class="n">user_id</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="p">):</span>  
+    <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">send_ixs</span><span class="p">([</span><span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_remove_liquidity_ix</span><span class="p">(</span>
+        <span class="n">amount</span><span class="p">,</span> <span class="n">market_index</span><span class="p">,</span> <span class="n">user_id</span>
+    <span class="p">)])</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-method">
+
+
+
+<h4 id="driftpy.clearing_house.ClearingHouse.send_ixs" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">send_ixs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ixs</span><span class="p">)</span></code>
+
+  <span class="doc doc-properties">
+      <small class="doc doc-property doc-property-async"><code>async</code></small>
+  </span>
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+
+        <details class="quote">
+          <summary>Source code in <code>driftpy/clearing_house.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">send_ixs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ixs</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">TransactionInstruction</span><span class="p">]):</span>
+    <span class="n">tx</span> <span class="o">=</span> <span class="n">Transaction</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">ix</span> <span class="ow">in</span> <span class="n">ixs</span><span class="p">:</span>
+        <span class="n">tx</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">ix</span><span class="p">)</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">program</span><span class="o">.</span><span class="n">provider</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="n">tx</span><span class="p">)</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-method">
+
+
+
+<h4 id="driftpy.clearing_house.ClearingHouse.settle_lp" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">settle_lp</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">settlee_user_account_public_key</span><span class="p">,</span> <span class="n">market_index</span><span class="p">)</span></code>
+
+  <span class="doc doc-properties">
+      <small class="doc doc-property doc-property-async"><code>async</code></small>
+  </span>
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+
+        <details class="quote">
+          <summary>Source code in <code>driftpy/clearing_house.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">settle_lp</span><span class="p">(</span>
+    <span class="bp">self</span><span class="p">,</span>
+    <span class="n">settlee_user_account_public_key</span><span class="p">:</span> <span class="n">PublicKey</span><span class="p">,</span> 
+    <span class="n">market_index</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+<span class="p">):</span> 
+    <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">send_ixs</span><span class="p">([</span><span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_settle_lp_ix</span><span class="p">(</span>
+        <span class="n">settlee_user_account_public_key</span><span class="p">,</span> 
+        <span class="n">market_index</span>
+    <span class="p">)])</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+
+
+  </div>
+
+    </div>
+
+  </div>
+
+
+
+
+  <div class="doc doc-object doc-function">
+
+
+
+<h3 id="driftpy.clearing_house.is_available" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">is_available</span><span class="p">(</span><span class="n">position</span><span class="p">)</span></code>
+
+
+</h3>
+
+    <div class="doc doc-contents ">
+
+
+        <details class="quote">
+          <summary>Source code in <code>driftpy/clearing_house.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">is_available</span><span class="p">(</span><span class="n">position</span><span class="p">:</span> <span class="n">MarketPosition</span><span class="p">):</span> 
+    <span class="k">return</span> <span class="p">(</span>
+        <span class="n">position</span><span class="o">.</span><span class="n">base_asset_amount</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">and</span>
+        <span class="n">position</span><span class="o">.</span><span class="n">open_orders</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">and</span> 
+        <span class="n">position</span><span class="o">.</span><span class="n">lp_shares</span> <span class="o">==</span> <span class="mi">0</span>
+    <span class="p">)</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+  </div>
+
+              
+            </article>
+          </div>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    <nav class="md-footer__inner md-grid" aria-label="Footer">
+      
+        
+        <a href=".." class="md-footer__link md-footer__link--prev" aria-label="Previous: Introduction" rel="prev">
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12z"/></svg>
+          </div>
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              Introduction
+            </div>
+          </div>
+        </a>
+      
+      
+    </nav>
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    <script id="__config" type="application/json">{"base": "..", "features": [], "translations": {"clipboard.copy": "Copy to clipboard", "clipboard.copied": "Copied to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.placeholder": "Type to start searching", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.term.missing": "Missing", "select.version.title": "Select version"}, "search": "../assets/javascripts/workers/search.bd0b6b67.min.js"}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.467223ff.min.js"></script>
+      
+    
+  </body>
+</html>
