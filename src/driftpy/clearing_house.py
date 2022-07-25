@@ -74,7 +74,6 @@ def is_available(position: MarketPosition):
         position.lp_shares == 0
     )
     
-
 class ClearingHouse:
     """This class is the main way to interact with Drift Protocol.
 

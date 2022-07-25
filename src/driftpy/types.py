@@ -4,7 +4,6 @@ from sumtypes import constructor  # type: ignore
 from borsh_construct.enum import _rust_enum
 from solana.publickey import PublicKey
 
-
 @dataclass
 class PriceDivergence:
     mark_oracle_divergence_numerator: int

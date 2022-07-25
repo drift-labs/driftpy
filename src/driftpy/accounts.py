@@ -47,7 +47,6 @@ from driftpy.types import (
     Market,
 )
 
-from driftpy.program import load_program
 
 from driftpy.addresses import (
     get_market_public_key,
