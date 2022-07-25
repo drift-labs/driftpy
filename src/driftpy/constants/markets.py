@@ -1,6 +1,5 @@
 from dataclasses import dataclass
 
-
 @dataclass
 class Market:
     symbol: str
@@ -8,7 +7,6 @@ class Market:
     market_index: int
     devnet_pyth_oracle: str
     mainnet_pyth_oracle: str
-
 
 MARKETS: list[Market] = [
     Market(

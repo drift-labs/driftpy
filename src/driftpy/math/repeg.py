@@ -195,7 +195,6 @@ def calculate_repeg_cost(market, new_peg):
 
     return cost2 / 1e6, mark_delta
 
-
 def calculate_k_cost(market, p):
     x = market.amm.base_asset_reserve / 1e13
     y = market.amm.quote_asset_reserve / 1e13

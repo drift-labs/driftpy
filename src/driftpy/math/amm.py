@@ -50,7 +50,6 @@ def calculate_price(base_asset_amount, quote_asset_amount, peg_multiplier):
     else:
         return (quote_asset_amount / base_asset_amount) * peg_multiplier / PEG_PRECISION
 
-
 def calculate_terminal_price(market):
     swap_direction = (
         SwapDirection.ADD if market.base_asset_amount > 0 else SwapDirection.REMOVE
