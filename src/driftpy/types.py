@@ -316,104 +316,104 @@ class Bank:
 @dataclass
 class AMM:
     oracle: PublicKey
-    oracle_source: OracleSource
-    last_oracle_price: int
-    last_oracle_conf_pct: int
-    last_oracle_delay: int
-    last_oracle_normalised_price: int
-    last_oracle_price_twap: int
-    last_oracle_price_twap_ts: int
-    last_oracle_mark_spread_pct: int
+    oracle_source: OracleSource = OracleSource.Pyth()
+    last_oracle_price: int = 0
+    last_oracle_conf_pct: int = 0
+    last_oracle_delay: int = 0
+    last_oracle_normalised_price: int = 0
+    last_oracle_price_twap: int = 0
+    last_oracle_price_twap_ts: int = 0
+    last_oracle_mark_spread_pct: int = 0
 
-    base_asset_reserve: int
-    quote_asset_reserve: int
-    sqrt_k: int
-    peg_multiplier: int
+    base_asset_reserve: int = 0
+    quote_asset_reserve: int = 0
+    sqrt_k: int = 0
+    peg_multiplier: int = 0
 
-    terminal_quote_asset_reserve: int
-    net_base_asset_amount: int
-    quote_asset_amount_long: int
-    quote_asset_amount_short: int
+    terminal_quote_asset_reserve: int = 0
+    net_base_asset_amount: int = 0
+    quote_asset_amount_long: int = 0
+    quote_asset_amount_short: int = 0
 
     ## lp stuff
-    cumulative_funding_payment_per_lp: int
-    cumulative_fee_per_lp: int
-    cumulative_net_base_asset_amount_per_lp: int
-    lp_cooldown_time: int
-    user_lp_shares: int
+    cumulative_funding_payment_per_lp: int = 0
+    cumulative_fee_per_lp: int = 0
+    cumulative_net_base_asset_amount_per_lp: int = 0
+    lp_cooldown_time: int = 0
+    user_lp_shares: int = 0
 
     ## funding
-    last_funding_rate: int
-    last_funding_rate_ts: int
-    funding_period: int
-    cumulative_funding_rate_long: int
-    cumulative_funding_rate_short: int
-    cumulative_repeg_rebate_long: int
-    cumulative_repeg_rebate_short: int
+    last_funding_rate: int = 0
+    last_funding_rate_ts: int = 0
+    funding_period: int = 0
+    cumulative_funding_rate_long: int = 0
+    cumulative_funding_rate_short: int = 0
+    cumulative_repeg_rebate_long: int = 0
+    cumulative_repeg_rebate_short: int = 0
 
-    mark_std: int
-    last_mark_price_twap: int
-    last_mark_price_twap_ts: int
+    mark_std: int = 0
+    last_mark_price_twap: int = 0
+    last_mark_price_twap_ts: int = 0
 
     ## trade constraints
-    minimum_quote_asset_trade_size: int
-    base_asset_amount_step_size: int
+    minimum_quote_asset_trade_size: int = 0
+    base_asset_amount_step_size: int = 0
 
     ## market making
-    base_spread: int
-    long_spread: int
-    short_spread: int
-    max_spread: int
-    ask_base_asset_reserve: int
-    ask_quote_asset_reserve: int
-    bid_base_asset_reserve: int
-    bid_quote_asset_reserve: int
+    base_spread: int = 0
+    long_spread: int = 0
+    short_spread: int = 0
+    max_spread: int = 0
+    ask_base_asset_reserve: int = 0
+    ask_quote_asset_reserve: int = 0
+    bid_base_asset_reserve: int = 0
+    bid_quote_asset_reserve: int = 0
 
-    last_bid_price_twap: int
-    last_ask_price_twap: int
+    last_bid_price_twap: int = 0
+    last_ask_price_twap: int = 0
 
-    long_intensity_count: int
-    long_intensity_volume: int
-    short_intensity_count: int
-    short_intensity_volume: int
-    curve_update_intensity: int
+    long_intensity_count: int = 0
+    long_intensity_volume: int = 0
+    short_intensity_count: int = 0
+    short_intensity_volume: int = 0
+    curve_update_intensity: int = 0
 
     ## fee tracking
-    total_fee: int
-    total_mm_fee: int
-    total_exchange_fee: int
-    total_fee_minus_distributions: int
-    total_fee_withdrawn: int
-    net_revenue_since_last_funding: int
-    fee_pool: int
-    last_update_slot: int
+    total_fee: int = 0
+    total_mm_fee: int = 0
+    total_exchange_fee: int = 0
+    total_fee_minus_distributions: int = 0
+    total_fee_withdrawn: int = 0
+    net_revenue_since_last_funding: int = 0
+    fee_pool: int = 0
+    last_update_slot: int = 0
 
-    padding0: int
-    padding1: int
-    padding2: int
-    padding3: int
+    padding0: int = 0
+    padding1: int = 0
+    padding2: int = 0
+    padding3: int = 0
 
 @dataclass
 class Market:
     market_index: int
-    pubkey: PublicKey
-    initialized: bool
-    amm: AMM
-    base_asset_amount_long: int
-    base_asset_amount_short: int
-    open_interest: int 
-    margin_ratio_initial: int
-    margin_ratio_partial: int
-    margin_ratio_maintenance: int
-    next_fill_record_id: int
-    next_funding_rate_record_id: int
-    next_curve_record_id: int
-    pnl_pool: PoolBalance
-    unsettled_profit: int
-    unsettled_loss: int
+    amm: AMM 
+    pubkey: PublicKey = PublicKey(0)
+    initialized: bool = True
+    base_asset_amount_long: int = 0
+    base_asset_amount_short: int = 0
+    open_interest: int = 0 
+    margin_ratio_initial: int = 1000
+    margin_ratio_partial: int = 500
+    margin_ratio_maintenance: int = 625
+    next_fill_record_id: int = 0
+    next_funding_rate_record_id: int = 0
+    next_curve_record_id: int = 0
+    pnl_pool: PoolBalance = PoolBalance(0)
+    unsettled_profit: int = 0
+    unsettled_loss: int = 0
 
-    padding0: int
-    padding1: int
-    padding2: int
-    padding3: int
-    padding4: int
+    padding0: int = 0
+    padding1: int = 0
+    padding2: int = 0
+    padding3: int = 0
+    padding4: int = 0
