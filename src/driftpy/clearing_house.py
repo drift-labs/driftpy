@@ -65,6 +65,8 @@ from driftpy.accounts import (
     get_user_account
 )
 
+from anchorpy import Wallet
+
 DEFAULT_USER_NAME = 'Main Account'
 
 def is_available(position: MarketPosition): 
@@ -85,7 +87,7 @@ class ClearingHouse:
     [create][driftpy.clearing_house.ClearingHouse.create] method.
     """
 
-    def __init__(self, program: Program):
+    def __init__(self, program: Program, authority: Keypair = None):
         """Initialize the ClearingHouse object.
 
         Note: you probably want to use
@@ -98,13 +100,18 @@ class ClearingHouse:
         """
         self.program = program
         self.program_id = program.program_id
-        self.authority = program.provider.wallet.public_key
+
+        if authority is None: 
+            authority = program.provider.wallet.payer
+
+        self.signer = authority
+        self.authority = authority.public_key
 
     async def send_ixs(self, ixs: list[TransactionInstruction]):
         tx = Transaction()
         for ix in ixs:
             tx.add(ix)
-        return await self.program.provider.send(tx)
+        return await self.program.provider.send(tx, signers=[self.signer])
 
     async def intialize_user(
         self, 
