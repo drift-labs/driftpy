@@ -184,3 +184,23 @@ class Admin(ClearingHouse):
                 }
             )
         )
+    
+    async def update_lp_cooldown_time(
+        self, 
+        duration: int, 
+        market_index: int
+    ): 
+        market_public_key = get_market_public_key(
+            self.program_id, 
+            market_index
+        )
+        return await self.program.rpc["update_lp_cooldown_time"](
+            duration, 
+            ctx=Context(
+                accounts={
+                    "admin": self.authority,
+                    "state": get_state_public_key(self.program_id),
+                    "market": market_public_key
+                }
+            )
+        )

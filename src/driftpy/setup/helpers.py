@@ -31,8 +31,8 @@ async def _setup_user(
 ) -> Keypair:
     user = Keypair()
     resp = await provider.connection.request_airdrop(user.public_key, 100_000 * 1000000000)
-    funding_tx_id = resp['result']
-    await provider.connection.confirm_transaction(funding_tx_id)
+    tx_sig = resp['result']
+    await provider.connection.confirm_transaction(tx_sig)
     return user
 
 async def _usdc_mint(provider: Provider) -> Keypair:

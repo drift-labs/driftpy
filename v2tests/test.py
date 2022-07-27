@@ -223,6 +223,10 @@ async def test_add_remove_liquidity(
     clearing_house: Admin,
 ):
     n_shares = 10 
+    await clearing_house.update_lp_cooldown_time(0, 0)
+    market: Market = await get_market_account(clearing_house.program, 0)
+    assert market.amm.lp_cooldown_time == 0
+
     await clearing_house.add_liquidity(
         n_shares, 
         0
@@ -237,9 +241,6 @@ async def test_add_remove_liquidity(
         clearing_house.authority, 
         0
     )
-    
-    # wait the cool down 
-    sleep(2)
 
     await clearing_house.remove_liquidity(
         n_shares, 0
