@@ -25,6 +25,35 @@ from spl.token.instructions import (
     mint_to,
     MintToParams,
 )
+from solana.rpc.commitment import Processed, Finalized, Confirmed
+
+from driftpy.types import Market, PositionDirection, SwapDirection, AssetType
+from driftpy.math.amm import calculate_amm_reserves_after_swap, calculate_price
+
+async def adjust_oracle_pretrade(
+    baa: int, 
+    position_direction: PositionDirection, 
+    market: Market, 
+    oracle_public_key: PublicKey,
+    oracle_program: Program,
+):
+    price = calculate_price(
+        market.amm.base_asset_reserve, 
+        market.amm.quote_asset_reserve, 
+        market.amm.peg_multiplier,
+    )
+    swap_direction = SwapDirection.ADD if position_direction == PositionDirection.SHORT() else SwapDirection.REMOVE
+    new_qar, new_bar = calculate_amm_reserves_after_swap(
+        market.amm, 
+        AssetType.BASE, 
+        baa, 
+        swap_direction,
+    )
+    newprice = calculate_price(new_bar, new_qar, market.amm.peg_multiplier)
+    await set_price_feed(oracle_program, oracle_public_key, newprice)
+    print(f'oracle: {price} -> {newprice}')
+
+    return newprice
 
 async def _setup_user(
     provider: Provider
@@ -32,7 +61,7 @@ async def _setup_user(
     user = Keypair()
     resp = await provider.connection.request_airdrop(user.public_key, 100_000 * 1000000000)
     tx_sig = resp['result']
-    await provider.connection.confirm_transaction(tx_sig)
+    await provider.connection.confirm_transaction(tx_sig, commitment=Processed, sleep_seconds=0)
     return user
 
 async def _usdc_mint(provider: Provider) -> Keypair:
@@ -112,6 +141,19 @@ async def _user_usdc_account(
     await provider.send(fake_usdc_tx, [provider.wallet.payer, account])
     return account
 
+async def set_price_feed(
+    oracle_program: Program,
+    oracle_public_key: PublicKey,
+    price: float,
+):
+    data = await get_feed_data(oracle_program, oracle_public_key)
+    int_price = int(price * 10 ** -data.exponent)
+    return await oracle_program.rpc["set_price"](
+        int_price,
+        ctx=Context(
+            accounts={"price": oracle_public_key }
+        )
+    )
 
 async def create_price_feed(
     oracle_program: Program,

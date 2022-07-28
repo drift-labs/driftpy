@@ -523,6 +523,6 @@ class ClearingHouse:
                 order_type=OrderType.MARKET(), 
                 direction=PositionDirection.LONG() if position.base_asset_amount < 0 else PositionDirection.SHORT(), 
                 market_index=market_index, 
-                base_asset_amount=position.base_asset_amount,
+                base_asset_amount=abs(int(position.base_asset_amount)),
                 price=0
         ))
