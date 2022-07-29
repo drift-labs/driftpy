@@ -125,7 +125,8 @@ class Admin(ClearingHouse):
 		initial_asset_weight: int = BANK_WEIGHT_PRECISION,
 		maintenance_asset_weight: int = BANK_WEIGHT_PRECISION,
 		initial_liability_weight: int = BANK_WEIGHT_PRECISION,
-		maintenance_liability_weight: int = BANK_WEIGHT_PRECISION
+		maintenance_liability_weight: int = BANK_WEIGHT_PRECISION,
+        imf_factor: int = 0,
 	):
         state_public_key = get_state_public_key(self.program_id)
         state = await get_state_account(self.program)
@@ -153,6 +154,7 @@ class Admin(ClearingHouse):
             maintenance_asset_weight,
             initial_liability_weight,
             maintenance_liability_weight,
+            imf_factor,
             ctx=Context(
                 accounts={
                     "admin": self.authority,
@@ -194,7 +196,7 @@ class Admin(ClearingHouse):
             self.program_id, 
             market_index
         )
-        return await self.program.rpc["update_lp_cooldown_time"](
+        return await self.program.rpc["update_max_base_asset_amount_ratio"](
             max_base_asset_amount_ratio, 
             ctx=Context(
                 accounts={

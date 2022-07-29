@@ -519,10 +519,15 @@ class ClearingHouse:
         if position.base_asset_amount == 0:
             return 
 
+        limit_price = {
+            True: 100 * 1e13, # going long
+            False: 100e6 # going short
+        }[position.base_asset_amount < 0]
+
         return await self.place_and_take(OrderParams(
-                order_type=OrderType.MARKET(), 
+                order_type=OrderType.LIMIT(), 
                 direction=PositionDirection.LONG() if position.base_asset_amount < 0 else PositionDirection.SHORT(), 
                 market_index=market_index, 
                 base_asset_amount=abs(int(position.base_asset_amount)),
-                price=0
+                price=int(limit_price)
         ))

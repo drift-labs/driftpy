@@ -42,12 +42,23 @@ async def adjust_oracle_pretrade(
         market.amm.quote_asset_reserve, 
         market.amm.peg_multiplier,
     )
+    print(f'price: {price}')
+    print(
+        "reserves;",
+        market.amm.base_asset_reserve, 
+        market.amm.quote_asset_reserve,
+    )
     swap_direction = SwapDirection.ADD if position_direction == PositionDirection.SHORT() else SwapDirection.REMOVE
     new_qar, new_bar = calculate_amm_reserves_after_swap(
         market.amm, 
         AssetType.BASE, 
-        baa, 
+        abs(baa), 
         swap_direction,
+    )
+    print(
+        "new reserves;",
+        new_bar, 
+        new_qar
     )
     newprice = calculate_price(new_bar, new_qar, market.amm.peg_multiplier)
     await set_price_feed(oracle_program, oracle_public_key, newprice)
