@@ -404,7 +404,7 @@ class ClearingHouse:
     ): 
        return await self.place_and_take(
             OrderParams(
-                order_type=OrderType.MARKET(), 
+                order_type=OrderType.LIMIT(), 
                 direction=direction, 
                 market_index=market_index, 
                 base_asset_amount=amount,
