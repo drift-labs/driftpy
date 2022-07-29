@@ -402,15 +402,21 @@ class ClearingHouse:
         market_index: int,
         limit_price: int = 0 
     ): 
-       return await self.place_and_take(
+        # tmp
+        limit_price = {
+            True: 100 * 1e13, # going long
+            False: 10 * 1e6 # going short
+        }[direction == PositionDirection.LONG]
+
+        return await self.place_and_take(
             OrderParams(
                 order_type=OrderType.LIMIT(), 
                 direction=direction, 
                 market_index=market_index, 
                 base_asset_amount=amount,
-                price=limit_price
+                price=int(limit_price),
             )
-       ) 
+        ) 
 
     async def place_and_take(
         self,
@@ -519,13 +525,14 @@ class ClearingHouse:
         if position.base_asset_amount == 0:
             return 
 
+        # tmp
         limit_price = {
             True: 100 * 1e13, # going long
-            False: 100e6 # going short
+            False: 10 * 1e6 # going short
         }[position.base_asset_amount < 0]
 
         return await self.place_and_take(OrderParams(
-                order_type=OrderType.LIMIT(), 
+                order_type=OrderType.MARKET(), 
                 direction=PositionDirection.LONG() if position.base_asset_amount < 0 else PositionDirection.SHORT(), 
                 market_index=market_index, 
                 base_asset_amount=abs(int(position.base_asset_amount)),
