@@ -26,6 +26,7 @@ from spl.token.instructions import (
     MintToParams,
 )
 from solana.rpc.commitment import Processed, Finalized, Confirmed
+from solana.transaction import TransactionSignature
 
 from driftpy.types import Market, PositionDirection, SwapDirection, AssetType
 from driftpy.math.amm import calculate_amm_reserves_after_swap, calculate_price
@@ -34,7 +35,6 @@ async def adjust_oracle_pretrade(
     baa: int, 
     position_direction: PositionDirection, 
     market: Market, 
-    oracle_public_key: PublicKey,
     oracle_program: Program,
 ):
     price = calculate_price(
@@ -61,19 +61,18 @@ async def adjust_oracle_pretrade(
         new_qar
     )
     newprice = calculate_price(new_bar, new_qar, market.amm.peg_multiplier)
-    await set_price_feed(oracle_program, oracle_public_key, newprice)
+    await set_price_feed(oracle_program, market.amm.oracle, newprice)
     print(f'oracle: {price} -> {newprice}')
 
     return newprice
 
 async def _setup_user(
-    provider: Provider
-) -> Keypair:
+    provider: Provider, 
+) -> tuple[Keypair, TransactionSignature]:
     user = Keypair()
-    resp = await provider.connection.request_airdrop(user.public_key, 100_000 * 1000000000)
+    resp = await provider.connection.request_airdrop(user.public_key, 100_0 * 1000000000)
     tx_sig = resp['result']
-    await provider.connection.confirm_transaction(tx_sig, commitment=Processed, sleep_seconds=0)
-    return user
+    return user, tx_sig
 
 async def _usdc_mint(provider: Provider) -> Keypair:
     fake_usdc_mint = Keypair()

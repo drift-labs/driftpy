@@ -406,11 +406,11 @@ class ClearingHouse:
         limit_price = {
             True: 100 * 1e13, # going long
             False: 10 * 1e6 # going short
-        }[direction == PositionDirection.LONG]
+        }[direction == PositionDirection.LONG()]
 
         return await self.place_and_take(
             OrderParams(
-                order_type=OrderType.LIMIT(), 
+                order_type=OrderType.MARKET(), 
                 direction=direction, 
                 market_index=market_index, 
                 base_asset_amount=amount,
