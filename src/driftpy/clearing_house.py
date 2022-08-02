@@ -423,8 +423,28 @@ class ClearingHouse:
         order_params: OrderParams,
         maker_info: MakerInfo = None,
     ):
+        from solana.publickey import PublicKey
+        from construct import Struct as CStruct
+        from construct import Int64ub as U32
+        from construct import Int16ub as U8
+
+        # sometimes runs out of compute budget so we request more first -- TODO: fix?
+        program_id = PublicKey('ComputeBudget111111111111111111111111111111')
+        request_units = CStruct(
+            "instruction" / U8,
+            "units" / U32, 
+            "additional_fee" / U32
+        )
+        compute_ix = TransactionInstruction(
+            [], 
+            program_id, 
+            request_units.build({"instruction": 0, "units": 500_000, "additional_fee": 0})
+        )
+
         return await self.send_ixs(
-            [await self.get_place_and_take_ix(order_params, maker_info)]
+            [
+                compute_ix,
+                await self.get_place_and_take_ix(order_params, maker_info)]
         )
 
     async def get_place_and_take_ix(

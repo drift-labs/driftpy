@@ -20,28 +20,28 @@ def provider(workspace: WorkspaceType) -> Provider:
 
 @async_fixture(scope="module")
 async def usdc_mint(provider: Provider) -> Keypair:
-    fake_usdc_mint = Keypair()
+    fake_create_usdc_mint = Keypair()
     params = CreateAccountParams(
         from_pubkey=provider.wallet.public_key,
-        new_account_pubkey=fake_usdc_mint.public_key,
+        new_account_pubkey=fake_create_usdc_mint.public_key,
         lamports=await AsyncToken.get_min_balance_rent_for_exempt_for_mint(
             provider.connection
         ),
         space=MINT_LAYOUT.sizeof(),
         program_id=TOKEN_PROGRAM_ID,
     )
-    create_usdc_mint_account_ix = create_account(params)
+    create_create_usdc_mint_account_ix = create_account(params)
     init_collateral_mint_ix = initialize_mint(
         InitializeMintParams(
             decimals=6,
             program_id=TOKEN_PROGRAM_ID,
-            mint=fake_usdc_mint.public_key,
+            mint=fake_create_usdc_mint.public_key,
             mint_authority=provider.wallet.public_key,
             freeze_authority=None,
         )
     )
     fake_usdc_tx = Transaction().add(
-        create_usdc_mint_account_ix, init_collateral_mint_ix
+        create_create_usdc_mint_account_ix, init_collateral_mint_ix
     )
-    await provider.send(fake_usdc_tx, [fake_usdc_mint])
-    return fake_usdc_mint
+    await provider.send(fake_usdc_tx, [fake_create_usdc_mint])
+    return fake_create_usdc_mint
