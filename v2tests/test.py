@@ -48,7 +48,7 @@ from anchorpy.utils.token import get_token_account
 from driftpy.admin import Admin
 from driftpy.constants.numeric_constants import MARK_PRICE_PRECISION, AMM_RESERVE_PRECISION
 from driftpy.clearing_house import ClearingHouse
-from driftpy.setup.helpers import _create_usdc_mint, _user_usdc_account, mock_oracle 
+from driftpy.setup.helpers import _create_usdc_mint, mock_oracle, _create_and_mint_user_usdc
 
 from driftpy.addresses import (
     get_market_public_key,
@@ -120,7 +120,7 @@ async def user_usdc_account(
     usdc_mint: Keypair,
     provider: Provider,
 ):
-    return await _user_usdc_account(
+    return await _create_and_mint_user_usdc(
         usdc_mint, 
         provider, 
         USDC_AMOUNT, 

@@ -164,7 +164,7 @@ async def _create_and_mint_user_usdc(
 ) -> Keypair:
     usdc_account = Keypair()
 
-    ata_tx: Transaction = _create_user_usdc_ata_tx(
+    ata_tx: Transaction = await _create_user_usdc_ata_tx(
         usdc_account, 
         provider, 
         usdc_mint, 
