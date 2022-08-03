@@ -227,6 +227,26 @@ class Admin(ClearingHouse):
             )
         )
 
+    async def update_market_base_spread(
+        self,
+        base_spread: int,
+        market_index: int,
+    ):
+        market_public_key = get_market_public_key(
+            self.program_id, 
+            market_index
+        )
+        return await self.program.rpc["update_market_base_spread"](
+            base_spread, 
+            ctx=Context(
+                accounts={
+                    "admin": self.authority,
+                    "state": get_state_public_key(self.program_id),
+                    "market": market_public_key
+                }
+            )
+        )
+
     async def update_market_base_asset_amount_step_size(
         self,
         step_size: int,
