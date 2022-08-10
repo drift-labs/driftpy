@@ -100,6 +100,18 @@ class ClearingHouse:
         self.program_id = program.program_id
         self.authority = program.provider.wallet.public_key
 
+    def get_user_account_public_key(self, user_id=0) -> PublicKey:
+        return get_user_account_public_key(
+            self.program_id, 
+            self.authority,
+            user_id
+        )
+    
+    def get_state_public_key(self):
+        return get_state_public_key(
+            self.program_id
+        )
+
     async def send_ixs(self, ixs: list[TransactionInstruction]):
         tx = Transaction()
         for ix in ixs:
@@ -118,14 +130,8 @@ class ClearingHouse:
         user_id: int = 0, 
         name: str = DEFAULT_USER_NAME
     ) -> TransactionInstruction:
-        user_public_key = get_user_account_public_key(
-            self.program_id, 
-            self.authority,
-            user_id
-        )
-        state_public_key = get_state_public_key(
-            self.program_id
-        )
+        user_public_key = self.get_user_account_public_key(user_id)
+        state_public_key = self.get_state_public_key()
 
         if len(name) > 32: 
             raise Exception("name too long")
@@ -248,6 +254,55 @@ class ClearingHouse:
 
         return remaining_accounts
 
+    async def withdraw(
+        self, 
+        amount: int, 
+        bank_index: int, 
+        user_token_account: PublicKey,
+        reduce_only: bool = False
+    ):
+        return await self.send_ixs([await self.get_withdraw_collateral_ix(
+            amount,
+            bank_index,
+            user_token_account,
+            reduce_only
+        )])
+
+    async def get_withdraw_collateral_ix(
+        self, 
+        amount: int, 
+        bank_index: int, 
+        user_token_account: PublicKey,
+        reduce_only: bool = False,
+    ):
+
+        bank = await get_bank_account(
+            self.program, 
+            bank_index
+        )
+        remaining_accounts = await self.get_remaining_accounts(
+            writable_bank_index=bank_index
+        )
+
+        return self.program.instruction["withdraw"](
+            bank_index, 
+            amount,
+            reduce_only,
+            ctx=Context(
+                accounts={
+                    "state": self.get_state_public_key(),
+                    "bank": bank.pubkey, 
+                    "bank_vault": bank.vault, 
+                    "bank_vault_authority": bank.vault_authority, 
+                    "user": self.get_user_account_public_key(), 
+                    "user_token_account": user_token_account, 
+                    "authority": self.authority, 
+                    "token_program": TOKEN_PROGRAM_ID 
+                },
+                remaining_accounts=remaining_accounts
+            ),
+        )
+
     async def deposit(
         self,
         amount: int,
@@ -296,15 +351,15 @@ class ClearingHouse:
             bank_index, 
             amount,
             reduce_only,
-            ctx=Context(
+            ctx=context(
                 accounts={
-                    "state": get_state_public_key(self.program_id), 
+                    "state": self.get_state_public_key(),
                     "bank": bank.pubkey, 
                     "bank_vault": bank.vault, 
                     "user": user_account_public_key, 
                     "user_token_account": user_token_account, 
                     "authority": self.authority, 
-                    "token_program": TOKEN_PROGRAM_ID 
+                    "token_program": token_program_id 
                 },
                 remaining_accounts=remaining_accounts
             ),
@@ -340,7 +395,7 @@ class ClearingHouse:
             market_index,
             ctx=Context(
                 accounts={
-                    "state": get_state_public_key(self.program_id), 
+                    "state": self.get_state_public_key(), 
                     "user": user_account_public_key, 
                     "authority": self.authority, 
                 },
@@ -369,11 +424,7 @@ class ClearingHouse:
             include_oracles=False, 
             include_banks=False,
         ) 
-        user_account_public_key = get_user_account_public_key(
-            self.program_id, 
-            self.authority, 
-            user_id
-        )
+        user_account_public_key = self.get_user_account_public_key(user_id)
 
         return self.program.instruction["remove_liquidity"](
             amount, 
@@ -419,10 +470,7 @@ class ClearingHouse:
         order_params: OrderParams,
         maker_info: MakerInfo = None,
     ):
-        user_account_public_key = get_user_account_public_key(
-            self.program_id, 
-            self.authority
-        )
+        user_account_public_key = self.get_user_account_public_key() 
 
         remaining_accounts = await self.get_remaining_accounts(
             writable_market_index=order_params.market_index, 
@@ -443,7 +491,7 @@ class ClearingHouse:
             maker_order_id,
             ctx=Context(
                 accounts={
-                    "state": get_state_public_key(self.program_id), 
+                    "state": self.get_state_public_key(), 
                     "user": user_account_public_key, 
                     "authority": self.authority, 
                 },
@@ -477,7 +525,7 @@ class ClearingHouse:
             market_index, 
             ctx=Context(
                 accounts={
-                    "state": get_state_public_key(self.program_id), 
+                    "state": self.get_state_public_key(), 
                     "user": get_user_account_public_key(
                         self.program_id, 
                         settlee_user_account_public_key
