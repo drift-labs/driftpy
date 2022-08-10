@@ -127,6 +127,7 @@ class Admin(ClearingHouse):
 		initial_liability_weight: int = BANK_WEIGHT_PRECISION,
 		maintenance_liability_weight: int = BANK_WEIGHT_PRECISION,
         imf_factor: int = 0,
+        liquidation_fee: int = 0,
 	):
         state_public_key = get_state_public_key(self.program_id)
         state = await get_state_account(self.program)
@@ -155,6 +156,7 @@ class Admin(ClearingHouse):
             initial_liability_weight,
             maintenance_liability_weight,
             imf_factor,
+            liquidation_fee,
             ctx=Context(
                 accounts={
                     "admin": self.authority,

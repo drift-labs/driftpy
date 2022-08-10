@@ -2,21 +2,6 @@
 from driftpy.clearing_house import ClearingHouse
 from solana.publickey import PublicKey
 from typing import cast, Optional
-from driftpy.types import (
-    # PositionDirection,
-    # StateAccount,
-    # MarketsAccount,
-    # FundingPaymentHistoryAccount,
-    # FundingRateHistoryAccount,
-    # TradeHistoryAccount,
-    # LiquidationHistoryAccount,
-    # DepositHistoryAccount,
-    # ExtendedCurveHistoryAccount,
-    # User,
-    UserPositions,
-    UserOrdersAccount,
-    MarketPosition,
-)
 from driftpy.math.market import calculate_mark_price
 
 from driftpy.math.positions import (
@@ -28,6 +13,59 @@ from driftpy.constants.numeric_constants import (
     AMM_RESERVE_PRECISION,
 )
 
+import driftpy
+from driftpy.constants.numeric_constants import QUOTE_ASSET_BANK_INDEX
+from driftpy.addresses import (
+    get_market_public_key,
+    get_bank_public_key,
+    get_bank_vault_public_key,
+    get_bank_vault_authority_public_key,
+    get_state_public_key,
+    get_user_account_public_key,
+)
+
+from driftpy.types import (
+    PriceDivergence,
+    Validity,
+    OracleGuardRails,
+    DiscountTokenTier,
+    DiscountTokenTiers,
+    ReferralDiscount,
+    OrderFillerRewardStructure,
+    FeeStructure,
+    StateAccount,
+    OracleSource,
+    DepositDirection,
+    TradeDirection,
+    OrderType,
+    OrderStatus,
+    OrderDiscountTier,
+    OrderTriggerCondition,
+    OrderAction,
+    PositionDirection,
+    SwapDirection,
+    AssetType,
+    BankBalanceType,
+    Order,
+    OrderParamsOptionalAccounts,
+    OrderParams,
+    OrderFillerRewardStructure,
+    MarketPosition,
+    UserFees,
+    UserBankBalance,
+    User,
+    PoolBalance,
+    Bank,
+    AMM,
+    Market,
+    MakerInfo
+)
+
+from driftpy.accounts import (
+    get_market_account, 
+    get_bank_account,
+    get_user_account
+)
 
 class ClearingHouseUser:
     """This class is the main way to interact with Drift Protocol.
@@ -58,58 +96,42 @@ class ClearingHouseUser:
         """
         self.clearing_house = clearing_house
         self.authority = authority
-
-    async def get_user_account(self):
-        user_account = await self.clearing_house.get_user_account(
-            self.authority
-        )
-        return user_account
-
-    async def get_user_positions_account(self) -> UserPositions:
-        user_account = await self.get_user_account()
-        positions_account = cast(
-            UserPositions,
-            await self.clearing_house.program.account["UserPositions"].fetch(
-                user_account.positions
-            ),
-        )
-
-        return positions_account
-
-    async def get_user_orders_account(self) -> UserOrdersAccount:
-        user_orders_account = self.clearing_house.get_user_orders_public_key(
-            self.authority
-        )
-        orders_account = cast(
-            UserOrdersAccount,
-            await self.clearing_house.program.account["UserOrders"].fetch(
-                user_orders_account
-            ),
-        )
-
-        return orders_account
+        self.program = clearing_house.program
 
     async def get_user_position(self, market_index: int) -> MarketPosition:
-        positions_account = await self.get_user_positions_account()
-        for position in positions_account.positions:
-            if position.market_index == market_index:
-                return position
-        return MarketPosition(
-            market_index, 0, 0, 0, 0, 0, 0, 0, 0, 0, PublicKey(0), 0, 0
+        user = await get_user_account(
+            self.program, 
+            self.authority
         )
+        found_position = False
+        for position in user.positions:
+            if position.market_index == market_index:
+                found_position = True
+                break 
+
+        if not found_position: 
+            raise Exception("no position in market")
+        
+        return position
 
     async def get_unrealised_pnl(self, market_index: int = None):
         assert market_index is None or int(market_index) >= 0
-        positions_account = await self.get_user_positions_account()
+        user = await get_user_account(
+            self.program, 
+            self.authority
+        )
 
         pnl = 0
-        for position in positions_account.positions:
+        for position in user.positions:
             if position.base_asset_amount != 0:
-                if market_index is None or position.market_index == int(market_index):
-                    market = await self.clearing_house.get_market(
+                if market_index is None or position.market_index == market_index:
+                    market = await get_market_account(
+                        self.program, 
                         position.market_index
-                    )  # todo repeat querying
-                    pnl += calculate_position_pnl(market, position)
+                    )
+                    market_pnl = calculate_position_pnl(market, position)
+                    print(f'market {position.market_index} pnl {market_pnl}')
+                    pnl += market_pnl
 
         return pnl
 
