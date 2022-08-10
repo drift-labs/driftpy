@@ -11,7 +11,9 @@ from solana.transaction import AccountMeta
 from spl.token.constants import TOKEN_PROGRAM_ID
 from anchorpy import Program, Context, Idl
 from struct import pack_into 
+from pathlib import Path
 
+import driftpy
 from driftpy.constants.numeric_constants import QUOTE_ASSET_BANK_INDEX
 from driftpy.addresses import (
     get_market_public_key,
@@ -66,6 +68,8 @@ from driftpy.accounts import (
 )
 
 from anchorpy import Wallet
+from driftpy.constants.config import Config
+from anchorpy import Provider
 
 DEFAULT_USER_NAME = 'Main Account'
 
@@ -106,6 +110,26 @@ class ClearingHouse:
 
         self.signer = authority
         self.authority = authority.public_key
+
+    @staticmethod
+    def from_config(config: Config, provider: Provider, authority: Keypair = None):
+        # read the idl 
+        file = Path(str(driftpy.__path__[0]) + '/idl/clearing_house.json')
+        with file.open() as f:
+            idl_dict = json.load(f)
+        idl = Idl.from_json(idl_dict)
+
+        # create the program
+        program = Program(
+            idl, 
+            config.clearing_house_program_id, 
+            provider, 
+        )
+
+        clearing_house = ClearingHouse(program, authority)
+        clearing_house.config = config
+
+        return clearing_house
 
     def get_user_account_public_key(self, user_id=0) -> PublicKey:
         return get_user_account_public_key(
