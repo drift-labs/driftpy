@@ -11,6 +11,18 @@ from spl.token._layouts import MINT_LAYOUT
 from spl.token.async_client import AsyncToken
 from spl.token.instructions import initialize_mint, InitializeMintParams
 
+from solana.system_program import create_account, CreateAccountParams
+from spl.token.async_client import AsyncToken
+from spl.token._layouts import ACCOUNT_LAYOUT
+from spl.token.constants import TOKEN_PROGRAM_ID
+from spl.token.instructions import (
+    initialize_account,
+    InitializeAccountParams,
+    mint_to,
+    MintToParams,
+)
+from anchorpy import Program, Provider, WorkspaceType
+from anchorpy.utils.token import get_token_account
 from driftpy.admin import Admin
 from driftpy.constants.numeric_constants import MARK_PRICE_PRECISION
 from math import sqrt
@@ -36,6 +48,7 @@ from anchorpy.utils.token import get_token_account
 from driftpy.admin import Admin
 from driftpy.constants.numeric_constants import MARK_PRICE_PRECISION, AMM_RESERVE_PRECISION
 from driftpy.clearing_house import ClearingHouse
+from driftpy.setup.helpers import _create_usdc_mint, mock_oracle, _create_and_mint_user_usdc
 
 from driftpy.addresses import (
     get_market_public_key,
@@ -87,8 +100,6 @@ from driftpy.accounts import (
     get_user_account
 )
 
-from helpers import mock_oracle
-
 MANTISSA_SQRT_SCALE = int(sqrt(MARK_PRICE_PRECISION))
 AMM_INITIAL_QUOTE_ASSET_AMOUNT = int((5 * 10 ** 13) * MANTISSA_SQRT_SCALE)
 AMM_INITIAL_BASE_ASSET_AMOUNT = int((5 * 10 ** 13) * MANTISSA_SQRT_SCALE)
@@ -100,84 +111,21 @@ workspace = workspace_fixture(
     "protocol-v2", build_cmd="anchor build --skip-lint", scope="session"
 )
 
-
 @async_fixture(scope="session")
-async def usdc_mint(provider: Provider) -> Keypair:
-    fake_usdc_mint = Keypair()
-    params = CreateAccountParams(
-        from_pubkey=provider.wallet.public_key,
-        new_account_pubkey=fake_usdc_mint.public_key,
-        lamports=await AsyncToken.get_min_balance_rent_for_exempt_for_mint(
-            provider.connection
-        ),
-        space=MINT_LAYOUT.sizeof(),
-        program_id=TOKEN_PROGRAM_ID,
-    )
-    create_usdc_mint_account_ix = create_account(params)
-    init_collateral_mint_ix = initialize_mint(
-        InitializeMintParams(
-            decimals=6,
-            program_id=TOKEN_PROGRAM_ID,
-            mint=fake_usdc_mint.public_key,
-            mint_authority=provider.wallet.public_key,
-            freeze_authority=None,
-        )
-    )
-    fake_usdc_tx = Transaction().add(
-        create_usdc_mint_account_ix, init_collateral_mint_ix
-    )
-    await provider.send(fake_usdc_tx, [fake_usdc_mint])
-    return fake_usdc_mint
-
+async def usdc_mint(provider: Provider):
+    return await _create_usdc_mint(provider)
 
 @async_fixture(scope="session")
 async def user_usdc_account(
     usdc_mint: Keypair,
     provider: Provider,
-) -> Keypair:
-    account = Keypair()
-    fake_usdc_tx = Transaction()
-
-    owner = provider.wallet.public_key
-
-    create_usdc_token_account_ix = create_account(
-        CreateAccountParams(
-            from_pubkey=provider.wallet.public_key,
-            new_account_pubkey=account.public_key,
-            lamports=await AsyncToken.get_min_balance_rent_for_exempt_for_account(
-                provider.connection
-            ),
-            space=ACCOUNT_LAYOUT.sizeof(),
-            program_id=TOKEN_PROGRAM_ID,
-        )
+):
+    return await _create_and_mint_user_usdc(
+        usdc_mint, 
+        provider, 
+        USDC_AMOUNT, 
+        provider.wallet.public_key
     )
-    fake_usdc_tx.add(create_usdc_token_account_ix)
-
-    init_usdc_token_account_ix = initialize_account(
-        InitializeAccountParams(
-            program_id=TOKEN_PROGRAM_ID,
-            account=account.public_key,
-            mint=usdc_mint.public_key,
-            owner=owner,
-        )
-    )
-    fake_usdc_tx.add(init_usdc_token_account_ix)
-
-    mint_to_user_account_tx = mint_to(
-        MintToParams(
-            program_id=TOKEN_PROGRAM_ID,
-            mint=usdc_mint.public_key,
-            dest=account.public_key,
-            mint_authority=provider.wallet.public_key,
-            signers=[],
-            amount=USDC_AMOUNT,
-        )
-    )
-    fake_usdc_tx.add(mint_to_user_account_tx)
-
-    await provider.send(fake_usdc_tx, [provider.wallet.payer, account])
-    return account
-
 
 @fixture(scope="session")
 def program(workspace: WorkspaceType) -> Program:
@@ -276,6 +224,10 @@ async def test_add_remove_liquidity(
     clearing_house: Admin,
 ):
     n_shares = 10 
+    await clearing_house.update_lp_cooldown_time(0, 0)
+    market: Market = await get_market_account(clearing_house.program, 0)
+    assert market.amm.lp_cooldown_time == 0
+
     await clearing_house.add_liquidity(
         n_shares, 
         0
@@ -290,9 +242,6 @@ async def test_add_remove_liquidity(
         clearing_house.authority, 
         0
     )
-    
-    # wait the cool down 
-    sleep(2)
 
     await clearing_house.remove_liquidity(
         n_shares, 0

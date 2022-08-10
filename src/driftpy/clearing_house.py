@@ -65,6 +65,8 @@ from driftpy.accounts import (
     get_user_account
 )
 
+from anchorpy import Wallet
+
 DEFAULT_USER_NAME = 'Main Account'
 
 def is_available(position: MarketPosition): 
@@ -85,7 +87,7 @@ class ClearingHouse:
     [create][driftpy.clearing_house.ClearingHouse.create] method.
     """
 
-    def __init__(self, program: Program):
+    def __init__(self, program: Program, authority: Keypair = None):
         """Initialize the ClearingHouse object.
 
         Note: you probably want to use
@@ -98,7 +100,12 @@ class ClearingHouse:
         """
         self.program = program
         self.program_id = program.program_id
-        self.authority = program.provider.wallet.public_key
+
+        if authority is None: 
+            authority = program.provider.wallet.payer
+
+        self.signer = authority
+        self.authority = authority.public_key
 
     def get_user_account_public_key(self, user_id=0) -> PublicKey:
         return get_user_account_public_key(
@@ -116,7 +123,7 @@ class ClearingHouse:
         tx = Transaction()
         for ix in ixs:
             tx.add(ix)
-        return await self.program.provider.send(tx)
+        return await self.program.provider.send(tx, signers=[self.signer])
 
     async def intialize_user(
         self, 
@@ -446,23 +453,48 @@ class ClearingHouse:
         market_index: int,
         limit_price: int = 0 
     ): 
-       return await self.place_and_take(
+        # tmp
+        limit_price = {
+            True: 100 * 1e13, # going long
+            False: 10 * 1e6 # going short
+        }[direction == PositionDirection.LONG()]
+
+        return await self.place_and_take(
             OrderParams(
                 order_type=OrderType.MARKET(), 
                 direction=direction, 
                 market_index=market_index, 
                 base_asset_amount=amount,
-                price=limit_price
+                price=int(limit_price),
             )
-       ) 
+        ) 
 
     async def place_and_take(
         self,
         order_params: OrderParams,
         maker_info: MakerInfo = None,
     ):
+        from solana.publickey import PublicKey
+        program_id = PublicKey('ComputeBudget111111111111111111111111111111')
+
+        # attempt2
+        name_bytes = bytearray(1 + 4 + 4)
+        pack_into('B', name_bytes, 0, 0)
+        pack_into('I', name_bytes, 1, 500_000) 
+        pack_into('I', name_bytes, 5, 0) 
+        data = bytes(name_bytes)
+
+        compute_ix = TransactionInstruction(
+            [], 
+            program_id, 
+            data
+        )
+
         return await self.send_ixs(
-            [await self.get_place_and_take_ix(order_params, maker_info)]
+            [
+                compute_ix,
+                await self.get_place_and_take_ix(order_params, maker_info)
+            ]
         )
 
     async def get_place_and_take_ix(
@@ -560,10 +592,16 @@ class ClearingHouse:
         if position.base_asset_amount == 0:
             return 
 
+        # tmp
+        limit_price = {
+            True: 100 * 1e13, # going long
+            False: 10 * 1e6 # going short
+        }[position.base_asset_amount < 0]
+
         return await self.place_and_take(OrderParams(
                 order_type=OrderType.MARKET(), 
                 direction=PositionDirection.LONG() if position.base_asset_amount < 0 else PositionDirection.SHORT(), 
                 market_index=market_index, 
-                base_asset_amount=position.base_asset_amount,
-                price=0
+                base_asset_amount=abs(int(position.base_asset_amount)),
+                price=int(limit_price)
         ))

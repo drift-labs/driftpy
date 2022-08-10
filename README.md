@@ -42,35 +42,7 @@ poetry install
 
 ### Testing
 
-1. Run `make test`.
-2. Run `make lint`.
-
-### Local Dev
-- run `anchor build` in `drift-core/` with `v0.19.0`
-- modify `drift-core/program` pubkeys to match `target/deploy/{...}-keypair.json` pubkeys (can use `solana-keygen pubkey {..}.json` view pubkeys) -- for example, for `programs/clearing_house/src/lib.rs`:
-```
-// #[cfg(feature = "mainnet-beta")]
-// declare_id!("...");
-// #[cfg(not(feature = "mainnet-beta"))]
-declare_id!("{...}"); // use `solana-keygen pubkey target/deploy/clearing_house-keypair.json` here 
-```
-- also change clearing-house address in `drift-core/Anchor.toml` with the same value
-
-```
-[programs.localnet]
-clearing_house = "{...}"
-```
-- re-build: `anchor build`
-
-### Local Dev: Clean Up
-
-- when running tests, you need to kill the validator after each test run
-- you can shutdown the validator by finding its PID with `ps aux | grep solana` and sending a kill command, `kill {PID}`
-
-- example with fish shell below: 
-```
-pytest -v; bash -c $(kill $(ps aux | grep solana | string split ' ' --no-empty | awk "NR==2"))
-```
+1. `bash test.sh v2tests/test.py`
 
 ### Building the docs
 

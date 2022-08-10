@@ -125,7 +125,8 @@ class Admin(ClearingHouse):
 		initial_asset_weight: int = BANK_WEIGHT_PRECISION,
 		maintenance_asset_weight: int = BANK_WEIGHT_PRECISION,
 		initial_liability_weight: int = BANK_WEIGHT_PRECISION,
-		maintenance_liability_weight: int = BANK_WEIGHT_PRECISION
+		maintenance_liability_weight: int = BANK_WEIGHT_PRECISION,
+        imf_factor: int = 0,
 	):
         state_public_key = get_state_public_key(self.program_id)
         state = await get_state_account(self.program)
@@ -153,6 +154,7 @@ class Admin(ClearingHouse):
             maintenance_asset_weight,
             initial_liability_weight,
             maintenance_liability_weight,
+            imf_factor,
             ctx=Context(
                 accounts={
                     "admin": self.authority,
@@ -181,6 +183,86 @@ class Admin(ClearingHouse):
                 accounts={
                     "admin": self.authority,
                     "state": get_state_public_key(self.program_id),
+                }
+            )
+        )
+
+    async def update_max_base_asset_amount_ratio(
+        self, 
+        max_base_asset_amount_ratio: int, 
+        market_index: int
+    ): 
+        market_public_key = get_market_public_key(
+            self.program_id, 
+            market_index
+        )
+        return await self.program.rpc["update_max_base_asset_amount_ratio"](
+            max_base_asset_amount_ratio, 
+            ctx=Context(
+                accounts={
+                    "admin": self.authority,
+                    "state": get_state_public_key(self.program_id),
+                    "market": market_public_key
+                }
+            )
+        )
+    
+    async def update_lp_cooldown_time(
+        self, 
+        duration: int, 
+        market_index: int
+    ): 
+        market_public_key = get_market_public_key(
+            self.program_id, 
+            market_index
+        )
+        return await self.program.rpc["update_lp_cooldown_time"](
+            duration, 
+            ctx=Context(
+                accounts={
+                    "admin": self.authority,
+                    "state": get_state_public_key(self.program_id),
+                    "market": market_public_key
+                }
+            )
+        )
+
+    async def update_market_base_spread(
+        self,
+        base_spread: int,
+        market_index: int,
+    ):
+        market_public_key = get_market_public_key(
+            self.program_id, 
+            market_index
+        )
+        return await self.program.rpc["update_market_base_spread"](
+            base_spread, 
+            ctx=Context(
+                accounts={
+                    "admin": self.authority,
+                    "state": get_state_public_key(self.program_id),
+                    "market": market_public_key
+                }
+            )
+        )
+
+    async def update_market_base_asset_amount_step_size(
+        self,
+        step_size: int,
+        market_index: int,
+    ):
+        market_public_key = get_market_public_key(
+            self.program_id, 
+            market_index
+        )
+        return await self.program.rpc["update_market_base_asset_amount_step_size"](
+            step_size, 
+            ctx=Context(
+                accounts={
+                    "admin": self.authority,
+                    "state": get_state_public_key(self.program_id),
+                    "market": market_public_key
                 }
             )
         )

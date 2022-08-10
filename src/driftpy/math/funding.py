@@ -15,7 +15,6 @@ from driftpy.constants.numeric_constants import (
 
 
 def calculate_long_short_funding(market: Market):
-
     sym = calculate_symmetric_funding(market)
     capped = calculate_capped_funding(market)
     if market.base_asset_amount > 0:
