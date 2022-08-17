@@ -24,7 +24,12 @@ Note: requires Python >= 3.9.
 
 ## Development
 
-- run `git submodule init` and `git submodule update` to get the protocol-v1 codebase
+- `git submodule init/update `
+- cd protocol-v2 && yarn 
+- cd sdk && yarn && yarn build && cd .. 
+- anchor build 
+- update anchor IDL for v2 protocol on new re-builds (copy new idls to src/driftpy/idl/...json)
+- run python tests: `bash test.sh v2tests/test.py`
 
 ### Development Setup
 
@@ -32,13 +37,9 @@ If you want to contribute to DriftPy, follow these steps to get set up:
 
 1. Install [poetry](https://python-poetry.org/docs/#installation)
 2. Install dev dependencies (in local env):
-
 ```sh
 poetry install
 ```
-
-3. Install [nox-poetry](https://github.com/cjolowicz/nox-poetry) (note: do not use Poetry to install this, see [here](https://medium.com/@cjolowicz/nox-is-a-part-of-your-global-developer-environment-like-poetry-pre-commit-pyenv-or-pipx-1cdeba9198bd))
-
 
 ### Testing
 
@@ -48,10 +49,6 @@ poetry install
 
 Run `mkdocs serve` to build the docs and serve them locally.
 
-### Updating the embedded IDLs
-
-DriftPy ships with IDL files for the user's convenience. These live at `src/driftpy/idl` if you need to update them.
-
 ### Releasing a new version of the package
 
 1. Make sure CHANGELOG.md is updated.
@@ -59,11 +56,3 @@ DriftPy ships with IDL files for the user's convenience. These live at `src/drif
 3. Run `git push origin <version_number>` to push the tag to GitHub.
 4. After merging your PR on GitHub, create a new release at https://github.com/drift-labs/driftpy/releases.
    The CI process will upload a new version of the package to PyPI.
-
-### Updating the `drift-core` subtree
-
-- This repo pulls in the main Drift repo using [git subtree](https://www.atlassian.com/git/tutorials/git-subtree).
-  Follow that linked tutorial if you want to see how it was done.
-
-The short answer:
-`git subtree pull --prefix drift-core drift-protocol mainnet-beta --squash`

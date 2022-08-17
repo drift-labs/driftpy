@@ -67,6 +67,13 @@ from driftpy.accounts import (
     get_user_account
 )
 
+def find(l: list, f: function):
+    valid_values = [v for v in l if f(v)]
+    if len(valid_values) == 0:
+        return None
+    else: 
+        return valid_values[0]
+
 class ClearingHouseUser:
     """This class is the main way to interact with Drift Protocol.
 
@@ -97,29 +104,33 @@ class ClearingHouseUser:
         self.clearing_house = clearing_house
         self.authority = authority
         self.program = clearing_house.program
-
-    async def get_user_position(self, market_index: int) -> MarketPosition:
-        user = await get_user_account(
+    
+    async def get_user_account(self) -> User:
+        return await get_user_account(
             self.program, 
             self.authority
         )
-        found_position = False
-        for position in user.positions:
-            if position.market_index == market_index:
-                found_position = True
-                break 
 
-        if not found_position: 
+    async def get_user_position(self, market_index: int) -> MarketPosition:
+        user = await self.get_user_account()
+
+        position, found = find(user.positions, lambda p: p.market_index == market_index)
+        if not found: 
             raise Exception("no position in market")
         
         return position
 
+    async def get_user_order(self, order_id: int) -> Order:
+        user = await self.get_user_account()
+
+        order, found = find(user.orders, lambda o: o.order_id == order_id)
+        if not found: 
+            raise Exception("no order in market")
+        return order
+
     async def get_unrealised_pnl(self, market_index: int = None):
         assert market_index is None or int(market_index) >= 0
-        user = await get_user_account(
-            self.program, 
-            self.authority
-        )
+        user = await self.get_user_account()
 
         pnl = 0
         for position in user.positions:
