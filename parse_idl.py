@@ -53,13 +53,13 @@ def generate_dataclass(account):
 
     return dataclass
 
-header = """\
+file_contents = """\
 from dataclasses import dataclass
 from solana.publickey import PublicKey
 from borsh_construct.enum import _rust_enum
 from sumtypes import constructor
 """
-header += '\n'
+file_contents += '\n'
 
 enums, structs = [], []
 name2value = {}
@@ -78,31 +78,31 @@ for account in data['types'] + data['accounts']:
 
 # enums have no dependencies so it goes at the top
 for dclass in enums:
-    header += f"{dclass} \n"
+    file_contents += f"{dclass} \n"
 
 recorded_names = []
-dclasses = []
+def record_struct(name):
+    global file_contents
 
-def record_children(children):
+    children = tree[name]
     for child in children:
         if not child in recorded_names and name2kind[child] != 'enum':
             if child in tree: 
-                record_children(tree[child])
-            dclasses.append(name2value[child])
+                record_struct(child)
+
+            file_contents += f"{name2value[child]} \n"
             recorded_names.append(child)
 
-for name in tree.keys():
-    children = tree[name]
-    record_children(children)
-    
-    dclasses.append(name2value[name])
+    file_contents += f"{name2value[name]} \n"
     recorded_names.append(name)
-    
-for dclass in dclasses:
-    header += f"{dclass} \n"
+
+# tree records the structs dependencies on other structs 
+# ie, tree[Market] = [..., AMM, ...] - so we want to define AMM first then Market
+for name in tree.keys():
+    record_struct(name)
 
 with open('auto_types.py', 'w') as f: 
-    f.write(header)
+    f.write(file_contents)
 
 #%%
 #%%
