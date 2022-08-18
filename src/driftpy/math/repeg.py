@@ -16,15 +16,81 @@ from solana.publickey import PublicKey
 import copy
 
 import numpy as np
+from driftpy.types import AMM
+
+def calculate_optimal_peg_and_budget(amm: AMM, target_price: int) -> tuple(int, int, int, bool):
+    from driftpy.math.market import calculate_price
+    from driftpy.math.amm import calculate_peg_from_target_price
+
+    mark_price_before = calculate_price(
+        amm.base_asset_reserve,
+        amm.quote_asset_reserve,
+        amm.peg_multiplier
+    )
+    new_peg = calculate_peg_from_target_price(
+        target_price,
+        amm.base_asset_reserve,
+        amm.quote_asset_reserve
+    )
+    pre_peg_cost = calculate_repeg_cost(
+        amm, 
+        new_peg
+    )
+
+    total_fee_lb = amm.total_exchange_fee / 2 
+    budget = max(0, amm.total_fee_minus_distributions - total_fee_lb)
+    target_price_gap = mark_price_before - target_price
+
+    # if cant pay for the full repeg 
+    if budget < pre_peg_cost:
+        max_price_spread = (
+            amm.max_spread * target_price
+            / BID_ASK_SPREAD_PRECISION
+        )
+        target_price_gap = mark_price_before - target_price
+
+        # if cant push the spread to the target price
+        if abs(target_price_gap) > max_price_spread:
+            # this how much we can afford -- will always be > 0
+            mark_adj = abs(target_price_gap) - max_price_spread
+
+            if target_price_gap < 0: 
+                # want to shift down but we cant fully = add back
+                new_target_price = mark_price_before + mark_adj
+            else:
+                new_target_price = mark_price_before - mark_adj
+
+            new_optimal_peg = calculate_peg_from_target_price(
+                new_target_price,
+                amm.base_asset_reserve,
+                amm.quote_asset_reserve
+            )
+
+            new_budget = calculate_repeg_cost(amm, new_optimal_peg)
+            return (
+                new_target_price,
+                new_optimal_peg,
+                new_budget,
+                False
+            )
+
+    return (
+        target_price, 
+        new_peg, 
+        budget, 
+        True
+    )
 
 
-def get_optimal_peg(market, target_px):
-    old_mark = calculate_mark_price(market)
-    peg_adj = (old_mark - target_px) * 1e3 - 1  # *repeg_direction
-    peg_adj *= market.amm.base_asset_reserve / market.amm.quote_asset_reserve
-    peg_adj /= 10
-    new_peg = market.amm.peg_multiplier - peg_adj
-    return new_peg
+    # new_peg = calculate_repeg_cost(amm, )
+
+# def get_optimal_peg(market, target_px):
+#     old_mark = calculate_mark_price(market)
+#     peg_adj = (old_mark - target_px) * 1e3 - 1  # *repeg_direction
+#     peg_adj *= market.amm.base_asset_reserve / market.amm.quote_asset_reserve
+#     peg_adj /= 10
+#     new_peg = market.amm.peg_multiplier - peg_adj
+#     return new_peg
 
 
 def calculate_curve_op_cost(market, market_index, base_p, quote_p, new_peg=None):
@@ -175,25 +241,32 @@ def calculate_buyout_cost(market, market_index, new_peg, sqrt_k):
 
     return cost / 1e6, marketNewK
 
+from driftpy.types import AMM
+from driftpy.constants.numeric_constants import * 
 
-def calculate_repeg_cost(market, new_peg):
-    k = int(market.amm.sqrt_k) ** 2
-    new_quote_reserves = k / (market.amm.base_asset_reserve + market.base_asset_amount)
-    delta_quote_reserves = new_quote_reserves - market.amm.quote_asset_reserve
+def calculate_repeg_cost(amm: AMM, new_peg: int) -> int:
+    dqar = amm.quote_asset_reserve - amm.terminal_quote_asset_reserve
+    cost = dqar * (new_peg - amm.peg_multiplier) / AMM_TO_QUOTE_PRECISION_RATIO / PEG_PRECISION
+    return cost
 
-    cost2 = (
-        (delta_quote_reserves
-        * (market.amm.peg_multiplier - new_peg))
-        / AMM_TIMES_PEG_TO_QUOTE_PRECISION_RATIO
-    )
+# def calculate_repeg_cost(market, new_peg):
+#     k = int(market.amm.sqrt_k) ** 2
+#     new_quote_reserves = k / (market.amm.base_asset_reserve + market.base_asset_amount)
+#     delta_quote_reserves = new_quote_reserves - market.amm.quote_asset_reserve
 
-    mark_delta = (
-        (market.amm.quote_asset_reserve / market.amm.base_asset_reserve)
-        * (new_peg - market.amm.peg_multiplier)
-        / PEG_PRECISION
-    )
+#     cost2 = (
+#         (delta_quote_reserves
+#         * (market.amm.peg_multiplier - new_peg))
+#         / AMM_TIMES_PEG_TO_QUOTE_PRECISION_RATIO
+#     )
 
-    return cost2 / 1e6, mark_delta
+#     mark_delta = (
+#         (market.amm.quote_asset_reserve / market.amm.base_asset_reserve)
+#         * (new_peg - market.amm.peg_multiplier)
+#         / PEG_PRECISION
+#     )
+
+#     return cost2 / 1e6, mark_delta
 
 def calculate_k_cost(market, p):
     x = market.amm.base_asset_reserve / 1e13

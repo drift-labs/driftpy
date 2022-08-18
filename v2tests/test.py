@@ -183,7 +183,6 @@ async def test_market(
 ):
     program = clearing_house.program
     market_oracle_public_key = initialized_market
-    market_pk = get_market_public_key(program.program_id, 0)
     market: Market = await get_market_account(program, 0)
 
     assert market.amm.oracle == market_oracle_public_key
@@ -272,7 +271,7 @@ async def test_open_close_position(
         clearing_house.authority
     )
     assert user_account.positions[0].base_asset_amount == baa
-    assert user_account.positions[0].quote_asset_amount > 0
+    assert user_account.positions[0].quote_asset_amount < 0
 
     await clearing_house.close_position(
         0
@@ -283,4 +282,4 @@ async def test_open_close_position(
         clearing_house.authority
     )
     assert user_account.positions[0].base_asset_amount == 0
-    assert user_account.positions[0].quote_asset_amount == 0
+    assert user_account.positions[0].quote_asset_amount == -20002

@@ -29,7 +29,7 @@ Note: requires Python >= 3.9.
 - cd sdk && yarn && yarn build && cd .. 
 - anchor build 
 - update anchor IDL for v2 protocol on new re-builds (copy new idls to src/driftpy/idl/...json)
-- run python tests: `bash test.sh v2tests/test.py`
+- run python tests: `pytest -v -s -x v2tests/test.py`
 
 ### Development Setup
 

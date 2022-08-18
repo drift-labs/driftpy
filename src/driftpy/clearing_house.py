@@ -382,7 +382,7 @@ class ClearingHouse:
             bank_index, 
             amount,
             reduce_only,
-            ctx=context(
+            ctx=Context(
                 accounts={
                     "state": self.get_state_public_key(),
                     "bank": bank.pubkey, 
@@ -390,7 +390,7 @@ class ClearingHouse:
                     "user": user_account_public_key, 
                     "user_token_account": user_token_account, 
                     "authority": self.authority, 
-                    "token_program": token_program_id 
+                    "token_program": TOKEN_PROGRAM_ID 
                 },
                 remaining_accounts=remaining_accounts
             ),
@@ -452,7 +452,6 @@ class ClearingHouse:
     ):  
         remaining_accounts = await self.get_remaining_accounts(
             writable_market_index=market_index, 
-            include_oracles=False, 
             include_banks=False,
         ) 
         user_account_public_key = self.get_user_account_public_key(user_id)

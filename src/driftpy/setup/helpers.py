@@ -42,12 +42,6 @@ async def adjust_oracle_pretrade(
         market.amm.quote_asset_reserve, 
         market.amm.peg_multiplier,
     )
-    # print(f'price: {price}')
-    # print(
-    #     "reserves;",
-    #     market.amm.base_asset_reserve, 
-    #     market.amm.quote_asset_reserve,
-    # )
     swap_direction = SwapDirection.ADD if position_direction == PositionDirection.SHORT() else SwapDirection.REMOVE
     new_qar, new_bar = calculate_amm_reserves_after_swap(
         market.amm, 
@@ -55,11 +49,6 @@ async def adjust_oracle_pretrade(
         abs(baa), 
         swap_direction,
     )
-    # print(
-    #     "new reserves;",
-    #     new_bar, 
-    #     new_qar
-    # )
     newprice = calculate_price(new_bar, new_qar, market.amm.peg_multiplier)
     await set_price_feed(oracle_program, market.amm.oracle, newprice)
     print(f'oracle: {price} -> {newprice}')
@@ -253,6 +242,13 @@ async def get_feed_data(oracle_program: Program, price_feed: PublicKey) -> Price
     info_resp = await oracle_program.provider.connection.get_account_info(price_feed)
     return parse_price_data(b64decode(info_resp["result"]["value"]["data"][0]))
 
+from solana.rpc.async_api import AsyncClient
+async def get_oracle_data(
+    connection: AsyncClient, 
+    oracle_addr: PublicKey, 
+): 
+    info_resp = await connection.get_account_info(oracle_addr)
+    return parse_price_data(b64decode(info_resp["result"]["value"]["data"][0]))
 
 async def mock_oracle(
     pyth_program: Program, price: int = int(50 * 10e7), expo=-7

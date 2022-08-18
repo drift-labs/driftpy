@@ -4,6 +4,7 @@ from solana.publickey import PublicKey
 from typing import cast, Optional
 from driftpy.math.market import calculate_mark_price
 
+from driftpy.setup.helpers import get_feed_data
 from driftpy.math.positions import (
     calculate_base_asset_value,
     calculate_position_pnl,
@@ -104,6 +105,7 @@ class ClearingHouseUser:
         self.clearing_house = clearing_house
         self.authority = authority
         self.program = clearing_house.program
+        self.oracle_program = clearing_house
     
     async def get_user_account(self) -> User:
         return await get_user_account(
@@ -132,6 +134,8 @@ class ClearingHouseUser:
         assert market_index is None or int(market_index) >= 0
         user = await self.get_user_account()
 
+        from driftpy.setup.helpers import get_oracle_data
+
         pnl = 0
         for position in user.positions:
             if position.base_asset_amount != 0:
@@ -140,6 +144,13 @@ class ClearingHouseUser:
                         self.program, 
                         position.market_index
                     )
+
+                    assert market.amm.oracle_source == OracleSource.Pyth(), 'only pyth oracles supported rn'
+                    oracle_data = await get_oracle_data(
+                        self.program.provider.connection, 
+                        market.amm.oracle,
+                    )
+
                     market_pnl = calculate_position_pnl(market, position)
                     print(f'market {position.market_index} pnl {market_pnl}')
                     pnl += market_pnl
