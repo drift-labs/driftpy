@@ -81,7 +81,7 @@ class Admin(ClearingHouse):
         quote_asset_reserve: int,
         periodicity: int,
         peg_multiplier: int = PEG_PRECISION,
-        oracle_source: OracleSource = OracleSource.Pyth(),
+        oracle_source: OracleSource = OracleSource.PYTH(),
         margin_ratio_initial: int = 2000,
         margin_ratio_partial: int = 625,
         margin_ratio_maintenance: int = 500
@@ -121,7 +121,7 @@ class Admin(ClearingHouse):
 		optimal_rate: int = BANK_INTEREST_PRECISION,
 		max_rate: int = BANK_INTEREST_PRECISION,
 		oracle: PublicKey = PublicKey([0] * PublicKey.LENGTH),
-		oracle_source: OracleSource = OracleSource.QuoteAsset(),
+		oracle_source: OracleSource = OracleSource.QUOTE_ASSET(),
 		initial_asset_weight: int = BANK_WEIGHT_PRECISION,
 		maintenance_asset_weight: int = BANK_WEIGHT_PRECISION,
 		initial_liability_weight: int = BANK_WEIGHT_PRECISION,

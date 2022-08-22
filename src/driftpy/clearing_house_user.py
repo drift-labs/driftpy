@@ -16,50 +16,11 @@ from driftpy.constants.numeric_constants import (
 
 import driftpy
 from driftpy.constants.numeric_constants import QUOTE_ASSET_BANK_INDEX
-from driftpy.addresses import (
-    get_market_public_key,
-    get_bank_public_key,
-    get_bank_vault_public_key,
-    get_bank_vault_authority_public_key,
-    get_state_public_key,
-    get_user_account_public_key,
-)
-
 from driftpy.types import (
-    PriceDivergence,
-    Validity,
-    OracleGuardRails,
-    DiscountTokenTier,
-    DiscountTokenTiers,
-    ReferralDiscount,
-    OrderFillerRewardStructure,
-    FeeStructure,
-    StateAccount,
     OracleSource,
-    DepositDirection,
-    TradeDirection,
-    OrderType,
-    OrderStatus,
-    OrderDiscountTier,
-    OrderTriggerCondition,
-    OrderAction,
-    PositionDirection,
-    SwapDirection,
-    AssetType,
-    BankBalanceType,
     Order,
-    OrderParamsOptionalAccounts,
-    OrderParams,
-    OrderFillerRewardStructure,
     MarketPosition,
-    UserFees,
-    UserBankBalance,
     User,
-    PoolBalance,
-    Bank,
-    AMM,
-    Market,
-    MakerInfo
 )
 
 from driftpy.accounts import (
@@ -68,7 +29,7 @@ from driftpy.accounts import (
     get_user_account
 )
 
-def find(l: list, f: function):
+def find(l: list, f):
     valid_values = [v for v in l if f(v)]
     if len(valid_values) == 0:
         return None

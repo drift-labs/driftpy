@@ -6,6 +6,11 @@ with open('src/driftpy/idl/clearing_house.json', 'r') as f:
 list(data.keys())
 
 #%%
+import re 
+def to_snake_case(v):
+    snake_v = re.sub(r'(?<!^)(?=[A-Z])', '_', v).lower()
+    return snake_v
+
 tree = {}
 def lookup_type_translation(parent, v):
     if v == 'publicKey': 
@@ -39,14 +44,15 @@ def generate_dataclass(account):
     if kind == 'struct':
         dataclass = f"""@dataclass\nclass {account['name']}:\n"""
         for field in type['fields']:
-            name = field['name']
+            name = to_snake_case(field['name'])
             type = lookup_type_translation(account['name'], field['type'])
             dataclass += f"""{tab}{name}: {type}\n"""
 
     elif kind == 'enum':
         dataclass = f"""@_rust_enum\nclass {account['name']}:\n"""
         for v in type['variants']:
-            dataclass += f"""{tab}{str.upper(v['name'])} = constructor()\n"""
+            name = to_snake_case(v['name'])
+            dataclass += f"""{tab}{str.upper(name)} = constructor()\n"""
 
     else: 
         assert False, account
@@ -101,7 +107,7 @@ def record_struct(name):
 for name in tree.keys():
     record_struct(name)
 
-with open('auto_types.py', 'w') as f: 
+with open('src/driftpy/types.py', 'w') as f: 
     f.write(file_contents)
 
 #%%

@@ -15,52 +15,9 @@ from pathlib import Path
 
 import driftpy
 from driftpy.constants.numeric_constants import QUOTE_ASSET_BANK_INDEX
-from driftpy.addresses import (
-    get_market_public_key,
-    get_bank_public_key,
-    get_bank_vault_public_key,
-    get_bank_vault_authority_public_key,
-    get_state_public_key,
-    get_user_account_public_key,
-)
-
-from driftpy.types import (
-    PriceDivergence,
-    Validity,
-    OracleGuardRails,
-    DiscountTokenTier,
-    DiscountTokenTiers,
-    ReferralDiscount,
-    OrderFillerRewardStructure,
-    FeeStructure,
-    StateAccount,
-    OracleSource,
-    DepositDirection,
-    TradeDirection,
-    OrderType,
-    OrderStatus,
-    OrderDiscountTier,
-    OrderTriggerCondition,
-    OrderAction,
-    PositionDirection,
-    SwapDirection,
-    AssetType,
-    BankBalanceType,
-    Order,
-    OrderParamsOptionalAccounts,
-    OrderParams,
-    OrderFillerRewardStructure,
-    MarketPosition,
-    UserFees,
-    UserBankBalance,
-    User,
-    PoolBalance,
-    Bank,
-    AMM,
-    Market,
-    MakerInfo
-)
-
+from driftpy.addresses import * 
+from driftpy.sdk_types import *
+from driftpy.types import *
 from driftpy.accounts import (
     get_market_account, 
     get_bank_account,
@@ -142,6 +99,12 @@ class ClearingHouse:
         return get_state_public_key(
             self.program_id
         )
+    
+    def get_user_stats_public_key(self):
+        return get_user_stats_account_public_key(
+            self.program_id,
+            self.authority
+        )
 
     async def send_ixs(self, ixs: list[TransactionInstruction]):
         tx = Transaction()
@@ -153,8 +116,33 @@ class ClearingHouse:
         self, 
         user_id: int = 0 
     ):
+        ixs = []
+        if user_id == 0:
+            ixs.append(
+                self.get_initialize_user_stats()
+            )
         ix = self.get_initialize_user_instructions(user_id)
-        return await self.send_ixs([ix])
+        ixs.append(ix)
+        return await self.send_ixs(ixs)
+
+    def get_initialize_user_stats(
+        self, 
+    ):
+        state_public_key = self.get_state_public_key()
+        user_stats_public_key = self.get_user_stats_public_key()
+
+        return self.program.instruction["initialize_user_stats"](
+            ctx=Context(
+                accounts={
+                    "user_stats": user_stats_public_key,
+                    "state": state_public_key,
+                    "authority": self.authority,
+                    "payer": self.authority, 
+                    "rent": SYSVAR_RENT_PUBKEY,
+                    "system_program": SYS_PROGRAM_ID,
+                },
+            ),
+        )
 
     def get_initialize_user_instructions(
         self,
@@ -163,6 +151,7 @@ class ClearingHouse:
     ) -> TransactionInstruction:
         user_public_key = self.get_user_account_public_key(user_id)
         state_public_key = self.get_state_public_key()
+        user_stats_public_key = self.get_user_stats_public_key()
 
         if len(name) > 32: 
             raise Exception("name too long")
@@ -187,6 +176,7 @@ class ClearingHouse:
             ctx=Context(
                 accounts={
                     "user": user_public_key,
+                    "user_stats": user_stats_public_key,
                     "authority": self.authority,
                     "payer": self.authority, 
                     "rent": SYSVAR_RENT_PUBKEY,

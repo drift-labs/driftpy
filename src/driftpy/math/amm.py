@@ -3,8 +3,8 @@ from driftpy.constants.numeric_constants import (
     PEG_PRECISION,
     AMM_TIMES_PEG_TO_QUOTE_PRECISION_RATIO,
 )
-from driftpy.types import PositionDirection, AssetType, SwapDirection, AMM
-from driftpy.math.repeg import calculate_repeg_cost
+from driftpy.sdk_types import AssetType
+from driftpy.types import PositionDirection, SwapDirection, AMM
 
 def calculate_peg_from_target_price(
     target_price: int, 
