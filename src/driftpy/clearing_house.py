@@ -85,6 +85,7 @@ class ClearingHouse:
 
         clearing_house = ClearingHouse(program, authority)
         clearing_house.config = config
+        clearing_house.idl = idl
 
         return clearing_house
 

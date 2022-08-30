@@ -100,14 +100,6 @@ class OrderType:
     TRIGGER_LIMIT = constructor()
  
 @_rust_enum
-class OrderDiscountTier:
-    NONE = constructor()
-    FIRST = constructor()
-    SECOND = constructor()
-    THIRD = constructor()
-    FOURTH = constructor()
- 
-@_rust_enum
 class OrderTriggerCondition:
     ABOVE = constructor()
     BELOW = constructor()
@@ -332,11 +324,9 @@ class Order:
     reduce_only: bool
     post_only: bool
     immediate_or_cancel: bool
-    discount_tier: OrderDiscountTier
     trigger_price: int
     trigger_condition: OrderTriggerCondition
     triggered: bool
-    referrer: PublicKey
     oracle_price_offset: int
     auction_start_price: int
     auction_end_price: int
@@ -390,9 +380,9 @@ class Market:
     next_curve_record_id: int
     pnl_pool: PoolBalance
     imf_factor: int
-    unsettled_initial_asset_weight: int
-    unsettled_maintenance_asset_weight: int
-    unsettled_imf_factor: int
+    unrealized_initial_asset_weight: int
+    unrealized_maintenance_asset_weight: int
+    unrealized_imf_factor: int
     liquidation_fee: int
     padding0: int
     padding1: int
@@ -452,14 +442,15 @@ class UserFees:
     total_lp_fees: int
     total_fee_rebate: int
     total_token_discount: int
-    total_referral_reward: int
     total_referee_discount: int
  
 @dataclass
 class UserStats:
     authority: PublicKey
     number_of_users: int
+    is_referrer: bool
     referrer: PublicKey
+    total_referrer_reward: int
     fees: UserFees
     maker_volume30d: int
     taker_volume30d: int

@@ -1,4 +1,6 @@
 .tmp
+accounts/
+test-ledger/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
