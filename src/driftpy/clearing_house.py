@@ -379,6 +379,7 @@ class ClearingHouse:
                     "bank": bank.pubkey, 
                     "bank_vault": bank.vault, 
                     "user": user_account_public_key, 
+                    "user_stats": self.get_user_stats_public_key(), 
                     "user_token_account": user_token_account, 
                     "authority": self.authority, 
                     "token_program": TOKEN_PROGRAM_ID 
@@ -473,15 +474,15 @@ class ClearingHouse:
             False: 10 * 1e6 # going short
         }[direction == PositionDirection.LONG()]
 
-        return await self.place_and_take(
-            OrderParams(
-                order_type=OrderType.MARKET(), 
-                direction=direction, 
-                market_index=market_index, 
-                base_asset_amount=amount,
-                price=int(limit_price),
-            )
-        ) 
+        order = self.default_order_params(
+            order_type=OrderType.MARKET(), 
+            direction=direction, 
+            market_index=market_index, 
+            base_asset_amount=amount,
+        )
+        order.price = int(limit_price)
+
+        return await self.place_and_take(order) 
 
     async def place_and_take(
         self,
@@ -539,6 +540,7 @@ class ClearingHouse:
                 accounts={
                     "state": self.get_state_public_key(), 
                     "user": user_account_public_key, 
+                    "user_stats": self.get_user_stats_public_key(),
                     "authority": self.authority, 
                 },
                 remaining_accounts=remaining_accounts
@@ -612,10 +614,39 @@ class ClearingHouse:
             False: 10 * 1e6 # going short
         }[position.base_asset_amount < 0]
 
-        return await self.place_and_take(OrderParams(
-                order_type=OrderType.MARKET(), 
-                direction=PositionDirection.LONG() if position.base_asset_amount < 0 else PositionDirection.SHORT(), 
-                market_index=market_index, 
-                base_asset_amount=abs(int(position.base_asset_amount)),
-                price=int(limit_price)
-        ))
+        order = self.default_order_params(
+            order_type=OrderType.MARKET(), 
+            market_index=market_index, 
+            base_asset_amount=abs(int(position.base_asset_amount)),
+            direction=PositionDirection.LONG() if position.base_asset_amount < 0 else PositionDirection.SHORT(), 
+        )
+        order.price = int(limit_price)
+
+        return await self.place_and_take(order)
+
+    def default_order_params(
+        self,
+        order_type, 
+        market_index, 
+        base_asset_amount, 
+        direction
+    ):
+        return OrderParams(
+            order_type,
+            direction,
+            user_order_id=0,
+            base_asset_amount=base_asset_amount,
+            price=0,
+            market_index=market_index,
+            reduce_only=False,
+            post_only=False,
+            immediate_or_cancel=False,
+            trigger_price=0,
+            trigger_condition=OrderTriggerCondition.ABOVE(),
+            optional_accounts=OrderParamsOptionalAccounts(False, False),
+            position_limit=0,
+            oracle_price_offset=0,
+            auction_duration=0,
+            padding0=0,
+            padding1=0,
+        )
