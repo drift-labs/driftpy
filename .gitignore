@@ -1,5 +1,6 @@
 .tmp
 accounts/
+keypairs/
 test-ledger/
 
 # Byte-compiled / optimized / DLL files

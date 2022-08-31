@@ -247,7 +247,7 @@ class ClearingHouse:
 
             if bank_index != 0 and include_oracles:
                 oracle_map[str(bank.pubkey)] = AccountMeta(
-                    pubkey=bank.amm.oracle, 
+                    pubkey=bank.oracle, 
                     is_signer=False, 
                     is_writable=False
                 )

@@ -1,12 +1,15 @@
 #%%
 import json 
+import re 
 
-with open('src/driftpy/idl/clearing_house.json', 'r') as f:
+input_idl = 'src/driftpy/idl/clearing_house.json'
+output_file = 'src/driftpy/types.py'
+
+with open(input_idl, 'r') as f:
     data = json.load(f)
 list(data.keys())
 
 #%%
-import re 
 def to_snake_case(v):
     snake_v = re.sub(r'(?<!^)(?=[A-Z])', '_', v).lower()
     return snake_v
@@ -35,7 +38,6 @@ def lookup_type_translation(parent, v):
         assert False, v
 
 tab = '    ' # tab = 4 spaces 
-
 def generate_dataclass(account):
     dataclass = ''
     type = account['type']
@@ -107,11 +109,5 @@ def record_struct(name):
 for name in tree.keys():
     record_struct(name)
 
-with open('src/driftpy/types.py', 'w') as f: 
+with open(output_file, 'w') as f: 
     f.write(file_contents)
-
-#%%
-#%%
-#%%
-#%%
-#%%

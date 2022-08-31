@@ -14,7 +14,7 @@ import json
 from anchorpy import Wallet
 from solana.rpc.async_api import AsyncClient
 from driftpy.clearing_house import ClearingHouse
-from driftpy.accounts import get_user_account
+from driftpy.accounts import get_user_account, get_market_account
 from solana.publickey import PublicKey
 from dataclasses import asdict
 from solana.keypair import Keypair
@@ -47,8 +47,12 @@ async def main():
             ch.program, 
             settle_pk,
         )
+        market = await get_market_account(
+            ch.program, 0 
+        )
         position = user.positions[0]
         print('position:', position)
+        print('lp position:', market.amm.market_position_per_lp)
 
         summary_data.append(
             asdict(position)
