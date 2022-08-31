@@ -33,6 +33,7 @@ DEFAULT_USER_NAME = 'Main Account'
 def is_available(position: MarketPosition): 
     return (
         position.base_asset_amount == 0 and
+        position.quote_asset_amount == 0 and
         position.open_orders == 0 and 
         position.lp_shares == 0
     )
