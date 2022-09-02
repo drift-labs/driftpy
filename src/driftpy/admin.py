@@ -29,9 +29,36 @@ from driftpy.constants.numeric_constants import (
     BANK_INTEREST_PRECISION, 
     BANK_WEIGHT_PRECISION, 
 )
+from anchorpy import Wallet
+from driftpy.constants.config import Config
+from anchorpy import Provider, Idl
+import driftpy
+from pathlib import Path
+import json
 
 class Admin(ClearingHouse):
 
+    @staticmethod
+    def from_config(config: Config, provider: Provider, authority: Keypair = None, admin: bool = False):
+        # read the idl 
+        file = Path(str(driftpy.__path__[0]) + '/idl/clearing_house.json')
+        with file.open() as f:
+            idl_dict = json.load(f)
+        idl = Idl.from_json(idl_dict)
+
+        # create the program
+        program = Program(
+            idl, 
+            config.clearing_house_program_id, 
+            provider, 
+        )
+
+        clearing_house = Admin(program, authority)
+        clearing_house.config = config
+        clearing_house.idl = idl
+
+        return clearing_house
+    
     async def initialize(
         self, 
         usdc_mint: PublicKey,
