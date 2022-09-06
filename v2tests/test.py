@@ -50,55 +50,9 @@ from driftpy.constants.numeric_constants import MARK_PRICE_PRECISION, AMM_RESERV
 from driftpy.clearing_house import ClearingHouse
 from driftpy.setup.helpers import _create_usdc_mint, mock_oracle, _create_and_mint_user_usdc
 
-from driftpy.addresses import (
-    get_market_public_key,
-    get_bank_public_key,
-    get_bank_vault_public_key,
-    get_bank_vault_authority_public_key,
-    get_state_public_key,
-    get_user_account_public_key,
-) 
-
-from driftpy.types import (
-    PriceDivergence,
-    Validity,
-    OracleGuardRails,
-    DiscountTokenTier,
-    DiscountTokenTiers,
-    ReferralDiscount,
-    OrderFillerRewardStructure,
-    FeeStructure,
-    StateAccount,
-    OracleSource,
-    DepositDirection,
-    TradeDirection,
-    OrderType,
-    OrderStatus,
-    OrderDiscountTier,
-    OrderTriggerCondition,
-    OrderAction,
-    PositionDirection,
-    SwapDirection,
-    AssetType,
-    BankBalanceType,
-    Order,
-    OrderParamsOptionalAccounts,
-    OrderParams,
-    OrderFillerRewardStructure,
-    MarketPosition,
-    UserFees,
-    UserBankBalance,
-    User,
-    PoolBalance,
-    Bank,
-    AMM,
-    Market,
-)
-from driftpy.accounts import (
-    get_market_account, 
-    get_bank_account,
-    get_user_account
-)
+from driftpy.addresses import * 
+from driftpy.types import * 
+from driftpy.accounts import *
 
 MANTISSA_SQRT_SCALE = int(sqrt(MARK_PRICE_PRECISION))
 AMM_INITIAL_QUOTE_ASSET_AMOUNT = int((5 * 10 ** 13) * MANTISSA_SQRT_SCALE)
@@ -183,7 +137,6 @@ async def test_market(
 ):
     program = clearing_house.program
     market_oracle_public_key = initialized_market
-    market_pk = get_market_public_key(program.program_id, 0)
     market: Market = await get_market_account(program, 0)
 
     assert market.amm.oracle == market_oracle_public_key
@@ -272,7 +225,7 @@ async def test_open_close_position(
         clearing_house.authority
     )
     assert user_account.positions[0].base_asset_amount == baa
-    assert user_account.positions[0].quote_asset_amount > 0
+    assert user_account.positions[0].quote_asset_amount < 0
 
     await clearing_house.close_position(
         0
@@ -283,4 +236,4 @@ async def test_open_close_position(
         clearing_house.authority
     )
     assert user_account.positions[0].base_asset_amount == 0
-    assert user_account.positions[0].quote_asset_amount == 0
+    assert user_account.positions[0].quote_asset_amount == -20002

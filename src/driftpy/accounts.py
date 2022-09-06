@@ -11,58 +11,37 @@ from solana.transaction import AccountMeta
 from spl.token.constants import TOKEN_PROGRAM_ID
 from anchorpy import Program, Context, Idl
 
-from driftpy.types import (
-    PriceDivergence,
-    Validity,
-    OracleGuardRails,
-    DiscountTokenTier,
-    DiscountTokenTiers,
-    ReferralDiscount,
-    OrderFillerRewardStructure,
-    FeeStructure,
-    StateAccount,
-    OracleSource,
-    DepositDirection,
-    TradeDirection,
-    OrderType,
-    OrderStatus,
-    OrderDiscountTier,
-    OrderTriggerCondition,
-    OrderAction,
-    PositionDirection,
-    SwapDirection,
-    AssetType,
-    BankBalanceType,
-    Order,
-    OrderParamsOptionalAccounts,
-    OrderParams,
-    OrderFillerRewardStructure,
-    MarketPosition,
-    UserFees,
-    UserBankBalance,
-    User,
-    PoolBalance,
-    Bank,
-    AMM,
-    Market,
-)
-
-
-from driftpy.addresses import (
-    get_market_public_key,
-    get_bank_public_key,
-    get_bank_vault_public_key,
-    get_bank_vault_authority_public_key,
-    get_state_public_key,
-    get_user_account_public_key,
-) 
+from driftpy.types import *
+from driftpy.addresses import * 
 
 async def get_state_account(
     program: Program
-) -> StateAccount:
+) -> State:
     state_public_key = get_state_public_key(program.program_id)
     response = await program.account["State"].fetch(state_public_key)
-    return cast(StateAccount, response)
+    return cast(State, response)
+
+async def get_user_account(
+    program: Program, 
+    authority: PublicKey,
+) -> User:
+    user_public_key = get_user_stats_account_public_key(
+        program.program_id, 
+        authority,
+    )
+    response = await program.account["UserStats"].fetch(user_public_key)
+    return cast(UserStats, response)
+
+async def get_user_stats_account(
+    program: Program, 
+    authority: PublicKey,
+) -> UserStats:
+    user_stats_public_key = get_user_stats_account_public_key(
+        program.program_id, 
+        authority,
+    )
+    response = await program.account["UserStats"].fetch(user_stats_public_key)
+    return cast(UserStats, response)
 
 async def get_user_account(
     program: Program, 

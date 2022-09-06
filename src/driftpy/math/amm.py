@@ -1,8 +1,25 @@
 from driftpy.constants.numeric_constants import (
+    PRICE_DIV_PEG,
     PEG_PRECISION,
     AMM_TIMES_PEG_TO_QUOTE_PRECISION_RATIO,
 )
-from driftpy.types import PositionDirection, AssetType, SwapDirection, AMM
+from driftpy.sdk_types import AssetType
+from driftpy.types import PositionDirection, SwapDirection, AMM
+
+def calculate_peg_from_target_price(
+    target_price: int, 
+    base_asset_reserves: int, 
+    quote_asset_reserves: int
+) -> int: 
+    return max(
+        (target_price
+        * base_asset_reserves
+        / quote_asset_reserves
+        + (PRICE_DIV_PEG / 2))
+        / PRICE_DIV_PEG,
+        1
+    )
+
 
 def calculate_mark_price_amm(amm: AMM):
     return calculate_price(

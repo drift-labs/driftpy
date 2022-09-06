@@ -1,28 +1,24 @@
-URL_PREPEND = "https://raw.githubusercontent.com/drift-labs/protocol-v1"
-CONFIG = {
-    "devnet": {
-        "ENV": "devnet",
-        "URL": "https://api.devnet.solana.com/",
-        "IDL_URL": URL_PREPEND + "/master/sdk/src/idl/clearing_house.json",
-        "PYTH_ORACLE_MAPPING_ADDRESS": "BmA9Z6FjioHJPpjT39QazZyhDRUdZy2ezwx4GiDdE2u2",
-        "CLEARING_HOUSE_PROGRAM_ID": "AsW7LnXB9UA1uec9wi9MctYTgTz7YH9snhxd16GsFaGX",
-        "USDC_MINT_ADDRESS": "8zGuJQqwhZafTah7Uc7Z4tXRnguqkn5KLFAP8oV6PHe2",
-    },
-    "devnet-limits": {
-        "ENV": "devnet",
-        "URL": "https://api.devnet.solana.com/",
-        "IDL_URL": URL_PREPEND
-        + "/crispheaney/off-chain-orders/sdk/src/idl/clearing_house.json",
-        "PYTH_ORACLE_MAPPING_ADDRESS": "BmA9Z6FjioHJPpjT39QazZyhDRUdZy2ezwx4GiDdE2u2",
-        "CLEARING_HOUSE_PROGRAM_ID": "HiZ8CnfEE9LrBZTfc8hBneWrPg1Cbsn8Wdy6SPLfae9V",
-        "USDC_MINT_ADDRESS": "8zGuJQqwhZafTah7Uc7Z4tXRnguqkn5KLFAP8oV6PHe2",
-    },
-    "mainnet": {
-        "ENV": "mainnet-beta",
-        "URL": "https://api.mainnet-beta.solana.com/",
-        # 'IDL_URL':'',
-        "PYTH_ORACLE_MAPPING_ADDRESS": "AHtgzX45WTKfkPG53L6WYhGEXwQkN1BVknET3sVsLL8J",
-        "CLEARING_HOUSE_PROGRAM_ID": "dammHkt7jmytvbS3nHTxQNEcP59aE57nxwV21YdqEDN",
-        "USDC_MINT_ADDRESS": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
-    },
+from driftpy.constants.banks import devnet_banks, Bank
+from driftpy.constants.markets import devnet_markets, Market
+from dataclasses import dataclass
+from solana.publickey import PublicKey
+
+@dataclass
+class Config:
+    env: str
+    pyth_oracle_mapping_address: PublicKey
+    clearing_house_program_id: PublicKey
+    usdc_mint_address: PublicKey
+    markets: list[Market] 
+    banks: list[Bank]
+
+configs = {
+    "devnet": Config(
+        env='devnet',
+        pyth_oracle_mapping_address=PublicKey('BmA9Z6FjioHJPpjT39QazZyhDRUdZy2ezwx4GiDdE2u2'),
+		clearing_house_program_id=PublicKey('65sz7dRiWDRPZjiRxcTxPM7AE6VK4Nag9HEK6oBJXhJn'),
+		usdc_mint_address=PublicKey('8zGuJQqwhZafTah7Uc7Z4tXRnguqkn5KLFAP8oV6PHe2'),
+		markets=devnet_markets,
+		banks=devnet_banks,
+    )
 }

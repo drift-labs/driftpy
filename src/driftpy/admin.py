@@ -29,9 +29,36 @@ from driftpy.constants.numeric_constants import (
     BANK_INTEREST_PRECISION, 
     BANK_WEIGHT_PRECISION, 
 )
+from anchorpy import Wallet
+from driftpy.constants.config import Config
+from anchorpy import Provider, Idl
+import driftpy
+from pathlib import Path
+import json
 
 class Admin(ClearingHouse):
 
+    @staticmethod
+    def from_config(config: Config, provider: Provider, authority: Keypair = None, admin: bool = False):
+        # read the idl 
+        file = Path(str(driftpy.__path__[0]) + '/idl/clearing_house.json')
+        with file.open() as f:
+            idl_dict = json.load(f)
+        idl = Idl.from_json(idl_dict)
+
+        # create the program
+        program = Program(
+            idl, 
+            config.clearing_house_program_id, 
+            provider, 
+        )
+
+        clearing_house = Admin(program, authority)
+        clearing_house.config = config
+        clearing_house.idl = idl
+
+        return clearing_house
+    
     async def initialize(
         self, 
         usdc_mint: PublicKey,
@@ -81,7 +108,7 @@ class Admin(ClearingHouse):
         quote_asset_reserve: int,
         periodicity: int,
         peg_multiplier: int = PEG_PRECISION,
-        oracle_source: OracleSource = OracleSource.Pyth(),
+        oracle_source: OracleSource = OracleSource.PYTH(),
         margin_ratio_initial: int = 2000,
         margin_ratio_partial: int = 625,
         margin_ratio_maintenance: int = 500
@@ -121,12 +148,13 @@ class Admin(ClearingHouse):
 		optimal_rate: int = BANK_INTEREST_PRECISION,
 		max_rate: int = BANK_INTEREST_PRECISION,
 		oracle: PublicKey = PublicKey([0] * PublicKey.LENGTH),
-		oracle_source: OracleSource = OracleSource.QuoteAsset(),
+		oracle_source: OracleSource = OracleSource.QUOTE_ASSET(),
 		initial_asset_weight: int = BANK_WEIGHT_PRECISION,
 		maintenance_asset_weight: int = BANK_WEIGHT_PRECISION,
 		initial_liability_weight: int = BANK_WEIGHT_PRECISION,
 		maintenance_liability_weight: int = BANK_WEIGHT_PRECISION,
         imf_factor: int = 0,
+        liquidation_fee: int = 0,
 	):
         state_public_key = get_state_public_key(self.program_id)
         state = await get_state_account(self.program)
@@ -155,6 +183,7 @@ class Admin(ClearingHouse):
             initial_liability_weight,
             maintenance_liability_weight,
             imf_factor,
+            liquidation_fee,
             ctx=Context(
                 accounts={
                     "admin": self.authority,

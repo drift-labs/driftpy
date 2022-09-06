@@ -11,54 +11,13 @@ from solana.transaction import AccountMeta
 from spl.token.constants import TOKEN_PROGRAM_ID
 from anchorpy import Program, Context, Idl
 from struct import pack_into 
+from pathlib import Path
 
+import driftpy
 from driftpy.constants.numeric_constants import QUOTE_ASSET_BANK_INDEX
-from driftpy.addresses import (
-    get_market_public_key,
-    get_bank_public_key,
-    get_bank_vault_public_key,
-    get_bank_vault_authority_public_key,
-    get_state_public_key,
-    get_user_account_public_key,
-)
-
-from driftpy.types import (
-    PriceDivergence,
-    Validity,
-    OracleGuardRails,
-    DiscountTokenTier,
-    DiscountTokenTiers,
-    ReferralDiscount,
-    OrderFillerRewardStructure,
-    FeeStructure,
-    StateAccount,
-    OracleSource,
-    DepositDirection,
-    TradeDirection,
-    OrderType,
-    OrderStatus,
-    OrderDiscountTier,
-    OrderTriggerCondition,
-    OrderAction,
-    PositionDirection,
-    SwapDirection,
-    AssetType,
-    BankBalanceType,
-    Order,
-    OrderParamsOptionalAccounts,
-    OrderParams,
-    OrderFillerRewardStructure,
-    MarketPosition,
-    UserFees,
-    UserBankBalance,
-    User,
-    PoolBalance,
-    Bank,
-    AMM,
-    Market,
-    MakerInfo
-)
-
+from driftpy.addresses import * 
+from driftpy.sdk_types import *
+from driftpy.types import *
 from driftpy.accounts import (
     get_market_account, 
     get_bank_account,
@@ -66,12 +25,15 @@ from driftpy.accounts import (
 )
 
 from anchorpy import Wallet
+from driftpy.constants.config import Config
+from anchorpy import Provider
 
 DEFAULT_USER_NAME = 'Main Account'
 
 def is_available(position: MarketPosition): 
     return (
         position.base_asset_amount == 0 and
+        position.quote_asset_amount == 0 and
         position.open_orders == 0 and 
         position.lp_shares == 0
     )
@@ -107,6 +69,46 @@ class ClearingHouse:
         self.signer = authority
         self.authority = authority.public_key
 
+    @staticmethod
+    def from_config(config: Config, provider: Provider, authority: Keypair = None):
+        # read the idl 
+        file = Path(str(driftpy.__path__[0]) + '/idl/clearing_house.json')
+        with file.open() as f:
+            idl_dict = json.load(f)
+        idl = Idl.from_json(idl_dict)
+
+        # create the program
+        program = Program(
+            idl, 
+            config.clearing_house_program_id, 
+            provider, 
+        )
+
+        clearing_house = ClearingHouse(program, authority)
+
+        clearing_house.config = config
+        clearing_house.idl = idl
+
+        return clearing_house
+
+    def get_user_account_public_key(self, user_id=0) -> PublicKey:
+        return get_user_account_public_key(
+            self.program_id, 
+            self.authority,
+            user_id
+        )
+    
+    def get_state_public_key(self):
+        return get_state_public_key(
+            self.program_id
+        )
+    
+    def get_user_stats_public_key(self):
+        return get_user_stats_account_public_key(
+            self.program_id,
+            self.authority
+        )
+
     async def send_ixs(self, ixs: list[TransactionInstruction]):
         tx = Transaction()
         for ix in ixs:
@@ -117,22 +119,42 @@ class ClearingHouse:
         self, 
         user_id: int = 0 
     ):
+        ixs = []
+        if user_id == 0:
+            ixs.append(
+                self.get_initialize_user_stats()
+            )
         ix = self.get_initialize_user_instructions(user_id)
-        return await self.send_ixs([ix])
+        ixs.append(ix)
+        return await self.send_ixs(ixs)
+
+    def get_initialize_user_stats(
+        self, 
+    ):
+        state_public_key = self.get_state_public_key()
+        user_stats_public_key = self.get_user_stats_public_key()
+
+        return self.program.instruction["initialize_user_stats"](
+            ctx=Context(
+                accounts={
+                    "user_stats": user_stats_public_key,
+                    "state": state_public_key,
+                    "authority": self.authority,
+                    "payer": self.authority, 
+                    "rent": SYSVAR_RENT_PUBKEY,
+                    "system_program": SYS_PROGRAM_ID,
+                },
+            ),
+        )
 
     def get_initialize_user_instructions(
         self,
         user_id: int = 0, 
         name: str = DEFAULT_USER_NAME
     ) -> TransactionInstruction:
-        user_public_key = get_user_account_public_key(
-            self.program_id, 
-            self.authority,
-            user_id
-        )
-        state_public_key = get_state_public_key(
-            self.program_id
-        )
+        user_public_key = self.get_user_account_public_key(user_id)
+        state_public_key = self.get_state_public_key()
+        user_stats_public_key = self.get_user_stats_public_key()
 
         if len(name) > 32: 
             raise Exception("name too long")
@@ -157,6 +179,7 @@ class ClearingHouse:
             ctx=Context(
                 accounts={
                     "user": user_public_key,
+                    "user_stats": user_stats_public_key,
                     "authority": self.authority,
                     "payer": self.authority, 
                     "rent": SYSVAR_RENT_PUBKEY,
@@ -226,7 +249,7 @@ class ClearingHouse:
 
             if bank_index != 0 and include_oracles:
                 oracle_map[str(bank.pubkey)] = AccountMeta(
-                    pubkey=bank.amm.oracle, 
+                    pubkey=bank.oracle, 
                     is_signer=False, 
                     is_writable=False
                 )
@@ -254,6 +277,55 @@ class ClearingHouse:
         ]
 
         return remaining_accounts
+
+    async def withdraw(
+        self, 
+        amount: int, 
+        bank_index: int, 
+        user_token_account: PublicKey,
+        reduce_only: bool = False
+    ):
+        return await self.send_ixs([await self.get_withdraw_collateral_ix(
+            amount,
+            bank_index,
+            user_token_account,
+            reduce_only
+        )])
+
+    async def get_withdraw_collateral_ix(
+        self, 
+        amount: int, 
+        bank_index: int, 
+        user_token_account: PublicKey,
+        reduce_only: bool = False,
+    ):
+
+        bank = await get_bank_account(
+            self.program, 
+            bank_index
+        )
+        remaining_accounts = await self.get_remaining_accounts(
+            writable_bank_index=bank_index
+        )
+
+        return self.program.instruction["withdraw"](
+            bank_index, 
+            amount,
+            reduce_only,
+            ctx=Context(
+                accounts={
+                    "state": self.get_state_public_key(),
+                    "bank": bank.pubkey, 
+                    "bank_vault": bank.vault, 
+                    "bank_vault_authority": bank.vault_authority, 
+                    "user": self.get_user_account_public_key(), 
+                    "user_token_account": user_token_account, 
+                    "authority": self.authority, 
+                    "token_program": TOKEN_PROGRAM_ID 
+                },
+                remaining_accounts=remaining_accounts
+            ),
+        )
 
     async def deposit(
         self,
@@ -305,10 +377,11 @@ class ClearingHouse:
             reduce_only,
             ctx=Context(
                 accounts={
-                    "state": get_state_public_key(self.program_id), 
+                    "state": self.get_state_public_key(),
                     "bank": bank.pubkey, 
                     "bank_vault": bank.vault, 
                     "user": user_account_public_key, 
+                    "user_stats": self.get_user_stats_public_key(), 
                     "user_token_account": user_token_account, 
                     "authority": self.authority, 
                     "token_program": TOKEN_PROGRAM_ID 
@@ -347,7 +420,7 @@ class ClearingHouse:
             market_index,
             ctx=Context(
                 accounts={
-                    "state": get_state_public_key(self.program_id), 
+                    "state": self.get_state_public_key(), 
                     "user": user_account_public_key, 
                     "authority": self.authority, 
                 },
@@ -373,14 +446,9 @@ class ClearingHouse:
     ):  
         remaining_accounts = await self.get_remaining_accounts(
             writable_market_index=market_index, 
-            include_oracles=False, 
             include_banks=False,
         ) 
-        user_account_public_key = get_user_account_public_key(
-            self.program_id, 
-            self.authority, 
-            user_id
-        )
+        user_account_public_key = self.get_user_account_public_key(user_id)
 
         return self.program.instruction["remove_liquidity"](
             amount, 
@@ -409,15 +477,15 @@ class ClearingHouse:
                 False: 10 * 1e6 # going short
             }[direction == PositionDirection.LONG()]
 
-        return await self.place_and_take(
-            OrderParams(
-                order_type=OrderType.MARKET(), 
-                direction=direction, 
-                market_index=market_index, 
-                base_asset_amount=amount,
-                price=int(limit_price),
-            )
-        ) 
+        order = self.default_order_params(
+            order_type=OrderType.MARKET(), 
+            direction=direction, 
+            market_index=market_index, 
+            base_asset_amount=amount,
+        )
+        order.price = int(limit_price)
+
+        return await self.place_and_take(order) 
 
     async def place_and_take(
         self,
@@ -452,10 +520,7 @@ class ClearingHouse:
         order_params: OrderParams,
         maker_info: MakerInfo = None,
     ):
-        user_account_public_key = get_user_account_public_key(
-            self.program_id, 
-            self.authority
-        )
+        user_account_public_key = self.get_user_account_public_key() 
 
         remaining_accounts = await self.get_remaining_accounts(
             writable_market_index=order_params.market_index, 
@@ -476,8 +541,9 @@ class ClearingHouse:
             maker_order_id,
             ctx=Context(
                 accounts={
-                    "state": get_state_public_key(self.program_id), 
+                    "state": self.get_state_public_key(), 
                     "user": user_account_public_key, 
+                    "user_stats": self.get_user_stats_public_key(),
                     "authority": self.authority, 
                 },
                 remaining_accounts=remaining_accounts
@@ -510,7 +576,7 @@ class ClearingHouse:
             market_index, 
             ctx=Context(
                 accounts={
-                    "state": get_state_public_key(self.program_id), 
+                    "state": self.get_state_public_key(), 
                     "user": get_user_account_public_key(
                         self.program_id, 
                         settlee_user_account_public_key
@@ -551,10 +617,39 @@ class ClearingHouse:
             False: 10 * 1e6 # going short
         }[position.base_asset_amount < 0]
 
-        return await self.place_and_take(OrderParams(
-                order_type=OrderType.MARKET(), 
-                direction=PositionDirection.LONG() if position.base_asset_amount < 0 else PositionDirection.SHORT(), 
-                market_index=market_index, 
-                base_asset_amount=abs(int(position.base_asset_amount)),
-                price=int(limit_price)
-        ))
+        order = self.default_order_params(
+            order_type=OrderType.MARKET(), 
+            market_index=market_index, 
+            base_asset_amount=abs(int(position.base_asset_amount)),
+            direction=PositionDirection.LONG() if position.base_asset_amount < 0 else PositionDirection.SHORT(), 
+        )
+        order.price = int(limit_price)
+
+        return await self.place_and_take(order)
+
+    def default_order_params(
+        self,
+        order_type, 
+        market_index, 
+        base_asset_amount, 
+        direction
+    ):
+        return OrderParams(
+            order_type,
+            direction,
+            user_order_id=0,
+            base_asset_amount=base_asset_amount,
+            price=0,
+            market_index=market_index,
+            reduce_only=False,
+            post_only=False,
+            immediate_or_cancel=False,
+            trigger_price=0,
+            trigger_condition=OrderTriggerCondition.ABOVE(),
+            optional_accounts=OrderParamsOptionalAccounts(False, False),
+            position_limit=0,
+            oracle_price_offset=0,
+            auction_duration=0,
+            padding0=0,
+            padding1=0,
+        )

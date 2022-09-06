@@ -1,12 +1,12 @@
 {
   "version": "0.1.0",
-  "name": "mock_usdc_faucet",
+  "name": "token_faucet",
   "instructions": [
     {
       "name": "initialize",
       "accounts": [
         {
-          "name": "mockUsdcFaucetState",
+          "name": "faucetConfig",
           "isMut": true,
           "isSigner": false
         },
@@ -17,7 +17,7 @@
         },
         {
           "name": "mintAccount",
-          "isMut": false,
+          "isMut": true,
           "isSigner": false
         },
         {
@@ -29,20 +29,20 @@
           "name": "systemProgram",
           "isMut": false,
           "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
         }
       ],
-      "args": [
-        {
-          "name": "mockUsdcFaucetNonce",
-          "type": "u8"
-        }
-      ]
+      "args": []
     },
     {
       "name": "mintToUser",
       "accounts": [
         {
-          "name": "mockUsdcFaucetState",
+          "name": "faucetConfig",
           "isMut": false,
           "isSigner": false
         },
@@ -73,11 +73,42 @@
           "type": "u64"
         }
       ]
+    },
+    {
+      "name": "transferMintAuthority",
+      "accounts": [
+        {
+          "name": "faucetConfig",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "admin",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "mintAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "mintAuthority",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": []
     }
   ],
   "accounts": [
     {
-      "name": "MockUSDCFaucetState",
+      "name": "FaucetConfig",
       "type": {
         "kind": "struct",
         "fields": [
@@ -106,14 +137,6 @@
       "code": 6000,
       "name": "InvalidMintAccountAuthority",
       "msg": "Program not mint authority"
-    },
-    {
-      "code": 6001,
-      "name": "Unauthorized",
-      "msg": "Signer must be MockUSDCFaucet admin"
     }
-  ],
-  "metadata": {
-    "address": "EujWZk1RbHCpXkumKYAkwUioVKgNZtiEjJCTxQKHLc7h"
-  }
+  ]
 }
