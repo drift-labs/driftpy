@@ -403,10 +403,11 @@ class ClearingHouse:
         limit_price: int = 0 
     ): 
         # tmp
-        limit_price = {
-            True: 100 * 1e13, # going long
-            False: 10 * 1e6 # going short
-        }[direction == PositionDirection.LONG()]
+        if limit_price == 0:
+            limit_price = {
+                True: 100 * 1e13, # going long
+                False: 10 * 1e6 # going short
+            }[direction == PositionDirection.LONG()]
 
         return await self.place_and_take(
             OrderParams(
