@@ -14,14 +14,7 @@ from driftpy.clearing_house import (
 )
 from driftpy.constants.numeric_constants import PEG_PRECISION
 from driftpy.types import OracleSource
-from driftpy.addresses import (
-    get_market_public_key,
-    get_bank_public_key,
-    get_bank_vault_public_key,
-    get_bank_vault_authority_public_key,
-    get_state_public_key,
-    get_user_account_public_key,
-) 
+from driftpy.addresses import * 
 from driftpy.accounts import ( 
     get_state_account
 )
@@ -76,11 +69,6 @@ class Admin(ClearingHouse):
             self.program_id
         )[0]
 
-        insurance_vault_authority_public_key = PublicKey.find_program_address(
-            [bytes(insurance_vault_public_key)],
-            self.program_id
-        )[0]
-
         state_public_key = get_state_public_key(self.program_id) 
 
         initialize_tx_sig = await self.program.rpc["initialize"](
@@ -91,7 +79,7 @@ class Admin(ClearingHouse):
                     "state": state_public_key,
                     "quote_asset_mint": usdc_mint,
                     "insurance_vault": insurance_vault_public_key,
-                    "insurance_vault_authority": insurance_vault_authority_public_key,
+                    "clearing_house_signer": get_clearing_house_signer_public_key(self.program_id),
                     "rent": SYSVAR_RENT_PUBKEY,
                     "system_program": SYS_PROGRAM_ID,
                     "token_program": TOKEN_PROGRAM_ID,
@@ -168,7 +156,7 @@ class Admin(ClearingHouse):
             self.program_id, 
             bank_index
         )
-        bank_vault_authority_public_key = get_bank_vault_authority_public_key(
+        insurance_vault_public_key = get_insurance_fund_public_key(
             self.program_id, 
             bank_index
         )
@@ -190,7 +178,8 @@ class Admin(ClearingHouse):
                     "state": state_public_key,
                     "bank": bank_public_key,
                     "bank_vault": bank_vault_public_key,
-                    "bank_vault_authority": bank_vault_authority_public_key,
+                    "insurance_fund_vault": insurance_vault_public_key,
+                    "clearing_house_signer": get_clearing_house_signer_public_key(self.program_id),
                     "bank_mint": mint,
                     "oracle": oracle,
                     "rent": SYSVAR_RENT_PUBKEY, 

@@ -214,16 +214,22 @@ async def test_open_close_position(
     )
 
     baa = 10 * AMM_RESERVE_PRECISION
-    await clearing_house.open_position(
+    sig = await clearing_house.open_position(
         PositionDirection.LONG(), 
         baa, 
         0, 
     )
+    from solana.rpc.commitment import Confirmed, Processed
+    clearing_house.program.provider.connection._commitment = Confirmed
+    tx = await clearing_house.program.provider.connection.get_transaction(sig)
+    # clearing_house.program.provider.connection._commitment = Processed
+    # print(tx)
     
     user_account = await get_user_account(
         clearing_house.program, 
         clearing_house.authority
     )
+
     assert user_account.positions[0].base_asset_amount == baa
     assert user_account.positions[0].quote_asset_amount < 0
 
@@ -236,4 +242,4 @@ async def test_open_close_position(
         clearing_house.authority
     )
     assert user_account.positions[0].base_asset_amount == 0
-    assert user_account.positions[0].quote_asset_amount == -20002
+    assert user_account.positions[0].quote_asset_amount == -20001
