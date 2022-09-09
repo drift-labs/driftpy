@@ -12,6 +12,15 @@ def get_market_public_key(
         program_id
     )[0]
 
+def get_insurance_fund_public_key(
+    program_id: PublicKey, 
+    bank_index: int, 
+) -> PublicKey: 
+    return PublicKey.find_program_address(
+        [b"insurance_fund_vault", int_to_le_bytes(bank_index)], 
+        program_id
+    )[0]
+
 def get_bank_public_key(
     program_id: PublicKey, 
     bank_index: int, 
@@ -44,6 +53,14 @@ def get_state_public_key(
 ) -> PublicKey: 
     return PublicKey.find_program_address(
         [b"clearing_house"],
+        program_id
+    )[0]
+
+def get_clearing_house_signer_public_key(
+    program_id: PublicKey, 
+) -> PublicKey: 
+    return PublicKey.find_program_address(
+        [b"clearing_house_signer"],
         program_id
     )[0]
 
