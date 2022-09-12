@@ -68,6 +68,7 @@ class ClearingHouse:
 
         self.signer = authority
         self.authority = authority.public_key
+        self.signers = [self.signer]
 
     @staticmethod
     def from_config(config: Config, provider: Provider, authority: Keypair = None):
@@ -109,11 +110,15 @@ class ClearingHouse:
             self.authority
         )
 
-    async def send_ixs(self, ixs: list[TransactionInstruction]):
+    async def send_ixs(self, ixs: list[TransactionInstruction], signers=None):
         tx = Transaction()
         for ix in ixs:
             tx.add(ix)
-        return await self.program.provider.send(tx, signers=[self.signer])
+        # return await self.program.provider.send(tx, signers=[self.signer])
+        if signers is None: 
+            signers = self.signers
+
+        return await self.program.provider.send(tx, signers=signers)
 
     async def intialize_user(
         self, 
@@ -446,7 +451,6 @@ class ClearingHouse:
     ):  
         remaining_accounts = await self.get_remaining_accounts(
             writable_market_index=market_index, 
-            include_banks=False,
         ) 
         user_account_public_key = self.get_user_account_public_key(user_id)
 
@@ -557,7 +561,7 @@ class ClearingHouse:
         return await self.send_ixs([await self.get_settle_lp_ix(
             settlee_user_account_public_key, 
             market_index
-        )])
+        )], signers=[])
 
     async def get_settle_lp_ix(
         self,
@@ -566,8 +570,6 @@ class ClearingHouse:
     ):
         remaining_accounts = await self.get_remaining_accounts(
             writable_market_index=market_index, 
-            include_banks=False, 
-            include_oracles=False,
             user_public_key=settlee_user_account_public_key,
         ) 
 

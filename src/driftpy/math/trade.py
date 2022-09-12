@@ -21,7 +21,8 @@ from driftpy.constants.numeric_constants import (
     AMM_TO_QUOTE_PRECISION_RATIO,
 )
 
-from driftpy.types import PositionDirection, Market, AssetType, AMM
+from driftpy.types import PositionDirection, Market, AMM
+from driftpy.sdk_types import AssetType
 
 def calculate_trade_acquired_amounts(
     direction: PositionDirection,

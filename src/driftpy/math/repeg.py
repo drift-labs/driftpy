@@ -6,7 +6,7 @@ from driftpy.math.trade import (
     calculate_trade_acquired_amounts,
 )
 from driftpy.math.positions import calculate_base_asset_value, calculate_position_pnl
-from driftpy.types import PositionDirection, AssetType, MarketPosition
+from driftpy.types import PositionDirection, MarketPosition
 from driftpy.math.market import calculate_mark_price
 from driftpy.constants.numeric_constants import (
     AMM_TIMES_PEG_TO_QUOTE_PRECISION_RATIO,
@@ -18,7 +18,7 @@ import copy
 import numpy as np
 from driftpy.types import AMM
 
-def calculate_optimal_peg_and_budget(amm: AMM, target_price: int) -> tuple(int, int, int, bool):
+def calculate_optimal_peg_and_budget(amm: AMM, target_price: int) -> tuple[int, int, int, bool]:
     from driftpy.math.market import calculate_price
     from driftpy.math.amm import calculate_peg_from_target_price
 
