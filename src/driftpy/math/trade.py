@@ -21,13 +21,13 @@ from driftpy.constants.numeric_constants import (
     AMM_TO_QUOTE_PRECISION_RATIO,
 )
 
-from driftpy.types import PositionDirection, Market, AMM
+from driftpy.types import PositionDirection, PerpMarket, AMM
 from driftpy.sdk_types import AssetType
 
 def calculate_trade_acquired_amounts(
     direction: PositionDirection,
     amount: int,
-    market: Market,
+    market: PerpMarket,
     input_asset_type=AssetType,
     use_spread: boolean = True,
 ):
@@ -73,7 +73,7 @@ def calculate_trade_acquired_amounts(
 def calculate_trade_slippage(
     direction: PositionDirection,
     amount: int,
-    market: Market,
+    market: PerpMarket,
     input_asset_type: AssetType,
     use_spread: boolean = True,
 ):
@@ -131,7 +131,7 @@ def calculate_trade_slippage(
 
 
 def calculate_target_price_trade(
-    market: Market,
+    market: PerpMarket,
     target_price: float,
     output_asset_type: AssetType,
     use_spread: boolean = True,

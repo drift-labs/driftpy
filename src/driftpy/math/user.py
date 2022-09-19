@@ -1,7 +1,7 @@
 from driftpy.types import (
     User,
-    MarketPosition,
-    Market, 
+    PerpPosition,
+    PerpMarket, 
 )
 from collections.abc import Mapping
 
@@ -17,7 +17,7 @@ from driftpy.constants.numeric_constants import (
 import numpy as np
 
 def calculate_unrealised_pnl(
-    user_position: list[MarketPosition], markets: Mapping[int, Market], market_index: int = None
+    user_position: list[PerpPosition], markets: Mapping[int, PerpMarket], market_index: int = None
 ) -> int:
     pnl = 0
     for position in user_position:
@@ -29,8 +29,8 @@ def calculate_unrealised_pnl(
     return pnl
 
 def get_total_position_value(
-    user_position: list[MarketPosition],
-    markets: Mapping[int, Market],
+    user_position: list[PerpPosition],
+    markets: Mapping[int, PerpMarket],
 ):
     value = 0
     for position in user_position:
@@ -41,7 +41,7 @@ def get_total_position_value(
 
 
 def get_position_value(
-    user_position: list[MarketPosition], markets: Mapping[int, Market], market_index: int
+    user_position: list[PerpPosition], markets: Mapping[int, PerpMarket], market_index: int
 ):
     assert market_index is None or int(market_index) >= 0
     value = 0
@@ -53,12 +53,12 @@ def get_position_value(
     return value
 
 
-def get_total_collateral(user_account: User, markets: Mapping[int, Market]):
+def get_total_collateral(user_account: User, markets: Mapping[int, PerpMarket]):
     collateral = user_account.collateral
     return collateral + calculate_unrealised_pnl(user_account.positions, markets)
 
 
-def get_margin_ratio(user_account: User, markets: Mapping[int, Market]):
+def get_margin_ratio(user_account: User, markets: Mapping[int, PerpMarket]):
     tpv = get_total_position_value(user_account.positions, markets)
     if tpv > 0:
         return get_total_collateral(user_account, markets) / tpv
@@ -66,20 +66,20 @@ def get_margin_ratio(user_account: User, markets: Mapping[int, Market]):
         return np.nan
 
 
-def get_leverage(user_account: User, markets: Mapping[int, Market]):
+def get_leverage(user_account: User, markets: Mapping[int, PerpMarket]):
     return get_total_position_value(
         user_account.positions, markets
     ) / get_total_collateral(user_account, markets)
 
 
-def get_free_collateral(user_account: User, markets: Mapping[int, Market]):
+def get_free_collateral(user_account: User, markets: Mapping[int, PerpMarket]):
     return get_total_collateral(user_account, markets) - (
         get_margin_requirement(user_account.positions, markets, "initial")
     )
 
 
 def get_margin_requirement(
-    user_position: list[MarketPosition], markets: Mapping[int, Market], kind: str
+    user_position: list[PerpPosition], markets: Mapping[int, PerpMarket], kind: str
 ):
     assert kind in ["initial", "partial", "maintenance"]
 
@@ -99,13 +99,13 @@ def get_margin_requirement(
     return value
 
 
-def can_be_liquidated(user_account: User, markets: Mapping[int, Market]):
+def can_be_liquidated(user_account: User, markets: Mapping[int, PerpMarket]):
     return get_total_collateral(user_account, markets) < (
         get_margin_requirement("partial")
     )
 
 
-def liquidation_price(user_account: User, markets: Mapping[int, Market], market_index: int):
+def liquidation_price(user_account: User, markets: Mapping[int, PerpMarket], market_index: int):
     # todo
 
     tc = get_total_collateral(user_account, markets)

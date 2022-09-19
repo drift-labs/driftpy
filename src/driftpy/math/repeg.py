@@ -6,7 +6,7 @@ from driftpy.math.trade import (
     calculate_trade_acquired_amounts,
 )
 from driftpy.math.positions import calculate_base_asset_value, calculate_position_pnl
-from driftpy.types import PositionDirection, MarketPosition
+from driftpy.types import PositionDirection, PerpPosition
 from driftpy.math.market import calculate_mark_price
 from driftpy.constants.numeric_constants import (
     AMM_TIMES_PEG_TO_QUOTE_PRECISION_RATIO,
@@ -99,7 +99,7 @@ def calculate_curve_op_cost(market, market_index, base_p, quote_p, new_peg=None)
     if not (base_p > 0 and quote_p > 0):
         print(base_p, quote_p)
         assert False
-    net_user_position = MarketPosition(
+    net_user_position = PerpPosition(
         market_index,
         market.base_asset_amount,
         0,
@@ -150,7 +150,7 @@ def calculate_curve_op_cost(market, market_index, base_p, quote_p, new_peg=None)
 def calculate_rebalance_market(market, market_index):
     new_peg = calculate_terminal_price(market) * 1e3
     cur_mark = calculate_mark_price(market)
-    net_user_position = MarketPosition(
+    net_user_position = PerpPosition(
         market_index,
         market.base_asset_amount,
         0,
@@ -198,7 +198,7 @@ def calculate_buyout_cost(market, market_index, new_peg, sqrt_k):
     #     print(market)
 
     assert sqrt_k > 1e13
-    net_user_position = MarketPosition(
+    net_user_position = PerpPosition(
         market_index,
         market.base_asset_amount,
         0,

@@ -1,7 +1,7 @@
 from driftpy.types import (
     PositionDirection,
-    Market,
-    MarketPosition,
+    PerpMarket,
+    PerpPosition,
 )
 
 from driftpy.math.amm import calculate_amm_reserves_after_swap, get_swap_direction
@@ -17,7 +17,7 @@ from driftpy.constants.numeric_constants import (
 from driftpy.math.amm import AssetType
 
 
-def calculate_base_asset_value(market: Market, user_position: MarketPosition) -> int:
+def calculate_base_asset_value(market: PerpMarket, user_position: PerpPosition) -> int:
 
     if user_position.base_asset_amount == 0:
         return 0
@@ -55,7 +55,7 @@ def calculate_base_asset_value(market: Market, user_position: MarketPosition) ->
 
 
 def calculate_position_pnl(
-    market: Market, market_position: MarketPosition, with_funding=False
+    market: PerpMarket, market_position: PerpPosition, with_funding=False
 ):
     pnl = 0.0
 
@@ -76,7 +76,7 @@ def calculate_position_pnl(
     return pnl
 
 
-def calculate_position_funding_pnl(market: Market, market_position: MarketPosition):
+def calculate_position_funding_pnl(market: PerpMarket, market_position: PerpPosition):
     funding_pnl = 0.0
 
     if market_position.base_asset_amount == 0:
@@ -97,7 +97,7 @@ def calculate_position_funding_pnl(market: Market, market_position: MarketPositi
     return funding_pnl
 
 
-def calculate_entry_price(market_position: MarketPosition):
+def calculate_entry_price(market_position: PerpPosition):
     if market_position.base_asset_amount == 0:
         return 0
 
