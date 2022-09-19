@@ -30,6 +30,9 @@ def lookup_type_translation(parent, v):
         elif 'vec' in v:
             list_type = lookup_type_translation(parent, v['vec']) 
             return f"list[{list_type}]"
+        elif 'option' in v:
+            list_type = lookup_type_translation(parent, v['option']) 
+            return f"Optional[{list_type}]"
         else: 
             assert False, v
     elif v == 'bool':
@@ -66,6 +69,7 @@ from dataclasses import dataclass
 from solana.publickey import PublicKey
 from borsh_construct.enum import _rust_enum
 from sumtypes import constructor
+from typing import Optional
 """
 file_contents += '\n'
 

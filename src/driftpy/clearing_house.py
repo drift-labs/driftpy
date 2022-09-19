@@ -20,7 +20,7 @@ from driftpy.sdk_types import *
 from driftpy.types import *
 from driftpy.accounts import (
     get_market_account, 
-    get_bank_account,
+    get_spot_market_account,
     get_user_account
 )
 
@@ -30,7 +30,7 @@ from anchorpy import Provider
 
 DEFAULT_USER_NAME = 'Main Account'
 
-def is_available(position: MarketPosition): 
+def is_available(position: PerpPosition): 
     return (
         position.base_asset_amount == 0 and
         position.quote_asset_amount == 0 and
@@ -198,10 +198,10 @@ class ClearingHouse:
     async def get_remaining_accounts(
         self,
         writable_market_index: int = None, 
-        writable_bank_index: int = None, 
+        writable_spot_market_index: int = None, 
         user_id = 0,
         include_oracles: bool = True,
-        include_banks: bool = True,
+        include_spot_markets: bool = True,
         user_public_key: PublicKey = None,
     ):
         if user_public_key is None: 
@@ -214,7 +214,7 @@ class ClearingHouse:
         )
 
         oracle_map = {}
-        bank_map = {}
+        spot_market_map = {}
         market_map = {}
 
         async def track_market(
@@ -238,28 +238,28 @@ class ClearingHouse:
                     is_writable=False
                 )
 
-        async def track_bank(
-            bank_index, 
+        async def track_spot_market(
+            spot_market_index, 
             is_writable
         ):
-            bank = await get_bank_account(
+            spot_market = await get_spot_market_account(
                 self.program, 
-                bank_index
+                spot_market_index
             )
-            bank_map[bank_index] = AccountMeta(
-                pubkey=bank.pubkey, 
+            spot_market_map[spot_market_index] = AccountMeta(
+                pubkey=spot_market.pubkey, 
                 is_signer=False, 
                 is_writable=is_writable,
             )
 
-            if bank_index != 0 and include_oracles:
-                oracle_map[str(bank.pubkey)] = AccountMeta(
-                    pubkey=bank.oracle, 
+            if spot_market_index != 0 and include_oracles:
+                oracle_map[str(spot_market.pubkey)] = AccountMeta(
+                    pubkey=spot_market.oracle, 
                     is_signer=False, 
                     is_writable=False
                 )
 
-        for position in user_account.positions:
+        for position in user_account.perp_positions:
             if not is_available(position):
                 market_index = position.market_index
                 await track_market(market_index, is_writable=True)
@@ -267,17 +267,17 @@ class ClearingHouse:
         if writable_market_index is not None: 
             await track_market(writable_market_index, is_writable=True)
 
-        if include_banks:
-            for bank_balance in user_account.bank_balances:
-                if bank_balance.balance != 0: 
-                    await track_bank(bank_balance.bank_index, is_writable=False)
+        if include_spot_markets:
+            for spot_market_balance in user_account.spot_positions:
+                if spot_market_balance.balance != 0: 
+                    await track_spot_market(spot_market_balance.market_index, is_writable=False)
 
-            if writable_bank_index is not None: 
-                await track_bank(writable_bank_index, is_writable=True)
+            if writable_spot_market_index is not None: 
+                await track_spot_market(writable_spot_market_index, is_writable=True)
 
         remaining_accounts = [
             *oracle_map.values(), 
-            *bank_map.values(), 
+            *spot_market_map.values(), 
             *market_map.values()   
         ]
 
@@ -286,13 +286,13 @@ class ClearingHouse:
     async def withdraw(
         self, 
         amount: int, 
-        bank_index: int, 
+        spot_market_index: int, 
         user_token_account: PublicKey,
         reduce_only: bool = False
     ):
         return await self.send_ixs([await self.get_withdraw_collateral_ix(
             amount,
-            bank_index,
+            spot_market_index,
             user_token_account,
             reduce_only
         )])
@@ -300,29 +300,29 @@ class ClearingHouse:
     async def get_withdraw_collateral_ix(
         self, 
         amount: int, 
-        bank_index: int, 
+        spot_market_index: int, 
         user_token_account: PublicKey,
         reduce_only: bool = False,
     ):
 
-        bank = await get_bank_account(
+        spot_market = await get_spot_market_account(
             self.program, 
-            bank_index
+            spot_market_index
         )
         remaining_accounts = await self.get_remaining_accounts(
-            writable_bank_index=bank_index
+            writable_spot_market_index=spot_market_index
         )
 
         return self.program.instruction["withdraw"](
-            bank_index, 
+            spot_market_index, 
             amount,
             reduce_only,
             ctx=Context(
                 accounts={
                     "state": self.get_state_public_key(),
-                    "bank": bank.pubkey, 
-                    "bank_vault": bank.vault, 
-                    "bank_vault_authority": bank.vault_authority, 
+                    "spot_market": spot_market.pubkey, 
+                    "spot_market_vault": spot_market.vault, 
+                    "spot_market_vault_authority": spot_market.vault_authority, 
                     "user": self.get_user_account_public_key(), 
                     "user_token_account": user_token_account, 
                     "authority": self.authority, 
@@ -335,7 +335,7 @@ class ClearingHouse:
     async def deposit(
         self,
         amount: int,
-        bank_index: int, 
+        spot_market_index: int, 
         user_token_account: PublicKey, 
         user_id: int = 0, 
         reduce_only = False, 
@@ -343,7 +343,7 @@ class ClearingHouse:
     ):
         return await self.send_ixs([await self.get_deposit_collateral_ix(
             amount,
-            bank_index,
+            spot_market_index,
             user_token_account,
             user_id,
             reduce_only,
@@ -353,7 +353,7 @@ class ClearingHouse:
     async def get_deposit_collateral_ix(
         self,
         amount: int,
-        bank_index: int, 
+        spot_market_index: int, 
         user_token_account: PublicKey, 
         user_id: int = 0, 
         reduce_only = False, 
@@ -362,14 +362,14 @@ class ClearingHouse:
 
         if user_initialized: 
             remaining_accounts = await self.get_remaining_accounts(
-                writable_bank_index=bank_index
+                writable_spot_market_index=spot_market_index
             ) 
         else: 
             raise Exception("not implemented...")
                     
-        bank = await get_bank_account(
+        spot_market = await get_spot_market_account(
             self.program, 
-            bank_index
+            spot_market_index
         )
         user_account_public_key = get_user_account_public_key(
             self.program_id, 
@@ -377,14 +377,14 @@ class ClearingHouse:
             user_id
         )
         return self.program.instruction["deposit"](
-            bank_index, 
+            spot_market_index, 
             amount,
             reduce_only,
             ctx=Context(
                 accounts={
                     "state": self.get_state_public_key(),
-                    "bank": bank.pubkey, 
-                    "bank_vault": bank.vault, 
+                    "spot_market": spot_market.pubkey, 
+                    "spot_market_vault": spot_market.vault, 
                     "user": user_account_public_key, 
                     "user_stats": self.get_user_stats_public_key(), 
                     "user_token_account": user_token_account, 
@@ -527,7 +527,7 @@ class ClearingHouse:
 
         remaining_accounts = await self.get_remaining_accounts(
             writable_market_index=order_params.market_index, 
-            writable_bank_index=QUOTE_ASSET_BANK_INDEX
+            writable_spot_market_index=QUOTE_ASSET_BANK_INDEX
         ) 
 
         maker_order_id = None 
@@ -595,7 +595,7 @@ class ClearingHouse:
             self.program, 
             self.authority
         )
-        for position in user.positions:
+        for position in user.perp_positions:
             if position.market_index == market_index:
                 break 
         assert position.market_index == market_index, "no position in market"
@@ -637,7 +637,8 @@ class ClearingHouse:
     ):
         return OrderParams(
             order_type,
-            direction,
+            market_type=MarketType.PERP(),
+            direction=direction,
             user_order_id=0,
             base_asset_amount=base_asset_amount,
             price=0,
@@ -647,10 +648,8 @@ class ClearingHouse:
             immediate_or_cancel=False,
             trigger_price=0,
             trigger_condition=OrderTriggerCondition.ABOVE(),
-            optional_accounts=OrderParamsOptionalAccounts(False, False),
-            position_limit=0,
             oracle_price_offset=0,
-            auction_duration=0,
-            padding0=0,
-            padding1=0,
+            auction_duration=None, 
+            time_in_force=None, 
+            auction_start_price=None,
         )

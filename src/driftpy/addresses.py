@@ -14,37 +14,37 @@ def get_market_public_key(
 
 def get_insurance_fund_public_key(
     program_id: PublicKey, 
-    bank_index: int, 
+    spot_market_index: int, 
 ) -> PublicKey: 
     return PublicKey.find_program_address(
-        [b"insurance_fund_vault", int_to_le_bytes(bank_index)], 
+        [b"insurance_fund_vault", int_to_le_bytes(spot_market_index)], 
         program_id
     )[0]
 
-def get_bank_public_key(
+def get_spot_market_public_key(
     program_id: PublicKey, 
-    bank_index: int, 
+    spot_market_index: int, 
 ) -> PublicKey: 
     return PublicKey.find_program_address(
-        [b"bank", int_to_le_bytes(bank_index)], 
+        [b"spot_market", int_to_le_bytes(spot_market_index)], 
         program_id
     )[0]
 
-def get_bank_vault_public_key(
+def get_spot_market_vault_public_key(
     program_id: PublicKey, 
-    bank_index: int, 
+    spot_market_index: int, 
 ) -> PublicKey: 
     return PublicKey.find_program_address(
-        [b"bank_vault", int_to_le_bytes(bank_index)], 
+        [b"spot_market_vault", int_to_le_bytes(spot_market_index)], 
         program_id
     )[0]
 
-def get_bank_vault_authority_public_key(
+def get_spot_market_vault_authority_public_key(
     program_id: PublicKey, 
-    bank_index: int, 
+    spot_market_index: int, 
 ) -> PublicKey: 
     return PublicKey.find_program_address(
-        [b"bank_vault_authority", int_to_le_bytes(bank_index)], 
+        [b"spot_market_vault_authority", int_to_le_bytes(spot_market_index)], 
         program_id
     )[0]
 

@@ -24,12 +24,13 @@ Note: requires Python >= 3.9.
 
 ## Development
 
-- `git submodule init/update `
+- `git submodule update --init --recursive`
 - cd protocol-v2 && yarn 
 - cd sdk && yarn && yarn build && cd .. 
 - anchor build 
+- in deps/serum/dex run `cargo build-bpf`
 - update anchor IDL for v2 protocol on new re-builds (copy new idls to src/driftpy/idl/...json)
-- run python tests: `pytest -v -s -x v2tests/test.py`
+- run python tests: `bash test.sh v2tests/test.py`
 
 ### Development Setup
 

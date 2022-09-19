@@ -25,7 +25,7 @@ from driftpy.types import (
 
 from driftpy.accounts import (
     get_market_account, 
-    get_bank_account,
+    get_spot_market_account,
     get_user_account
 )
 

@@ -59,21 +59,21 @@ async def get_user_account(
 async def get_market_account(
     program: Program, 
     market_index: int
-) -> Market:
+) -> PerpMarket:
     market_public_key = get_market_public_key(
         program.program_id, 
         market_index
     )
-    response = await program.account["Market"].fetch(market_public_key)
-    return cast(Market, response)
+    response = await program.account["PerpMarket"].fetch(market_public_key)
+    return cast(PerpMarket, response)
 
-async def get_bank_account(
+async def get_spot_market_account(
     program: Program, 
-    bank_index: int
-) -> Bank:
-    bank_public_key = get_bank_public_key(
+    spot_market_index: int
+) -> SpotMarket:
+    spot_market_public_key = get_spot_market_public_key(
         program.program_id, 
-        bank_index
+        spot_market_index
     )
-    response = await program.account["Bank"].fetch(bank_public_key)
-    return cast(Bank, response)
+    response = await program.account["SpotMarket"].fetch(spot_market_public_key)
+    return cast(SpotMarket, response)

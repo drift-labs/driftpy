@@ -97,12 +97,12 @@ async def clearing_house(program: Program, usdc_mint: Keypair) -> Admin:
     return admin 
 
 @async_fixture(scope="session")
-async def initialized_bank(
+async def initialized_spot_market(
     clearing_house: Admin, 
     usdc_mint: Keypair,
 ): 
-    await clearing_house.initialize_bank(
-        usdc_mint.public_key, 
+    await clearing_house.initialize_spot_market(
+        usdc_mint.public_key 
     )
 
 @async_fixture(scope="session")
@@ -122,13 +122,13 @@ async def initialized_market(
     return sol_usd
 
 @mark.asyncio
-async def test_bank(
+async def test_spot(
     clearing_house: Admin,
-    initialized_bank: PublicKey,
+    initialized_spot_market: PublicKey,
 ):
     program = clearing_house.program
-    bank: Bank = await get_bank_account(program, 0)
-    assert bank.bank_index == 0 
+    spot_market = await get_spot_market_account(program, 0)
+    assert spot_market.market_index == 0 
 
 @mark.asyncio
 async def test_market(
@@ -137,7 +137,7 @@ async def test_market(
 ):
     program = clearing_house.program
     market_oracle_public_key = initialized_market
-    market: Market = await get_market_account(program, 0)
+    market: PerpMarket = await get_market_account(program, 0)
 
     assert market.amm.oracle == market_oracle_public_key
 
@@ -169,16 +169,18 @@ async def test_usdc_deposit(
         clearing_house.program, 
         clearing_house.authority
     )
-    assert user_account.bank_balances[0].balance == USDC_AMOUNT
+    assert user_account.spot_positions[0].balance == USDC_AMOUNT
 
 from time import sleep
 @mark.asyncio
 async def test_add_remove_liquidity(
     clearing_house: Admin,
 ):
-    n_shares = 10 
+    market = await get_market_account(clearing_house.program, 0)
+    n_shares = market.amm.base_asset_amount_step_size
+
     await clearing_house.update_lp_cooldown_time(0, 0)
-    market: Market = await get_market_account(clearing_house.program, 0)
+    market = await get_market_account(clearing_house.program, 0)
     assert market.amm.lp_cooldown_time == 0
 
     await clearing_house.add_liquidity(
@@ -189,7 +191,7 @@ async def test_add_remove_liquidity(
         clearing_house.program, 
         clearing_house.authority
     )
-    assert user_account.positions[0].lp_shares == n_shares
+    assert user_account.perp_positions[0].lp_shares == n_shares
 
     await clearing_house.settle_lp(
         clearing_house.authority, 
@@ -203,14 +205,14 @@ async def test_add_remove_liquidity(
         clearing_house.program, 
         clearing_house.authority
     )
-    assert user_account.positions[0].lp_shares == 0
+    assert user_account.perp_positions[0].lp_shares == 0
 
 @mark.asyncio
 async def test_open_close_position(
     clearing_house: Admin,
 ):
-    await clearing_house.update_auction_duration(
-        0, 0
+    await clearing_house.update_perp_auction_duration(
+        0
     )
 
     baa = 10 * AMM_RESERVE_PRECISION
@@ -230,8 +232,8 @@ async def test_open_close_position(
         clearing_house.authority
     )
 
-    assert user_account.positions[0].base_asset_amount == baa
-    assert user_account.positions[0].quote_asset_amount < 0
+    assert user_account.perp_positions[0].base_asset_amount == baa
+    assert user_account.perp_positions[0].quote_asset_amount < 0
 
     await clearing_house.close_position(
         0
@@ -241,5 +243,5 @@ async def test_open_close_position(
         clearing_house.program, 
         clearing_house.authority
     )
-    assert user_account.positions[0].base_asset_amount == 0
-    assert user_account.positions[0].quote_asset_amount == -20001
+    assert user_account.perp_positions[0].base_asset_amount == 0
+    assert user_account.perp_positions[0].quote_asset_amount == -20001

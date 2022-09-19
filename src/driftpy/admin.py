@@ -129,7 +129,7 @@ class Admin(ClearingHouse):
             ),
         )
 	
-    async def initialize_bank(
+    async def initialize_spot_market(
         self,
 		mint: PublicKey,
 		optimal_utilization: int = BANK_INTEREST_PRECISION // 2,
@@ -146,22 +146,22 @@ class Admin(ClearingHouse):
 	):
         state_public_key = get_state_public_key(self.program_id)
         state = await get_state_account(self.program)
-        bank_index = state.number_of_banks
+        spot_index = state.number_of_spot_markets
 
-        bank_public_key = get_bank_public_key(
+        spot_public_key = get_spot_market_public_key(
             self.program_id,
-            bank_index
+            spot_index
         )
-        bank_vault_public_key = get_bank_vault_public_key(
+        spot_vault_public_key = get_spot_market_vault_public_key(
             self.program_id, 
-            bank_index
+            spot_index
         )
         insurance_vault_public_key = get_insurance_fund_public_key(
             self.program_id, 
-            bank_index
+            spot_index
         )
 
-        return await self.program.rpc["initialize_bank"](
+        return await self.program.rpc["initialize_spot_market"](
             optimal_utilization,
             optimal_rate,
             max_rate,
@@ -176,11 +176,11 @@ class Admin(ClearingHouse):
                 accounts={
                     "admin": self.authority,
                     "state": state_public_key,
-                    "bank": bank_public_key,
-                    "bank_vault": bank_vault_public_key,
+                    "spot_market": spot_public_key,
+                    "spot_market_vault": spot_vault_public_key,
                     "insurance_fund_vault": insurance_vault_public_key,
                     "clearing_house_signer": get_clearing_house_signer_public_key(self.program_id),
-                    "bank_mint": mint,
+                    "spot_market_mint": mint,
                     "oracle": oracle,
                     "rent": SYSVAR_RENT_PUBKEY, 
                     "system_program": SYS_PROGRAM_ID,
@@ -189,14 +189,12 @@ class Admin(ClearingHouse):
             )
         )
 
-    async def update_auction_duration(
+    async def update_perp_auction_duration(
         self, 
         min_duration: int, 
-        max_duration: int, 
     ): 
-        return await self.program.rpc["update_auction_duration"](
+        return await self.program.rpc["update_perp_auction_duration"](
             min_duration, 
-            max_duration,
             ctx=Context(
                 accounts={
                     "admin": self.authority,

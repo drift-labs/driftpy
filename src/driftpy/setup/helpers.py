@@ -29,13 +29,13 @@ from solana.rpc.commitment import Processed, Finalized, Confirmed
 from solana.transaction import TransactionSignature
 
 from driftpy.sdk_types import AssetType
-from driftpy.types import Market, PositionDirection, SwapDirection
+from driftpy.types import * 
 from driftpy.math.amm import calculate_amm_reserves_after_swap, calculate_price
 
 async def adjust_oracle_pretrade(
     baa: int, 
     position_direction: PositionDirection, 
-    market: Market, 
+    market: PerpMarket, 
     oracle_program: Program,
 ):
     price = calculate_price(
