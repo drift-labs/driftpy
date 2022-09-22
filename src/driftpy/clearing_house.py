@@ -18,11 +18,7 @@ from driftpy.constants.numeric_constants import QUOTE_ASSET_BANK_INDEX
 from driftpy.addresses import * 
 from driftpy.sdk_types import *
 from driftpy.types import *
-from driftpy.accounts import (
-    get_market_account, 
-    get_spot_market_account,
-    get_user_account
-)
+from driftpy.accounts import * 
 
 from anchorpy import Wallet
 from driftpy.constants.config import Config

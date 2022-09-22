@@ -1,5 +1,5 @@
 from driftpy.types import (
-    PerpPerpMarket,
+    PerpMarket,
 )
 
 from driftpy.constants.numeric_constants import (
