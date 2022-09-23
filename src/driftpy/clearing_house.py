@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from solana.publickey import PublicKey
 import json
 from importlib import resources
 from typing import Optional, TypeVar, Type, cast
@@ -470,31 +471,21 @@ class ClearingHouse:
         market_index: int,
         limit_price: int = 0 
     ): 
-
         order = self.default_order_params(
             order_type=OrderType.MARKET(), 
             direction=direction, 
             market_index=market_index, 
             base_asset_amount=amount,
         )
-        # # tmp
-        # limit_price = {
-        #     True: 100 * 1e13, # going long
-        #     False: 10 * 1e6 # going short
-        # }[direction == PositionDirection.LONG()]
-        # order.price = int(limit_price)
+        order.limit_price = limit_price
 
         return await self.place_and_take(order) 
 
-    async def place_and_take(
-        self,
-        order_params: OrderParams,
-        maker_info: MakerInfo = None,
+    def get_increase_compute_ix(
+        self
     ):
-        from solana.publickey import PublicKey
         program_id = PublicKey('ComputeBudget111111111111111111111111111111')
 
-        # attempt2
         name_bytes = bytearray(1 + 4 + 4)
         pack_into('B', name_bytes, 0, 0)
         pack_into('I', name_bytes, 1, 500_000) 
@@ -507,9 +498,50 @@ class ClearingHouse:
             data
         )
 
+        return compute_ix
+
+    async def place_order(
+        self,
+        order_params: OrderParams,
+        maker_info: MakerInfo = None,
+    ):
         return await self.send_ixs(
             [
-                compute_ix,
+                self.get_increase_compute_ix(),
+                await self.get_place_order_ix(order_params, maker_info)
+            ]
+        )
+
+    async def get_place_order_ix(
+        self,
+        order_params: OrderParams,
+    ):
+        user_account_public_key = self.get_user_account_public_key() 
+
+        remaining_accounts = await self.get_remaining_accounts(
+            writable_market_index=order_params.market_index, 
+        ) 
+
+        return self.program.instruction["place_order"](
+            order_params,
+            ctx=Context(
+                accounts={
+                    "state": self.get_state_public_key(), 
+                    "user": user_account_public_key, 
+                    "authority": self.authority, 
+                },
+                remaining_accounts=remaining_accounts
+            ),
+        )
+
+    async def place_and_take(
+        self,
+        order_params: OrderParams,
+        maker_info: MakerInfo = None,
+    ):
+        return await self.send_ixs(
+            [
+                self.get_increase_compute_ix(),
                 await self.get_place_and_take_ix(order_params, maker_info)
             ]
         )
