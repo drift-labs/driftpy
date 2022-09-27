@@ -186,7 +186,7 @@ class PerpPosition:
     open_orders: int
     open_bids: int
     open_asks: int
-    realized_pnl: int
+    settled_pnl: int
     lp_shares: int
     remainder_base_asset_amount: int
     last_net_base_asset_amount_per_lp: int
@@ -299,31 +299,15 @@ class OracleGuardRails:
     use_for_liquidations: bool
  
 @dataclass
-class DiscountTokenTier:
-    minimum_balance: int
-    discount_numerator: int
-    discount_denominator: int
- 
-@dataclass
-class DiscountTokenTiers:
-    first_tier: DiscountTokenTier
-    second_tier: DiscountTokenTier
-    third_tier: DiscountTokenTier
-    fourth_tier: DiscountTokenTier
- 
-@dataclass
-class DiscountTokenTiers:
-    first_tier: DiscountTokenTier
-    second_tier: DiscountTokenTier
-    third_tier: DiscountTokenTier
-    fourth_tier: DiscountTokenTier
- 
-@dataclass
-class ReferralDiscount:
+class FeeTier:
+    fee_numerator: int
+    fee_denominator: int
+    maker_rebate_numerator: int
+    maker_rebate_denominator: int
     referrer_reward_numerator: int
     referrer_reward_denominator: int
-    referee_discount_numerator: int
-    referee_discount_denominator: int
+    referee_fee_numerator: int
+    referee_fee_denominator: int
  
 @dataclass
 class OrderFillerRewardStructure:
@@ -333,21 +317,10 @@ class OrderFillerRewardStructure:
  
 @dataclass
 class FeeStructure:
-    fee_numerator: int
-    fee_denominator: int
-    discount_token_tiers: DiscountTokenTiers
-    referral_discount: ReferralDiscount
-    maker_rebate_numerator: int
-    maker_rebate_denominator: int
+    fee_tiers: list[FeeTier]
     filler_reward_structure: OrderFillerRewardStructure
+    referrer_reward_epoch_upper_bound: int
     flat_filler_fee: int
- 
-@dataclass
-class DiscountTokenTiers:
-    first_tier: DiscountTokenTier
-    second_tier: DiscountTokenTier
-    third_tier: DiscountTokenTier
-    fourth_tier: DiscountTokenTier
  
 @dataclass
 class SpotPosition:
@@ -357,6 +330,7 @@ class SpotPosition:
     open_orders: int
     open_bids: int
     open_asks: int
+    cumulative_deposits: int
  
 @dataclass
 class Order:
@@ -493,8 +467,6 @@ class State:
     funding_paused: bool
     admin_controls_prices: bool
     insurance_vault: PublicKey
-    perp_fee_structure: FeeStructure
-    spot_fee_structure: FeeStructure
     whitelist_mint: PublicKey
     discount_mint: PublicKey
     oracle_guard_rails: OracleGuardRails
@@ -508,10 +480,13 @@ class State:
     settlement_duration: int
     signer: PublicKey
     signer_nonce: int
+    perp_fee_structure: FeeStructure
+    spot_fee_structure: FeeStructure
  
 @dataclass
 class User:
     authority: PublicKey
+    delegate: PublicKey
     user_id: int
     name: list[int]
     spot_positions: list[SpotPosition]
@@ -538,6 +513,8 @@ class UserStats:
     is_referrer: bool
     referrer: PublicKey
     total_referrer_reward: int
+    current_epoch_referrer_reward: int
+    next_epoch_ts: int
     fees: UserFees
     maker_volume30d: int
     taker_volume30d: int
@@ -545,5 +522,5 @@ class UserStats:
     last_maker_volume30d_ts: int
     last_taker_volume30d_ts: int
     last_filler_volume30d_ts: int
-    quote_asset_insurance_fund_stake: int
+    staked_quote_asset_amount: int
  

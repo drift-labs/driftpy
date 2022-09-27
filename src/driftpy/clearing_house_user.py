@@ -10,24 +10,9 @@ from driftpy.math.positions import (
     calculate_position_pnl,
 )
 
-from driftpy.constants.numeric_constants import (
-    AMM_RESERVE_PRECISION,
-)
-
-import driftpy
-from driftpy.constants.numeric_constants import QUOTE_ASSET_BANK_INDEX
-from driftpy.types import (
-    OracleSource,
-    Order,
-    MarketPosition,
-    User,
-)
-
-from driftpy.accounts import (
-    get_market_account, 
-    get_spot_market_account,
-    get_user_account
-)
+from driftpy.constants.numeric_constants import *
+from driftpy.types import *
+from driftpy.accounts import *
 
 def find(l: list, f):
     valid_values = [v for v in l if f(v)]
@@ -35,6 +20,173 @@ def find(l: list, f):
         return None
     else: 
         return valid_values[0]
+
+from pythclient.pythaccounts import PythPriceAccount
+from pythclient.solana import (SolanaClient, SolanaPublicKey, SOLANA_DEVNET_HTTP_ENDPOINT, SOLANA_DEVNET_WS_ENDPOINT,
+    SOLANA_MAINNET_HTTP_ENDPOINT, SOLANA_MAINNET_HTTP_ENDPOINT)
+
+from solana.rpc.async_api import AsyncClient
+
+async def convert_pyth_price(price):
+    return int(price * PRICE_PERCISION)
+
+# todo: support other than devnet
+async def get_oracle_data(address: str):
+    account_key = SolanaPublicKey(address)
+    solana_client = SolanaClient(endpoint=SOLANA_DEVNET_HTTP_ENDPOINT, ws_endpoint=SOLANA_DEVNET_WS_ENDPOINT)
+    price: PythPriceAccount = PythPriceAccount(account_key, solana_client)
+    await price.update()
+
+    (twap, twac) = (price.derivations.get('TWAPVALUE'), price.derivations.get('TWACVALUE'))
+
+    return dict( 
+        price = convert_pyth_price(price.aggregate_price),
+        slot = price.last_slot, 
+        confidence = convert_pyth_price(price.aggregate_price_confidence_interval),
+        twap = convert_pyth_price(twap),
+        twap_confidence = convert_pyth_price(twac),
+        has_sufficient_number_of_datapoints = True
+    )
+
+def get_signed_token_amount(
+    amount, 
+    balance_type
+):
+    if str(balance_type) == 'SpotBalanceType.Deposit()': # todo not sure how else to do comparisons
+        return amount
+    else: 
+        return -abs(amount)
+
+def get_token_amount(
+    balance: int, 
+    spot_market: SpotMarket,
+    balance_type: SpotBalanceType
+) -> int: 
+    percision_decrease = 10 ** (16 - spot_market.decimals)
+
+    if str(balance_type) == 'SpotBalanceType.Deposit()': # todo not sure how else to do comparisons
+        cumm_interest = spot_market.cumulative_deposit_interest
+    else:
+        cumm_interest = spot_market.cumulative_borrow_interest
+
+    return balance * cumm_interest / percision_decrease
+
+def is_spot_position_available(
+    position: SpotPosition
+):
+    return position.balance == 0 and position.open_orders == 0
+
+def get_token_value(
+    amount, 
+    spot_decimals, 
+    oracle_data
+):
+    precision_decrease = 10 ** spot_decimals
+    return amount * oracle_data['price'] / precision_decrease
+
+def calculate_size_discount_asset_weight(
+    size, 
+    imf_factor, 
+    asset_weight,
+):
+    if imf_factor == 0: 
+        return 0 
+    
+    size_sqrt = int((size * 10) ** .5) + 1
+    imf_num = SPOT_MARKET_IMF_PRECISION + (SPOT_MARKET_IMF_PRECISION / 10)
+
+    size_discount_asset_weight = imf_num * SPOT_MARKET_WEIGHT_PRECISION / ( 
+        SPOT_MARKET_IMF_PRECISION + size_sqrt * imf_factor / 100_000
+    )
+
+    min_asset_weight = min(asset_weight, size_discount_asset_weight)
+    return min_asset_weight
+
+def calculate_asset_weight(
+    amount, 
+    spot_market: SpotMarket, 
+    margin_category,
+):
+    size_precision = 10 ** spot_market.decimals
+
+    if size_precision > AMM_RESERVE_PRECISION:
+        size_in_amm_precision = amount / (size_precision / AMM_RESERVE_PRECISION)
+    else: 
+        size_in_amm_precision = amount * AMM_RESERVE_PRECISION / size_precision
+
+    match margin_category:
+        case 'Initial': 
+            asset_weight = calculate_size_discount_asset_weight(
+                size_in_amm_precision, 
+                spot_market.imf_factor, 
+                spot_market.initial_asset_weight
+            )
+        case 'Maintenance':
+            asset_weight = calculate_size_discount_asset_weight(
+                size_in_amm_precision, 
+                spot_market.imf_factor, 
+                spot_market.maintenance_asset_weight
+            )
+        case _: 
+            asset_weight = spot_market.initial_asset_weight
+    
+    return asset_weight
+
+def get_spot_asset_value(
+    amount: int, 
+    oracle_data, 
+    spot_market: SpotMarket,
+    margin_category
+):
+    asset_value = get_token_value(
+        amount, 
+        spot_market.decimals,
+        oracle_data
+    )
+
+    if margin_category is not None: 
+        weight = calculate_asset_weight(
+            amount, 
+            spot_market, 
+            margin_category
+        )
+        asset_value = asset_value * weight / SPOT_MARKET_WEIGHT_PRECISION
+
+    return asset_value
+
+def get_worst_case_token_amounts(
+    position: SpotPosition, 
+    spot_market: SpotMarket, 
+    oracle_data, 
+): 
+
+    token_amount = get_signed_token_amount(
+        get_token_amount(
+            position.balance, 
+            spot_market, 
+            position.balance_type
+        ),
+        position.balance_type,
+    )
+
+    token_all_bids = token_amount + position.open_bids
+    token_all_asks = token_amount + position.open_asks
+
+    if abs(token_all_asks) > abs(token_all_bids):
+        value = get_token_value(
+            -position.open_asks,
+            spot_market.decimals,
+            oracle_data
+        )
+        return [token_all_asks, value]
+    else:
+        value = get_token_value(
+            -position.open_bids,
+            spot_market.decimals,
+            oracle_data
+        )
+        return [token_all_bids, value]
+
 
 class ClearingHouseUser:
     """This class is the main way to interact with Drift Protocol.
@@ -65,8 +217,75 @@ class ClearingHouseUser:
         """
         self.clearing_house = clearing_house
         self.authority = authority
+        if self.authority is None: 
+            self.authority = clearing_house.authority
+
         self.program = clearing_house.program
         self.oracle_program = clearing_house
+
+    async def get_spot_market_asset_value(
+        self, 
+        margin_category,
+        include_open_orders
+    ):
+        user = await get_user_account(self.clearing_house.program, self.authority)
+        total_value = 0 
+        for position in user.spot_positions:
+            if is_spot_position_available(position): 
+                continue
+            
+            spot_market = await get_spot_market_account(
+                self.program, 
+                position.market_index
+            )
+
+            if position.market_index == QUOTE_ASSET_BANK_INDEX:
+                total_value += get_token_amount(
+                    position.balance, 
+                    spot_market, 
+                    position.balance_type
+                )
+                continue
+            
+            oracle_data = await get_oracle_data(spot_market.oracle)
+
+            if not include_open_orders:
+                if str(position.balance_type) == 'SpotBalanceType.Deposit()':
+                    token_amount = get_token_amount(
+                        position.balance, 
+                        spot_market, 
+                        position.balance_type
+                    )
+                    asset_value = get_spot_asset_value(
+                        token_amount, 
+                        oracle_data, 
+                        spot_market,
+                        margin_category
+                    )
+                    total_value += asset_value
+                    continue
+                else: 
+                    continue
+            
+            worst_case_token_amount, worst_case_quote_amount = get_worst_case_token_amounts(
+                position, 
+                spot_market, 
+                oracle_data
+            )
+
+            if worst_case_token_amount > 0:
+                baa_value = get_spot_asset_value(
+                    worst_case_token_amount, 
+                    oracle_data, 
+                    spot_market, 
+                    margin_category
+                )
+                total_value += baa_value
+            
+            if worst_case_quote_amount > 0:
+                total_value += worst_case_quote_amount
+
+        return total_value
     
     async def get_user_account(self) -> User:
         return await get_user_account(
@@ -74,7 +293,7 @@ class ClearingHouseUser:
             self.authority
         )
 
-    async def get_user_position(self, market_index: int) -> MarketPosition:
+    async def get_user_position(self, market_index: int) -> PerpPosition:
         user = await self.get_user_account()
 
         position, found = find(user.positions, lambda p: p.market_index == market_index)
