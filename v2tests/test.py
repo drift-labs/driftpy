@@ -48,7 +48,7 @@ from anchorpy.utils.token import get_token_account
 from driftpy.admin import Admin
 from driftpy.constants.numeric_constants import MARK_PRICE_PRECISION, AMM_RESERVE_PRECISION
 from driftpy.clearing_house import ClearingHouse
-from driftpy.setup.helpers import _create_usdc_mint, mock_oracle, _create_and_mint_user_usdc
+from driftpy.setup.helpers import _create_usdc_mint, _create_and_mint_user_usdc, mock_oracle, set_price_feed, _airdrop_user
 
 from driftpy.addresses import * 
 from driftpy.types import * 
@@ -171,7 +171,7 @@ async def test_usdc_deposit(
     )
     assert user_account.spot_positions[0].balance == USDC_AMOUNT
 
-from time import sleep
+
 @mark.asyncio
 async def test_add_remove_liquidity(
     clearing_house: Admin,
@@ -245,3 +245,55 @@ async def test_open_close_position(
     )
     assert user_account.perp_positions[0].base_asset_amount == 0
     assert user_account.perp_positions[0].quote_asset_amount == -20001
+
+# note this goes at end bc the main clearing house loses all collateral ...
+@mark.asyncio
+async def test_liq_perp(
+    clearing_house: Admin,
+    usdc_mint: Keypair,
+    workspace: WorkspaceType
+):
+    market = await get_market_account(clearing_house.program, 0)
+    user_account = await get_user_account(
+        clearing_house.program, 
+        clearing_house.authority
+    )
+
+    liq, _ = await _airdrop_user(clearing_house.program.provider)
+    liq_ch = ClearingHouse(clearing_house.program, liq)
+    usdc_acc = await _create_and_mint_user_usdc(
+        usdc_mint, 
+        clearing_house.program.provider, 
+        USDC_AMOUNT, 
+        liq.public_key
+    )
+    await liq_ch.intialize_user()
+    await liq_ch.deposit(
+        USDC_AMOUNT, 
+        0, 
+        usdc_acc.public_key, 
+    )
+
+    from driftpy.constants.numeric_constants import QUOTE_PRECISION, AMM_RESERVE_PRECISION
+    baa = user_account.spot_positions[0].balance / QUOTE_PRECISION * AMM_RESERVE_PRECISION * 2 
+    await clearing_house.open_position(
+        PositionDirection.SHORT(), 
+        int(baa),
+        0, 
+    )
+
+    # liq em
+    pyth_program = workspace["pyth"]
+    await set_price_feed(pyth_program, market.amm.oracle, 10)
+
+    sig = await liq_ch.liquidate_perp(
+        clearing_house.authority, 
+        0, 
+        0
+    )
+
+    # from solana.rpc.commitment import Confirmed, Processed
+    # clearing_house.program.provider.connection._commitment = Confirmed
+    # tx = await clearing_house.program.provider.connection.get_transaction(sig)
+    # clearing_house.program.provider.connection._commitment = Processed
+    # print(tx)

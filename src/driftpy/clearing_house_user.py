@@ -14,18 +14,16 @@ from driftpy.constants.numeric_constants import *
 from driftpy.types import *
 from driftpy.accounts import *
 
+from pythclient.pythaccounts import PythPriceAccount
+from pythclient.solana import (SolanaClient, SolanaPublicKey, SOLANA_DEVNET_HTTP_ENDPOINT, SOLANA_DEVNET_WS_ENDPOINT,
+    SOLANA_MAINNET_HTTP_ENDPOINT, SOLANA_MAINNET_HTTP_ENDPOINT)
+
 def find(l: list, f):
     valid_values = [v for v in l if f(v)]
     if len(valid_values) == 0:
         return None
     else: 
         return valid_values[0]
-
-from pythclient.pythaccounts import PythPriceAccount
-from pythclient.solana import (SolanaClient, SolanaPublicKey, SOLANA_DEVNET_HTTP_ENDPOINT, SOLANA_DEVNET_WS_ENDPOINT,
-    SOLANA_MAINNET_HTTP_ENDPOINT, SOLANA_MAINNET_HTTP_ENDPOINT)
-
-from solana.rpc.async_api import AsyncClient
 
 async def convert_pyth_price(price):
     return int(price * PRICE_PERCISION)
@@ -64,10 +62,13 @@ def get_token_amount(
 ) -> int: 
     percision_decrease = 10 ** (16 - spot_market.decimals)
 
-    if str(balance_type) == 'SpotBalanceType.Deposit()': # todo not sure how else to do comparisons
-        cumm_interest = spot_market.cumulative_deposit_interest
-    else:
-        cumm_interest = spot_market.cumulative_borrow_interest
+    match str(balance_type):
+        case 'SpotBalanceType.Deposit()':
+            cumm_interest = spot_market.cumulative_deposit_interest
+        case 'SpotBalanceType.Borrow()':
+            cumm_interest = spot_market.cumulative_borrow_interest
+        case _: 
+            raise Exception(f"Invalid balance type: {balance_type}")
 
     return balance * cumm_interest / percision_decrease
 
@@ -127,8 +128,10 @@ def calculate_asset_weight(
                 spot_market.imf_factor, 
                 spot_market.maintenance_asset_weight
             )
-        case _: 
+        case None: 
             asset_weight = spot_market.initial_asset_weight
+        case _: 
+            raise Exception(f"Invalid margin category: {margin_category}")
     
     return asset_weight
 

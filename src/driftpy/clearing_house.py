@@ -199,14 +199,14 @@ class ClearingHouse:
         user_id = 0,
         include_oracles: bool = True,
         include_spot_markets: bool = True,
-        user_public_key: PublicKey = None,
+        authority: PublicKey = None,
     ):
-        if user_public_key is None: 
-            user_public_key = self.authority
+        if authority is None: 
+            authority = self.authority
 
         user_account = await get_user_account(
             self.program, 
-            user_public_key, 
+            authority, 
             user_id
         )
 
@@ -583,22 +583,22 @@ class ClearingHouse:
 
     async def settle_lp(
         self,
-        settlee_user_account_public_key: PublicKey, 
+        settlee_authority: PublicKey, 
         market_index: int,
     ): 
         return await self.send_ixs([await self.get_settle_lp_ix(
-            settlee_user_account_public_key, 
+            settlee_authority, 
             market_index
         )], signers=[])
 
     async def get_settle_lp_ix(
         self,
-        settlee_user_account_public_key: PublicKey, 
+        settlee_authority: PublicKey, 
         market_index: int,
     ):
         remaining_accounts = await self.get_remaining_accounts(
             writable_market_index=market_index, 
-            user_public_key=settlee_user_account_public_key,
+            authority=settlee_authority,
         ) 
 
         return self.program.instruction["settle_lp"](
@@ -608,7 +608,7 @@ class ClearingHouse:
                     "state": self.get_state_public_key(), 
                     "user": get_user_account_public_key(
                         self.program_id, 
-                        settlee_user_account_public_key
+                        settlee_authority
                     ), 
                 },
                 remaining_accounts=remaining_accounts
@@ -646,13 +646,6 @@ class ClearingHouse:
             base_asset_amount=abs(int(position.base_asset_amount)),
             direction=PositionDirection.LONG() if position.base_asset_amount < 0 else PositionDirection.SHORT(), 
         )
-        
-        # # tmp
-        # limit_price = {
-        #     True: 100 * 1e13, # going long
-        #     False: 10 * 1e6 # going short
-        # }[position.base_asset_amount < 0]
-        # order.price = int(limit_price)
 
         return await self.place_and_take(order)
 
@@ -680,4 +673,55 @@ class ClearingHouse:
             auction_duration=None, 
             time_in_force=None, 
             auction_start_price=None,
+        )
+
+    async def liquidate_perp(
+        self,
+        user_authority: PublicKey,
+        market_index: int, 
+        max_base_asset_amount: int, 
+    ):
+        return await self.send_ixs([await self.get_liquidate_perp_ix(
+            user_authority,
+            market_index, 
+            max_base_asset_amount, 
+        )])
+
+    async def get_liquidate_perp_ix(
+        self,
+        user_authority: PublicKey,
+        market_index: int, 
+        max_base_asset_amount: int, 
+    ):
+        user_pk = get_user_account_public_key(
+            self.program_id, 
+            user_authority
+        )
+        user_stats_pk = get_user_stats_account_public_key(
+            self.program_id, 
+            user_authority,
+        )
+
+        liq_pk = self.get_user_account_public_key()
+        liq_stats_pk = self.get_user_stats_public_key()
+
+        remaining_accounts = await self.get_remaining_accounts(
+            writable_market_index=market_index, 
+            authority=user_authority
+        )
+
+        return self.program.instruction["liquidate_perp"](
+            market_index, 
+            max_base_asset_amount,
+            ctx=Context(
+                accounts={
+                    "state": self.get_state_public_key(), 
+                    "authority": self.authority,
+                    "user": user_pk, 
+                    "user_stats": user_stats_pk,
+                    "liquidator": liq_pk, 
+                    "liquidator_stats": liq_stats_pk,
+                },
+                remaining_accounts=remaining_accounts
+            ),
         )
