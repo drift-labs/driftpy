@@ -289,11 +289,9 @@ async def test_liq_perp(
     sig = await liq_ch.liquidate_perp(
         clearing_house.authority, 
         0, 
-        0
+        int(baa) // 10
     )
 
-    # from solana.rpc.commitment import Confirmed, Processed
-    # clearing_house.program.provider.connection._commitment = Confirmed
-    # tx = await clearing_house.program.provider.connection.get_transaction(sig)
-    # clearing_house.program.provider.connection._commitment = Processed
-    # print(tx)
+    # liq takes on position
+    position = await liq_ch.get_user_position(0)
+    assert position.base_asset_amount != 0 
