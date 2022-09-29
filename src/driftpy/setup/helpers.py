@@ -58,8 +58,10 @@ async def adjust_oracle_pretrade(
 
 async def _airdrop_user(
     provider: Provider, 
+    user: Optional[Keypair] = None
 ) -> tuple[Keypair, TransactionSignature]:
-    user = Keypair()
+    if user is None:
+        user = Keypair()
     resp = await provider.connection.request_airdrop(user.public_key, 100_0 * 1000000000)
     tx_sig = resp['result']
     return user, tx_sig

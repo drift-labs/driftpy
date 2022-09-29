@@ -618,16 +618,22 @@ class ClearingHouse:
     async def get_user_position(
         self, 
         market_index: int, 
-    ):
+    ) -> Optional[PerpPosition]:
         user = await get_user_account(
             self.program, 
             self.authority
         )
+
+        found = False
         for position in user.perp_positions:
-            if position.market_index == market_index:
+            if position.market_index == market_index and not is_available(position):
+                found = True
                 break 
-        assert position.market_index == market_index, "no position in market"
         
+        if not found: 
+            return None
+
+        # assert position.market_index == market_index, "no position in market"
         return position
 
     async def close_position(
