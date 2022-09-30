@@ -18,16 +18,16 @@ from driftpy.addresses import *
 from driftpy.accounts import ( 
     get_state_account
 )
-from driftpy.constants.numeric_constants import ( 
-    BANK_INTEREST_PRECISION, 
-    BANK_WEIGHT_PRECISION, 
-)
 from anchorpy import Wallet
 from driftpy.constants.config import Config
 from anchorpy import Provider, Idl
 import driftpy
 from pathlib import Path
 import json
+from driftpy.constants.numeric_constants import (
+    SPOT_RATE_PRECISION,
+    SPOT_WEIGHT_PRECISION   
+)
 
 class Admin(ClearingHouse):
 
@@ -132,15 +132,15 @@ class Admin(ClearingHouse):
     async def initialize_spot_market(
         self,
 		mint: PublicKey,
-		optimal_utilization: int = BANK_INTEREST_PRECISION // 2,
-		optimal_rate: int = BANK_INTEREST_PRECISION,
-		max_rate: int = BANK_INTEREST_PRECISION,
+		optimal_utilization: int = SPOT_RATE_PRECISION // 2,
+		optimal_rate: int = SPOT_RATE_PRECISION,
+		max_rate: int = SPOT_RATE_PRECISION,
 		oracle: PublicKey = PublicKey([0] * PublicKey.LENGTH),
 		oracle_source: OracleSource = OracleSource.QUOTE_ASSET(),
-		initial_asset_weight: int = BANK_WEIGHT_PRECISION,
-		maintenance_asset_weight: int = BANK_WEIGHT_PRECISION,
-		initial_liability_weight: int = BANK_WEIGHT_PRECISION,
-		maintenance_liability_weight: int = BANK_WEIGHT_PRECISION,
+		initial_asset_weight: int = SPOT_WEIGHT_PRECISION,
+		maintenance_asset_weight: int = SPOT_WEIGHT_PRECISION,
+		initial_liability_weight: int = SPOT_WEIGHT_PRECISION,
+		maintenance_liability_weight: int = SPOT_WEIGHT_PRECISION,
         imf_factor: int = 0,
         liquidation_fee: int = 0,
 	):

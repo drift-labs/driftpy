@@ -1,7 +1,7 @@
 from solana.publickey import PublicKey
 
 def int_to_le_bytes(a: int):
-    return a.to_bytes(8, 'little')
+    return a.to_bytes(2, 'little')
 
 def get_market_public_key(
     program_id: PublicKey, 

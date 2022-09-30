@@ -35,6 +35,27 @@ class MarginRequirementType:
     MAINTENANCE = constructor()
  
 @_rust_enum
+class OracleValidity:
+    INVALID = constructor()
+    TOO_VOLATILE = constructor()
+    STALE_FOR_MARGIN = constructor()
+    INSUFFICIENT_DATA_POINTS = constructor()
+    STALE_FOR_A_M_M = constructor()
+    VALID = constructor()
+ 
+@_rust_enum
+class DriftAction:
+    UPDATE_FUNDING = constructor()
+    SETTLE_PNL = constructor()
+    TRIGGER_ORDER = constructor()
+    FILL_ORDER_MATCH = constructor()
+    FILL_ORDER_AMM = constructor()
+    LIQUIDATE = constructor()
+    MARGIN_CALC = constructor()
+    UPDATE_TWAP = constructor()
+    UPDATE_A_M_M_CURVE = constructor()
+ 
+@_rust_enum
 class PositionUpdateType:
     OPEN = constructor()
     INCREASE = constructor()
@@ -175,13 +196,21 @@ class OrderParams:
     auction_start_price: Optional[int]
  
 @dataclass
+class HistoricalOracleData:
+    last_oracle_price: int
+    last_oracle_conf: int
+    last_oracle_delay: int
+    last_oracle_price_twap: int
+    last_oracle_price_twap5min: int
+    last_oracle_price_twap_ts: int
+ 
+@dataclass
 class PerpPosition:
     market_index: int
     base_asset_amount: int
     quote_asset_amount: int
     quote_entry_amount: int
     last_cumulative_funding_rate: int
-    last_cumulative_repeg_rebate: int
     last_funding_rate_ts: int
     open_orders: int
     open_bids: int
@@ -192,11 +221,6 @@ class PerpPosition:
     last_net_base_asset_amount_per_lp: int
     last_net_quote_asset_amount_per_lp: int
     last_lp_add_time: int
-    padding0: int
-    padding1: int
-    padding2: int
-    padding3: int
-    padding4: int
  
 @dataclass
 class PoolBalance:
@@ -206,14 +230,12 @@ class PoolBalance:
 class AMM:
     oracle: PublicKey
     oracle_source: OracleSource
-    last_oracle_price: int
+    historical_oracle_data: HistoricalOracleData
+    last_oracle_valid: bool
+    last_update_slot: int
     last_oracle_conf_pct: int
-    last_oracle_delay: int
     last_oracle_normalised_price: int
-    last_oracle_price_twap: int
-    last_oracle_price_twap5min: int
-    last_oracle_price_twap_ts: int
-    last_oracle_mark_spread_pct: int
+    last_oracle_reserve_price_spread_pct: int
     base_asset_reserve: int
     quote_asset_reserve: int
     concentration_coef: int
@@ -235,17 +257,12 @@ class AMM:
     last_funding_rate: int
     last_funding_rate_long: int
     last_funding_rate_short: int
+    last24h_avg_funding_rate: int
     last_funding_rate_ts: int
     funding_period: int
     cumulative_funding_rate_long: int
     cumulative_funding_rate_short: int
-    cumulative_repeg_rebate_long: int
-    cumulative_repeg_rebate_short: int
     cumulative_social_loss: int
-    mark_std: int
-    last_mark_price_twap: int
-    last_mark_price_twap5min: int
-    last_mark_price_twap_ts: int
     minimum_quote_asset_trade_size: int
     max_base_asset_amount_ratio: int
     max_slippage_ratio: int
@@ -259,13 +276,19 @@ class AMM:
     ask_quote_asset_reserve: int
     bid_base_asset_reserve: int
     bid_quote_asset_reserve: int
-    last_bid_price_twap: int
-    last_ask_price_twap: int
+    volume24h: int
     long_intensity_count: int
     long_intensity_volume: int
     short_intensity_count: int
     short_intensity_volume: int
     curve_update_intensity: int
+    last_trade_ts: int
+    mark_std: int
+    last_bid_price_twap: int
+    last_ask_price_twap: int
+    last_mark_price_twap: int
+    last_mark_price_twap5min: int
+    last_mark_price_twap_ts: int
     total_fee: int
     total_mm_fee: int
     total_exchange_fee: int
@@ -274,8 +297,6 @@ class AMM:
     net_revenue_since_last_funding: int
     total_liquidation_fee: int
     fee_pool: PoolBalance
-    last_update_slot: int
-    last_oracle_valid: bool
     padding0: int
     padding1: int
     padding2: int
@@ -288,7 +309,8 @@ class PriceDivergenceGuardRails:
  
 @dataclass
 class ValidityGuardRails:
-    slots_before_stale: int
+    slots_before_stale_for_amm: int
+    slots_before_stale_for_margin: int
     confidence_interval_max_size: int
     too_volatile_ratio: int
  
@@ -398,6 +420,14 @@ class PerpMarket:
     padding4: int
  
 @dataclass
+class HistoricalIndexData:
+    last_index_bid_price: int
+    last_index_ask_price: int
+    last_index_price_twap: int
+    last_index_price_twap5min: int
+    last_index_price_twap_ts: int
+ 
+@dataclass
 class SpotMarket:
     market_index: int
     pubkey: PublicKey
@@ -405,6 +435,8 @@ class SpotMarket:
     expiry_ts: int
     oracle: PublicKey
     oracle_source: OracleSource
+    historical_oracle_data: HistoricalOracleData
+    historical_index_data: HistoricalIndexData
     mint: PublicKey
     vault: PublicKey
     insurance_fund_vault: PublicKey
@@ -466,7 +498,6 @@ class State:
     exchange_paused: bool
     funding_paused: bool
     admin_controls_prices: bool
-    insurance_vault: PublicKey
     whitelist_mint: PublicKey
     discount_mint: PublicKey
     oracle_guard_rails: OracleGuardRails
@@ -480,6 +511,7 @@ class State:
     settlement_duration: int
     signer: PublicKey
     signer_nonce: int
+    srm_vault: PublicKey
     perp_fee_structure: FeeStructure
     spot_fee_structure: FeeStructure
  

@@ -24,7 +24,7 @@ from spl.token.instructions import (
 from anchorpy import Program, Provider, WorkspaceType
 from anchorpy.utils.token import get_token_account
 from driftpy.admin import Admin
-from driftpy.constants.numeric_constants import MARK_PRICE_PRECISION
+from driftpy.constants.numeric_constants import *
 from math import sqrt
 from typing import cast
 from pytest import fixture, mark
@@ -46,7 +46,7 @@ from anchorpy import Program, Provider, WorkspaceType
 from anchorpy.utils.token import get_token_account
 
 from driftpy.admin import Admin
-from driftpy.constants.numeric_constants import MARK_PRICE_PRECISION, AMM_RESERVE_PRECISION
+from driftpy.constants.numeric_constants import PRICE_PRECISION, AMM_RESERVE_PRECISION
 from driftpy.clearing_house import ClearingHouse
 from driftpy.setup.helpers import _create_usdc_mint, _create_and_mint_user_usdc, mock_oracle, set_price_feed, _airdrop_user
 
@@ -54,11 +54,11 @@ from driftpy.addresses import *
 from driftpy.types import * 
 from driftpy.accounts import *
 
-MANTISSA_SQRT_SCALE = int(sqrt(MARK_PRICE_PRECISION))
-AMM_INITIAL_QUOTE_ASSET_AMOUNT = int((5 * 10 ** 13) * MANTISSA_SQRT_SCALE)
-AMM_INITIAL_BASE_ASSET_AMOUNT = int((5 * 10 ** 13) * MANTISSA_SQRT_SCALE)
+MANTISSA_SQRT_SCALE = int(sqrt(PRICE_PRECISION))
+AMM_INITIAL_QUOTE_ASSET_AMOUNT = int((5 * AMM_RESERVE_PRECISION) * MANTISSA_SQRT_SCALE)
+AMM_INITIAL_BASE_ASSET_AMOUNT = int((5 * AMM_RESERVE_PRECISION) * MANTISSA_SQRT_SCALE)
 PERIODICITY = 60 * 60  # 1 HOUR
-USDC_AMOUNT = int(10 * 10 ** 6)
+USDC_AMOUNT = int(10 * QUOTE_PRECISION)
 MARKET_INDEX = 0
 
 workspace = workspace_fixture(
@@ -169,7 +169,7 @@ async def test_usdc_deposit(
         clearing_house.program, 
         clearing_house.authority
     )
-    assert user_account.spot_positions[0].balance == USDC_AMOUNT
+    assert user_account.spot_positions[0].balance == USDC_AMOUNT / QUOTE_PRECISION * SPOT_BALANCE_PRECISION
 
 
 @mark.asyncio
@@ -219,12 +219,13 @@ async def test_open_close_position(
     sig = await clearing_house.open_position(
         PositionDirection.LONG(), 
         baa, 
-        0, 
+        0,
     )
+
     from solana.rpc.commitment import Confirmed, Processed
     clearing_house.program.provider.connection._commitment = Confirmed
     tx = await clearing_house.program.provider.connection.get_transaction(sig)
-    # clearing_house.program.provider.connection._commitment = Processed
+    clearing_house.program.provider.connection._commitment = Processed
     # print(tx)
     
     user_account = await get_user_account(
@@ -244,7 +245,7 @@ async def test_open_close_position(
         clearing_house.authority
     )
     assert user_account.perp_positions[0].base_asset_amount == 0
-    assert user_account.perp_positions[0].quote_asset_amount == -20001
+    assert user_account.perp_positions[0].quote_asset_amount == -20041
 
 # note this goes at end bc the main clearing house loses all collateral ...
 @mark.asyncio
@@ -274,8 +275,10 @@ async def test_liq_perp(
         usdc_acc.public_key, 
     )
 
-    from driftpy.constants.numeric_constants import QUOTE_PRECISION, AMM_RESERVE_PRECISION
-    baa = user_account.spot_positions[0].balance / QUOTE_PRECISION * AMM_RESERVE_PRECISION * 2 
+    from driftpy.constants.numeric_constants import AMM_RESERVE_PRECISION
+    from driftpy.math.amm import calculate_price
+    price = calculate_price(market.amm.base_asset_reserve, market.amm.quote_asset_reserve, market.amm.peg_multiplier)
+    baa = user_account.spot_positions[0].balance / price / SPOT_BALANCE_PRECISION * AMM_RESERVE_PRECISION * 3
     await clearing_house.open_position(
         PositionDirection.SHORT(), 
         int(baa),
@@ -284,7 +287,7 @@ async def test_liq_perp(
 
     # liq em
     pyth_program = workspace["pyth"]
-    await set_price_feed(pyth_program, market.amm.oracle, 10)
+    await set_price_feed(pyth_program, market.amm.oracle, 1.5)
 
     sig = await liq_ch.liquidate_perp(
         clearing_house.authority, 
