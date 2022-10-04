@@ -6,9 +6,9 @@ from driftpy.types import (
 
 from driftpy.math.amm import calculate_amm_reserves_after_swap, get_swap_direction
 from driftpy.constants.numeric_constants import (
-    MARK_PRICE_PRECISION,
+    PRICE_PRECISION as PRICE_PRECISION,
     AMM_RESERVE_PRECISION,
-    FUNDING_PAYMENT_PRECISION,
+    FUNDING_RATE_BUFFER,
     PRICE_TO_QUOTE_PRECISION_RATIO,
     AMM_TO_QUOTE_PRECISION_RATIO,
     AMM_TIMES_PEG_TO_QUOTE_PRECISION_RATIO,
@@ -92,7 +92,7 @@ def calculate_position_funding_pnl(market: PerpMarket, market_position: PerpPosi
         market_position.last_cumulative_funding_rate - amm_cum_funding_rate
     ) * market_position.base_asset_amount
 
-    funding_pnl /= float(AMM_RESERVE_PRECISION * FUNDING_PAYMENT_PRECISION)
+    funding_pnl /= float(AMM_RESERVE_PRECISION * FUNDING_RATE_BUFFER)
 
     return funding_pnl
 
@@ -103,7 +103,7 @@ def calculate_entry_price(market_position: PerpPosition):
 
     return abs(
         market_position.quote_asset_amount
-        * MARK_PRICE_PRECISION
+        * PRICE_PRECISION
         * AMM_TO_QUOTE_PRECISION_RATIO
         / market_position.base_asset_amount
     )

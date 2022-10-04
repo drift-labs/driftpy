@@ -20,7 +20,7 @@ from anchorpy.utils.token import get_token_account
 
 from driftpy.admin import Admin
 from driftpy.constants.markets import MARKETS
-from driftpy.constants.numeric_constants import MARK_PRICE_PRECISION
+from driftpy.constants.numeric_constants import PRICE_PRECISION
 from driftpy.types import (
     PositionDirection,
     StateAccount,
@@ -29,7 +29,7 @@ from driftpy.types import (
 )
 from .helpers import mock_oracle
 
-MANTISSA_SQRT_SCALE = int(sqrt(MARK_PRICE_PRECISION))
+MANTISSA_SQRT_SCALE = int(sqrt(PRICE_PRECISION))
 AMM_INITIAL_QUOTE_ASSET_AMOUNT = int((5 * 10 ** 13) * MANTISSA_SQRT_SCALE)
 AMM_INITIAL_BASE_ASSET_AMOUNT = int((5 * 10 ** 13) * MANTISSA_SQRT_SCALE)
 PERIODICITY = 60 * 60  # 1 HOUR

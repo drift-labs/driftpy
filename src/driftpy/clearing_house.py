@@ -96,6 +96,9 @@ class ClearingHouse:
             user_id
         )
     
+    async def get_user(self, user_id=0) -> User:
+        return await get_user_account(self.program, self.authority, user_id)
+    
     def get_state_public_key(self):
         return get_state_public_key(
             self.program_id
@@ -638,7 +641,8 @@ class ClearingHouse:
 
     async def close_position(
         self, 
-        market_index: int
+        market_index: int,
+        limit_price: int = 0,
     ):
         position = await self.get_user_position(
             market_index
@@ -652,6 +656,7 @@ class ClearingHouse:
             base_asset_amount=abs(int(position.base_asset_amount)),
             direction=PositionDirection.LONG() if position.base_asset_amount < 0 else PositionDirection.SHORT(), 
         )
+        order.limit_price = limit_price
 
         return await self.place_and_take(order)
 
@@ -661,7 +666,7 @@ class ClearingHouse:
         market_index, 
         base_asset_amount, 
         direction
-    ):
+    ) -> OrderParams:
         return OrderParams(
             order_type,
             market_type=MarketType.PERP(),

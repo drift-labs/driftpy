@@ -3,7 +3,7 @@ from driftpy.types import (
 )
 
 from driftpy.constants.numeric_constants import (
-    MARK_PRICE_PRECISION,
+    PRICE_PRECISION as PRICE_PRECISION,
     # PEG_PRECISION,
     AMM_RESERVE_PRECISION,
     QUOTE_PRECISION,
@@ -40,7 +40,7 @@ def calculate_capped_funding(market: PerpMarket):
     if larger_side != 0:
         capped_funding = (
             smaller_side * next_funding
-            + funding_fee_pool * MARK_PRICE_PRECISION * AMM_RESERVE_PRECISION
+            + funding_fee_pool * PRICE_PRECISION * AMM_RESERVE_PRECISION
         ) / larger_side
     else:
         capped_funding = next_funding

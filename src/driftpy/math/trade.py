@@ -16,7 +16,7 @@ from driftpy.math.market import (
 )
 
 from driftpy.constants.numeric_constants import (
-    MARK_PRICE_PRECISION,
+    PRICE_PRECISION as PRICE_PRECISION,
     PEG_PRECISION,
     AMM_TO_QUOTE_PRECISION_RATIO,
 )
@@ -137,13 +137,13 @@ def calculate_target_price_trade(
     use_spread: boolean = True,
     oracle_price=None,
 ):
-    mark_price_before = calculate_mark_price(market, oracle_price) * MARK_PRICE_PRECISION
+    mark_price_before = calculate_mark_price(market, oracle_price) * PRICE_PRECISION
     bid_price_before, ask_price_before = calculate_bid_ask_price(market, oracle_price) 
-    bid_price_before *= MARK_PRICE_PRECISION
-    ask_price_before *= MARK_PRICE_PRECISION
+    bid_price_before *= PRICE_PRECISION
+    ask_price_before *= PRICE_PRECISION
 
-    # bid_price_before = calculate_bid_price(market, oracle_price) * MARK_PRICE_PRECISION
-    # ask_price_before = calculate_ask_price(market, oracle_price) * MARK_PRICE_PRECISION
+    # bid_price_before = calculate_bid_price(market, oracle_price) * PRICE_PRECISION
+    # ask_price_before = calculate_ask_price(market, oracle_price) * PRICE_PRECISION
 
     if target_price > mark_price_before:
         #     price_gap = target_price - mark_price_before
@@ -174,7 +174,7 @@ def calculate_target_price_trade(
 
     # print(direction, mark_price_before/1e10, peg/1e3)
     invariant = (float(market.amm.sqrt_k)) ** 2
-    k = invariant * MARK_PRICE_PRECISION
+    k = invariant * PRICE_PRECISION
     bias_modifier = 0
 
     if (
@@ -193,7 +193,7 @@ def calculate_target_price_trade(
             math.sqrt((k / target_price) * (float(peg) / PEG_PRECISION) - bias_modifier) - 1
         )
         quote_asset_reserve_after = (
-            k / MARK_PRICE_PRECISION
+            k / PRICE_PRECISION
         ) / base_asset_reserve_after
 
         direction = PositionDirection.SHORT
@@ -209,7 +209,7 @@ def calculate_target_price_trade(
             math.sqrt((k / target_price) * (float(peg) / PEG_PRECISION) + bias_modifier) + 1
         )
         quote_asset_reserve_after = (
-            k / MARK_PRICE_PRECISION
+            k / PRICE_PRECISION
         ) / base_asset_reserve_after
 
         direction = PositionDirection.LONG
