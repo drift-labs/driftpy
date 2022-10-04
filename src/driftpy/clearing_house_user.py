@@ -34,7 +34,8 @@ class OracleData:
 async def get_oracle_data(address: PublicKey) -> OracleData:
     address = str(address)
     account_key = SolanaPublicKey(address)
-    solana_client = SolanaClient(endpoint=SOLANA_DEVNET_HTTP_ENDPOINT, ws_endpoint=SOLANA_DEVNET_WS_ENDPOINT)
+    # solana_client = SolanaClient(endpoint=SOLANA_DEVNET_HTTP_ENDPOINT, ws_endpoint=SOLANA_DEVNET_WS_ENDPOINT)
+    solana_client = SolanaClient(endpoint="http://localhost:8899/", ws_endpoint="wss://localhost:8900/")
     price: PythPriceAccount = PythPriceAccount(account_key, solana_client)
     await price.update()
 
@@ -43,9 +44,9 @@ async def get_oracle_data(address: PublicKey) -> OracleData:
     (twap, twac) = (0, 0)
 
     oracle_data = OracleData( 
-        price = convert_pyth_price(price.aggregate_price),
+        price = convert_pyth_price(price.aggregate_price_info.price),
         slot = price.last_slot, 
-        confidence = convert_pyth_price(price.aggregate_price_confidence_interval),
+        confidence = convert_pyth_price(price.aggregate_price_info.confidence_interval),
         twap = convert_pyth_price(twap),
         twap_confidence = convert_pyth_price(twac),
         has_sufficient_number_of_datapoints = True
@@ -510,7 +511,7 @@ class ClearingHouseUser:
 
             price = (await get_oracle_data(market.amm.oracle)).price
             base_asset_amount = calculate_worst_case_base_asset_amount(position) if include_open_orders else position.base_asset_amount
-            base_value = base_asset_amount * price / (AMM_TO_QUOTE_PRECISION_RATIO * PRICE_PRECISION)
+            base_value = abs(base_asset_amount) * price / (AMM_TO_QUOTE_PRECISION_RATIO * PRICE_PRECISION)
 
             if margin_category is not None:
                 margin_ratio = calculate_market_margin_ratio(

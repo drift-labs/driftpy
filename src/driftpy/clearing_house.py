@@ -647,7 +647,7 @@ class ClearingHouse:
         position = await self.get_user_position(
             market_index
         )
-        if position.base_asset_amount == 0:
+        if position is None or position.base_asset_amount == 0:
             return 
 
         order = self.default_order_params(
