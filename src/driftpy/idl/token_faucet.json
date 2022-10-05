@@ -138,8 +138,5 @@
       "name": "InvalidMintAccountAuthority",
       "msg": "Program not mint authority"
     }
-  ],
-  "metadata": {
-    "address": "Du4cvSS7p53vvXmcCzg84YwQhsraf6tYdf8CZtsGoDyn"
-  }
+  ]
 }

@@ -76,7 +76,6 @@ class Admin(ClearingHouse):
         state_public_key = get_state_public_key(self.program_id)
 
         initialize_tx_sig = await self.program.rpc["initialize"](
-            admin_controls_prices,
             ctx=Context(
                 accounts={
                     "admin": self.authority,
@@ -104,8 +103,9 @@ class Admin(ClearingHouse):
         peg_multiplier: int = PEG_PRECISION,
         oracle_source: OracleSource = OracleSource.PYTH(),
         margin_ratio_initial: int = 2000,
-        margin_ratio_partial: int = 625,
         margin_ratio_maintenance: int = 500,
+        liquidation_fee: int = 0,
+        active_status: bool = True,
     ) -> TransactionSignature:
         state_public_key = get_state_public_key(self.program.program_id)
         state = await get_state_account(self.program)
@@ -121,8 +121,9 @@ class Admin(ClearingHouse):
             peg_multiplier,
             oracle_source,
             margin_ratio_initial,
-            margin_ratio_partial,
             margin_ratio_maintenance,
+            liquidation_fee,
+            active_status,
             ctx=Context(
                 accounts={
                     "admin": self.authority,
@@ -149,6 +150,7 @@ class Admin(ClearingHouse):
         maintenance_liability_weight: int = SPOT_WEIGHT_PRECISION,
         imf_factor: int = 0,
         liquidation_fee: int = 0,
+        active_status: bool = True,
     ):
         state_public_key = get_state_public_key(self.program_id)
         state = await get_state_account(self.program)
@@ -173,6 +175,7 @@ class Admin(ClearingHouse):
             maintenance_liability_weight,
             imf_factor,
             liquidation_fee,
+            active_status,
             ctx=Context(
                 accounts={
                     "admin": self.authority,
