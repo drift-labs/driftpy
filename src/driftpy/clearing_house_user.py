@@ -252,7 +252,7 @@ def calculate_position_pnl(
 def calculate_worst_case_base_asset_amount(perp_position: PerpPosition):
     all_bids = perp_position.base_asset_amount + perp_position.open_bids
     all_asks = perp_position.base_asset_amount + perp_position.open_asks
-    if abs(all_bids) > all_asks:
+    if abs(all_bids) > abs(all_asks):
         return all_bids
     else:
         return all_asks
