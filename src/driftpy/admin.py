@@ -282,3 +282,48 @@ class Admin(ClearingHouse):
                 }
             )
         )
+
+    async def settle_expired_market_pools_to_revenue_pool(
+        self,
+        market_index: int,
+    ):
+        return await self.send_ixs([await self.get_settle_expired_market_pools_to_revenue_pool_ix(
+            market_index, 
+        )])
+    
+    async def get_settle_expired_market_pools_to_revenue_pool_ix(
+        self,
+        market_index: int,
+    ):
+        from driftpy.constants.numeric_constants import QUOTE_SPOT_MARKET_INDEX
+
+        return self.program.instruction["settle_expired_market_pools_to_revenue_pool"](
+            ctx=Context(
+                accounts={
+                    "state": self.get_state_public_key(), 
+                    "admin": self.authority,
+                    "spot_market": get_spot_market_public_key(self.program_id, QUOTE_SPOT_MARKET_INDEX), 
+                    "perp_market": get_market_public_key(self.program_id, market_index)
+                },
+            ),
+        )
+
+    async def update_market_expiry(
+        self,
+        expiry_ts: int,
+        market_index: int,
+    ):
+        market_public_key = get_market_public_key(
+            self.program_id, 
+            market_index
+        )
+        return await self.program.rpc["update_market_expiry"](
+            expiry_ts, 
+            ctx=Context(
+                accounts={
+                    "admin": self.authority,
+                    "state": get_state_public_key(self.program_id),
+                    "market": market_public_key
+                }
+            )
+        )

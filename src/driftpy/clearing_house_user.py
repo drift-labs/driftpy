@@ -6,6 +6,7 @@ from typing import cast, Optional
 from driftpy.constants.numeric_constants import *
 from driftpy.types import *
 from driftpy.accounts import *
+from driftpy.math.positions import is_available, is_spot_position_available
 
 from pythclient.pythaccounts import PythPriceAccount
 from pythclient.solana import (SolanaClient, SolanaPublicKey, SOLANA_DEVNET_HTTP_ENDPOINT, SOLANA_DEVNET_WS_ENDPOINT,
@@ -81,11 +82,6 @@ def get_token_amount(
             raise Exception(f"Invalid balance type: {balance_type}")
 
     return balance * cumm_interest / percision_decrease
-
-def is_spot_position_available(
-    position: SpotPosition
-):
-    return position.balance == 0 and position.open_orders == 0
 
 def get_token_value(
     amount, 
@@ -591,7 +587,6 @@ class ClearingHouseUser:
             self.authority
         )
 
-        from driftpy.clearing_house import is_available
         found = False
         for position in user.perp_positions:
             if position.market_index == market_index and not is_available(position):
