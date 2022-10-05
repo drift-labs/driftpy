@@ -311,7 +311,7 @@ class Admin(ClearingHouse):
                 accounts={
                     "admin": self.authority,
                     "state": get_state_public_key(self.program_id),
-                    "market": market_public_key,
+                    "perp_market": market_public_key,
                 }
             ),
         )

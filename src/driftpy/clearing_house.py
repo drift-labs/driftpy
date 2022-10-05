@@ -798,7 +798,7 @@ class ClearingHouse:
             )
         ]
 
-        spot_pk = get_spot_market_public_key(self.program, QUOTE_ASSET_BANK_INDEX)
+        spot_pk = get_spot_market_public_key(self.program_id, QUOTE_ASSET_BANK_INDEX)
         spot_account_infos = [
             AccountMeta(
                 pubkey=spot_pk,
