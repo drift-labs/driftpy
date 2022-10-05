@@ -1,9 +1,4 @@
-from driftpy.types import (
-    PositionDirection,
-    PerpMarket,
-    PerpPosition,
-    SpotPosition
-)
+from driftpy.types import PositionDirection, PerpMarket, PerpPosition, SpotPosition
 
 from driftpy.math.amm import calculate_amm_reserves_after_swap, get_swap_direction
 from driftpy.constants.numeric_constants import (
@@ -17,18 +12,19 @@ from driftpy.constants.numeric_constants import (
 
 from driftpy.math.amm import AssetType
 
-def is_spot_position_available(
-    position: SpotPosition
-):
+
+def is_spot_position_available(position: SpotPosition):
     return position.balance == 0 and position.open_orders == 0
 
-def is_available(position: PerpPosition): 
+
+def is_available(position: PerpPosition):
     return (
-        position.base_asset_amount == 0 and
-        position.quote_asset_amount == 0 and
-        position.open_orders == 0 and 
-        position.lp_shares == 0
+        position.base_asset_amount == 0
+        and position.quote_asset_amount == 0
+        and position.open_orders == 0
+        and position.lp_shares == 0
     )
+
 
 def calculate_base_asset_value(market: PerpMarket, user_position: PerpPosition) -> int:
 

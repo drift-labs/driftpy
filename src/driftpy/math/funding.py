@@ -33,7 +33,7 @@ def calculate_capped_funding(market: PerpMarket):
     larger_side = max(
         abs(market.base_asset_amount_short), market.base_asset_amount_long
     )
-    
+
     next_funding = calculate_oracle_mark_spread_owed(market)
     funding_fee_pool = calculate_funding_fee_pool(market)
 

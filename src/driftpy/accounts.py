@@ -12,68 +12,62 @@ from spl.token.constants import TOKEN_PROGRAM_ID
 from anchorpy import Program, Context, Idl
 
 from driftpy.types import *
-from driftpy.addresses import * 
+from driftpy.addresses import *
 
-async def get_state_account(
-    program: Program
-) -> State:
+
+async def get_state_account(program: Program) -> State:
     state_public_key = get_state_public_key(program.program_id)
     response = await program.account["State"].fetch(state_public_key)
     return cast(State, response)
 
+
 async def get_user_account(
-    program: Program, 
+    program: Program,
     authority: PublicKey,
 ) -> User:
     user_public_key = get_user_stats_account_public_key(
-        program.program_id, 
+        program.program_id,
         authority,
     )
     response = await program.account["UserStats"].fetch(user_public_key)
     return cast(UserStats, response)
 
+
 async def get_user_stats_account(
-    program: Program, 
+    program: Program,
     authority: PublicKey,
 ) -> UserStats:
     user_stats_public_key = get_user_stats_account_public_key(
-        program.program_id, 
+        program.program_id,
         authority,
     )
     response = await program.account["UserStats"].fetch(user_stats_public_key)
     return cast(UserStats, response)
 
+
 async def get_user_account(
-    program: Program, 
+    program: Program,
     authority: PublicKey,
     user_id: int = 0,
 ) -> User:
     user_public_key = get_user_account_public_key(
-        program.program_id, 
-        authority,
-        user_id
+        program.program_id, authority, user_id
     )
     response = await program.account["User"].fetch(user_public_key)
     return cast(User, response)
 
-async def get_market_account(
-    program: Program, 
-    market_index: int
-) -> PerpMarket:
-    market_public_key = get_market_public_key(
-        program.program_id, 
-        market_index
-    )
+
+async def get_market_account(program: Program, market_index: int) -> PerpMarket:
+    market_public_key = get_market_public_key(program.program_id, market_index)
     response = await program.account["PerpMarket"].fetch(market_public_key)
     return cast(PerpMarket, response)
 
+
 async def get_spot_market_account(
-    program: Program, 
-    spot_market_index: int
+    program: Program, spot_market_index: int
 ) -> SpotMarket:
     spot_market_public_key = get_spot_market_public_key(
-        program.program_id, 
-        spot_market_index
+        program.program_id, spot_market_index
     )
     response = await program.account["SpotMarket"].fetch(spot_market_public_key)
     return cast(SpotMarket, response)

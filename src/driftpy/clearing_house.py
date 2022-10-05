@@ -11,15 +11,15 @@ from solana.sysvar import SYSVAR_RENT_PUBKEY
 from solana.transaction import AccountMeta
 from spl.token.constants import TOKEN_PROGRAM_ID
 from anchorpy import Program, Context, Idl
-from struct import pack_into 
+from struct import pack_into
 from pathlib import Path
 
 import driftpy
 from driftpy.constants.numeric_constants import QUOTE_ASSET_BANK_INDEX
-from driftpy.addresses import * 
+from driftpy.addresses import *
 from driftpy.sdk_types import *
 from driftpy.types import *
-from driftpy.accounts import * 
+from driftpy.accounts import *
 
 from anchorpy import Wallet
 from driftpy.constants.config import Config
@@ -28,8 +28,9 @@ from anchorpy import Provider
 from typing import Union, Optional, Dict, List, Any, Sequence, cast
 from driftpy.math.positions import is_available, is_spot_position_available
 
-DEFAULT_USER_NAME = 'Main Account'
-    
+DEFAULT_USER_NAME = "Main Account"
+
+
 class ClearingHouse:
     """This class is the main way to interact with Drift Protocol.
 
@@ -55,7 +56,7 @@ class ClearingHouse:
         self.program = program
         self.program_id = program.program_id
 
-        if authority is None: 
+        if authority is None:
             authority = program.provider.wallet.payer
 
         self.signer = authority
@@ -64,17 +65,17 @@ class ClearingHouse:
 
     @staticmethod
     def from_config(config: Config, provider: Provider, authority: Keypair = None):
-        # read the idl 
-        file = Path(str(driftpy.__path__[0]) + '/idl/clearing_house.json')
+        # read the idl
+        file = Path(str(driftpy.__path__[0]) + "/idl/clearing_house.json")
         with file.open() as f:
             idl_dict = json.load(f)
         idl = Idl.from_json(idl_dict)
 
         # create the program
         program = Program(
-            idl, 
-            config.clearing_house_program_id, 
-            provider, 
+            idl,
+            config.clearing_house_program_id,
+            provider,
         )
 
         clearing_house = ClearingHouse(program, authority)
@@ -85,51 +86,37 @@ class ClearingHouse:
         return clearing_house
 
     def get_user_account_public_key(self, user_id=0) -> PublicKey:
-        return get_user_account_public_key(
-            self.program_id, 
-            self.authority,
-            user_id
-        )
-    
+        return get_user_account_public_key(self.program_id, self.authority, user_id)
+
     async def get_user(self, user_id=0) -> User:
         return await get_user_account(self.program, self.authority, user_id)
-    
+
     def get_state_public_key(self):
-        return get_state_public_key(
-            self.program_id
-        )
-    
+        return get_state_public_key(self.program_id)
+
     def get_user_stats_public_key(self):
-        return get_user_stats_account_public_key(
-            self.program_id,
-            self.authority
-        )
+        return get_user_stats_account_public_key(self.program_id, self.authority)
 
     async def send_ixs(self, ixs: list[TransactionInstruction], signers=None):
         tx = Transaction()
         for ix in ixs:
             tx.add(ix)
         # return await self.program.provider.send(tx, signers=[self.signer])
-        if signers is None: 
+        if signers is None:
             signers = self.signers
 
         return await self.program.provider.send(tx, signers=signers)
 
-    async def intialize_user(
-        self, 
-        user_id: int = 0 
-    ):
+    async def intialize_user(self, user_id: int = 0):
         ixs = []
         if user_id == 0:
-            ixs.append(
-                self.get_initialize_user_stats()
-            )
+            ixs.append(self.get_initialize_user_stats())
         ix = self.get_initialize_user_instructions(user_id)
         ixs.append(ix)
         return await self.send_ixs(ixs)
 
     def get_initialize_user_stats(
-        self, 
+        self,
     ):
         state_public_key = self.get_state_public_key()
         user_stats_public_key = self.get_user_stats_public_key()
@@ -140,7 +127,7 @@ class ClearingHouse:
                     "user_stats": user_stats_public_key,
                     "state": state_public_key,
                     "authority": self.authority,
-                    "payer": self.authority, 
+                    "payer": self.authority,
                     "rent": SYSVAR_RENT_PUBKEY,
                     "system_program": SYS_PROGRAM_ID,
                 },
@@ -148,30 +135,26 @@ class ClearingHouse:
         )
 
     def get_initialize_user_instructions(
-        self,
-        user_id: int = 0, 
-        name: str = DEFAULT_USER_NAME
+        self, user_id: int = 0, name: str = DEFAULT_USER_NAME
     ) -> TransactionInstruction:
         user_public_key = self.get_user_account_public_key(user_id)
         state_public_key = self.get_state_public_key()
         user_stats_public_key = self.get_user_stats_public_key()
 
-        if len(name) > 32: 
+        if len(name) > 32:
             raise Exception("name too long")
 
         name_bytes = bytearray(32)
-        pack_into(f'{len(name)}s', name_bytes, 0, name.encode('utf-8'))
+        pack_into(f"{len(name)}s", name_bytes, 0, name.encode("utf-8"))
         offset = len(name)
         for _ in range(32 - len(name)):
-            pack_into('1s', name_bytes, offset, ' '.encode('utf-8'))
+            pack_into("1s", name_bytes, offset, " ".encode("utf-8"))
             offset += 1
 
         str_name_bytes = name_bytes.hex()
         name_byte_array = []
         for i in range(0, len(str_name_bytes), 2):
-            name_byte_array.append(
-                int(str_name_bytes[i:i+2], 16)
-            )
+            name_byte_array.append(int(str_name_bytes[i : i + 2], 16))
 
         initialize_user_account_ix = self.program.instruction["initialize_user"](
             user_id,
@@ -181,7 +164,7 @@ class ClearingHouse:
                     "user": user_public_key,
                     "user_stats": user_stats_public_key,
                     "authority": self.authority,
-                    "payer": self.authority, 
+                    "payer": self.authority,
                     "rent": SYSVAR_RENT_PUBKEY,
                     "system_program": SYS_PROGRAM_ID,
                     "state": state_public_key,
@@ -189,74 +172,54 @@ class ClearingHouse:
             ),
         )
         return initialize_user_account_ix
-    
+
     async def get_remaining_accounts(
         self,
-        writable_market_index: int = None, 
-        writable_spot_market_index: int = None, 
-        user_id = 0,
+        writable_market_index: int = None,
+        writable_spot_market_index: int = None,
+        user_id=0,
         include_oracles: bool = True,
         include_spot_markets: bool = True,
         authority: Optional[Union[PublicKey, Sequence[PublicKey]]] = None,
     ):
-        if authority is None: 
+        if authority is None:
             authority = [self.authority]
         elif isinstance(authority, PublicKey):
             authority = [authority]
 
         accounts = []
         for pk in authority:
-            user_account = await get_user_account(
-                self.program, 
-                pk, 
-                user_id
-            )
+            user_account = await get_user_account(self.program, pk, user_id)
             accounts.append(user_account)
 
         oracle_map = {}
         spot_market_map = {}
         market_map = {}
 
-        async def track_market(
-            market_index,
-            is_writable
-        ):
-            market = await get_market_account(
-                self.program, 
-                market_index
-            )
+        async def track_market(market_index, is_writable):
+            market = await get_market_account(self.program, market_index)
             market_map[market_index] = AccountMeta(
-                pubkey=market.pubkey, 
-                is_signer=False, 
+                pubkey=market.pubkey,
+                is_signer=False,
                 is_writable=is_writable,
             )
 
             if include_oracles:
                 oracle_map[str(market.pubkey)] = AccountMeta(
-                    pubkey=market.amm.oracle, 
-                    is_signer=False, 
-                    is_writable=False
+                    pubkey=market.amm.oracle, is_signer=False, is_writable=False
                 )
 
-        async def track_spot_market(
-            spot_market_index, 
-            is_writable
-        ):
-            spot_market = await get_spot_market_account(
-                self.program, 
-                spot_market_index
-            )
+        async def track_spot_market(spot_market_index, is_writable):
+            spot_market = await get_spot_market_account(self.program, spot_market_index)
             spot_market_map[spot_market_index] = AccountMeta(
-                pubkey=spot_market.pubkey, 
-                is_signer=False, 
+                pubkey=spot_market.pubkey,
+                is_signer=False,
                 is_writable=is_writable,
             )
 
             if spot_market_index != 0 and include_oracles:
                 oracle_map[str(spot_market.pubkey)] = AccountMeta(
-                    pubkey=spot_market.oracle, 
-                    is_signer=False, 
-                    is_writable=False
+                    pubkey=spot_market.oracle, is_signer=False, is_writable=False
                 )
 
         for user_account in accounts:
@@ -265,242 +228,219 @@ class ClearingHouse:
                     market_index = position.market_index
                     await track_market(market_index, is_writable=True)
 
-            if writable_market_index is not None: 
+            if writable_market_index is not None:
                 await track_market(writable_market_index, is_writable=True)
 
             if include_spot_markets:
                 for spot_market_balance in user_account.spot_positions:
-                    if not is_spot_position_available(spot_market_balance): 
-                        await track_spot_market(spot_market_balance.market_index, is_writable=False)
+                    if not is_spot_position_available(spot_market_balance):
+                        await track_spot_market(
+                            spot_market_balance.market_index, is_writable=False
+                        )
 
-                if writable_spot_market_index is not None: 
-                    await track_spot_market(writable_spot_market_index, is_writable=True)
+                if writable_spot_market_index is not None:
+                    await track_spot_market(
+                        writable_spot_market_index, is_writable=True
+                    )
 
         remaining_accounts = [
-            *oracle_map.values(), 
-            *spot_market_map.values(), 
-            *market_map.values()   
+            *oracle_map.values(),
+            *spot_market_map.values(),
+            *market_map.values(),
         ]
 
         return remaining_accounts
 
     async def withdraw(
-        self, 
-        amount: int, 
-        spot_market_index: int, 
+        self,
+        amount: int,
+        spot_market_index: int,
         user_token_account: PublicKey,
-        reduce_only: bool = False
+        reduce_only: bool = False,
     ):
-        return await self.send_ixs([await self.get_withdraw_collateral_ix(
-            amount,
-            spot_market_index,
-            user_token_account,
-            reduce_only
-        )])
+        return await self.send_ixs(
+            [
+                await self.get_withdraw_collateral_ix(
+                    amount, spot_market_index, user_token_account, reduce_only
+                )
+            ]
+        )
 
     async def get_withdraw_collateral_ix(
-        self, 
-        amount: int, 
-        spot_market_index: int, 
+        self,
+        amount: int,
+        spot_market_index: int,
         user_token_account: PublicKey,
         reduce_only: bool = False,
     ):
 
-        spot_market = await get_spot_market_account(
-            self.program, 
-            spot_market_index
-        )
+        spot_market = await get_spot_market_account(self.program, spot_market_index)
         remaining_accounts = await self.get_remaining_accounts(
             writable_spot_market_index=spot_market_index
         )
 
         return self.program.instruction["withdraw"](
-            spot_market_index, 
+            spot_market_index,
             amount,
             reduce_only,
             ctx=Context(
                 accounts={
                     "state": self.get_state_public_key(),
-                    "spot_market": spot_market.pubkey, 
-                    "spot_market_vault": spot_market.vault, 
-                    "spot_market_vault_authority": spot_market.vault_authority, 
-                    "user": self.get_user_account_public_key(), 
-                    "user_token_account": user_token_account, 
-                    "authority": self.authority, 
-                    "token_program": TOKEN_PROGRAM_ID 
+                    "spot_market": spot_market.pubkey,
+                    "spot_market_vault": spot_market.vault,
+                    "spot_market_vault_authority": spot_market.vault_authority,
+                    "user": self.get_user_account_public_key(),
+                    "user_token_account": user_token_account,
+                    "authority": self.authority,
+                    "token_program": TOKEN_PROGRAM_ID,
                 },
-                remaining_accounts=remaining_accounts
+                remaining_accounts=remaining_accounts,
             ),
         )
 
     async def deposit(
         self,
         amount: int,
-        spot_market_index: int, 
-        user_token_account: PublicKey, 
-        user_id: int = 0, 
-        reduce_only = False, 
-        user_initialized = True,
+        spot_market_index: int,
+        user_token_account: PublicKey,
+        user_id: int = 0,
+        reduce_only=False,
+        user_initialized=True,
     ):
-        return await self.send_ixs([await self.get_deposit_collateral_ix(
-            amount,
-            spot_market_index,
-            user_token_account,
-            user_id,
-            reduce_only,
-            user_initialized,
-        )])
+        return await self.send_ixs(
+            [
+                await self.get_deposit_collateral_ix(
+                    amount,
+                    spot_market_index,
+                    user_token_account,
+                    user_id,
+                    reduce_only,
+                    user_initialized,
+                )
+            ]
+        )
 
     async def get_deposit_collateral_ix(
         self,
         amount: int,
-        spot_market_index: int, 
-        user_token_account: PublicKey, 
-        user_id: int = 0, 
-        reduce_only = False, 
-        user_initialized = True,
+        spot_market_index: int,
+        user_token_account: PublicKey,
+        user_id: int = 0,
+        reduce_only=False,
+        user_initialized=True,
     ) -> TransactionInstruction:
 
-        if user_initialized: 
+        if user_initialized:
             remaining_accounts = await self.get_remaining_accounts(
                 writable_spot_market_index=spot_market_index
-            ) 
-        else: 
+            )
+        else:
             raise Exception("not implemented...")
-                    
-        spot_market = await get_spot_market_account(
-            self.program, 
-            spot_market_index
-        )
+
+        spot_market = await get_spot_market_account(self.program, spot_market_index)
         user_account_public_key = get_user_account_public_key(
-            self.program_id, 
-            self.authority, 
-            user_id
+            self.program_id, self.authority, user_id
         )
         return self.program.instruction["deposit"](
-            spot_market_index, 
+            spot_market_index,
             amount,
             reduce_only,
             ctx=Context(
                 accounts={
                     "state": self.get_state_public_key(),
-                    "spot_market": spot_market.pubkey, 
-                    "spot_market_vault": spot_market.vault, 
-                    "user": user_account_public_key, 
-                    "user_stats": self.get_user_stats_public_key(), 
-                    "user_token_account": user_token_account, 
-                    "authority": self.authority, 
-                    "token_program": TOKEN_PROGRAM_ID 
+                    "spot_market": spot_market.pubkey,
+                    "spot_market_vault": spot_market.vault,
+                    "user": user_account_public_key,
+                    "user_stats": self.get_user_stats_public_key(),
+                    "user_token_account": user_token_account,
+                    "authority": self.authority,
+                    "token_program": TOKEN_PROGRAM_ID,
                 },
-                remaining_accounts=remaining_accounts
+                remaining_accounts=remaining_accounts,
             ),
         )
-    
-    async def add_liquidity(
-        self, 
-        amount: int, 
-        market_index: int, 
-        user_id: int = 0
-    ):  
-        return await self.send_ixs([await self.get_add_liquidity_ix(
-            amount, market_index, user_id
-        )])
+
+    async def add_liquidity(self, amount: int, market_index: int, user_id: int = 0):
+        return await self.send_ixs(
+            [await self.get_add_liquidity_ix(amount, market_index, user_id)]
+        )
 
     async def get_add_liquidity_ix(
-        self, 
-        amount: int, 
-        market_index: int, 
-        user_id: int = 0
-    ):  
+        self, amount: int, market_index: int, user_id: int = 0
+    ):
         remaining_accounts = await self.get_remaining_accounts(
             writable_market_index=market_index
-        ) 
+        )
         user_account_public_key = get_user_account_public_key(
-            self.program_id, 
-            self.authority, 
-            user_id
+            self.program_id, self.authority, user_id
         )
 
         return self.program.instruction["add_liquidity"](
-            amount, 
+            amount,
             market_index,
             ctx=Context(
                 accounts={
-                    "state": self.get_state_public_key(), 
-                    "user": user_account_public_key, 
-                    "authority": self.authority, 
+                    "state": self.get_state_public_key(),
+                    "user": user_account_public_key,
+                    "authority": self.authority,
                 },
-                remaining_accounts=remaining_accounts
+                remaining_accounts=remaining_accounts,
             ),
         )
 
-    async def remove_liquidity(
-        self, 
-        amount: int, 
-        market_index: int, 
-        user_id: int = 0
-    ):  
-        return await self.send_ixs([await self.get_remove_liquidity_ix(
-            amount, market_index, user_id
-        )])
+    async def remove_liquidity(self, amount: int, market_index: int, user_id: int = 0):
+        return await self.send_ixs(
+            [await self.get_remove_liquidity_ix(amount, market_index, user_id)]
+        )
 
     async def get_remove_liquidity_ix(
-        self, 
-        amount: int, 
-        market_index: int, 
-        user_id: int = 0
-    ):  
+        self, amount: int, market_index: int, user_id: int = 0
+    ):
         remaining_accounts = await self.get_remaining_accounts(
-            writable_market_index=market_index, 
-        ) 
+            writable_market_index=market_index,
+        )
         user_account_public_key = self.get_user_account_public_key(user_id)
 
         return self.program.instruction["remove_liquidity"](
-            amount, 
+            amount,
             market_index,
             ctx=Context(
                 accounts={
-                    "state": get_state_public_key(self.program_id), 
-                    "user": user_account_public_key, 
-                    "authority": self.authority, 
+                    "state": get_state_public_key(self.program_id),
+                    "user": user_account_public_key,
+                    "authority": self.authority,
                 },
-                remaining_accounts=remaining_accounts
+                remaining_accounts=remaining_accounts,
             ),
         )
 
     async def open_position(
         self,
-        direction: PositionDirection, 
-        amount: int, 
+        direction: PositionDirection,
+        amount: int,
         market_index: int,
-        limit_price: int = 0 
-    ): 
+        limit_price: int = 0,
+    ):
         order = self.default_order_params(
-            order_type=OrderType.MARKET(), 
-            direction=direction, 
-            market_index=market_index, 
+            order_type=OrderType.MARKET(),
+            direction=direction,
+            market_index=market_index,
             base_asset_amount=amount,
         )
         order.limit_price = limit_price
 
-        return await self.place_and_take(order) 
+        return await self.place_and_take(order)
 
-    def get_increase_compute_ix(
-        self
-    ):
-        program_id = PublicKey('ComputeBudget111111111111111111111111111111')
+    def get_increase_compute_ix(self):
+        program_id = PublicKey("ComputeBudget111111111111111111111111111111")
 
         name_bytes = bytearray(1 + 4 + 4)
-        pack_into('B', name_bytes, 0, 0)
-        pack_into('I', name_bytes, 1, 500_000) 
-        pack_into('I', name_bytes, 5, 0) 
+        pack_into("B", name_bytes, 0, 0)
+        pack_into("I", name_bytes, 1, 500_000)
+        pack_into("I", name_bytes, 5, 0)
         data = bytes(name_bytes)
 
-        compute_ix = TransactionInstruction(
-            [], 
-            program_id, 
-            data
-        )
+        compute_ix = TransactionInstruction([], program_id, data)
 
         return compute_ix
 
@@ -512,7 +452,7 @@ class ClearingHouse:
         return await self.send_ixs(
             [
                 self.get_increase_compute_ix(),
-                await self.get_place_order_ix(order_params, maker_info)
+                await self.get_place_order_ix(order_params, maker_info),
             ]
         )
 
@@ -520,21 +460,21 @@ class ClearingHouse:
         self,
         order_params: OrderParams,
     ):
-        user_account_public_key = self.get_user_account_public_key() 
+        user_account_public_key = self.get_user_account_public_key()
 
         remaining_accounts = await self.get_remaining_accounts(
-            writable_market_index=order_params.market_index, 
-        ) 
+            writable_market_index=order_params.market_index,
+        )
 
         return self.program.instruction["place_order"](
             order_params,
             ctx=Context(
                 accounts={
-                    "state": self.get_state_public_key(), 
-                    "user": user_account_public_key, 
-                    "authority": self.authority, 
+                    "state": self.get_state_public_key(),
+                    "user": user_account_public_key,
+                    "authority": self.authority,
                 },
-                remaining_accounts=remaining_accounts
+                remaining_accounts=remaining_accounts,
             ),
         )
 
@@ -546,7 +486,7 @@ class ClearingHouse:
         return await self.send_ixs(
             [
                 self.get_increase_compute_ix(),
-                await self.get_place_and_take_ix(order_params, maker_info)
+                await self.get_place_and_take_ix(order_params, maker_info),
             ]
         )
 
@@ -555,118 +495,107 @@ class ClearingHouse:
         order_params: OrderParams,
         maker_info: MakerInfo = None,
     ):
-        user_account_public_key = self.get_user_account_public_key() 
+        user_account_public_key = self.get_user_account_public_key()
 
         remaining_accounts = await self.get_remaining_accounts(
-            writable_market_index=order_params.market_index, 
-            writable_spot_market_index=QUOTE_ASSET_BANK_INDEX
-        ) 
+            writable_market_index=order_params.market_index,
+            writable_spot_market_index=QUOTE_ASSET_BANK_INDEX,
+        )
 
-        maker_order_id = None 
-        if maker_info is not None: 
+        maker_order_id = None
+        if maker_info is not None:
             maker_order_id = maker_info.order.order_id
-            remaining_accounts.append(AccountMeta(
-                pubkey=maker_info.maker, 
-                is_signer=False, 
-                is_writable=True
-            ))
+            remaining_accounts.append(
+                AccountMeta(pubkey=maker_info.maker, is_signer=False, is_writable=True)
+            )
 
         return self.program.instruction["place_and_take"](
             order_params,
             maker_order_id,
             ctx=Context(
                 accounts={
-                    "state": self.get_state_public_key(), 
-                    "user": user_account_public_key, 
+                    "state": self.get_state_public_key(),
+                    "user": user_account_public_key,
                     "user_stats": self.get_user_stats_public_key(),
-                    "authority": self.authority, 
+                    "authority": self.authority,
                 },
-                remaining_accounts=remaining_accounts
+                remaining_accounts=remaining_accounts,
             ),
         )
 
     async def settle_lp(
         self,
-        settlee_authority: PublicKey, 
+        settlee_authority: PublicKey,
         market_index: int,
-    ): 
-        return await self.send_ixs([await self.get_settle_lp_ix(
-            settlee_authority, 
-            market_index
-        )], signers=[])
+    ):
+        return await self.send_ixs(
+            [await self.get_settle_lp_ix(settlee_authority, market_index)], signers=[]
+        )
 
     async def get_settle_lp_ix(
         self,
-        settlee_authority: PublicKey, 
+        settlee_authority: PublicKey,
         market_index: int,
     ):
         remaining_accounts = await self.get_remaining_accounts(
-            writable_market_index=market_index, 
+            writable_market_index=market_index,
             authority=settlee_authority,
-        ) 
+        )
 
         return self.program.instruction["settle_lp"](
-            market_index, 
+            market_index,
             ctx=Context(
                 accounts={
-                    "state": self.get_state_public_key(), 
+                    "state": self.get_state_public_key(),
                     "user": get_user_account_public_key(
-                        self.program_id, 
-                        settlee_authority
-                    ), 
+                        self.program_id, settlee_authority
+                    ),
                 },
-                remaining_accounts=remaining_accounts
+                remaining_accounts=remaining_accounts,
             ),
         )
 
     async def get_user_position(
-        self, 
-        market_index: int, 
+        self,
+        market_index: int,
     ) -> Optional[PerpPosition]:
-        user = await get_user_account(
-            self.program, 
-            self.authority
-        )
+        user = await get_user_account(self.program, self.authority)
 
         found = False
         for position in user.perp_positions:
             if position.market_index == market_index and not is_available(position):
                 found = True
-                break 
-        
-        if not found: 
+                break
+
+        if not found:
             return None
 
         # assert position.market_index == market_index, "no position in market"
         return position
 
     async def close_position(
-        self, 
+        self,
         market_index: int,
         limit_price: int = 0,
     ):
-        position = await self.get_user_position(
-            market_index
-        )
+        position = await self.get_user_position(market_index)
         if position is None or position.base_asset_amount == 0:
-            return 
+            return
 
         order = self.default_order_params(
-            order_type=OrderType.MARKET(), 
-            market_index=market_index, 
+            order_type=OrderType.MARKET(),
+            market_index=market_index,
             base_asset_amount=abs(int(position.base_asset_amount)),
-            direction=PositionDirection.LONG() if position.base_asset_amount < 0 else PositionDirection.SHORT(), 
+            direction=PositionDirection.LONG()
+            if position.base_asset_amount < 0
+            else PositionDirection.SHORT(),
         )
         order.limit_price = limit_price
 
         return await self.place_and_take(order)
 
     def default_order_params(
-        self,
-        order_type, 
-        market_index, 
-        base_asset_amount, 
-        direction
+        self, order_type, market_index, base_asset_amount, direction
     ) -> OrderParams:
         return OrderParams(
             order_type,
@@ -682,35 +611,36 @@ class ClearingHouse:
             trigger_price=0,
             trigger_condition=OrderTriggerCondition.ABOVE(),
             oracle_price_offset=0,
-            auction_duration=None, 
-            time_in_force=None, 
+            auction_duration=None,
+            time_in_force=None,
             auction_start_price=None,
         )
 
     async def liquidate_perp(
         self,
         user_authority: PublicKey,
-        market_index: int, 
-        max_base_asset_amount: int, 
+        market_index: int,
+        max_base_asset_amount: int,
     ):
-        return await self.send_ixs([await self.get_liquidate_perp_ix(
-            user_authority,
-            market_index, 
-            max_base_asset_amount, 
-        )])
+        return await self.send_ixs(
+            [
+                await self.get_liquidate_perp_ix(
+                    user_authority,
+                    market_index,
+                    max_base_asset_amount,
+                )
+            ]
+        )
 
     async def get_liquidate_perp_ix(
         self,
         user_authority: PublicKey,
-        market_index: int, 
-        max_base_asset_amount: int, 
+        market_index: int,
+        max_base_asset_amount: int,
     ):
-        user_pk = get_user_account_public_key(
-            self.program_id, 
-            user_authority
-        )
+        user_pk = get_user_account_public_key(self.program_id, user_authority)
         user_stats_pk = get_user_stats_account_public_key(
-            self.program_id, 
+            self.program_id,
             user_authority,
         )
 
@@ -718,82 +648,85 @@ class ClearingHouse:
         liq_stats_pk = self.get_user_stats_public_key()
 
         remaining_accounts = await self.get_remaining_accounts(
-            writable_market_index=market_index, 
-            authority=user_authority
+            writable_market_index=market_index, authority=user_authority
         )
 
         return self.program.instruction["liquidate_perp"](
-            market_index, 
+            market_index,
             max_base_asset_amount,
             ctx=Context(
                 accounts={
-                    "state": self.get_state_public_key(), 
+                    "state": self.get_state_public_key(),
                     "authority": self.authority,
-                    "user": user_pk, 
+                    "user": user_pk,
                     "user_stats": user_stats_pk,
-                    "liquidator": liq_pk, 
+                    "liquidator": liq_pk,
                     "liquidator_stats": liq_stats_pk,
                 },
-                remaining_accounts=remaining_accounts
+                remaining_accounts=remaining_accounts,
             ),
         )
-
 
     async def settle_expired_position(
         self,
         user_authority: PublicKey,
-        market_index: int, 
+        market_index: int,
     ):
-        return await self.send_ixs([await self.get_settle_expired_position_ix(
-            user_authority,
-            market_index, 
-        )])
+        return await self.send_ixs(
+            [
+                await self.get_settle_expired_position_ix(
+                    user_authority,
+                    market_index,
+                )
+            ]
+        )
 
     async def get_settle_expired_position_ix(
         self,
         user_authority: PublicKey,
-        market_index: int, 
+        market_index: int,
     ):
         remaining_accounts = await self.get_remaining_accounts(
-            authority=user_authority, 
-            writable_market_index=market_index, 
-            writable_spot_market_index=QUOTE_ASSET_BANK_INDEX
+            authority=user_authority,
+            writable_market_index=market_index,
+            writable_spot_market_index=QUOTE_ASSET_BANK_INDEX,
         )
-    
+
         return self.program.instruction["settle_expired_position"](
-            QUOTE_ASSET_BANK_INDEX, 
+            QUOTE_ASSET_BANK_INDEX,
             market_index,
             ctx=Context(
                 accounts={
-                    "state": self.get_state_public_key(), 
+                    "state": self.get_state_public_key(),
                     "authority": self.authority,
-                    "user": user_authority, 
+                    "user": user_authority,
                 },
-                remaining_accounts=remaining_accounts
+                remaining_accounts=remaining_accounts,
             ),
         )
-    
+
     async def resolve_perp_bankruptcy(
         self,
         user_authority: PublicKey,
-        market_index: int, 
+        market_index: int,
     ):
-        return await self.send_ixs([await self.get_resolve_perp_bankruptcy_ix(
-            user_authority,
-            market_index, 
-        )])
+        return await self.send_ixs(
+            [
+                await self.get_resolve_perp_bankruptcy_ix(
+                    user_authority,
+                    market_index,
+                )
+            ]
+        )
 
     async def get_resolve_perp_bankruptcy_ix(
         self,
         user_authority: PublicKey,
-        market_index: int, 
+        market_index: int,
     ):
-        user_pk = get_user_account_public_key(
-            self.program_id, 
-            user_authority
-        )
+        user_pk = get_user_account_public_key(self.program_id, user_authority)
         user_stats_pk = get_user_stats_account_public_key(
-            self.program_id, 
+            self.program_id,
             user_authority,
         )
 
@@ -801,90 +734,90 @@ class ClearingHouse:
         liq_stats_pk = self.get_user_stats_public_key()
 
         remaining_accounts = await self.get_remaining_accounts(
-            writable_market_index=market_index, 
+            writable_market_index=market_index,
             writable_spot_market_index=QUOTE_ASSET_BANK_INDEX,
-            authority=[user_authority, self.authority] 
+            authority=[user_authority, self.authority],
         )
 
         spot_market = await get_spot_market_account(
             self.program, QUOTE_ASSET_BANK_INDEX
         )
-        ch_signer = get_clearing_house_signer_public_key(
-            self.program_id
-        )
+        ch_signer = get_clearing_house_signer_public_key(self.program_id)
 
         return self.program.instruction["resolve_perp_bankruptcy"](
-            QUOTE_ASSET_BANK_INDEX, 
+            QUOTE_ASSET_BANK_INDEX,
             market_index,
             ctx=Context(
                 accounts={
-                    "state": self.get_state_public_key(), 
+                    "state": self.get_state_public_key(),
                     "authority": self.authority,
-                    "user": user_pk, 
+                    "user": user_pk,
                     "user_stats": user_stats_pk,
-                    "liquidator": liq_pk, 
+                    "liquidator": liq_pk,
                     "liquidator_stats": liq_stats_pk,
-                    "spot_market_vault": spot_market.vault, 
-                    "insurance_fund_vault": spot_market.insurance_fund_vault, 
-                    "clearing_house_signer": ch_signer, 
-                    "token_program": TOKEN_PROGRAM_ID, 
+                    "spot_market_vault": spot_market.vault,
+                    "insurance_fund_vault": spot_market.insurance_fund_vault,
+                    "clearing_house_signer": ch_signer,
+                    "token_program": TOKEN_PROGRAM_ID,
                 },
-                remaining_accounts=remaining_accounts
+                remaining_accounts=remaining_accounts,
             ),
         )
 
     async def settle_expired_market(
-        self, 
-        market_index: int, 
+        self,
+        market_index: int,
     ):
-        return await self.send_ixs([await self.get_settle_expired_market_ix(
-            market_index, 
-        )])
+        return await self.send_ixs(
+            [
+                await self.get_settle_expired_market_ix(
+                    market_index,
+                )
+            ]
+        )
 
     async def get_settle_expired_market_ix(
-        self, 
-        market_index: int, 
+        self,
+        market_index: int,
     ):
-        market = await get_market_account(
-            self.program, market_index
-        )
-        
+        market = await get_market_account(self.program, market_index)
+
         market_account_infos = [
             AccountMeta(
-                pubkey=market.pubkey, 
+                pubkey=market.pubkey,
                 is_writable=True,
-                is_signer=False, 
-            )
-        ]
-        
-        oracle_account_infos = [
-            AccountMeta(
-                pubkey=market.amm.oracle, 
-                is_writable=False,
-                is_signer=False, 
-            )
-        ]
-        
-        spot_pk = get_spot_market_public_key(
-            self.program, QUOTE_ASSET_BANK_INDEX
-        )
-        spot_account_infos = [
-            AccountMeta(
-                pubkey=spot_pk, 
-                is_writable=True,
-                is_signer=False, 
+                is_signer=False,
             )
         ]
 
-        remaining_accounts = oracle_account_infos + spot_account_infos + market_account_infos
+        oracle_account_infos = [
+            AccountMeta(
+                pubkey=market.amm.oracle,
+                is_writable=False,
+                is_signer=False,
+            )
+        ]
+
+        spot_pk = get_spot_market_public_key(self.program, QUOTE_ASSET_BANK_INDEX)
+        spot_account_infos = [
+            AccountMeta(
+                pubkey=spot_pk,
+                is_writable=True,
+                is_signer=False,
+            )
+        ]
+
+        remaining_accounts = (
+            oracle_account_infos + spot_account_infos + market_account_infos
+        )
 
         return self.program.instruction["settle_expired_market"](
             market_index,
             ctx=Context(
                 accounts={
-                    "state": self.get_state_public_key(), 
+                    "state": self.get_state_public_key(),
                     "authority": self.authority,
                 },
-                remaining_accounts=remaining_accounts
+                remaining_accounts=remaining_accounts,
             ),
         )

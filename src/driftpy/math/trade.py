@@ -24,6 +24,7 @@ from driftpy.constants.numeric_constants import (
 from driftpy.types import PositionDirection, PerpMarket, AMM
 from driftpy.sdk_types import AssetType
 
+
 def calculate_trade_acquired_amounts(
     direction: PositionDirection,
     amount: int,
@@ -138,7 +139,7 @@ def calculate_target_price_trade(
     oracle_price=None,
 ):
     mark_price_before = calculate_mark_price(market, oracle_price) * PRICE_PRECISION
-    bid_price_before, ask_price_before = calculate_bid_ask_price(market, oracle_price) 
+    bid_price_before, ask_price_before = calculate_bid_ask_price(market, oracle_price)
     bid_price_before *= PRICE_PRECISION
     ask_price_before *= PRICE_PRECISION
 
@@ -154,7 +155,6 @@ def calculate_target_price_trade(
     #     price_gap = mark_price_before - target_price
     #     target_price = mark_price_before - price_gap
 
-
     candidate_amm = calculate_candidate_amm(market, oracle_price)
     peg = candidate_amm.peg_multiplier
 
@@ -164,13 +164,14 @@ def calculate_target_price_trade(
         (
             base_asset_reserve_before,
             quote_asset_reserve_before,
-        ) = calculate_spread_reserves(candidate_amm, direction, oracle_price=oracle_price)
+        ) = calculate_spread_reserves(
+            candidate_amm, direction, oracle_price=oracle_price
+        )
         # print(base_asset_reserve_before, quote_asset_reserve_before)
-        # print(market.amm.strategies)        
+        # print(market.amm.strategies)
     else:
         base_asset_reserve_before = market.amm.base_asset_reserve
         quote_asset_reserve_before = market.amm.quote_asset_reserve
-
 
     # print(direction, mark_price_before/1e10, peg/1e3)
     invariant = (float(market.amm.sqrt_k)) ** 2
@@ -190,11 +191,10 @@ def calculate_target_price_trade(
         return [direction, tradeSize, target_price, target_price]
     elif mark_price_before > target_price:
         base_asset_reserve_after = (
-            math.sqrt((k / target_price) * (float(peg) / PEG_PRECISION) - bias_modifier) - 1
+            math.sqrt((k / target_price) * (float(peg) / PEG_PRECISION) - bias_modifier)
+            - 1
         )
-        quote_asset_reserve_after = (
-            k / PRICE_PRECISION
-        ) / base_asset_reserve_after
+        quote_asset_reserve_after = (k / PRICE_PRECISION) / base_asset_reserve_after
 
         direction = PositionDirection.SHORT
         trade_size = (
@@ -206,11 +206,10 @@ def calculate_target_price_trade(
 
     elif mark_price_before < target_price:
         base_asset_reserve_after = (
-            math.sqrt((k / target_price) * (float(peg) / PEG_PRECISION) + bias_modifier) + 1
+            math.sqrt((k / target_price) * (float(peg) / PEG_PRECISION) + bias_modifier)
+            + 1
         )
-        quote_asset_reserve_after = (
-            k / PRICE_PRECISION
-        ) / base_asset_reserve_after
+        quote_asset_reserve_after = (k / PRICE_PRECISION) / base_asset_reserve_after
 
         direction = PositionDirection.LONG
         trade_size = (
@@ -235,39 +234,51 @@ def calculate_target_price_trade(
 
         # print(peg, market.amm.peg_multiplier, direction)
         if direction == PositionDirection.SHORT:
-        #     print(base_asset_reserve_before)
-        #     print((
-        #     math.sqrt((k / target_price) * (float(peg) / PEG_PRECISION) - bias_modifier) - 1
-        # ) - base_asset_reserve_before)
-        #     print((
-        #         math.sqrt((k / (entry_price*1e10)) * (float(peg) / PEG_PRECISION) - bias_modifier) - 1
-        #     ) - base_asset_reserve_before)
-            if not (entry_price*1e10 >= target_price):
-                #problem!
-                print('ERR:', direction, mark_price_before/1e10, bid_price_before/1e10, target_price/1e10, entry_price)
+            #     print(base_asset_reserve_before)
+            #     print((
+            #     math.sqrt((k / target_price) * (float(peg) / PEG_PRECISION) - bias_modifier) - 1
+            # ) - base_asset_reserve_before)
+            #     print((
+            #         math.sqrt((k / (entry_price*1e10)) * (float(peg) / PEG_PRECISION) - bias_modifier) - 1
+            #     ) - base_asset_reserve_before)
+            if not (entry_price * 1e10 >= target_price):
+                # problem!
+                print(
+                    "ERR:",
+                    direction,
+                    mark_price_before / 1e10,
+                    bid_price_before / 1e10,
+                    target_price / 1e10,
+                    entry_price,
+                )
                 tradeSize = 0
                 # assert(False)
 
                 return [direction, tradeSize, target_price, target_price]
         else:
-        #     print(base_asset_reserve_before)
-        #     print(market.amm.sqrt_k)
-        #     print((
-        #     math.sqrt((k / target_price) * (float(peg) / PEG_PRECISION) - bias_modifier) - 1
-        # ) - base_asset_reserve_before)
-        #     print((
-        #         math.sqrt((k / (entry_price*1e10)) * (float(peg) / PEG_PRECISION) - bias_modifier) - 1
-        #     ) - base_asset_reserve_before)
-            if not (entry_price*1e10 <= target_price):
-                #problem!
-                print('ERR:', direction, mark_price_before/1e10, ask_price_before/1e10, target_price/1e10, entry_price)
+            #     print(base_asset_reserve_before)
+            #     print(market.amm.sqrt_k)
+            #     print((
+            #     math.sqrt((k / target_price) * (float(peg) / PEG_PRECISION) - bias_modifier) - 1
+            # ) - base_asset_reserve_before)
+            #     print((
+            #         math.sqrt((k / (entry_price*1e10)) * (float(peg) / PEG_PRECISION) - bias_modifier) - 1
+            #     ) - base_asset_reserve_before)
+            if not (entry_price * 1e10 <= target_price):
+                # problem!
+                print(
+                    "ERR:",
+                    direction,
+                    mark_price_before / 1e10,
+                    ask_price_before / 1e10,
+                    target_price / 1e10,
+                    entry_price,
+                )
                 tradeSize = 0
                 # assert(False)
                 return [direction, tradeSize, target_price, target_price]
     else:
         entry_price = 0
-    
-
 
     if output_asset_type == AssetType.QUOTE:
         return [

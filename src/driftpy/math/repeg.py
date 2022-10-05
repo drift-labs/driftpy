@@ -1,4 +1,3 @@
-
 from driftpy.math.amm import calculate_terminal_price, calculate_budgeted_repeg
 from driftpy.math.trade import (
     calculate_trade_slippage,
@@ -18,35 +17,28 @@ import copy
 import numpy as np
 from driftpy.types import AMM
 
-def calculate_optimal_peg_and_budget(amm: AMM, target_price: int) -> tuple[int, int, int, bool]:
+
+def calculate_optimal_peg_and_budget(
+    amm: AMM, target_price: int
+) -> tuple[int, int, int, bool]:
     from driftpy.math.market import calculate_price
     from driftpy.math.amm import calculate_peg_from_target_price
 
     mark_price_before = calculate_price(
-        amm.base_asset_reserve,
-        amm.quote_asset_reserve,
-        amm.peg_multiplier
+        amm.base_asset_reserve, amm.quote_asset_reserve, amm.peg_multiplier
     )
     new_peg = calculate_peg_from_target_price(
-        target_price,
-        amm.base_asset_reserve,
-        amm.quote_asset_reserve
+        target_price, amm.base_asset_reserve, amm.quote_asset_reserve
     )
-    pre_peg_cost = calculate_repeg_cost(
-        amm, 
-        new_peg
-    )
+    pre_peg_cost = calculate_repeg_cost(amm, new_peg)
 
-    total_fee_lb = amm.total_exchange_fee / 2 
+    total_fee_lb = amm.total_exchange_fee / 2
     budget = max(0, amm.total_fee_minus_distributions - total_fee_lb)
     target_price_gap = mark_price_before - target_price
 
-    # if cant pay for the full repeg 
+    # if cant pay for the full repeg
     if budget < pre_peg_cost:
-        max_price_spread = (
-            amm.max_spread * target_price
-            / BID_ASK_SPREAD_PRECISION
-        )
+        max_price_spread = amm.max_spread * target_price / BID_ASK_SPREAD_PRECISION
         target_price_gap = mark_price_before - target_price
 
         # if cant push the spread to the target price
@@ -54,35 +46,23 @@ def calculate_optimal_peg_and_budget(amm: AMM, target_price: int) -> tuple[int, 
             # this how much we can afford -- will always be > 0
             mark_adj = abs(target_price_gap) - max_price_spread
 
-            if target_price_gap < 0: 
+            if target_price_gap < 0:
                 # want to shift down but we cant fully = add back
                 new_target_price = mark_price_before + mark_adj
             else:
                 new_target_price = mark_price_before - mark_adj
 
             new_optimal_peg = calculate_peg_from_target_price(
-                new_target_price,
-                amm.base_asset_reserve,
-                amm.quote_asset_reserve
+                new_target_price, amm.base_asset_reserve, amm.quote_asset_reserve
             )
 
             new_budget = calculate_repeg_cost(amm, new_optimal_peg)
-            return (
-                new_target_price,
-                new_optimal_peg,
-                new_budget,
-                False
-            )
+            return (new_target_price, new_optimal_peg, new_budget, False)
 
-    return (
-        target_price, 
-        new_peg, 
-        budget, 
-        True
-    )
-
+    return (target_price, new_peg, budget, True)
 
     # new_peg = calculate_repeg_cost(amm, )
+
 
 # def get_optimal_peg(market, target_px):
 #     old_mark = calculate_mark_price(market)
@@ -241,13 +221,21 @@ def calculate_buyout_cost(market, market_index, new_peg, sqrt_k):
 
     return cost / 1e6, marketNewK
 
+
 from driftpy.types import AMM
-from driftpy.constants.numeric_constants import * 
+from driftpy.constants.numeric_constants import *
+
 
 def calculate_repeg_cost(amm: AMM, new_peg: int) -> int:
     dqar = amm.quote_asset_reserve - amm.terminal_quote_asset_reserve
-    cost = dqar * (new_peg - amm.peg_multiplier) / AMM_TO_QUOTE_PRECISION_RATIO / PEG_PRECISION
+    cost = (
+        dqar
+        * (new_peg - amm.peg_multiplier)
+        / AMM_TO_QUOTE_PRECISION_RATIO
+        / PEG_PRECISION
+    )
     return cost
+
 
 # def calculate_repeg_cost(market, new_peg):
 #     k = int(market.amm.sqrt_k) ** 2
@@ -267,6 +255,7 @@ def calculate_repeg_cost(amm: AMM, new_peg: int) -> int:
 #     )
 
 #     return cost2 / 1e6, mark_delta
+
 
 def calculate_k_cost(market, p):
     x = market.amm.base_asset_reserve / 1e13
@@ -293,9 +282,6 @@ def calculate_budgeted_k(market, cost):
     return p
 
 
-
-
-
 def calculate_freepeg_cost(market, market_index, target_price, bonus=0):
     mark = calculate_mark_price(market)
     price_div = (mark - target_price) / mark
@@ -309,7 +295,7 @@ def calculate_freepeg_cost(market, market_index, target_price, bonus=0):
     # assert(False)
     pk = 1
     new_peg = market.amm.peg_multiplier
-    print('SEE', bonly)
+    print("SEE", bonly)
     if bonly < 0:
         print(bonly)
         bonus = 0
