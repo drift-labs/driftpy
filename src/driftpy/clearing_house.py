@@ -693,13 +693,12 @@ class ClearingHouse:
         )
 
         return self.program.instruction["settle_expired_position"](
-            QUOTE_ASSET_BANK_INDEX,
             market_index,
             ctx=Context(
                 accounts={
                     "state": self.get_state_public_key(),
                     "authority": self.authority,
-                    "user": user_authority,
+                    "user": get_user_account_public_key(self.program_id, user_authority),
                 },
                 remaining_accounts=remaining_accounts,
             ),
