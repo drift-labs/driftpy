@@ -413,6 +413,34 @@ class ClearingHouse:
                 remaining_accounts=remaining_accounts,
             ),
         )
+    
+    async def cancel_order(
+        self, 
+        order_id: Optional[int] = None
+    ):
+        return await self.send_ixs(
+            [
+                await self.get_cancel_order_ix(order_id),
+            ]
+        )
+
+    async def get_cancel_order_ix(
+        self, 
+        order_id: Optional[int] = None
+    ):
+        remaining_accounts = await self.get_remaining_accounts()
+
+        return self.program.instruction["cancel_order"](
+            order_id,
+            ctx=Context(
+                accounts={
+                    "state": self.get_state_public_key(),
+                    "user": self.get_user_account_public_key(),
+                    "authority": self.authority,
+                },
+                remaining_accounts=remaining_accounts,
+            ),
+        )
 
     async def open_position(
         self,
