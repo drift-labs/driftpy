@@ -175,7 +175,7 @@ def calculate_budgeted_repeg(amm, cost, target_px=None, pay_only=False):
     C = cost
     x = amm.base_asset_reserve / 1e13
     y = amm.quote_asset_reserve / 1e13
-    d = amm.net_base_asset_amount / 1e13
+    d = amm.base_asset_amount_with_amm / 1e13
     Q = amm.peg_multiplier / 1e3
     k = (amm.sqrt_k / 1e13) ** 2
 
@@ -288,7 +288,7 @@ def calculate_spread_reserves(
         max_scale = 5  # if 'OracleRetreat' not in amm.strategies else 20
 
         effective_position = (
-            amm.net_base_asset_amount
+            amm.base_asset_amount_with_amm
         )  # (amm.sqrt_k - amm.base_asset_reserve)
 
         net_cost_basis = (

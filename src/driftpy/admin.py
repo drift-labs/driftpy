@@ -94,7 +94,7 @@ class Admin(ClearingHouse):
 
         return initialize_tx_sig
 
-    async def initialize_market(
+    async def initialize_perp_market(
         self,
         price_oracle: PublicKey,
         base_asset_reserve: int,
@@ -114,7 +114,7 @@ class Admin(ClearingHouse):
             state.number_of_markets,
         )
 
-        return await self.program.rpc["initialize_market"](
+        return await self.program.rpc["initialize_perp_market"](
             base_asset_reserve,
             quote_asset_reserve,
             periodicity,
@@ -254,14 +254,16 @@ class Admin(ClearingHouse):
             ),
         )
 
-    async def update_market_base_asset_amount_step_size(
+    async def update_perp_step_size_and_tick_size(
         self,
-        step_size: int,
         market_index: int,
+        step_size: int,
+        tick_size: int,
     ):
         market_public_key = get_market_public_key(self.program_id, market_index)
-        return await self.program.rpc["update_market_base_asset_amount_step_size"](
+        return await self.program.rpc["update_perp_step_size_and_tick_size"](
             step_size,
+            tick_size,
             ctx=Context(
                 accounts={
                     "admin": self.authority,
@@ -314,7 +316,7 @@ class Admin(ClearingHouse):
                 accounts={
                     "admin": self.authority,
                     "state": get_state_public_key(self.program_id),
-                    "perp_market": market_public_key,
+                    "market": market_public_key,
                 }
             ),
         )

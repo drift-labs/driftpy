@@ -28,10 +28,10 @@ def calculate_long_short_funding(market: PerpMarket):
 def calculate_capped_funding(market: PerpMarket):
 
     smaller_side = min(
-        abs(market.base_asset_amount_short), market.base_asset_amount_long
+        abs(market.amm.base_asset_amount_short), market.amm.base_asset_amount_long
     )
     larger_side = max(
-        abs(market.base_asset_amount_short), market.base_asset_amount_long
+        abs(market.amm.base_asset_amount_short), market.amm.base_asset_amount_long
     )
 
     next_funding = calculate_oracle_mark_spread_owed(market)

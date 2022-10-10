@@ -112,7 +112,7 @@ async def initialized_market(
     pyth_program = workspace["pyth"]
     sol_usd = await mock_oracle(pyth_program=pyth_program, price=1)
 
-    await clearing_house.initialize_market(
+    await clearing_house.initialize_perp_market(
         sol_usd,
         AMM_INITIAL_BASE_ASSET_AMOUNT,
         AMM_INITIAL_QUOTE_ASSET_AMOUNT,

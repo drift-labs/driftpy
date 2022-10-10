@@ -117,7 +117,7 @@ def calculate_candidate_amm(market, oracle_price=None):
         )
 
     candidate_amm.terminal_quote_asset_reserve = (candidate_amm.sqrt_k ** 2) / (
-        candidate_amm.base_asset_reserve + candidate_amm.net_base_asset_amount
+        candidate_amm.base_asset_reserve + candidate_amm.base_asset_amount_with_amm
     )
     return candidate_amm
 
