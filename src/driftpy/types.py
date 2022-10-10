@@ -265,7 +265,7 @@ class PerpPosition:
     open_asks: int
     settled_pnl: int
     lp_shares: int
-    last_base_asset_amount_with_amm_per_lp: int
+    last_net_base_asset_amount_per_lp: int
     last_net_quote_asset_amount_per_lp: int
     remainder_base_asset_amount: int
     market_index: int
@@ -294,13 +294,18 @@ class AMM:
     sqrt_k: int
     peg_multiplier: int
     terminal_quote_asset_reserve: int
+
+    base_asset_amount_long: int
+    base_asset_amount_short: int
     base_asset_amount_with_amm: int
+    base_asset_amount_with_unsettled_lp: int
+
     quote_asset_amount_long: int
     quote_asset_amount_short: int
     quote_entry_amount_long: int
     quote_entry_amount_short: int
+
     user_lp_shares: int
-    base_asset_amount_with_unsettled_lp: int
     last_funding_rate: int
     last_funding_rate_long: int
     last_funding_rate_short: int
@@ -324,14 +329,17 @@ class AMM:
     last_bid_price_twap: int
     last_ask_price_twap: int
     last_mark_price_twap: int
-    last_mark_price_twap5min: int
+    last_mark_price_twap_5min: int
     last_update_slot: int
     last_oracle_conf_pct: int
     net_revenue_since_last_funding: int
     lp_cooldown_time: int
     last_funding_rate_ts: int
     funding_period: int
-    base_asset_amount_step_size: int
+    order_step_size: int
+    order_tick_size: int
+    min_order_size: int
+    max_position_size: int
     volume24h: int
     long_intensity_volume: int
     short_intensity_volume: int
@@ -339,7 +347,7 @@ class AMM:
     mark_std: int
     last_mark_price_twap_ts: int
     max_spread: int
-    max_base_asset_amount_ratio: int
+    max_fill_reserve_fraction: int
     max_slippage_ratio: int
     base_spread: int
     long_intensity_count: int
@@ -413,9 +421,9 @@ class Order:
     quote_asset_amount_filled: int
     fee: int
     trigger_price: int
-    oracle_price_offset: int
     auction_start_price: int
     auction_end_price: int
+    oracle_price_offset: int
     order_id: int
     market_index: int
     status: OrderStatus
@@ -439,27 +447,19 @@ class PerpMarket:
     amm: AMM
     pnl_pool: PoolBalance
     expiry_price: int
-    base_asset_amount_long: int
-    base_asset_amount_short: int
-    open_interest: int
-    revenue_withdraw_since_last_settle: int
-    max_revenue_withdraw_per_period: int
+    number_of_users: int
     imf_factor: int
-    unrealized_imf_factor: int
-    unrealized_max_imbalance: int
-    liquidator_fee: int
-    if_liquidation_fee: int
-    quote_max_insurance: int
-    quote_settled_insurance: int
+    unrealized_pnl_imf_factor: int
+    unrealized_pnl_max_imbalance: int
+    insurance_claim: InsuranceClaim
     expiry_ts: int
     next_fill_record_id: int
     next_funding_rate_record_id: int
     next_curve_record_id: int
-    last_revenue_withdraw_ts: int
     margin_ratio_initial: int
     margin_ratio_maintenance: int
-    unrealized_initial_asset_weight: int
-    unrealized_maintenance_asset_weight: int
+    unrealized_pnl_initial_asset_weight: int
+    unrealized_pnl_maintenance_asset_weight: int
     market_index: int
     status: MarketStatus
     contract_type: ContractType
