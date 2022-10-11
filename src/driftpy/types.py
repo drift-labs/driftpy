@@ -274,7 +274,7 @@ class PerpPosition:
  
 @dataclass
 class PoolBalance:
-    balance: int
+    scaled_balance: int
     market_index: int
     padding: list[int]
  
