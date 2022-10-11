@@ -366,6 +366,11 @@ class AMM:
 
     terminal_quote_asset_reserve: int = 0
     base_asset_amount_with_amm: int = 0
+    base_asset_amount_with_unsettled_lp: int = 0
+
+    base_asset_amount_long: int = 0
+    base_asset_amount_short: int = 0
+
     quote_asset_amount_long: int = 0
     quote_asset_amount_short: int = 0
 
@@ -436,7 +441,7 @@ class Market:
     initialized: bool = True
     base_asset_amount_long: int = 0
     base_asset_amount_short: int = 0
-    open_interest: int = 0
+    number_of_users: int = 0
     margin_ratio_initial: int = 1000
     margin_ratio_partial: int = 500
     margin_ratio_maintenance: int = 625

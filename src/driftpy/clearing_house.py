@@ -375,7 +375,7 @@ class ClearingHouse:
             self.program_id, self.authority, user_id
         )
 
-        return self.program.instruction["add_liquidity"](
+        return self.program.instruction["add_perp_lp_shares"](
             amount,
             market_index,
             ctx=Context(
@@ -401,7 +401,7 @@ class ClearingHouse:
         )
         user_account_public_key = self.get_user_account_public_key(user_id)
 
-        return self.program.instruction["remove_liquidity"](
+        return self.program.instruction["remove_perp_lp_shares"](
             amount,
             market_index,
             ctx=Context(
@@ -695,21 +695,65 @@ class ClearingHouse:
             ),
         )
 
-    async def settle_expired_position(
+
+    async def liquidate_perp_pnl_for_deposit(
+        self, 
+        user_authority: PublicKey,
+        perp_market_index: int,
+        spot_market_index: int,
+        max_pnl_transfer: int,
+    ):
+        user_pk = get_user_account_public_key(self.program_id, user_authority)
+        user_stats_pk = get_user_stats_account_public_key(
+            self.program_id,
+            user_authority,
+        )
+
+        liq_pk = self.get_user_account_public_key()
+        liq_stats_pk = self.get_user_stats_public_key()
+
+        remaining_accounts = await self.get_remaining_accounts(
+            writable_market_index=perp_market_index, 
+            writable_spot_market_index=spot_market_index,
+            authority=user_authority
+        )
+
+        result = self.program.instruction["liquidate_perp_pnl_for_deposit"](
+            perp_market_index,
+            spot_market_index,
+            max_pnl_transfer,
+            ctx=Context(
+                accounts={
+                    "state": self.get_state_public_key(),
+                    "authority": self.authority,
+                    "user": user_pk,
+                    "user_stats": user_stats_pk,
+                    "liquidator": liq_pk,
+                    "liquidator_stats": liq_stats_pk,
+                },
+                remaining_accounts=remaining_accounts,
+            ),
+        )
+
+        return await self.send_ixs([result])
+
+
+
+    async def settle_pnl(
         self,
         user_authority: PublicKey,
         market_index: int,
     ):
         return await self.send_ixs(
             [
-                await self.get_settle_expired_position_ix(
+                await self.get_settle_pnl_ix(
                     user_authority,
                     market_index,
                 )
             ]
         )
 
-    async def get_settle_expired_position_ix(
+    async def get_settle_pnl_ix(
         self,
         user_authority: PublicKey,
         market_index: int,
@@ -720,7 +764,7 @@ class ClearingHouse:
             writable_spot_market_index=QUOTE_ASSET_BANK_INDEX,
         )
 
-        return self.program.instruction["settle_expired_position"](
+        return self.program.instruction["settle_pnl"](
             market_index,
             ctx=Context(
                 accounts={

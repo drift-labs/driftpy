@@ -236,23 +236,6 @@ class HistoricalOracleData:
     last_oracle_price_twap_ts: int
  
 @dataclass
-class PerpPosition:
-    last_cumulative_funding_rate: int
-    base_asset_amount: int
-    quote_asset_amount: int
-    quote_entry_amount: int
-    open_bids: int
-    open_asks: int
-    settled_pnl: int
-    lp_shares: int
-    last_net_base_asset_amount_per_lp: int
-    last_net_quote_asset_amount_per_lp: int
-    remainder_base_asset_amount: int
-    market_index: int
-    open_orders: int
-    padding: list[int]
- 
-@dataclass
 class PoolBalance:
     scaled_balance: int
     market_index: int
@@ -262,7 +245,8 @@ class PoolBalance:
 class AMM:
     oracle: PublicKey
     historical_oracle_data: HistoricalOracleData
-    market_position_per_lp: PerpPosition
+    base_asset_amount_per_lp: int
+    quote_asset_amount_per_lp: int
     fee_pool: PoolBalance
     last_oracle_normalised_price: int
     last_oracle_reserve_price_spread_pct: int
@@ -556,6 +540,23 @@ class State:
     default_market_order_time_in_force: int
     default_spot_auction_duration: int
     exchange_status: ExchangeStatus
+    padding: list[int]
+ 
+@dataclass
+class PerpPosition:
+    last_cumulative_funding_rate: int
+    base_asset_amount: int
+    quote_asset_amount: int
+    quote_entry_amount: int
+    open_bids: int
+    open_asks: int
+    settled_pnl: int
+    lp_shares: int
+    last_net_base_asset_amount_per_lp: int
+    last_net_quote_asset_amount_per_lp: int
+    remainder_base_asset_amount: int
+    market_index: int
+    open_orders: int
     padding: list[int]
  
 @dataclass
