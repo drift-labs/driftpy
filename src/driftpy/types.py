@@ -402,7 +402,7 @@ class FeeStructure:
  
 @dataclass
 class SpotPosition:
-    balance: int
+    scaled_balance: int
     open_bids: int
     open_asks: int
     cumulative_deposits: int

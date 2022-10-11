@@ -57,8 +57,8 @@ async def get_user_account(
     return cast(User, response)
 
 
-async def get_market_account(program: Program, market_index: int) -> PerpMarket:
-    market_public_key = get_market_public_key(program.program_id, market_index)
+async def get_perp_market_account(program: Program, market_index: int) -> PerpMarket:
+    market_public_key = get_perp_market_public_key(program.program_id, market_index)
     response = await program.account["PerpMarket"].fetch(market_public_key)
     return cast(PerpMarket, response)
 

@@ -13,7 +13,7 @@ from driftpy.clearing_house import (
     ClearingHouse,
 )
 from driftpy.constants.numeric_constants import PEG_PRECISION
-from driftpy.types import OracleSource
+from driftpy.types import OracleGuardRails, OracleSource
 from driftpy.addresses import *
 from driftpy.accounts import get_state_account
 from anchorpy import Wallet
@@ -109,7 +109,7 @@ class Admin(ClearingHouse):
     ) -> TransactionSignature:
         state_public_key = get_state_public_key(self.program.program_id)
         state = await get_state_account(self.program)
-        market_pubkey = get_market_public_key(
+        market_pubkey = get_perp_market_public_key(
             self.program.program_id,
             state.number_of_markets,
         )
@@ -129,7 +129,7 @@ class Admin(ClearingHouse):
                     "admin": self.authority,
                     "state": state_public_key,
                     "oracle": price_oracle,
-                    "market": market_pubkey,
+                    "perp_market": market_pubkey,
                     "rent": SYSVAR_RENT_PUBKEY,
                     "system_program": SYS_PROGRAM_ID,
                 }
@@ -209,66 +209,102 @@ class Admin(ClearingHouse):
             ),
         )
 
-    async def update_max_base_asset_amount_ratio(
-        self, max_base_asset_amount_ratio: int, market_index: int
+    async def update_perp_market_max_fill_reserve_fraction(
+        self, market_index: int, max_fill_reserve_fraction: int, 
     ):
-        market_public_key = get_market_public_key(self.program_id, market_index)
-        return await self.program.rpc["update_max_base_asset_amount_ratio"](
-            max_base_asset_amount_ratio,
+        market_public_key = get_perp_market_public_key(self.program_id, market_index)
+        return await self.program.rpc["update_perp_market_max_fill_reserve_fraction"](
+            max_fill_reserve_fraction,
             ctx=Context(
                 accounts={
                     "admin": self.authority,
                     "state": get_state_public_key(self.program_id),
-                    "market": market_public_key,
+                    "perp_market": market_public_key,
                 }
             ),
         )
 
-    async def update_lp_cooldown_time(self, duration: int, market_index: int):
-        market_public_key = get_market_public_key(self.program_id, market_index)
-        return await self.program.rpc["update_lp_cooldown_time"](
+    async def update_perp_market_lp_cooldown_time(self, duration: int, market_index: int):
+        market_public_key = get_perp_market_public_key(self.program_id, market_index)
+        return await self.program.rpc["update_perp_market_lp_cooldown_time"](
             duration,
             ctx=Context(
                 accounts={
                     "admin": self.authority,
                     "state": get_state_public_key(self.program_id),
-                    "market": market_public_key,
+                    "perp_market": market_public_key,
                 }
             ),
         )
 
-    async def update_market_base_spread(
+
+    async def update_perp_market_concentration_scale(
         self,
-        base_spread: int,
         market_index: int,
+        concentration_scale: int,
     ):
-        market_public_key = get_market_public_key(self.program_id, market_index)
-        return await self.program.rpc["update_market_base_spread"](
+        market_public_key = get_perp_market_public_key(self.program_id, market_index)
+        return await self.program.rpc["update_perp_market_concentration_scale"](
+            concentration_scale,
+            ctx=Context(
+                accounts={
+                    "admin": self.authority,
+                    "state": get_state_public_key(self.program_id),
+                    "perp_market": market_public_key,
+                }
+            ),
+        )
+
+    async def update_perp_market_base_spread(
+        self,
+        market_index: int,
+        base_spread: int,
+    ):
+        market_public_key = get_perp_market_public_key(self.program_id, market_index)
+        return await self.program.rpc["update_perp_market_base_spread"](
             base_spread,
             ctx=Context(
                 accounts={
                     "admin": self.authority,
                     "state": get_state_public_key(self.program_id),
-                    "market": market_public_key,
+                    "perp_market": market_public_key,
                 }
             ),
         )
 
-    async def update_perp_step_size_and_tick_size(
+
+    async def update_perp_market_max_spread(
+        self,
+        market_index: int,
+        max_spread: int,
+    ):
+        market_public_key = get_perp_market_public_key(self.program_id, market_index)
+        return await self.program.rpc["update_perp_market_max_spread"](
+            max_spread,
+            ctx=Context(
+                accounts={
+                    "admin": self.authority,
+                    "state": get_state_public_key(self.program_id),
+                    "perp_market": market_public_key,
+                }
+            ),
+        )
+
+    async def update_perp_market_step_size_and_tick_size(
         self,
         market_index: int,
         step_size: int,
         tick_size: int,
     ):
-        market_public_key = get_market_public_key(self.program_id, market_index)
-        return await self.program.rpc["update_perp_step_size_and_tick_size"](
+        market_public_key = get_perp_market_public_key(self.program_id, market_index)
+        return await self.program.rpc["update_perp_market_step_size_and_tick_size"](
             step_size,
             tick_size,
             ctx=Context(
                 accounts={
                     "admin": self.authority,
                     "state": get_state_public_key(self.program_id),
-                    "market": market_public_key,
+                    "perp_market": market_public_key,
                 }
             ),
         )
@@ -299,24 +335,39 @@ class Admin(ClearingHouse):
                     "spot_market": get_spot_market_public_key(
                         self.program_id, QUOTE_SPOT_MARKET_INDEX
                     ),
-                    "perp_market": get_market_public_key(self.program_id, market_index),
+                    "perp_market": get_perp_market_public_key(self.program_id, market_index),
                 },
             ),
         )
 
-    async def update_market_expiry(
+    async def update_perp_market_expiry(
         self,
-        expiry_ts: int,
         market_index: int,
+        expiry_ts: int,
     ):
-        market_public_key = get_market_public_key(self.program_id, market_index)
-        return await self.program.rpc["update_market_expiry"](
+        market_public_key = get_perp_market_public_key(self.program_id, market_index)
+        return await self.program.rpc["update_perp_market_expiry"](
             expiry_ts,
             ctx=Context(
                 accounts={
                     "admin": self.authority,
                     "state": get_state_public_key(self.program_id),
-                    "market": market_public_key,
+                    "perp_market": market_public_key,
                 }
             ),
         )
+
+
+    async def update_oracle_guard_rails(
+            self,
+            oracle_guard_rails: OracleGuardRails
+        ):
+            return await self.program.rpc["update_oracle_guard_rails"](
+                oracle_guard_rails,
+                ctx=Context(
+                    accounts={
+                        "admin": self.authority,
+                        "state": get_state_public_key(self.program_id),
+                    }
+                ),
+            )

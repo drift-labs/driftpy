@@ -137,7 +137,7 @@ async def test_market(
 ):
     program = clearing_house.program
     market_oracle_public_key = initialized_market
-    market: PerpMarket = await get_market_account(program, 0)
+    market: PerpMarket = await get_perp_market_account(program, 0)
 
     assert market.amm.oracle == market_oracle_public_key
 
@@ -169,18 +169,18 @@ async def test_usdc_deposit(
         clearing_house.program, 
         clearing_house.authority
     )
-    assert user_account.spot_positions[0].balance == USDC_AMOUNT / QUOTE_PRECISION * SPOT_BALANCE_PRECISION
+    assert user_account.spot_positions[0].scaled_balance == USDC_AMOUNT / QUOTE_PRECISION * SPOT_BALANCE_PRECISION
 
 
 @mark.asyncio
 async def test_add_remove_liquidity(
     clearing_house: Admin,
 ):
-    market = await get_market_account(clearing_house.program, 0)
+    market = await get_perp_market_account(clearing_house.program, 0)
     n_shares = market.amm.base_asset_amount_step_size
 
-    await clearing_house.update_lp_cooldown_time(0, 0)
-    market = await get_market_account(clearing_house.program, 0)
+    await clearing_house.update_perp_market_lp_cooldown_time(0, 0)
+    market = await get_perp_market_account(clearing_house.program, 0)
     assert market.amm.lp_cooldown_time == 0
 
     await clearing_house.add_liquidity(
@@ -254,7 +254,7 @@ async def test_liq_perp(
     usdc_mint: Keypair,
     workspace: WorkspaceType
 ):
-    market = await get_market_account(clearing_house.program, 0)
+    market = await get_perp_market_account(clearing_house.program, 0)
     user_account = await get_user_account(
         clearing_house.program, 
         clearing_house.authority
@@ -278,7 +278,7 @@ async def test_liq_perp(
     from driftpy.constants.numeric_constants import AMM_RESERVE_PRECISION
     from driftpy.math.amm import calculate_price
     price = calculate_price(market.amm.base_asset_reserve, market.amm.quote_asset_reserve, market.amm.peg_multiplier)
-    baa = user_account.spot_positions[0].balance / price / SPOT_BALANCE_PRECISION * AMM_RESERVE_PRECISION * 3
+    baa = user_account.spot_positions[0].scaled_balance / price / SPOT_BALANCE_PRECISION * AMM_RESERVE_PRECISION * 3
     await clearing_house.open_position(
         PositionDirection.SHORT(), 
         int(baa),
