@@ -274,7 +274,7 @@ class MarketPosition:
     lp_quote_asset_amount: int
     last_cumulative_funding_payment_per_lp: int
     last_cumulative_fee_per_lp: int
-    last_cumulative_net_base_asset_amount_per_lp: int
+    last_cumulative_base_asset_amount_with_amm_per_lp: int
     last_lp_add_time: int
 
     # upgrade-ability
@@ -365,14 +365,14 @@ class AMM:
     peg_multiplier: int = 0
 
     terminal_quote_asset_reserve: int = 0
-    net_base_asset_amount: int = 0
+    base_asset_amount_with_amm: int = 0
     quote_asset_amount_long: int = 0
     quote_asset_amount_short: int = 0
 
     ## lp stuff
     cumulative_funding_payment_per_lp: int = 0
     cumulative_fee_per_lp: int = 0
-    cumulative_net_base_asset_amount_per_lp: int = 0
+    cumulative_base_asset_amount_with_amm_per_lp: int = 0
     lp_cooldown_time: int = 0
     user_lp_shares: int = 0
 

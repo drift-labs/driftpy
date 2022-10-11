@@ -14,7 +14,7 @@ from driftpy.math.amm import AssetType
 
 
 def is_spot_position_available(position: SpotPosition):
-    return position.balance == 0 and position.open_orders == 0
+    return position.scaled_balance == 0 and position.open_orders == 0
 
 
 def is_available(position: PerpPosition):

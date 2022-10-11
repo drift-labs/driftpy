@@ -5,12 +5,12 @@ def int_to_le_bytes(a: int):
     return a.to_bytes(2, "little")
 
 
-def get_market_public_key(
+def get_perp_market_public_key(
     program_id: PublicKey,
     market_index: int,
 ) -> PublicKey:
     return PublicKey.find_program_address(
-        [b"market", int_to_le_bytes(market_index)], program_id
+        [b"perp_market", int_to_le_bytes(market_index)], program_id
     )[0]
 
 

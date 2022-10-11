@@ -480,7 +480,7 @@ class ClearingHouseUser:
         user = await self.get_user_account()
         unrealized_pnl = 0
         for position in user.perp_positions:
-            market = await get_market_account(self.program, position.market_index)
+            market = await get_perp_market_account(self.program, position.market_index)
 
             if position.lp_shares > 0:
                 pass
@@ -594,7 +594,7 @@ class ClearingHouseUser:
             if market_index is not None and position.market_index != market_index:
                 continue
 
-            market = await get_market_account(self.program, position.market_index)
+            market = await get_perp_market_account(self.program, position.market_index)
             oracle_data = await get_oracle_data(market.amm.oracle)
             position_unrealized_pnl = calculate_position_pnl(
                 market, position, oracle_data, with_funding

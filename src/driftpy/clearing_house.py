@@ -197,7 +197,7 @@ class ClearingHouse:
         market_map = {}
 
         async def track_market(market_index, is_writable):
-            market = await get_market_account(self.program, market_index)
+            market = await get_perp_market_account(self.program, market_index)
             market_map[market_index] = AccountMeta(
                 pubkey=market.pubkey,
                 is_signer=False,
@@ -807,7 +807,7 @@ class ClearingHouse:
         self,
         market_index: int,
     ):
-        market = await get_market_account(self.program, market_index)
+        market = await get_perp_market_account(self.program, market_index)
 
         market_account_infos = [
             AccountMeta(

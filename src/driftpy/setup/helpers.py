@@ -184,8 +184,24 @@ async def set_price_feed(
 ):
     data = await get_feed_data(oracle_program, oracle_public_key)
     int_price = int(price * 10 ** -data.exponent)
+    print('setting oracle price', int_price)
     return await oracle_program.rpc["set_price"](
         int_price, ctx=Context(accounts={"price": oracle_public_key})
+    )
+
+async def set_price_feed_detailed(
+    oracle_program: Program,
+    oracle_public_key: PublicKey,
+    price: float,
+    conf: float,
+    slot: int,
+):
+    data = await get_feed_data(oracle_program, oracle_public_key)
+    int_price = int(price * 10 ** -data.exponent)
+    int_conf = int(abs(conf) * 10 ** -data.exponent)
+    print('setting oracle price', int_price, "+/-", int_conf, '@ slot=', slot)
+    return await oracle_program.rpc["set_price_info"](
+        int_price, int_conf, slot, ctx=Context(accounts={"price": oracle_public_key})
     )
 
 
@@ -242,7 +258,8 @@ def parse_price_data(data: bytes) -> PriceData:
 
 async def get_feed_data(oracle_program: Program, price_feed: PublicKey) -> PriceData:
     info_resp = await oracle_program.provider.connection.get_account_info(price_feed)
-    return parse_price_data(b64decode(info_resp["result"]["value"]["data"][0]))
+    raw_bytes = b64decode(info_resp["result"]["value"]["data"][0])
+    return parse_price_data(raw_bytes)
 
 
 from solana.rpc.async_api import AsyncClient

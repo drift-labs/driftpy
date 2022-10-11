@@ -235,6 +235,27 @@ class HistoricalOracleData:
     last_oracle_price_twap_ts: int
  
 @dataclass
+class InsuranceFund:
+    vault: PublicKey
+    total_shares: int #u128,
+    user_shares: int # u128,
+    shares_base: int # u128,     // exponent for lp shares (for rebasing)
+    unstaking_period: int #i64, // if_unstaking_period
+    last_revenue_settle_ts: int #i64,
+    revenue_settle_period: int #i64,
+    total_factor: int #// percentage of interest for total insurance
+    user_factor: int  #// percentage of interest for user staked insurance
+
+
+@dataclass
+class InsuranceClaim:
+    revenue_withdraw_since_last_settle: int
+    max_revenue_withdraw_per_period: int
+    quote_max_insurance: int
+    quote_settled_insurance: int
+    last_revenue_withdraw_ts: int
+
+@dataclass
 class PerpPosition:
     last_cumulative_funding_rate: int
     base_asset_amount: int
@@ -253,7 +274,7 @@ class PerpPosition:
  
 @dataclass
 class PoolBalance:
-    balance: int
+    scaled_balance: int
     market_index: int
     padding: list[int]
  
@@ -261,8 +282,7 @@ class PoolBalance:
 class AMM:
     oracle: PublicKey
     historical_oracle_data: HistoricalOracleData
-    market_position: PerpPosition
-    market_position_per_lp: PerpPosition
+    insurance_claim: InsuranceClaim
     fee_pool: PoolBalance
     last_oracle_normalised_price: int
     last_oracle_reserve_price_spread_pct: int
@@ -274,13 +294,18 @@ class AMM:
     sqrt_k: int
     peg_multiplier: int
     terminal_quote_asset_reserve: int
-    net_base_asset_amount: int
+
+    base_asset_amount_long: int
+    base_asset_amount_short: int
+    base_asset_amount_with_amm: int
+    base_asset_amount_with_unsettled_lp: int
+
     quote_asset_amount_long: int
     quote_asset_amount_short: int
     quote_entry_amount_long: int
     quote_entry_amount_short: int
+
     user_lp_shares: int
-    net_unsettled_lp_base_asset_amount: int
     last_funding_rate: int
     last_funding_rate_long: int
     last_funding_rate_short: int
@@ -304,14 +329,17 @@ class AMM:
     last_bid_price_twap: int
     last_ask_price_twap: int
     last_mark_price_twap: int
-    last_mark_price_twap5min: int
+    last_mark_price_twap_5min: int
     last_update_slot: int
     last_oracle_conf_pct: int
     net_revenue_since_last_funding: int
     lp_cooldown_time: int
     last_funding_rate_ts: int
     funding_period: int
-    base_asset_amount_step_size: int
+    order_step_size: int
+    order_tick_size: int
+    min_order_size: int
+    max_position_size: int
     volume24h: int
     long_intensity_volume: int
     short_intensity_volume: int
@@ -319,7 +347,7 @@ class AMM:
     mark_std: int
     last_mark_price_twap_ts: int
     max_spread: int
-    max_base_asset_amount_ratio: int
+    max_fill_reserve_fraction: int
     max_slippage_ratio: int
     base_spread: int
     long_intensity_count: int
@@ -374,7 +402,7 @@ class FeeStructure:
  
 @dataclass
 class SpotPosition:
-    balance: int
+    scaled_balance: int
     open_bids: int
     open_asks: int
     cumulative_deposits: int
@@ -393,9 +421,9 @@ class Order:
     quote_asset_amount_filled: int
     fee: int
     trigger_price: int
-    oracle_price_offset: int
     auction_start_price: int
     auction_end_price: int
+    oracle_price_offset: int
     order_id: int
     market_index: int
     status: OrderStatus
@@ -418,28 +446,20 @@ class PerpMarket:
     pubkey: PublicKey
     amm: AMM
     pnl_pool: PoolBalance
-    settlement_price: int
-    base_asset_amount_long: int
-    base_asset_amount_short: int
-    open_interest: int
-    revenue_withdraw_since_last_settle: int
-    max_revenue_withdraw_per_period: int
+    expiry_price: int
+    number_of_users: int
     imf_factor: int
-    unrealized_imf_factor: int
-    unrealized_max_imbalance: int
-    liquidator_fee: int
-    if_liquidation_fee: int
-    quote_max_insurance: int
-    quote_settled_insurance: int
+    unrealized_pnl_imf_factor: int
+    unrealized_pnl_max_imbalance: int
+    insurance_claim: InsuranceClaim
     expiry_ts: int
     next_fill_record_id: int
     next_funding_rate_record_id: int
     next_curve_record_id: int
-    last_revenue_withdraw_ts: int
     margin_ratio_initial: int
     margin_ratio_maintenance: int
-    unrealized_initial_asset_weight: int
-    unrealized_maintenance_asset_weight: int
+    unrealized_pnl_initial_asset_weight: int
+    unrealized_pnl_maintenance_asset_weight: int
     market_index: int
     status: MarketStatus
     contract_type: ContractType
@@ -460,7 +480,7 @@ class SpotMarket:
     oracle: PublicKey
     mint: PublicKey
     vault: PublicKey
-    insurance_fund_vault: PublicKey
+    insurance_fund: InsuranceFund
     historical_oracle_data: HistoricalOracleData
     historical_index_data: HistoricalIndexData
     revenue_pool: PoolBalance
@@ -560,7 +580,7 @@ class User:
     next_liquidation_id: int
     user_id: int
     being_liquidated: bool
-    bankrupt: bool
+    is_bankrupt: bool
     padding: list[int]
  
 @dataclass
