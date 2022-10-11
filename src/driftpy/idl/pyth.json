@@ -43,6 +43,30 @@
       ]
     },
     {
+      "name": "setPriceInfo",
+      "accounts": [
+        {
+          "name": "price",
+          "isMut": true,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "price",
+          "type": "i64"
+        },
+        {
+          "name": "conf",
+          "type": "u64"
+        },
+        {
+          "name": "slot",
+          "type": "u64"
+        }
+      ]
+    },
+    {
       "name": "setTwap",
       "accounts": [
         {

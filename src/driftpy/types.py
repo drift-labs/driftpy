@@ -5,11 +5,6 @@ from sumtypes import constructor
 from typing import Optional
 
 @_rust_enum
-class SpotFulfillmentType:
-    SERUM_V3 = constructor()
-    NONE = constructor()
- 
-@_rust_enum
 class SwapDirection:
     ADD = constructor()
     REMOVE = constructor()
@@ -18,6 +13,11 @@ class SwapDirection:
 class PositionDirection:
     LONG = constructor()
     SHORT = constructor()
+ 
+@_rust_enum
+class SpotFulfillmentType:
+    SERUM_V3 = constructor()
+    NONE = constructor()
  
 @_rust_enum
 class TwapPeriod:
@@ -86,6 +86,7 @@ class OrderActionExplanation:
     CANCELED_FOR_LIQUIDATION = constructor()
     ORDER_FILLED_WITH_A_M_M = constructor()
     ORDER_FILLED_WITH_MATCH = constructor()
+    MARKET_EXPIRED = constructor()
  
 @_rust_enum
 class LPAction:
@@ -120,6 +121,12 @@ class SpotFulfillmentMethod:
     MATCH = constructor()
  
 @_rust_enum
+class OracleSource:
+    PYTH = constructor()
+    SWITCHBOARD = constructor()
+    QUOTE_ASSET = constructor()
+ 
+@_rust_enum
 class MarketStatus:
     INITIALIZED = constructor()
     ACTIVE = constructor()
@@ -142,12 +149,6 @@ class ContractTier:
     B = constructor()
     C = constructor()
     SPECULATIVE = constructor()
- 
-@_rust_enum
-class OracleSource:
-    PYTH = constructor()
-    SWITCHBOARD = constructor()
-    QUOTE_ASSET = constructor()
  
 @_rust_enum
 class SpotBalanceType:
@@ -235,27 +236,6 @@ class HistoricalOracleData:
     last_oracle_price_twap_ts: int
  
 @dataclass
-class InsuranceFund:
-    vault: PublicKey
-    total_shares: int #u128,
-    user_shares: int # u128,
-    shares_base: int # u128,     // exponent for lp shares (for rebasing)
-    unstaking_period: int #i64, // if_unstaking_period
-    last_revenue_settle_ts: int #i64,
-    revenue_settle_period: int #i64,
-    total_factor: int #// percentage of interest for total insurance
-    user_factor: int  #// percentage of interest for user staked insurance
-
-
-@dataclass
-class InsuranceClaim:
-    revenue_withdraw_since_last_settle: int
-    max_revenue_withdraw_per_period: int
-    quote_max_insurance: int
-    quote_settled_insurance: int
-    last_revenue_withdraw_ts: int
-
-@dataclass
 class PerpPosition:
     last_cumulative_funding_rate: int
     base_asset_amount: int
@@ -282,7 +262,7 @@ class PoolBalance:
 class AMM:
     oracle: PublicKey
     historical_oracle_data: HistoricalOracleData
-    insurance_claim: InsuranceClaim
+    market_position_per_lp: PerpPosition
     fee_pool: PoolBalance
     last_oracle_normalised_price: int
     last_oracle_reserve_price_spread_pct: int
@@ -294,17 +274,14 @@ class AMM:
     sqrt_k: int
     peg_multiplier: int
     terminal_quote_asset_reserve: int
-
     base_asset_amount_long: int
     base_asset_amount_short: int
     base_asset_amount_with_amm: int
     base_asset_amount_with_unsettled_lp: int
-
     quote_asset_amount_long: int
     quote_asset_amount_short: int
     quote_entry_amount_long: int
     quote_entry_amount_short: int
-
     user_lp_shares: int
     last_funding_rate: int
     last_funding_rate_long: int
@@ -319,7 +296,6 @@ class AMM:
     cumulative_funding_rate_long: int
     cumulative_funding_rate_short: int
     cumulative_social_loss: int
-    minimum_quote_asset_trade_size: int
     long_spread: int
     short_spread: int
     ask_base_asset_reserve: int
@@ -329,11 +305,10 @@ class AMM:
     last_bid_price_twap: int
     last_ask_price_twap: int
     last_mark_price_twap: int
-    last_mark_price_twap_5min: int
+    last_mark_price_twap5min: int
     last_update_slot: int
     last_oracle_conf_pct: int
     net_revenue_since_last_funding: int
-    lp_cooldown_time: int
     last_funding_rate_ts: int
     funding_period: int
     order_step_size: int
@@ -442,6 +417,14 @@ class Order:
     padding: list[int]
  
 @dataclass
+class InsuranceClaim:
+    revenue_withdraw_since_last_settle: int
+    max_revenue_withdraw_per_period: int
+    quote_max_insurance: int
+    quote_settled_insurance: int
+    last_revenue_withdraw_ts: int
+ 
+@dataclass
 class PerpMarket:
     pubkey: PublicKey
     amm: AMM
@@ -451,6 +434,8 @@ class PerpMarket:
     imf_factor: int
     unrealized_pnl_imf_factor: int
     unrealized_pnl_max_imbalance: int
+    liquidator_fee: int
+    if_liquidation_fee: int
     insurance_claim: InsuranceClaim
     expiry_ts: int
     next_fill_record_id: int
@@ -475,16 +460,28 @@ class HistoricalIndexData:
     last_index_price_twap_ts: int
  
 @dataclass
+class InsuranceFund:
+    vault: PublicKey
+    total_shares: int
+    user_shares: int
+    shares_base: int
+    unstaking_period: int
+    last_revenue_settle_ts: int
+    revenue_settle_period: int
+    total_factor: int
+    user_factor: int
+ 
+@dataclass
 class SpotMarket:
     pubkey: PublicKey
     oracle: PublicKey
     mint: PublicKey
     vault: PublicKey
-    insurance_fund: InsuranceFund
     historical_oracle_data: HistoricalOracleData
     historical_index_data: HistoricalIndexData
     revenue_pool: PoolBalance
     spot_fee_pool: PoolBalance
+    insurance_fund: InsuranceFund
     initial_asset_weight: int
     maintenance_asset_weight: int
     initial_liability_weight: int
@@ -493,9 +490,6 @@ class SpotMarket:
     liquidator_fee: int
     if_liquidation_fee: int
     withdraw_guard_threshold: int
-    total_if_shares: int
-    user_if_shares: int
-    if_shares_base: int
     total_spot_fee: int
     deposit_balance: int
     borrow_balance: int
@@ -505,19 +499,17 @@ class SpotMarket:
     utilization_twap: int
     cumulative_deposit_interest: int
     cumulative_borrow_interest: int
-    insurance_withdraw_escrow_period: int
-    last_revenue_settle_ts: int
-    revenue_settle_period: int
     last_interest_ts: int
     last_twap_ts: int
     expiry_ts: int
     order_step_size: int
+    order_tick_size: int
+    min_order_size: int
+    max_position_size: int
     next_fill_record_id: int
     optimal_utilization: int
     optimal_borrow_rate: int
     max_borrow_rate: int
-    total_if_factor: int
-    user_if_factor: int
     market_index: int
     decimals: int
     oracle_source: OracleSource
@@ -553,8 +545,8 @@ class State:
     perp_fee_structure: FeeStructure
     spot_fee_structure: FeeStructure
     oracle_guard_rails: OracleGuardRails
-    min_order_quote_asset_amount: int
     number_of_authorities: int
+    lp_cooldown_time: int
     liquidation_margin_buffer_ratio: int
     settlement_duration: int
     number_of_markets: int
@@ -574,12 +566,12 @@ class User:
     spot_positions: list[SpotPosition]
     perp_positions: list[PerpPosition]
     orders: list[Order]
-    last_lp_add_time: int
+    last_add_perp_lp_shares_ts: int
     next_order_id: int
-    custom_margin_ratio: int
+    max_margin_ratio: int
     next_liquidation_id: int
-    user_id: int
-    being_liquidated: bool
+    sub_account_id: int
+    is_being_liquidated: bool
     is_bankrupt: bool
     padding: list[int]
  
@@ -589,14 +581,14 @@ class UserFees:
     total_fee_rebate: int
     total_token_discount: int
     total_referee_discount: int
+    total_referrer_reward: int
+    current_epoch_referrer_reward: int
  
 @dataclass
 class UserStats:
     authority: PublicKey
     referrer: PublicKey
     fees: UserFees
-    total_referrer_reward: int
-    current_epoch_referrer_reward: int
     next_epoch_ts: int
     maker_volume30d: int
     taker_volume30d: int
@@ -604,8 +596,8 @@ class UserStats:
     last_maker_volume30d_ts: int
     last_taker_volume30d_ts: int
     last_filler_volume30d_ts: int
-    staked_quote_asset_amount: int
-    number_of_users: int
+    if_staked_quote_asset_amount: int
+    number_of_sub_accounts: int
     is_referrer: bool
     padding: list[int]
  

@@ -181,7 +181,7 @@ def get_worst_case_token_amounts(
 ):
 
     token_amount = get_signed_token_amount(
-        get_token_amount(position.balance, spot_market, position.balance_type),
+        get_token_amount(position.scaled_balance, spot_market, position.balance_type),
         position.balance_type,
     )
 
@@ -337,7 +337,7 @@ def get_spot_liability_value(
     spot_market: SpotMarket,
     margin_category: MarginCategory,
     liquidation_buffer: int = None,
-    custom_margin_ratio: int = None,
+    max_margin_ratio: int = None,
 ) -> int:
     liability_value = get_token_value(token_amount, spot_market.decimals, oracle_data)
 
@@ -345,8 +345,8 @@ def get_spot_liability_value(
         weight = calculcate_liability_weight(token_amount, spot_market, margin_category)
 
         if margin_category == MarginCategory.INITIAL:
-            assert custom_margin_ratio, "set = user.custom_margin_ratio"
-            weight = max(weight, custom_margin_ratio)
+            assert max_margin_ratio, "set = user.max_margin_ratio"
+            weight = max(weight, max_margin_ratio)
 
         if liquidation_buffer is not None:
             weight += liquidation_buffer
@@ -413,11 +413,11 @@ class ClearingHouseUser:
             if position.market_index == QUOTE_ASSET_BANK_INDEX:
                 if str(position.balance_type) == "SpotBalanceType.Borrow()":
                     token_amount = get_token_amount(
-                        position.balance, spot_market, position.balance_type
+                        position.scaled_balance, spot_market, position.balance_type
                     )
                     weight = SPOT_WEIGHT_PRECISION
                     if margin_category == MarginCategory.INITIAL:
-                        weight = max(weight, user.custom_margin_ratio)
+                        weight = max(weight, user.max_margin_ratio)
 
                     value = token_amount * weight / SPOT_WEIGHT_PRECISION
                     total_liability += value
@@ -429,7 +429,7 @@ class ClearingHouseUser:
             if not include_open_orders:
                 if str(position.balance_type) == "SpotBalanceType.Borrow()":
                     token_amount = get_token_amount(
-                        position.balance, spot_market, position.balance_type
+                        position.scaled_balance, spot_market, position.balance_type
                     )
                     liability_value = get_spot_liability_value(
                         token_amount,
@@ -437,7 +437,7 @@ class ClearingHouseUser:
                         spot_market,
                         margin_category,
                         liquidation_buffer,
-                        user.custom_margin_ratio,
+                        user.max_margin_ratio,
                     )
                     total_liability += liability_value
                     continue
@@ -456,14 +456,14 @@ class ClearingHouseUser:
                     spot_market,
                     margin_category,
                     liquidation_buffer,
-                    user.custom_margin_ratio,
+                    user.max_margin_ratio,
                 )
                 total_liability += baa_value
 
             if worst_case_quote_amount > 0:
                 weight = SPOT_WEIGHT_PRECISION
                 if margin_category == MarginCategory.INITIAL:
-                    weight = max(weight, user.custom_margin_ratio)
+                    weight = max(weight, user.max_margin_ratio)
                 weighted_value = (
                     worst_case_quote_amount * weight / SPOT_WEIGHT_PRECISION
                 )
@@ -503,7 +503,7 @@ class ClearingHouseUser:
                 )
 
                 if margin_category == MarginCategory.INITIAL:
-                    margin_ratio = max(margin_ratio, user.custom_margin_ratio)
+                    margin_ratio = max(margin_ratio, user.max_margin_ratio)
 
                 if liquidation_buffer is not None:
                     margin_ratio += liquidation_buffer
@@ -629,7 +629,7 @@ class ClearingHouseUser:
 
             if position.market_index == QUOTE_ASSET_BANK_INDEX:
                 spot_token_value = get_token_amount(
-                    position.balance, spot_market, position.balance_type
+                    position.scaled_balance, spot_market, position.balance_type
                 )
                 total_value += spot_token_value
                 continue
@@ -639,7 +639,7 @@ class ClearingHouseUser:
             if not include_open_orders:
                 if str(position.balance_type) == "SpotBalanceType.Deposit()":
                     token_amount = get_token_amount(
-                        position.balance, spot_market, position.balance_type
+                        position.scaled_balance, spot_market, position.balance_type
                     )
                     asset_value = get_spot_asset_value(
                         token_amount, oracle_data, spot_market, margin_category
