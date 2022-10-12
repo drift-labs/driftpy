@@ -21,7 +21,7 @@ configs = {
             "BmA9Z6FjioHJPpjT39QazZyhDRUdZy2ezwx4GiDdE2u2"
         ),
         clearing_house_program_id=PublicKey(
-            "By7XjakxXVnQ9gMZ4VT98DenTgBCeP295A58ybzgwVPZ"
+            "DUZwKJKAk2C9S88BYvQzck1M1i5hySQjxB4zW6tJ29Nw"
         ),
         usdc_mint_address=PublicKey("8zGuJQqwhZafTah7Uc7Z4tXRnguqkn5KLFAP8oV6PHe2"),
         markets=devnet_markets,

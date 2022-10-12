@@ -413,6 +413,7 @@ class PerpMarket:
     pubkey: PublicKey
     amm: AMM
     pnl_pool: PoolBalance
+    name: list[int]
     expiry_price: int
     number_of_users: int
     imf_factor: int
