@@ -278,6 +278,7 @@ class ClearingHouse:
         remaining_accounts = await self.get_remaining_accounts(
             writable_spot_market_index=spot_market_index
         )
+        ch_signer = get_clearing_house_signer_public_key(self.program_id)
 
         return self.program.instruction["withdraw"](
             spot_market_index,
@@ -288,8 +289,9 @@ class ClearingHouse:
                     "state": self.get_state_public_key(),
                     "spot_market": spot_market.pubkey,
                     "spot_market_vault": spot_market.vault,
-                    "spot_market_vault_authority": spot_market.vault_authority,
+                    "clearing_house_signer": ch_signer,
                     "user": self.get_user_account_public_key(),
+                    "user_stats": self.get_user_stats_public_key(),
                     "user_token_account": user_token_account,
                     "authority": self.authority,
                     "token_program": TOKEN_PROGRAM_ID,
