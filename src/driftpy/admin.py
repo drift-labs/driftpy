@@ -106,6 +106,7 @@ class Admin(ClearingHouse):
         margin_ratio_maintenance: int = 500,
         liquidation_fee: int = 0,
         active_status: bool = True,
+        name: list = [0] * 32
     ) -> TransactionSignature:
         state_public_key = get_state_public_key(self.program.program_id)
         state = await get_state_account(self.program)
@@ -124,6 +125,7 @@ class Admin(ClearingHouse):
             margin_ratio_maintenance,
             liquidation_fee,
             active_status,
+            name,
             ctx=Context(
                 accounts={
                     "admin": self.authority,
