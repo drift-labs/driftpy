@@ -101,7 +101,7 @@ class Admin(ClearingHouse):
         quote_asset_reserve: int,
         periodicity: int,
         peg_multiplier: int = PEG_PRECISION,
-        oracle_source: OracleSource = OracleSource.Pyth(),
+        oracle_source: OracleSource = OracleSource.PYTH(),
         margin_ratio_initial: int = 2000,
         margin_ratio_maintenance: int = 500,
         liquidation_fee: int = 0,
@@ -143,7 +143,7 @@ class Admin(ClearingHouse):
         optimal_rate: int = SPOT_RATE_PRECISION,
         max_rate: int = SPOT_RATE_PRECISION,
         oracle: PublicKey = PublicKey([0] * PublicKey.LENGTH),
-        oracle_source: OracleSource = OracleSource.Quote_Asset(),
+        oracle_source: OracleSource = OracleSource.QUOTE_ASSET(),
         initial_asset_weight: int = SPOT_WEIGHT_PRECISION,
         maintenance_asset_weight: int = SPOT_WEIGHT_PRECISION,
         initial_liability_weight: int = SPOT_WEIGHT_PRECISION,
@@ -209,6 +209,22 @@ class Admin(ClearingHouse):
             ),
         )
 
+    async def update_perp_market_curve_update_intensity(
+        self, market_index: int, curve_update_intensity: int, 
+    ):
+        assert(curve_update_intensity >=0 and curve_update_intensity <= 100)
+        market_public_key = get_perp_market_public_key(self.program_id, market_index)
+        return await self.program.rpc["update_perp_market_curve_update_intensity"](
+            curve_update_intensity,
+            ctx=Context(
+                accounts={
+                    "admin": self.authority,
+                    "state": get_state_public_key(self.program_id),
+                    "perp_market": market_public_key,
+                }
+            ),
+        )
+
     async def update_perp_market_max_fill_reserve_fraction(
         self, market_index: int, max_fill_reserve_fraction: int, 
     ):
@@ -224,9 +240,9 @@ class Admin(ClearingHouse):
             ),
         )
 
-    async def update_perp_market_lp_cooldown_time(self, duration: int, market_index: int):
+    async def update_lp_cooldown_time(self, duration: int, market_index: int):
         market_public_key = get_perp_market_public_key(self.program_id, market_index)
-        return await self.program.rpc["update_perp_market_lp_cooldown_time"](
+        return await self.program.rpc["update_lp_cooldown_time"](
             duration,
             ctx=Context(
                 accounts={

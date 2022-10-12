@@ -827,7 +827,7 @@ class ClearingHouse:
                     "liquidator": liq_pk,
                     "liquidator_stats": liq_stats_pk,
                     "spot_market_vault": spot_market.vault,
-                    "insurance_fund_vault": spot_market.insurance_fund_vault,
+                    "insurance_fund_vault": spot_market.insurance_fund.vault,
                     "clearing_house_signer": ch_signer,
                     "token_program": TOKEN_PROGRAM_ID,
                 },

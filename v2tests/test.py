@@ -179,7 +179,7 @@ async def test_add_remove_liquidity(
     market = await get_perp_market_account(clearing_house.program, 0)
     n_shares = market.amm.order_step_size
 
-    await clearing_house.update_perp_market_lp_cooldown_time(0, 0)
+    await clearing_house.update_lp_cooldown_time(0, 0)
     market = await get_perp_market_account(clearing_house.program, 0)
     assert market.amm.lp_cooldown_time == 0
 
