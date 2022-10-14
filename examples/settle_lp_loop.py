@@ -47,7 +47,7 @@ async def main():
             ch.program, 
             settle_pk,
         )
-        market = await get_market_account(
+        market = await get_perp_market_account(
             ch.program, 0 
         )
         position = user.positions[0]

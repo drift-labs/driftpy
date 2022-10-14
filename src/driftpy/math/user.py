@@ -1,7 +1,7 @@
 from driftpy.types import (
     User,
     PerpPosition,
-    PerpMarket, 
+    PerpMarket,
 )
 from collections.abc import Mapping
 
@@ -9,15 +9,18 @@ from driftpy.math.market import calculate_mark_price
 from driftpy.math.amm import calculate_amm_reserves_after_swap, get_swap_direction
 from driftpy.math.positions import calculate_position_pnl, calculate_base_asset_value
 from driftpy.constants.numeric_constants import (
-    MARK_PRICE_PRECISION,
+    PRICE_PRECISION,
     AMM_RESERVE_PRECISION,
     AMM_TO_QUOTE_PRECISION_RATIO,
     AMM_TIMES_PEG_TO_QUOTE_PRECISION_RATIO,
 )
 import numpy as np
 
+
 def calculate_unrealised_pnl(
-    user_position: list[PerpPosition], markets: Mapping[int, PerpMarket], market_index: int = None
+    user_position: list[PerpPosition],
+    markets: Mapping[int, PerpMarket],
+    market_index: int = None,
 ) -> int:
     pnl = 0
     for position in user_position:
@@ -27,6 +30,7 @@ def calculate_unrealised_pnl(
                 pnl += calculate_position_pnl(market, position)
 
     return pnl
+
 
 def get_total_position_value(
     user_position: list[PerpPosition],
@@ -41,7 +45,9 @@ def get_total_position_value(
 
 
 def get_position_value(
-    user_position: list[PerpPosition], markets: Mapping[int, PerpMarket], market_index: int
+    user_position: list[PerpPosition],
+    markets: Mapping[int, PerpMarket],
+    market_index: int,
 ):
     assert market_index is None or int(market_index) >= 0
     value = 0
@@ -105,7 +111,9 @@ def can_be_liquidated(user_account: User, markets: Mapping[int, PerpMarket]):
     )
 
 
-def liquidation_price(user_account: User, markets: Mapping[int, PerpMarket], market_index: int):
+def liquidation_price(
+    user_account: User, markets: Mapping[int, PerpMarket], market_index: int
+):
     # todo
 
     tc = get_total_collateral(user_account, markets)

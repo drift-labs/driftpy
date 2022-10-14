@@ -3,7 +3,7 @@ from driftpy.types import (
 )
 
 from driftpy.constants.numeric_constants import (
-    MARK_PRICE_PRECISION,
+    PRICE_PRECISION as PRICE_PRECISION,
     # PEG_PRECISION,
     AMM_RESERVE_PRECISION,
     QUOTE_PRECISION,
@@ -28,19 +28,19 @@ def calculate_long_short_funding(market: PerpMarket):
 def calculate_capped_funding(market: PerpMarket):
 
     smaller_side = min(
-        abs(market.base_asset_amount_short), market.base_asset_amount_long
+        abs(market.amm.base_asset_amount_short), market.amm.base_asset_amount_long
     )
     larger_side = max(
-        abs(market.base_asset_amount_short), market.base_asset_amount_long
+        abs(market.amm.base_asset_amount_short), market.amm.base_asset_amount_long
     )
-    
+
     next_funding = calculate_oracle_mark_spread_owed(market)
     funding_fee_pool = calculate_funding_fee_pool(market)
 
     if larger_side != 0:
         capped_funding = (
             smaller_side * next_funding
-            + funding_fee_pool * MARK_PRICE_PRECISION * AMM_RESERVE_PRECISION
+            + funding_fee_pool * PRICE_PRECISION * AMM_RESERVE_PRECISION
         ) / larger_side
     else:
         capped_funding = next_funding

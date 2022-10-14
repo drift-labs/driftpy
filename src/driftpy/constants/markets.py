@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from solana.publickey import PublicKey
 
+
 @dataclass
 class Market:
     symbol: str
@@ -8,24 +9,25 @@ class Market:
     market_index: int
     pyth_oracle: PublicKey
 
+
 devnet_markets: list[Market] = [
     Market(
-		base_asset_symbol='SOL',
-		symbol='SOL-PERP',
-        market_index=0, 
-        pyth_oracle=PublicKey('J83w4HKfqxwcq3BEMMkPFSppX3gqekLyLJBexebFVkix')
+        base_asset_symbol="SOL",
+        symbol="SOL-PERP",
+        market_index=0,
+        pyth_oracle=PublicKey("J83w4HKfqxwcq3BEMMkPFSppX3gqekLyLJBexebFVkix"),
     ),
     Market(
-		base_asset_symbol='BTC',
-		symbol='BTC-PERP',
-        market_index=1, 
-        pyth_oracle=PublicKey('HovQMDrbAgAYPCmHVSrezcSmkMtXSSUsLDFANExrZh2J')
+        base_asset_symbol="BTC",
+        symbol="BTC-PERP",
+        market_index=1,
+        pyth_oracle=PublicKey("HovQMDrbAgAYPCmHVSrezcSmkMtXSSUsLDFANExrZh2J"),
     ),
     Market(
-		base_asset_symbol='ETH',
-		symbol='ETH-PERP',
-        market_index=2, 
-        pyth_oracle=PublicKey('EdVCmQ9FSPcVe5YySXDPCRmc8aDQLKJ9xvYBMZPie1Vw')
+        base_asset_symbol="ETH",
+        symbol="ETH-PERP",
+        market_index=2,
+        pyth_oracle=PublicKey("EdVCmQ9FSPcVe5YySXDPCRmc8aDQLKJ9xvYBMZPie1Vw"),
     ),
 ]
 

@@ -4,10 +4,12 @@ from sumtypes import constructor  # type: ignore
 from borsh_construct.enum import _rust_enum
 from solana.publickey import PublicKey
 
+
 @dataclass
 class PriceDivergence:
     mark_oracle_divergence_numerator: int
     mark_oracle_divergence_denominator: int
+
 
 @dataclass
 class Validity:
@@ -15,17 +17,20 @@ class Validity:
     confidence_interval_max_size: int
     too_volatile_ratio: int
 
+
 @dataclass
 class OracleGuardRails:
     price_divergence: PriceDivergence
     validity: Validity
     use_for_liquidations: bool
 
+
 @dataclass
 class DiscountTokenTier:
     minimum_balance: int
     discount_numerator: int
     discount_denominator: int
+
 
 @dataclass
 class DiscountTokenTiers:
@@ -34,6 +39,7 @@ class DiscountTokenTiers:
     third_tier: DiscountTokenTier
     fourth_tier: DiscountTokenTier
 
+
 @dataclass
 class ReferralDiscount:
     referrer_reward_numerator: int
@@ -41,11 +47,13 @@ class ReferralDiscount:
     referee_discount_numerator: int
     referee_discount_denominator: int
 
+
 @dataclass
 class OrderFillerRewardStructure:
     reward_numerator: int
     reward_denominator: int
     time_based_reward_lower_bound: int
+
 
 @dataclass
 class FeeStructure:
@@ -56,6 +64,7 @@ class FeeStructure:
     maker_rebate_numerator: int
     maker_rebate_denominator: int
     filler_reward_structure: OrderFillerRewardStructure
+
 
 @dataclass
 class StateAccount:
@@ -89,7 +98,9 @@ class StateAccount:
     padding0: int
     padding1: int
 
+
 # ---
+
 
 @_rust_enum
 class OracleSource:
@@ -97,15 +108,18 @@ class OracleSource:
     Switchboard = constructor()
     QuoteAsset = constructor()
 
+
 @_rust_enum
 class DepositDirection:
     DEPOSIT = constructor()
     WITHDRAW = constructor()
 
+
 @dataclass
 class TradeDirection:
     long: Optional[Any]
     short: Optional[Any]
+
 
 @_rust_enum
 class OrderType:
@@ -114,12 +128,14 @@ class OrderType:
     TRIGGER_MARKET = constructor()
     TRIGGER_LIMIT = constructor()
 
+
 @_rust_enum
 class OrderStatus:
     INIT = constructor()
     OPEN = constructor()
     FILLED = constructor()
     CANCELED = constructor()
+
 
 @_rust_enum
 class OrderDiscountTier:
@@ -129,10 +145,12 @@ class OrderDiscountTier:
     THIRD = constructor()
     FOURTH = constructor()
 
+
 @_rust_enum
 class OrderTriggerCondition:
     ABOVE = constructor()
     BELOW = constructor()
+
 
 @_rust_enum
 class OrderAction:
@@ -140,27 +158,33 @@ class OrderAction:
     FILL = constructor()
     CANCEL = constructor()
 
+
 @_rust_enum
 class PositionDirection:
     LONG = constructor()
     SHORT = constructor()
+
 
 @_rust_enum
 class SwapDirection:
     ADD = constructor()
     REMOVE = constructor()
 
+
 @_rust_enum
 class AssetType:
     QUOTE = constructor()
     BASE = constructor()
+
 
 @_rust_enum
 class BankBalanceType:
     DEPOSIT = constructor()
     BORROW = constructor()
 
-# --- 
+
+# ---
+
 
 @dataclass
 class Order:
@@ -187,43 +211,48 @@ class Order:
     immediate_or_cancel: bool
     oracle_price_offset: int
 
+
 @dataclass
 class OrderParamsOptionalAccounts:
     discount_token: bool = False
     referrer: bool = False
 
+
 @dataclass
 class OrderParams:
-    # necessary 
+    # necessary
     order_type: OrderType
     direction: PositionDirection
     market_index: int
     base_asset_amount: int
-    # optional 
-    user_order_id: int = 0 
-    price: int = 0 
+    # optional
+    user_order_id: int = 0
+    price: int = 0
     reduce_only: bool = False
     post_only: bool = False
     immediate_or_cancel: bool = False
-    trigger_price: int = 0 
+    trigger_price: int = 0
     trigger_condition: OrderTriggerCondition = OrderTriggerCondition.ABOVE()
     position_limit: int = 0
     oracle_price_offset: int = 0
     auction_duration: int = 0
-    padding0: bool = 0 
-    padding1: bool = 0 
+    padding0: bool = 0
+    padding1: bool = 0
     optional_accounts: OrderParamsOptionalAccounts = OrderParamsOptionalAccounts()
+
 
 @dataclass
 class MakerInfo:
     maker: PublicKey
     order: Order
 
+
 @dataclass
 class OrderFillerRewardStructure:
     reward_numerator: int
     reward_denominator: int
     time_based_reward_lower_bound: int  # minimum time filler reward
+
 
 @dataclass
 class MarketPosition:
@@ -245,7 +274,7 @@ class MarketPosition:
     lp_quote_asset_amount: int
     last_cumulative_funding_payment_per_lp: int
     last_cumulative_fee_per_lp: int
-    last_cumulative_net_base_asset_amount_per_lp: int
+    last_cumulative_base_asset_amount_with_amm_per_lp: int
     last_lp_add_time: int
 
     # upgrade-ability
@@ -256,8 +285,9 @@ class MarketPosition:
     padding4: int
 
     ## dw why this doesnt register :(
-    # def is_available(self): 
+    # def is_available(self):
     #     return self.base_asset_amount == 0 and self.open_orders == 0 and self.lp_shares == 0
+
 
 @dataclass
 class UserFees:
@@ -266,6 +296,7 @@ class UserFees:
     total_token_discount: int
     total_referral_reward: int
     total_referee_discount: int
+
 
 @dataclass
 class UserBankBalance:
@@ -285,9 +316,11 @@ class User:
     positions: list[MarketPosition]
     orders: list[Order]
 
+
 @dataclass
 class PoolBalance:
     balance: int
+
 
 @dataclass
 class Bank:
@@ -313,6 +346,7 @@ class Bank:
     initial_liability_weight: int
     maintenance_liability_weight: int
 
+
 @dataclass
 class AMM:
     oracle: PublicKey
@@ -331,14 +365,19 @@ class AMM:
     peg_multiplier: int = 0
 
     terminal_quote_asset_reserve: int = 0
-    net_base_asset_amount: int = 0
+    base_asset_amount_with_amm: int = 0
+    base_asset_amount_with_unsettled_lp: int = 0
+
+    base_asset_amount_long: int = 0
+    base_asset_amount_short: int = 0
+
     quote_asset_amount_long: int = 0
     quote_asset_amount_short: int = 0
 
     ## lp stuff
     cumulative_funding_payment_per_lp: int = 0
     cumulative_fee_per_lp: int = 0
-    cumulative_net_base_asset_amount_per_lp: int = 0
+    cumulative_base_asset_amount_with_amm_per_lp: int = 0
     lp_cooldown_time: int = 0
     user_lp_shares: int = 0
 
@@ -393,15 +432,16 @@ class AMM:
     padding2: int = 0
     padding3: int = 0
 
+
 @dataclass
 class Market:
     market_index: int
-    amm: AMM 
+    amm: AMM
     pubkey: PublicKey = PublicKey(0)
     initialized: bool = True
     base_asset_amount_long: int = 0
     base_asset_amount_short: int = 0
-    open_interest: int = 0 
+    number_of_users: int = 0
     margin_ratio_initial: int = 1000
     margin_ratio_partial: int = 500
     margin_ratio_maintenance: int = 625

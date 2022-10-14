@@ -6,18 +6,17 @@ from driftpy.constants.numeric_constants import (
 from driftpy.sdk_types import AssetType
 from driftpy.types import PositionDirection, SwapDirection, AMM
 
+
 def calculate_peg_from_target_price(
-    target_price: int, 
-    base_asset_reserves: int, 
-    quote_asset_reserves: int
-) -> int: 
+    target_price: int, base_asset_reserves: int, quote_asset_reserves: int
+) -> int:
     return max(
-        (target_price
-        * base_asset_reserves
-        / quote_asset_reserves
-        + (PRICE_DIV_PEG / 2))
+        (
+            target_price * base_asset_reserves / quote_asset_reserves
+            + (PRICE_DIV_PEG / 2)
+        )
         / PRICE_DIV_PEG,
-        1
+        1,
     )
 
 
@@ -28,8 +27,9 @@ def calculate_mark_price_amm(amm: AMM):
         amm.peg_multiplier,
     )
 
+
 def calculate_mark_price_amm(amm, oracle_price=None):
-    dynamic_peg = 'PrePeg' in amm.strategies
+    dynamic_peg = "PrePeg" in amm.strategies
 
     if dynamic_peg:
         peg = calculate_peg_multiplier(amm, oracle_price)
@@ -42,10 +42,10 @@ def calculate_mark_price_amm(amm, oracle_price=None):
         peg,
     )
 
+
 def calculate_bid_price_amm(amm: AMM, oracle_price=None):
     base_asset_reserves, quote_asset_reserves = calculate_spread_reserves(
-        amm, PositionDirection.SHORT,
-        oracle_price=oracle_price
+        amm, PositionDirection.SHORT, oracle_price=oracle_price
     )
     return calculate_price(
         base_asset_reserves, quote_asset_reserves, amm.peg_multiplier
@@ -54,18 +54,19 @@ def calculate_bid_price_amm(amm: AMM, oracle_price=None):
 
 def calculate_ask_price_amm(amm: AMM, oracle_price=None):
     base_asset_reserves, quote_asset_reserves = calculate_spread_reserves(
-        amm, PositionDirection.LONG,
-        oracle_price=oracle_price
+        amm, PositionDirection.LONG, oracle_price=oracle_price
     )
     return calculate_price(
         base_asset_reserves, quote_asset_reserves, amm.peg_multiplier
     )
+
 
 def calculate_price(base_asset_amount, quote_asset_amount, peg_multiplier):
     if abs(base_asset_amount) <= 0:
         return 0
     else:
         return (quote_asset_amount / base_asset_amount) * peg_multiplier / PEG_PRECISION
+
 
 def calculate_terminal_price(market):
     swap_direction = (
@@ -92,7 +93,7 @@ def calculate_terminal_price(market):
 def calculate_swap_output(
     swap_amount, input_asset_reserve, swap_direction: SwapDirection, invariant_sqrt
 ):
-    invariant = invariant_sqrt*invariant_sqrt
+    invariant = invariant_sqrt * invariant_sqrt
     assert swap_direction in [
         SwapDirection.ADD,
         SwapDirection.REMOVE,
@@ -112,7 +113,10 @@ def calculate_swap_output(
 
 
 def calculate_amm_reserves_after_swap(
-    amm, input_asset_type: AssetType, swap_amount, swap_direction: SwapDirection,
+    amm,
+    input_asset_type: AssetType,
+    swap_amount,
+    swap_direction: SwapDirection,
 ):
     if input_asset_type == AssetType.QUOTE:
         swap_amount = (
@@ -162,35 +166,36 @@ def get_swap_direction(
     return SwapDirection.ADD
 
 
-
 def calculate_budgeted_repeg(amm, cost, target_px=None, pay_only=False):
 
-    if target_px==None:
-        target_px = amm.last_oracle_price #/ 1e10
-        assert(amm.last_oracle_price!=0)
+    if target_px == None:
+        target_px = amm.last_oracle_price  # / 1e10
+        assert amm.last_oracle_price != 0
 
     C = cost
     x = amm.base_asset_reserve / 1e13
     y = amm.quote_asset_reserve / 1e13
-    d = amm.net_base_asset_amount / 1e13
+    d = amm.base_asset_amount_with_amm / 1e13
     Q = amm.peg_multiplier / 1e3
     k = (amm.sqrt_k / 1e13) ** 2
 
     dqar = y - (k / (x + d))
 
     # print('dqar', dqar)
-    cur_px = y/x*Q
+    cur_px = y / x * Q
     target_peg = target_px * x / y
 
     peg_change_direction = target_peg - Q
 
-    use_target_peg = (dqar < 0 and peg_change_direction > 0) or (dqar > 0 and peg_change_direction < 0)
+    use_target_peg = (dqar < 0 and peg_change_direction > 0) or (
+        dqar > 0 and peg_change_direction < 0
+    )
 
     if dqar != 0 and not use_target_peg:
         new_peg = Q + (C / dqar)
     else:
         new_peg = target_peg
-    
+
     # print(cur_px, target_px, Q, '->', new_peg, '||', target_peg, '(budget:', C,')', d, dqar)
     if cur_px > target_px and new_peg < target_peg:
         new_peg = target_peg
@@ -206,16 +211,19 @@ def calculate_budgeted_repeg(amm, cost, target_px=None, pay_only=False):
     # print("new_peg", new_peg, target_peg)
     return new_peg
 
-def calculate_peg_multiplier(amm, oracle_price=None, now=None, delay=None, budget_cost=None):
-    #todo: make amm have all the vars needed
-    if 'PrePeg' in amm.strategies:
+
+def calculate_peg_multiplier(
+    amm, oracle_price=None, now=None, delay=None, budget_cost=None
+):
+    # todo: make amm have all the vars needed
+    if "PrePeg" in amm.strategies:
         if oracle_price is None:
-            oracle_price = amm.last_oracle_price 
+            oracle_price = amm.last_oracle_price
             if delay is None:
                 if now is not None:
                     delay = now - amm.last_oracle_price_twap_ts
                 else:
-                    delay = 100            
+                    delay = 100
             # delay_discount = 1/(delay*delay/2)
             # last_mark = calculate_mark_price_amm(market.amm)
             # target_px = last_mark + ((oracle_price-last_mark)*delay_discount)
@@ -224,72 +232,91 @@ def calculate_peg_multiplier(amm, oracle_price=None, now=None, delay=None, budge
             target_px = oracle_price
 
         if budget_cost is None:
-            fee_pool = (amm.total_fee_minus_distributions/1e6) - (amm.total_fee/1e6)/2
+            fee_pool = (amm.total_fee_minus_distributions / 1e6) - (
+                amm.total_fee / 1e6
+            ) / 2
             budget_cost = max(0, fee_pool)
             # print('budget to repeg:', budget_cost, 'to target_price', target_px)
 
-        new_peg = int(calculate_budgeted_repeg(amm, budget_cost, target_px=target_px)*1e3)
+        new_peg = int(
+            calculate_budgeted_repeg(amm, budget_cost, target_px=target_px) * 1e3
+        )
         return new_peg
-    elif 'PreFreePeg' in amm.strategies:
+    elif "PreFreePeg" in amm.strategies:
         target_px = oracle_price
 
         if budget_cost is None:
-            fee_pool = (amm.total_fee_minus_distributions/1e6) - (amm.total_fee/1e6)/2
+            fee_pool = (amm.total_fee_minus_distributions / 1e6) - (
+                amm.total_fee / 1e6
+            ) / 2
             budget_cost = max(0, fee_pool)
 
-        new_peg = int(calculate_budgeted_repeg(amm, budget_cost, target_px=target_px)*1e3)
+        new_peg = int(
+            calculate_budgeted_repeg(amm, budget_cost, target_px=target_px) * 1e3
+        )
         return new_peg
     else:
         return amm.peg_multiplier
 
 
-
-def calculate_spread_reserves(amm, position_direction: PositionDirection, oracle_price=None):
+def calculate_spread_reserves(
+    amm, position_direction: PositionDirection, oracle_price=None
+):
     BID_ASK_SPREAD_PRECISION = 1_000_000  # this is 100% (thus 1_000 = .1%)
     mark_price = calculate_mark_price_amm(amm, oracle_price=oracle_price)
     spread = amm.base_spread
 
-    if 'OracleRetreat' in amm.strategies:
+    if "OracleRetreat" in amm.strategies:
         if oracle_price is None:
-            oracle_price = amm.last_oracle_price 
-        pct_delta =  float(oracle_price - mark_price)/mark_price
+            oracle_price = amm.last_oracle_price
+        pct_delta = float(oracle_price - mark_price) / mark_price
         # print(amm.last_oracle_price, mark_price, pct_delta, spread)
-        if (pct_delta > 0 and position_direction == PositionDirection.LONG) \
-            or (pct_delta < 0 and position_direction == PositionDirection.SHORT):
-            oracle_spread = abs(pct_delta)*1e6*2
+        if (pct_delta > 0 and position_direction == PositionDirection.LONG) or (
+            pct_delta < 0 and position_direction == PositionDirection.SHORT
+        ):
+            oracle_spread = abs(pct_delta) * 1e6 * 2
             if oracle_spread > spread:
                 spread = oracle_spread * 2
         else:
-            #no retreat
+            # no retreat
             pass
 
-    if 'VolatilityScale' in amm.strategies:
+    if "VolatilityScale" in amm.strategies:
         spread *= min(2, max(1, amm.mark_std))
 
-    if 'InventorySkew' in amm.strategies:
-        max_scale = 5 # if 'OracleRetreat' not in amm.strategies else 20
+    if "InventorySkew" in amm.strategies:
+        max_scale = 5  # if 'OracleRetreat' not in amm.strategies else 20
 
-        effective_position = amm.net_base_asset_amount #(amm.sqrt_k - amm.base_asset_reserve)
+        effective_position = (
+            amm.base_asset_amount_with_amm
+        )  # (amm.sqrt_k - amm.base_asset_reserve)
 
-        net_cost_basis = (amm.quote_asset_amount_long - (amm.quote_asset_amount_short))/1e6
-        net_base_asset_value = (amm.quote_asset_reserve - amm.terminal_quote_asset_reserve)/1e13 * amm.peg_multiplier/1e3
-        local_base_asset_value = mark_price * (effective_position/1e13)
+        net_cost_basis = (
+            amm.quote_asset_amount_long - (amm.quote_asset_amount_short)
+        ) / 1e6
+        net_base_asset_value = (
+            (amm.quote_asset_reserve - amm.terminal_quote_asset_reserve)
+            / 1e13
+            * amm.peg_multiplier
+            / 1e3
+        )
+        local_base_asset_value = mark_price * (effective_position / 1e13)
 
         local_pnl = local_base_asset_value - net_cost_basis
         net_pnl = net_base_asset_value - net_cost_basis
-        print('local pnl: ', local_pnl, 'net pnl:', net_pnl)
+        print("local pnl: ", local_pnl, "net pnl:", net_pnl)
         if amm.total_fee_minus_distributions > 0:
-            effective_leverage =  (local_pnl-net_pnl)/(amm.total_fee_minus_distributions/1e6)
-            print('effective_leverage:', effective_leverage)
+            effective_leverage = (local_pnl - net_pnl) / (
+                amm.total_fee_minus_distributions / 1e6
+            )
+            print("effective_leverage:", effective_leverage)
             if position_direction == PositionDirection.LONG:
                 # print((1 + (effective_position/(amm.sqrt_k/10000))))
-                spread *= min(max_scale, max(1,  (1 + effective_leverage)))
+                spread *= min(max_scale, max(1, (1 + effective_leverage)))
             else:
                 spread *= min(max_scale, max(1, (1 - effective_leverage)))
         else:
             spread *= max_scale
-
-       
 
     amm.last_spread = spread
 

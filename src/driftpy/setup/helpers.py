@@ -13,7 +13,7 @@ from spl.token.constants import TOKEN_PROGRAM_ID
 from spl.token._layouts import MINT_LAYOUT
 from spl.token.async_client import AsyncToken
 from spl.token.instructions import initialize_mint, InitializeMintParams
-import math 
+import math
 
 from solana.system_program import create_account, CreateAccountParams
 from spl.token.async_client import AsyncToken
@@ -29,40 +29,50 @@ from solana.rpc.commitment import Processed, Finalized, Confirmed
 from solana.transaction import TransactionSignature
 
 from driftpy.sdk_types import AssetType
-from driftpy.types import * 
+from driftpy.types import *
 from driftpy.math.amm import calculate_amm_reserves_after_swap, calculate_price
 
+
 async def adjust_oracle_pretrade(
-    baa: int, 
-    position_direction: PositionDirection, 
-    market: PerpMarket, 
+    baa: int,
+    position_direction: PositionDirection,
+    market: PerpMarket,
     oracle_program: Program,
 ):
     price = calculate_price(
-        market.amm.base_asset_reserve, 
-        market.amm.quote_asset_reserve, 
+        market.amm.base_asset_reserve,
+        market.amm.quote_asset_reserve,
         market.amm.peg_multiplier,
     )
-    swap_direction = SwapDirection.ADD if position_direction == PositionDirection.SHORT() else SwapDirection.REMOVE
+    swap_direction = (
+        SwapDirection.ADD
+        if position_direction == PositionDirection.SHORT()
+        else SwapDirection.REMOVE
+    )
     new_qar, new_bar = calculate_amm_reserves_after_swap(
-        market.amm, 
-        AssetType.BASE, 
-        abs(baa), 
+        market.amm,
+        AssetType.BASE,
+        abs(baa),
         swap_direction,
     )
     newprice = calculate_price(new_bar, new_qar, market.amm.peg_multiplier)
     await set_price_feed(oracle_program, market.amm.oracle, newprice)
-    print(f'oracle: {price} -> {newprice}')
+    print(f"oracle: {price} -> {newprice}")
 
     return newprice
 
+
 async def _airdrop_user(
-    provider: Provider, 
+    provider: Provider, user: Optional[Keypair] = None
 ) -> tuple[Keypair, TransactionSignature]:
-    user = Keypair()
-    resp = await provider.connection.request_airdrop(user.public_key, 100_0 * 1000000000)
-    tx_sig = resp['result']
+    if user is None:
+        user = Keypair()
+    resp = await provider.connection.request_airdrop(
+        user.public_key, 100_0 * 1000000000
+    )
+    tx_sig = resp["result"]
     return user, tx_sig
+
 
 async def _create_usdc_mint(provider: Provider) -> Keypair:
     fake_create_usdc_mint = Keypair()
@@ -91,11 +101,9 @@ async def _create_usdc_mint(provider: Provider) -> Keypair:
     await provider.send(fake_usdc_tx, [fake_create_usdc_mint])
     return fake_create_usdc_mint
 
+
 async def _create_user_usdc_ata_tx(
-    usdc_account: Keypair,
-    provider: Provider,
-    usdc_mint: Keypair,
-    owner: PublicKey
+    usdc_account: Keypair, provider: Provider, usdc_mint: Keypair, owner: PublicKey
 ) -> Transaction:
     fake_usdc_tx = Transaction()
 
@@ -124,10 +132,11 @@ async def _create_user_usdc_ata_tx(
 
     return fake_usdc_tx
 
+
 def _mint_usdc_tx(
     usdc_mint: Keypair,
     provider: Provider,
-    usdc_amount: int, 
+    usdc_amount: int,
     ata_account: Keypair,
 ) -> Transaction:
     fake_usdc_tx = Transaction()
@@ -146,33 +155,27 @@ def _mint_usdc_tx(
 
     return fake_usdc_tx
 
+
 async def _create_and_mint_user_usdc(
-    usdc_mint: Keypair,
-    provider: Provider,
-    usdc_amount: int, 
-    owner: PublicKey 
+    usdc_mint: Keypair, provider: Provider, usdc_amount: int, owner: PublicKey
 ) -> Keypair:
     usdc_account = Keypair()
 
     ata_tx: Transaction = await _create_user_usdc_ata_tx(
-        usdc_account, 
-        provider, 
-        usdc_mint, 
-        owner, 
+        usdc_account,
+        provider,
+        usdc_mint,
+        owner,
     )
-    mint_tx: Transaction = _mint_usdc_tx(
-        usdc_mint, 
-        provider, 
-        usdc_amount, 
-        usdc_account
-    )
+    mint_tx: Transaction = _mint_usdc_tx(usdc_mint, provider, usdc_amount, usdc_account)
 
     for ix in mint_tx.instructions:
         ata_tx.add(ix)
 
     await provider.send(ata_tx, [provider.wallet.payer, usdc_account])
-    
+
     return usdc_account
+
 
 async def set_price_feed(
     oracle_program: Program,
@@ -181,12 +184,26 @@ async def set_price_feed(
 ):
     data = await get_feed_data(oracle_program, oracle_public_key)
     int_price = int(price * 10 ** -data.exponent)
+    print('setting oracle price', int_price)
     return await oracle_program.rpc["set_price"](
-        int_price,
-        ctx=Context(
-            accounts={"price": oracle_public_key }
-        )
+        int_price, ctx=Context(accounts={"price": oracle_public_key})
     )
+
+async def set_price_feed_detailed(
+    oracle_program: Program,
+    oracle_public_key: PublicKey,
+    price: float,
+    conf: float,
+    slot: int,
+):
+    data = await get_feed_data(oracle_program, oracle_public_key)
+    int_price = int(price * 10 ** -data.exponent)
+    int_conf = int(abs(conf) * 10 ** -data.exponent)
+    print('setting oracle price', int_price, "+/-", int_conf, '@ slot=', slot)
+    return await oracle_program.rpc["set_price_info"](
+        int_price, int_conf, slot, ctx=Context(accounts={"price": oracle_public_key})
+    )
+
 
 async def create_price_feed(
     oracle_program: Program,
@@ -241,15 +258,20 @@ def parse_price_data(data: bytes) -> PriceData:
 
 async def get_feed_data(oracle_program: Program, price_feed: PublicKey) -> PriceData:
     info_resp = await oracle_program.provider.connection.get_account_info(price_feed)
-    return parse_price_data(b64decode(info_resp["result"]["value"]["data"][0]))
+    raw_bytes = b64decode(info_resp["result"]["value"]["data"][0])
+    return parse_price_data(raw_bytes)
+
 
 from solana.rpc.async_api import AsyncClient
+
+
 async def get_oracle_data(
-    connection: AsyncClient, 
-    oracle_addr: PublicKey, 
-): 
+    connection: AsyncClient,
+    oracle_addr: PublicKey,
+):
     info_resp = await connection.get_account_info(oracle_addr)
     return parse_price_data(b64decode(info_resp["result"]["value"]["data"][0]))
+
 
 async def mock_oracle(
     pyth_program: Program, price: int = int(50 * 10e7), expo=-7
@@ -260,5 +282,7 @@ async def mock_oracle(
 
     feed_data = await get_feed_data(pyth_program, price_feed_address)
 
-    assert math.isclose(feed_data.price, price, abs_tol=0.001), f"{feed_data.price} {price}"
+    assert math.isclose(
+        feed_data.price, price, abs_tol=0.001
+    ), f"{feed_data.price} {price}"
     return price_feed_address

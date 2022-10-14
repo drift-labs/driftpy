@@ -54,7 +54,7 @@ await ch.place_order(
         PositionDirection.LONG(), 
         3, 
         BASE_PRECISION, 
-        10 * MARK_PRICE_PRECISION, 
+        10 * PRICE_PRECISION, 
         0, 
         False, 
         False, 

@@ -3,14 +3,16 @@ from driftpy.constants.markets import devnet_markets, Market
 from dataclasses import dataclass
 from solana.publickey import PublicKey
 
+
 @dataclass
 class Config:
     env: str
     pyth_oracle_mapping_address: PublicKey
     clearing_house_program_id: PublicKey
     usdc_mint_address: PublicKey
-    markets: list[Market] 
+    markets: list[Market]
     banks: list[Bank]
+
 
 configs = {
     "devnet": Config(

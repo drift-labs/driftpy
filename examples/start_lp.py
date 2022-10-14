@@ -48,7 +48,7 @@ user = await get_user_account(
     ch.program, 
     ch.authority
 )
-market = await get_market_account(
+market = await get_perp_market_account(
     ch.program, 
     0
 )
