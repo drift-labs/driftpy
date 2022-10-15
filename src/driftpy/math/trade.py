@@ -188,6 +188,7 @@ def calculate_target_price_trade(
         else:
             direction = PositionDirection.LONG
         tradeSize = 0
+        print('canot trade:', bid_price_before, target_price, ask_price_before)
         return [direction, tradeSize, target_price, target_price]
     elif mark_price_before > target_price:
         base_asset_reserve_after = (
@@ -212,6 +213,7 @@ def calculate_target_price_trade(
         quote_asset_reserve_after = (k / PRICE_PRECISION) / base_asset_reserve_after
 
         direction = PositionDirection.LONG
+        print('long', quote_asset_reserve_after, quote_asset_reserve_before, peg)
         trade_size = (
             (quote_asset_reserve_after - quote_asset_reserve_before)
             * ((peg) / PEG_PRECISION)
@@ -220,6 +222,7 @@ def calculate_target_price_trade(
         # print('ARB LONG', peg/PEG_PRECISION, base_size/1e13, trade_size/1e6)
     else:
         # no trade, market is at target
+        print("NO TRADE")
         direction = PositionDirection.LONG
         trade_size = 0
         return [direction, trade_size, target_price, target_price]
@@ -241,14 +244,14 @@ def calculate_target_price_trade(
             #     print((
             #         math.sqrt((k / (entry_price*1e10)) * (float(peg) / PEG_PRECISION) - bias_modifier) - 1
             #     ) - base_asset_reserve_before)
-            if not (entry_price * 1e10 >= target_price):
+            if not (entry_price * PRICE_PRECISION >= target_price):
                 # problem!
                 print(
                     "ERR:",
                     direction,
-                    mark_price_before / 1e10,
-                    bid_price_before / 1e10,
-                    target_price / 1e10,
+                    mark_price_before / PRICE_PRECISION,
+                    bid_price_before / PRICE_PRECISION,
+                    target_price / PRICE_PRECISION,
                     entry_price,
                 )
                 tradeSize = 0
@@ -264,14 +267,14 @@ def calculate_target_price_trade(
             #     print((
             #         math.sqrt((k / (entry_price*1e10)) * (float(peg) / PEG_PRECISION) - bias_modifier) - 1
             #     ) - base_asset_reserve_before)
-            if not (entry_price * 1e10 <= target_price):
+            if not (entry_price * PRICE_PRECISION <= target_price):
                 # problem!
                 print(
                     "ERR:",
                     direction,
-                    mark_price_before / 1e10,
-                    ask_price_before / 1e10,
-                    target_price / 1e10,
+                    mark_price_before / PRICE_PRECISION,
+                    ask_price_before / PRICE_PRECISION,
+                    target_price / PRICE_PRECISION,
                     entry_price,
                 )
                 tradeSize = 0

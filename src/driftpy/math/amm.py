@@ -1,7 +1,9 @@
 from driftpy.constants.numeric_constants import (
+    AMM_RESERVE_PRECISION,
     PRICE_DIV_PEG,
     PEG_PRECISION,
     AMM_TIMES_PEG_TO_QUOTE_PRECISION_RATIO,
+    QUOTE_PRECISION,
 )
 from driftpy.sdk_types import AssetType
 from driftpy.types import PositionDirection, SwapDirection, AMM
@@ -173,11 +175,11 @@ def calculate_budgeted_repeg(amm, cost, target_px=None, pay_only=False):
         assert amm.last_oracle_price != 0
 
     C = cost
-    x = amm.base_asset_reserve / 1e13
-    y = amm.quote_asset_reserve / 1e13
-    d = amm.base_asset_amount_with_amm / 1e13
-    Q = amm.peg_multiplier / 1e3
-    k = (amm.sqrt_k / 1e13) ** 2
+    x = amm.base_asset_reserve / AMM_RESERVE_PRECISION
+    y = amm.quote_asset_reserve / AMM_RESERVE_PRECISION
+    d = amm.base_asset_amount_with_amm / AMM_RESERVE_PRECISION
+    Q = amm.peg_multiplier / PEG_PRECISION
+    k = (amm.sqrt_k / AMM_RESERVE_PRECISION) ** 2
 
     dqar = y - (k / (x + d))
 
@@ -232,27 +234,27 @@ def calculate_peg_multiplier(
             target_px = oracle_price
 
         if budget_cost is None:
-            fee_pool = (amm.total_fee_minus_distributions / 1e6) - (
-                amm.total_fee / 1e6
+            fee_pool = (amm.total_fee_minus_distributions / QUOTE_PRECISION) - (
+                amm.total_fee / QUOTE_PRECISION
             ) / 2
             budget_cost = max(0, fee_pool)
             # print('budget to repeg:', budget_cost, 'to target_price', target_px)
 
         new_peg = int(
-            calculate_budgeted_repeg(amm, budget_cost, target_px=target_px) * 1e3
+            calculate_budgeted_repeg(amm, budget_cost, target_px=target_px) * PEG_PRECISION
         )
         return new_peg
     elif "PreFreePeg" in amm.strategies:
         target_px = oracle_price
 
         if budget_cost is None:
-            fee_pool = (amm.total_fee_minus_distributions / 1e6) - (
-                amm.total_fee / 1e6
+            fee_pool = (amm.total_fee_minus_distributions / QUOTE_PRECISION) - (
+                amm.total_fee / QUOTE_PRECISION
             ) / 2
             budget_cost = max(0, fee_pool)
 
         new_peg = int(
-            calculate_budgeted_repeg(amm, budget_cost, target_px=target_px) * 1e3
+            calculate_budgeted_repeg(amm, budget_cost, target_px=target_px) * PEG_PRECISION
         )
         return new_peg
     else:
@@ -265,6 +267,7 @@ def calculate_spread_reserves(
     BID_ASK_SPREAD_PRECISION = 1_000_000  # this is 100% (thus 1_000 = .1%)
     mark_price = calculate_mark_price_amm(amm, oracle_price=oracle_price)
     spread = amm.base_spread
+    print('sprad reserve calc:', mark_price, spread, oracle_price)
 
     if "OracleRetreat" in amm.strategies:
         if oracle_price is None:
@@ -274,7 +277,7 @@ def calculate_spread_reserves(
         if (pct_delta > 0 and position_direction == PositionDirection.LONG) or (
             pct_delta < 0 and position_direction == PositionDirection.SHORT
         ):
-            oracle_spread = abs(pct_delta) * 1e6 * 2
+            oracle_spread = abs(pct_delta) * QUOTE_PRECISION * 2
             if oracle_spread > spread:
                 spread = oracle_spread * 2
         else:
@@ -293,21 +296,21 @@ def calculate_spread_reserves(
 
         net_cost_basis = (
             amm.quote_asset_amount_long - (amm.quote_asset_amount_short)
-        ) / 1e6
+        ) / QUOTE_PRECISION
         net_base_asset_value = (
             (amm.quote_asset_reserve - amm.terminal_quote_asset_reserve)
-            / 1e13
+            / AMM_RESERVE_PRECISION
             * amm.peg_multiplier
-            / 1e3
+            / PEG_PRECISION
         )
-        local_base_asset_value = mark_price * (effective_position / 1e13)
+        local_base_asset_value = mark_price * (effective_position / AMM_RESERVE_PRECISION)
 
         local_pnl = local_base_asset_value - net_cost_basis
         net_pnl = net_base_asset_value - net_cost_basis
-        print("local pnl: ", local_pnl, "net pnl:", net_pnl)
+        # print("local pnl: ", local_pnl, "net pnl:", net_pnl)
         if amm.total_fee_minus_distributions > 0:
             effective_leverage = (local_pnl - net_pnl) / (
-                amm.total_fee_minus_distributions / 1e6
+                amm.total_fee_minus_distributions / QUOTE_PRECISION
             )
             print("effective_leverage:", effective_leverage)
             if position_direction == PositionDirection.LONG:

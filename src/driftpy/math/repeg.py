@@ -258,10 +258,10 @@ def calculate_repeg_cost(amm: AMM, new_peg: int) -> int:
 
 
 def calculate_k_cost(market, p):
-    x = market.amm.base_asset_reserve / 1e13
-    y = market.amm.quote_asset_reserve / 1e13
-    d = market.base_asset_amount / 1e13
-    Q = market.amm.peg_multiplier / 1e3
+    x = market.amm.base_asset_reserve / AMM_RESERVE_PRECISION
+    y = market.amm.quote_asset_reserve / AMM_RESERVE_PRECISION
+    d = market.base_asset_amount / AMM_RESERVE_PRECISION
+    Q = market.amm.peg_multiplier / PEG_PRECISION
 
     cost = -((1 / (x + d) - p / (x * p + d)) * y * d * Q)
     return cost
@@ -269,10 +269,10 @@ def calculate_k_cost(market, p):
 
 def calculate_budgeted_k(market, cost):
     C = cost
-    x = market.amm.base_asset_reserve / 1e13
-    y = market.amm.quote_asset_reserve / 1e13
-    d = market.base_asset_amount / 1e13
-    Q = market.amm.peg_multiplier / 1e3
+    x = market.amm.base_asset_reserve / AMM_RESERVE_PRECISION
+    y = market.amm.quote_asset_reserve / AMM_RESERVE_PRECISION
+    d = market.base_asset_amount / AMM_RESERVE_PRECISION
+    Q = market.amm.peg_multiplier / PEG_PRECISION
 
     numer = y * d * d * Q - C * d * (x + d)
     denom = C * x * (x + d) + y * d * d * Q

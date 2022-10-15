@@ -1,3 +1,4 @@
+from tkinter.messagebox import QUESTION
 from driftpy.math.amm import (
     calculate_price,
     calculate_spread_reserves,
@@ -11,8 +12,10 @@ from solana.publickey import PublicKey
 import numpy as np
 from driftpy.math.positions import calculate_base_asset_value, calculate_position_pnl
 from driftpy.constants.numeric_constants import (
+    AMM_RESERVE_PRECISION,
     AMM_TIMES_PEG_TO_QUOTE_PRECISION_RATIO,
     PEG_PRECISION,
+    QUOTE_PRECISION,
 )
 
 
@@ -22,10 +25,10 @@ def calculate_freepeg_cost(market, target_price, bonus=0):
             return 1
 
         C = cost
-        x = market.amm.base_asset_reserve / 1e13
-        y = market.amm.quote_asset_reserve / 1e13
-        d = market.base_asset_amount / 1e13
-        Q = market.amm.peg_multiplier / 1e3
+        x = market.amm.base_asset_reserve / AMM_RESERVE_PRECISION
+        y = market.amm.quote_asset_reserve / AMM_RESERVE_PRECISION
+        d = market.base_asset_amount / AMM_RESERVE_PRECISION
+        Q = market.amm.peg_multiplier / PEG_PRECISION
 
         numer = y * d * d * Q - C * d * (x + d)
         denom = C * x * (x + d) + y * d * d * Q
@@ -55,10 +58,10 @@ def calculate_freepeg_cost(market, target_price, bonus=0):
         return cost2 / 1e6, mark_delta
 
     def calculate_k_cost(market, p):
-        x = market.amm.base_asset_reserve / 1e13
-        y = market.amm.quote_asset_reserve / 1e13
-        d = market.base_asset_amount / 1e13
-        Q = market.amm.peg_multiplier / 1e3
+        x = market.amm.base_asset_reserve / AMM_RESERVE_PRECISION
+        y = market.amm.quote_asset_reserve / AMM_RESERVE_PRECISION
+        d = market.base_asset_amount / AMM_RESERVE_PRECISION
+        Q = market.amm.peg_multiplier / PEG_PRECISION
 
         cost = -((1 / (x + d) - p / (x * p + d)) * y * d * Q)
         return cost
@@ -67,7 +70,7 @@ def calculate_freepeg_cost(market, target_price, bonus=0):
     new_peg = (
         target_price * market.amm.base_asset_reserve / market.amm.quote_asset_reserve
     )
-    optimal_peg_cost, _ = calculate_repeg_cost(market, int(new_peg * 1e3))
+    optimal_peg_cost, _ = calculate_repeg_cost(market, int(new_peg * PEG_PRECISION))
     if bonus < optimal_peg_cost:
         print("MUST LOWER K FOR FREEPEG")
         deficit = bonus - optimal_peg_cost
@@ -77,9 +80,9 @@ def calculate_freepeg_cost(market, target_price, bonus=0):
         assert deficit_madeup > 0
         freepeg_cost = bonus + deficit_madeup
         new_peg = calculate_budgeted_repeg(market.amm, freepeg_cost, target_price)
-        return freepeg_cost, pk, pk, int(new_peg * 1e3)
+        return freepeg_cost, pk, pk, int(new_peg * PEG_PRECISION)
 
-    return optimal_peg_cost, pk, pk, int(new_peg * 1e3)
+    return optimal_peg_cost, pk, pk, int(new_peg * PEG_PRECISION)
 
 
 def calculate_candidate_amm(market, oracle_price=None):
@@ -90,8 +93,8 @@ def calculate_candidate_amm(market, oracle_price=None):
     quote_scale = 1
 
     budget_cost = None  # max(0, (market.amm.total_fee_minus_distributions/1e6)/2)
-    fee_pool = (market.amm.total_fee_minus_distributions / 1e6) - (
-        market.amm.total_fee / 1e6
+    fee_pool = (market.amm.total_fee_minus_distributions / QUOTE_PRECISION) - (
+        market.amm.total_fee / QUOTE_PRECISION
     ) / 2
     budget_cost = max(0, fee_pool)
     # print('BUDGET_COST', budget_cost)
