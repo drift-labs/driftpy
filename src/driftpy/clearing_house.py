@@ -416,6 +416,26 @@ class ClearingHouse:
             ),
         )
     
+    async def cancel_orders(
+        self,
+    ): 
+        remaining_accounts = await self.get_remaining_accounts()
+
+        return self.program.instruction["cancel_orders"](
+            None,
+            None,
+            None,
+            ctx=Context(
+                accounts={
+                    "state": self.get_state_public_key(),
+                    "user": self.get_user_account_public_key(),
+                    "authority": self.authority,
+                },
+                remaining_accounts=remaining_accounts,
+            ),
+        )
+
+
     async def cancel_order(
         self, 
         order_id: Optional[int] = None
@@ -450,6 +470,7 @@ class ClearingHouse:
         amount: int,
         market_index: int,
         limit_price: int = 0,
+        ioc: bool = False,
     ):
         order = self.default_order_params(
             order_type=OrderType.MARKET(),
@@ -459,7 +480,9 @@ class ClearingHouse:
         )
         order.limit_price = limit_price
 
-        return await self.place_and_take(order)
+        tx_sig = await self.place_and_take(order)
+        return tx_sig
+
 
     def get_increase_compute_ix(self):
         program_id = PublicKey("ComputeBudget111111111111111111111111111111")
