@@ -97,11 +97,14 @@ class ClearingHouse:
     def get_user_stats_public_key(self):
         return get_user_stats_account_public_key(self.program_id, self.authority)
 
-    async def send_ixs(self, ixs: list[TransactionInstruction], signers=None):
+    async def send_ixs(self, ixs: Union[TransactionInstruction, list[TransactionInstruction]], signers=None):
+        if isinstance(ixs, TransactionInstruction):
+            ixs = [ixs]
+
         tx = Transaction()
         for ix in ixs:
             tx.add(ix)
-        # return await self.program.provider.send(tx, signers=[self.signer])
+
         if signers is None:
             signers = self.signers
 
@@ -441,9 +444,7 @@ class ClearingHouse:
         order_id: Optional[int] = None
     ):
         return await self.send_ixs(
-            [
-                await self.get_cancel_order_ix(order_id),
-            ]
+            await self.get_cancel_order_ix(order_id),
         )
 
     async def get_cancel_order_ix(
@@ -472,6 +473,18 @@ class ClearingHouse:
         limit_price: int = 0,
         ioc: bool = False,
     ):
+        return await self.send_ixs(
+            await self.get_open_position_ix(direction, amount, market_index, limit_price, ioc),
+        )
+
+    async def get_open_position_ix(
+        self, 
+        direction: PositionDirection,
+        amount: int,
+        market_index: int,
+        limit_price: int = 0,
+        ioc: bool = False,
+    ):
         order = self.default_order_params(
             order_type=OrderType.MARKET(),
             direction=direction,
@@ -480,9 +493,8 @@ class ClearingHouse:
         )
         order.limit_price = limit_price
 
-        tx_sig = await self.place_and_take(order)
-        return tx_sig
-
+        ix = await self.get_place_and_take_ix(order)
+        return ix
 
     def get_increase_compute_ix(self):
         program_id = PublicKey("ComputeBudget111111111111111111111111111111")
@@ -503,10 +515,7 @@ class ClearingHouse:
         maker_info: MakerInfo = None,
     ):
         return await self.send_ixs(
-            [
-                self.get_increase_compute_ix(),
-                await self.get_place_order_ix(order_params, maker_info),
-            ]
+            await self.get_place_order_ix(order_params, maker_info),
         )
 
     async def get_place_order_ix(
@@ -519,7 +528,7 @@ class ClearingHouse:
             writable_market_index=order_params.market_index,
         )
 
-        return self.program.instruction["place_order"](
+        ix = self.program.instruction["place_order"](
             order_params,
             ctx=Context(
                 accounts={
@@ -530,6 +539,11 @@ class ClearingHouse:
                 remaining_accounts=remaining_accounts,
             ),
         )
+
+        return [
+            self.get_increase_compute_ix(),
+            ix
+        ]
 
     async def place_and_take(
         self,

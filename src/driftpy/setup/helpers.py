@@ -204,6 +204,20 @@ async def set_price_feed_detailed(
         int_price, int_conf, slot, ctx=Context(accounts={"price": oracle_public_key})
     )
 
+async def get_set_price_feed_detailed_ix(
+    oracle_program: Program,
+    oracle_public_key: PublicKey,
+    price: float,
+    conf: float,
+    slot: int,
+):
+    data = await get_feed_data(oracle_program, oracle_public_key)
+    int_price = int(price * 10 ** -data.exponent)
+    int_conf = int(abs(conf) * 10 ** -data.exponent)
+    print('setting oracle price', int_price, "+/-", int_conf, '@ slot=', slot)
+    return await oracle_program.instruction["set_price_info"](
+        int_price, int_conf, slot, ctx=Context(accounts={"price": oracle_public_key})
+    )
 
 async def create_price_feed(
     oracle_program: Program,
