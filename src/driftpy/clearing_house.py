@@ -342,7 +342,12 @@ class ClearingHouse:
         else:
             raise Exception("not implemented...")
 
-        spot_market = await get_spot_market_account(self.program, spot_market_index)
+        spot_market_pk = get_spot_market_public_key(
+            self.program_id, spot_market_index
+        )
+        spot_vault_public_key = get_spot_market_vault_public_key(
+            self.program_id, spot_market_index
+        )
         user_account_public_key = get_user_account_public_key(
             self.program_id, self.authority, user_id
         )
@@ -353,8 +358,8 @@ class ClearingHouse:
             ctx=Context(
                 accounts={
                     "state": self.get_state_public_key(),
-                    "spot_market": spot_market.pubkey,
-                    "spot_market_vault": spot_market.vault,
+                    "spot_market": spot_market_pk,
+                    "spot_market_vault": spot_vault_public_key,
                     "user": user_account_public_key,
                     "user_stats": self.get_user_stats_public_key(),
                     "user_token_account": user_token_account,
@@ -551,10 +556,7 @@ class ClearingHouse:
         maker_info: MakerInfo = None,
     ):
         return await self.send_ixs(
-            [
-                self.get_increase_compute_ix(),
-                await self.get_place_and_take_ix(order_params, maker_info),
-            ]
+            await self.get_place_and_take_ix(order_params, maker_info),
         )
 
     async def get_place_and_take_ix(
@@ -576,7 +578,9 @@ class ClearingHouse:
                 AccountMeta(pubkey=maker_info.maker, is_signer=False, is_writable=True)
             )
 
-        return self.program.instruction["place_and_take"](
+        return [
+            self.get_increase_compute_ix(),
+            self.program.instruction["place_and_take"](
             order_params,
             maker_order_id,
             ctx=Context(
@@ -588,7 +592,7 @@ class ClearingHouse:
                 },
                 remaining_accounts=remaining_accounts,
             ),
-        )
+        )]
 
     async def settle_lp(
         self,
