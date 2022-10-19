@@ -378,7 +378,6 @@ class Order:
     base_asset_amount: int
     base_asset_amount_filled: int
     quote_asset_amount_filled: int
-    fee: int
     trigger_price: int
     auction_start_price: int
     auction_end_price: int
@@ -569,6 +568,9 @@ class User:
     perp_positions: list[PerpPosition]
     orders: list[Order]
     last_add_perp_lp_shares_ts: int
+    total_deposits: int
+    total_withdraws: int
+    settled_perp_pnl: int
     next_order_id: int
     max_margin_ratio: int
     next_liquidation_id: int

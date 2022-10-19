@@ -4042,6 +4042,18 @@
             "type": "i64"
           },
           {
+            "name": "totalDeposits",
+            "type": "u64"
+          },
+          {
+            "name": "totalWithdraws",
+            "type": "u64"
+          },
+          {
+            "name": "settledPerpPnl",
+            "type": "i64"
+          },
+          {
             "name": "nextOrderId",
             "type": "u32"
           },
@@ -5235,10 +5247,6 @@
             "type": "u64"
           },
           {
-            "name": "fee",
-            "type": "i64"
-          },
-          {
             "name": "triggerPrice",
             "type": "u64"
           },
@@ -6025,6 +6033,16 @@
           "index": false
         },
         {
+          "name": "totalDepositsAfter",
+          "type": "u64",
+          "index": false
+        },
+        {
+          "name": "totalWithdrawsAfter",
+          "type": "u64",
+          "index": false
+        },
+        {
           "name": "transferUser",
           "type": {
             "option": "publicKey"
@@ -6479,13 +6497,6 @@
           "index": false
         },
         {
-          "name": "takerOrderFee",
-          "type": {
-            "option": "i64"
-          },
-          "index": false
-        },
-        {
           "name": "maker",
           "type": {
             "option": "publicKey"
@@ -6526,13 +6537,6 @@
           "name": "makerOrderCumulativeQuoteAssetAmountFilled",
           "type": {
             "option": "u64"
-          },
-          "index": false
-        },
-        {
-          "name": "makerOrderFee",
-          "type": {
-            "option": "i64"
           },
           "index": false
         },
