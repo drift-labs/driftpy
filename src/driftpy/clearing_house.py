@@ -501,7 +501,7 @@ class ClearingHouse:
         ix = await self.get_place_and_take_ix(order)
         return ix
 
-    def get_increase_compute_ix(self):
+    def get_increase_compute_ix(self) -> TransactionInstruction:
         program_id = PublicKey("ComputeBudget111111111111111111111111111111")
 
         name_bytes = bytearray(1 + 4 + 4)
@@ -581,18 +581,19 @@ class ClearingHouse:
         return [
             self.get_increase_compute_ix(),
             self.program.instruction["place_and_take"](
-            order_params,
-            maker_order_id,
-            ctx=Context(
-                accounts={
-                    "state": self.get_state_public_key(),
-                    "user": user_account_public_key,
-                    "user_stats": self.get_user_stats_public_key(),
-                    "authority": self.authority,
-                },
-                remaining_accounts=remaining_accounts,
-            ),
-        )]
+                order_params,
+                maker_order_id,
+                ctx=Context(
+                    accounts={
+                        "state": self.get_state_public_key(),
+                        "user": user_account_public_key,
+                        "user_stats": self.get_user_stats_public_key(),
+                        "authority": self.authority,
+                    },
+                    remaining_accounts=remaining_accounts,
+                )
+            )
+        ]
 
     async def settle_lp(
         self,

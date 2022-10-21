@@ -45,12 +45,16 @@ class OracleData:
 async def get_oracle_data(address: PublicKey) -> OracleData:
     address = str(address)
     account_key = SolanaPublicKey(address)
-    # solana_client = SolanaClient(endpoint=SOLANA_DEVNET_HTTP_ENDPOINT, ws_endpoint=SOLANA_DEVNET_WS_ENDPOINT)
-    solana_client = SolanaClient(
-        endpoint="http://localhost:8899/", ws_endpoint="wss://localhost:8900/"
-    )
-    price: PythPriceAccount = PythPriceAccount(account_key, solana_client)
-    await price.update()
+    try:
+        solana_client = SolanaClient(endpoint="http://localhost:8899/", ws_endpoint="wss://localhost:8900/")
+        price: PythPriceAccount = PythPriceAccount(account_key, solana_client)
+        await price.update()
+    except:
+        await solana_client.close()
+
+        solana_client = SolanaClient(endpoint=SOLANA_DEVNET_HTTP_ENDPOINT, ws_endpoint=SOLANA_DEVNET_WS_ENDPOINT)
+        price: PythPriceAccount = PythPriceAccount(account_key, solana_client)
+        await price.update()
 
     # TODO: returns none rn
     # (twap, twac) = (price.derivations.get('TWAPVALUE'), price.derivations.get('TWACVALUE'))

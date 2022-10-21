@@ -267,7 +267,7 @@ def calculate_spread_reserves(
     BID_ASK_SPREAD_PRECISION = 1_000_000  # this is 100% (thus 1_000 = .1%)
     mark_price = calculate_mark_price_amm(amm, oracle_price=oracle_price)
     spread = amm.base_spread
-    print('sprad reserve calc:', mark_price, spread, oracle_price)
+    # print('sprad reserve calc:', mark_price, spread, oracle_price)
 
     if "OracleRetreat" in amm.strategies:
         if oracle_price is None:

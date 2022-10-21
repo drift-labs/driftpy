@@ -1434,6 +1434,11 @@
           "name": "spotMarket",
           "isMut": true,
           "isSigner": false
+        },
+        {
+          "name": "oracle",
+          "isMut": false,
+          "isSigner": false
         }
       ],
       "args": []
@@ -2722,6 +2727,11 @@
           "name": "spotMarket",
           "isMut": true,
           "isSigner": false
+        },
+        {
+          "name": "oracle",
+          "isMut": false,
+          "isSigner": false
         }
       ],
       "args": [
@@ -2992,13 +3002,29 @@
       ]
     },
     {
-      "name": "updatePerpMarketOracle",
+      "name": "updateStateSettlementDuration",
       "accounts": [
         {
           "name": "admin",
           "isMut": false,
           "isSigner": true
         },
+        {
+          "name": "state",
+          "isMut": true,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "settlementDuration",
+          "type": "u16"
+        }
+      ]
+    },
+    {
+      "name": "updatePerpMarketOracle",
+      "accounts": [
         {
           "name": "state",
           "isMut": false,
@@ -3008,6 +3034,16 @@
           "name": "perpMarket",
           "isMut": true,
           "isSigner": false
+        },
+        {
+          "name": "oracle",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "admin",
+          "isMut": false,
+          "isSigner": true
         }
       ],
       "args": [
@@ -4214,6 +4250,12 @@
             "type": "bool"
           },
           {
+            "name": "maxTs",
+            "type": {
+              "option": "i64"
+            }
+          },
+          {
             "name": "triggerPrice",
             "type": {
               "option": "u64"
@@ -4238,13 +4280,13 @@
             }
           },
           {
-            "name": "timeInForce",
+            "name": "auctionStartPrice",
             "type": {
-              "option": "u8"
+              "option": "u64"
             }
           },
           {
-            "name": "auctionStartPrice",
+            "name": "auctionEndPrice",
             "type": {
               "option": "u64"
             }
@@ -5223,10 +5265,6 @@
         "kind": "struct",
         "fields": [
           {
-            "name": "ts",
-            "type": "i64"
-          },
-          {
             "name": "slot",
             "type": "u64"
           },
@@ -5257,6 +5295,10 @@
           {
             "name": "auctionEndPrice",
             "type": "u64"
+          },
+          {
+            "name": "maxTs",
+            "type": "i64"
           },
           {
             "name": "oraclePriceOffset",
@@ -5331,15 +5373,11 @@
             "type": "u8"
           },
           {
-            "name": "timeInForce",
-            "type": "u8"
-          },
-          {
             "name": "padding",
             "type": {
               "array": [
                 "u8",
-                1
+                2
               ]
             }
           }
@@ -5440,6 +5478,9 @@
           },
           {
             "name": "TooVolatile"
+          },
+          {
+            "name": "TooUncertain"
           },
           {
             "name": "StaleForMargin"
@@ -5764,6 +5805,9 @@
           },
           {
             "name": "Speculative"
+          },
+          {
+            "name": "Isolated"
           }
         ]
       }

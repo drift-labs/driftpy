@@ -38,6 +38,7 @@ class MarginRequirementType:
 class OracleValidity:
     INVALID = constructor()
     TOO_VOLATILE = constructor()
+    TOO_UNCERTAIN = constructor()
     STALE_FOR_MARGIN = constructor()
     INSUFFICIENT_DATA_POINTS = constructor()
     STALE_FOR_A_M_M = constructor()
@@ -149,6 +150,7 @@ class ContractTier:
     B = constructor()
     C = constructor()
     SPECULATIVE = constructor()
+    ISOLATED = constructor()
  
 @_rust_enum
 class SpotBalanceType:
@@ -219,12 +221,13 @@ class OrderParams:
     reduce_only: bool
     post_only: bool
     immediate_or_cancel: bool
+    max_ts: Optional[int]
     trigger_price: Optional[int]
     trigger_condition: OrderTriggerCondition
     oracle_price_offset: Optional[int]
     auction_duration: Optional[int]
-    time_in_force: Optional[int]
     auction_start_price: Optional[int]
+    auction_end_price: Optional[int]
  
 @dataclass
 class HistoricalOracleData:
@@ -372,7 +375,6 @@ class SpotPosition:
  
 @dataclass
 class Order:
-    ts: int
     slot: int
     price: int
     base_asset_amount: int
@@ -381,6 +383,7 @@ class Order:
     trigger_price: int
     auction_start_price: int
     auction_end_price: int
+    max_ts: int
     oracle_price_offset: int
     order_id: int
     market_index: int
@@ -396,7 +399,6 @@ class Order:
     trigger_condition: OrderTriggerCondition
     triggered: bool
     auction_duration: int
-    time_in_force: int
     padding: list[int]
  
 @dataclass
