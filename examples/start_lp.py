@@ -56,14 +56,21 @@ async def main(
         print('cannot lp with 0 collateral')
         return
 
-    ix = await ch.add_liquidity(liquidity_amount * AMM_RESERVE_PRECISION, market_index)
-    await view_logs(ix, connection)
-
     market = await get_perp_market_account(
         ch.program, 
         market_index
     )
-    percent_provided = (liquidity_amount * AMM_RESERVE_PRECISION / market.amm.sqrt_k) * 100
+    lp_amount = liquidity_amount * AMM_RESERVE_PRECISION
+    lp_amount -= lp_amount % market.amm.order_step_size
+    print('standardized lp amount:', lp_amount / AMM_RESERVE_PRECISION)
+    
+    if lp_amount < market.amm.order_step_size:
+        print('lp amount too small - exiting...')
+
+    ix = await ch.add_liquidity(lp_amount, market_index)
+    await view_logs(ix, connection)
+
+    percent_provided = (lp_amount / (market.amm.sqrt_k + lp_amount)) * 100
 
     print(f"providing {percent_provided}% of total market liquidity")
     print('done! :)')
