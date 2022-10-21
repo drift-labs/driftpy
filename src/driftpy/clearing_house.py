@@ -62,6 +62,7 @@ class ClearingHouse:
         self.signer = authority
         self.authority = authority.public_key
         self.signers = [self.signer]
+        self.usdc_ata = None
 
     @staticmethod
     def from_config(config: Config, provider: Provider, authority: Keypair = None):
@@ -684,8 +685,9 @@ class ClearingHouse:
             trigger_condition=OrderTriggerCondition.ABOVE(),
             oracle_price_offset=0,
             auction_duration=None,
-            time_in_force=None,
+            max_ts=None,
             auction_start_price=None,
+            auction_end_price=None,
         )
 
     async def liquidate_perp(
