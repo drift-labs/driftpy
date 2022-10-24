@@ -651,6 +651,17 @@ class ClearingHouse:
         market_index: int,
         limit_price: int = 0,
     ):
+        return await self.send_ixs(
+            self.get_close_position_ix(
+                market_index, limit_price,
+            )
+        )
+
+    async def get_close_position_ix(
+        self,
+        market_index: int,
+        limit_price: int = 0,
+    ):
         position = await self.get_user_position(market_index)
         if position is None or position.base_asset_amount == 0:
             return
@@ -665,7 +676,8 @@ class ClearingHouse:
         )
         order.limit_price = limit_price
 
-        return await self.place_and_take(order)
+        ix = await self.get_place_and_take_ix(order)
+        return ix
 
     def default_order_params(
         self, order_type, market_index, base_asset_amount, direction
@@ -742,7 +754,7 @@ class ClearingHouse:
         )
 
 
-    async def liquidate_perp_pnl_for_deposit(
+    async def get_liquidate_perp_pnl_for_deposit_ix(
         self, 
         user_authority: PublicKey,
         perp_market_index: int,
@@ -780,10 +792,23 @@ class ClearingHouse:
                 remaining_accounts=remaining_accounts,
             ),
         )
+        return result
 
-        return await self.send_ixs([result])
-
-
+    async def liquidate_perp_pnl_for_deposit(
+        self, 
+        user_authority: PublicKey,
+        perp_market_index: int,
+        spot_market_index: int,
+        max_pnl_transfer: int,
+    ):
+        return await self.send_ixs(
+            self.get_liquidate_perp_pnl_for_deposit_ix(
+                user_authority,
+                perp_market_index,
+                spot_market_index,
+                max_pnl_transfer,
+            )
+        )
 
     async def settle_pnl(
         self,
