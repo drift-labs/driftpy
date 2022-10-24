@@ -99,9 +99,9 @@ def get_token_amount(
     return balance * cumm_interest / percision_decrease
 
 
-def get_token_value(amount, spot_decimals, oracle_data):
+def get_token_value(amount, spot_decimals, oracle_data: OracleData):
     precision_decrease = 10 ** spot_decimals
-    return amount * oracle_data["price"] / precision_decrease
+    return amount * oracle_data.price / precision_decrease
 
 
 def calculate_size_discount_asset_weight(

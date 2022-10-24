@@ -265,6 +265,7 @@ class AMM:
     base_asset_amount_short: int
     base_asset_amount_with_amm: int
     base_asset_amount_with_unsettled_lp: int
+    max_open_interest: int
     quote_asset_amount_long: int
     quote_asset_amount_short: int
     quote_entry_amount_long: int
@@ -573,6 +574,7 @@ class User:
     total_deposits: int
     total_withdraws: int
     settled_perp_pnl: int
+    cumulative_spot_fees: int
     next_order_id: int
     max_margin_ratio: int
     next_liquidation_id: int
