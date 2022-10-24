@@ -581,7 +581,7 @@ class ClearingHouse:
 
         return [
             self.get_increase_compute_ix(),
-            self.program.instruction["place_and_take"](
+            self.program.instruction["place_and_take_perp_order"](
                 order_params,
                 maker_order_id,
                 ctx=Context(
@@ -652,7 +652,7 @@ class ClearingHouse:
         limit_price: int = 0,
     ):
         return await self.send_ixs(
-            self.get_close_position_ix(
+            await self.get_close_position_ix(
                 market_index, limit_price,
             )
         )
