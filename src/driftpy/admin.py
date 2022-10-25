@@ -374,15 +374,31 @@ class Admin(ClearingHouse):
 
 
     async def update_oracle_guard_rails(
-            self,
-            oracle_guard_rails: OracleGuardRails
-        ):
-            return await self.program.rpc["update_oracle_guard_rails"](
-                oracle_guard_rails,
-                ctx=Context(
-                    accounts={
-                        "admin": self.authority,
-                        "state": get_state_public_key(self.program_id),
-                    }
-                ),
-            )
+        self,
+        oracle_guard_rails: OracleGuardRails
+    ):
+        return await self.program.rpc["update_oracle_guard_rails"](
+            oracle_guard_rails,
+            ctx=Context(
+                accounts={
+                    "admin": self.authority,
+                    "state": get_state_public_key(self.program_id),
+                }
+            ),
+        )
+    
+    async def update_withdraw_guard_threshold(
+        self,
+        spot_market_index: int, 
+        withdraw_guard_threshold: int
+    ):
+        return await self.program.rpc["update_withdraw_guard_threshold"](
+            withdraw_guard_threshold,
+            ctx=Context(
+                accounts={
+                    "admin": self.authority,
+                    "state": get_state_public_key(self.program_id),
+                    "spot_market": get_spot_market_public_key(self.program_id, spot_market_index)
+                }
+            ),
+        )

@@ -707,6 +707,7 @@ class ClearingHouse:
         user_authority: PublicKey,
         market_index: int,
         max_base_asset_amount: int,
+        limit_price: Optional[int] = None
     ):
         return await self.send_ixs(
             [
@@ -714,6 +715,7 @@ class ClearingHouse:
                     user_authority,
                     market_index,
                     max_base_asset_amount,
+                    limit_price,
                 )
             ]
         )
@@ -723,6 +725,7 @@ class ClearingHouse:
         user_authority: PublicKey,
         market_index: int,
         max_base_asset_amount: int,
+        limit_price: Optional[int] = None
     ):
         user_pk = get_user_account_public_key(self.program_id, user_authority)
         user_stats_pk = get_user_stats_account_public_key(
@@ -740,6 +743,7 @@ class ClearingHouse:
         return self.program.instruction["liquidate_perp"](
             market_index,
             max_base_asset_amount,
+            limit_price,
             ctx=Context(
                 accounts={
                     "state": self.get_state_public_key(),
