@@ -167,11 +167,11 @@ class ClearingHouse:
                 accounts={
                     "user": user_public_key,
                     "user_stats": user_stats_public_key,
+                    "state": state_public_key,
                     "authority": self.authority,
                     "payer": self.authority,
                     "rent": SYSVAR_RENT_PUBKEY,
                     "system_program": SYS_PROGRAM_ID,
-                    "state": state_public_key,
                 },
             ),
         )

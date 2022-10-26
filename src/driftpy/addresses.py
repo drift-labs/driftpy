@@ -84,7 +84,7 @@ def get_user_account_public_key(
     user_id=0,
 ) -> PublicKey:
     return PublicKey.find_program_address(
-        [b"user", bytes(authority), bytes([user_id])], program_id
+        [b"user", bytes(authority), int_to_le_bytes(user_id)], program_id
     )[0]
 
 

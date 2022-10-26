@@ -137,7 +137,7 @@ def _mint_usdc_tx(
     usdc_mint: Keypair,
     provider: Provider,
     usdc_amount: int,
-    ata_account: Keypair,
+    ata_account: PublicKey,
 ) -> Transaction:
     fake_usdc_tx = Transaction()
 
@@ -145,7 +145,7 @@ def _mint_usdc_tx(
         MintToParams(
             program_id=TOKEN_PROGRAM_ID,
             mint=usdc_mint.public_key,
-            dest=ata_account.public_key,
+            dest=ata_account,
             mint_authority=provider.wallet.public_key,
             signers=[],
             amount=usdc_amount,
@@ -154,7 +154,6 @@ def _mint_usdc_tx(
     fake_usdc_tx.add(mint_to_user_account_tx)
 
     return fake_usdc_tx
-
 
 async def _create_and_mint_user_usdc(
     usdc_mint: Keypair, provider: Provider, usdc_amount: int, owner: PublicKey
@@ -167,7 +166,7 @@ async def _create_and_mint_user_usdc(
         usdc_mint,
         owner,
     )
-    mint_tx: Transaction = _mint_usdc_tx(usdc_mint, provider, usdc_amount, usdc_account)
+    mint_tx: Transaction = _mint_usdc_tx(usdc_mint, provider, usdc_amount, usdc_account.public_key)
 
     for ix in mint_tx.instructions:
         ata_tx.add(ix)
