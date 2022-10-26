@@ -251,8 +251,6 @@ class AMM:
     base_asset_amount_per_lp: int
     quote_asset_amount_per_lp: int
     fee_pool: PoolBalance
-    last_oracle_normalised_price: int
-    last_oracle_reserve_price_spread_pct: int
     base_asset_reserve: int
     quote_asset_reserve: int
     concentration_coef: int
@@ -266,10 +264,11 @@ class AMM:
     base_asset_amount_with_amm: int
     base_asset_amount_with_unsettled_lp: int
     max_open_interest: int
-    quote_asset_amount_long: int
-    quote_asset_amount_short: int
+    quote_asset_amount: int
     quote_entry_amount_long: int
     quote_entry_amount_short: int
+    quote_break_even_amount_long: int
+    quote_break_even_amount_short: int
     user_lp_shares: int
     last_funding_rate: int
     last_funding_rate_long: int
@@ -284,12 +283,12 @@ class AMM:
     cumulative_funding_rate_long: int
     cumulative_funding_rate_short: int
     cumulative_social_loss: int
-    long_spread: int
-    short_spread: int
     ask_base_asset_reserve: int
     ask_quote_asset_reserve: int
     bid_base_asset_reserve: int
     bid_quote_asset_reserve: int
+    last_oracle_normalised_price: int
+    last_oracle_reserve_price_spread_pct: int
     last_bid_price_twap: int
     last_ask_price_twap: int
     last_mark_price_twap: int
@@ -309,17 +308,18 @@ class AMM:
     last_trade_ts: int
     mark_std: int
     last_mark_price_twap_ts: int
-    max_spread: int
-    max_fill_reserve_fraction: int
-    max_slippage_ratio: int
     base_spread: int
+    max_spread: int
+    long_spread: int
+    short_spread: int
     long_intensity_count: int
     short_intensity_count: int
+    max_fill_reserve_fraction: int
+    max_slippage_ratio: int
     curve_update_intensity: int
     amm_jit_intensity: int
     oracle_source: OracleSource
     last_oracle_valid: bool
-    padding: list[int]
  
 @dataclass
 class PriceDivergenceGuardRails:
@@ -416,22 +416,23 @@ class PerpMarket:
     amm: AMM
     pnl_pool: PoolBalance
     name: list[int]
-    expiry_price: int
-    number_of_users: int
-    imf_factor: int
-    unrealized_pnl_imf_factor: int
-    unrealized_pnl_max_imbalance: int
-    liquidator_fee: int
-    if_liquidation_fee: int
     insurance_claim: InsuranceClaim
+    unrealized_pnl_max_imbalance: int
     expiry_ts: int
+    expiry_price: int
     next_fill_record_id: int
     next_funding_rate_record_id: int
     next_curve_record_id: int
+    imf_factor: int
+    unrealized_pnl_imf_factor: int
+    liquidator_fee: int
+    if_liquidation_fee: int
     margin_ratio_initial: int
     margin_ratio_maintenance: int
     unrealized_pnl_initial_asset_weight: int
     unrealized_pnl_maintenance_asset_weight: int
+    number_of_users_with_base: int
+    number_of_users: int
     market_index: int
     status: MarketStatus
     contract_type: ContractType
@@ -469,23 +470,16 @@ class SpotMarket:
     revenue_pool: PoolBalance
     spot_fee_pool: PoolBalance
     insurance_fund: InsuranceFund
-    initial_asset_weight: int
-    maintenance_asset_weight: int
-    initial_liability_weight: int
-    maintenance_liability_weight: int
-    imf_factor: int
-    liquidator_fee: int
-    if_liquidation_fee: int
-    withdraw_guard_threshold: int
     total_spot_fee: int
     deposit_balance: int
     borrow_balance: int
+    cumulative_deposit_interest: int
+    cumulative_borrow_interest: int
+    withdraw_guard_threshold: int
     max_token_deposits: int
     deposit_token_twap: int
     borrow_token_twap: int
     utilization_twap: int
-    cumulative_deposit_interest: int
-    cumulative_borrow_interest: int
     last_interest_ts: int
     last_twap_ts: int
     expiry_ts: int
@@ -494,11 +488,18 @@ class SpotMarket:
     min_order_size: int
     max_position_size: int
     next_fill_record_id: int
+    initial_asset_weight: int
+    maintenance_asset_weight: int
+    initial_liability_weight: int
+    maintenance_liability_weight: int
+    imf_factor: int
+    liquidator_fee: int
+    if_liquidation_fee: int
     optimal_utilization: int
     optimal_borrow_rate: int
     max_borrow_rate: int
-    market_index: int
     decimals: int
+    market_index: int
     oracle_source: OracleSource
     status: MarketStatus
     asset_tier: AssetTier
@@ -550,6 +551,7 @@ class PerpPosition:
     last_cumulative_funding_rate: int
     base_asset_amount: int
     quote_asset_amount: int
+    quote_break_even_amount: int
     quote_entry_amount: int
     open_bids: int
     open_asks: int
@@ -581,6 +583,7 @@ class User:
     sub_account_id: int
     is_being_liquidated: bool
     is_bankrupt: bool
+    is_margin_trading_enabled: bool
     padding: list[int]
  
 @dataclass
@@ -606,6 +609,7 @@ class UserStats:
     last_filler_volume30d_ts: int
     if_staked_quote_asset_amount: int
     number_of_sub_accounts: int
+    max_sub_account_id: int
     is_referrer: bool
     padding: list[int]
  
