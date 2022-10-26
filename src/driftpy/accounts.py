@@ -20,6 +20,18 @@ async def get_state_account(program: Program) -> State:
     response = await program.account["State"].fetch(state_public_key)
     return cast(State, response)
 
+async def get_if_stake_account(
+    program: Program,
+    authority: PublicKey,
+    spot_market_index: int
+) -> InsuranceFundStake:
+    if_stake_pk = get_insurance_fund_stake_public_key(
+        program.program_id,
+        authority,
+        spot_market_index
+    )
+    response = await program.account["InsuranceFundStake"].fetch(if_stake_pk)
+    return cast(InsuranceFundStake, response)
 
 async def get_user_account(
     program: Program,

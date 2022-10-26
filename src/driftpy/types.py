@@ -609,3 +609,70 @@ class UserStats:
     is_referrer: bool
     padding: list[int]
  
+@dataclass
+class LiquidatePerpRecord:
+    market_index: int
+    oracle_price: int
+    base_asset_amount: int
+    quote_asset_amount: int
+    lp_shares: int
+    fill_record_id: int
+    user_order_id: int
+    liquidator_order_id: int
+    if_fee: int
+ 
+@dataclass
+class LiquidateSpotRecord:
+    asset_market_index: int
+    asset_price: int
+    asset_transfer: int
+    liability_market_index: int
+    liability_price: int
+    liability_transfer: int
+    if_fee: int
+ 
+@dataclass
+class LiquidateBorrowForPerpPnlRecord:
+    perp_market_index: int
+    market_oracle_price: int
+    pnl_transfer: int
+    liability_market_index: int
+    liability_price: int
+    liability_transfer: int
+ 
+@dataclass
+class LiquidatePerpPnlForDepositRecord:
+    perp_market_index: int
+    market_oracle_price: int
+    pnl_transfer: int
+    asset_market_index: int
+    asset_price: int
+    asset_transfer: int
+ 
+@dataclass
+class PerpBankruptcyRecord:
+    market_index: int
+    pnl: int
+    if_payment: int
+    cumulative_funding_rate_delta: int
+ 
+@dataclass
+class SpotBankruptcyRecord:
+    market_index: int
+    borrow_amount: int
+    if_payment: int
+    cumulative_deposit_interest_delta: int
+ 
+@dataclass
+class InsuranceFundStake:
+    authority: PublicKey
+    if_shares: int
+    last_withdraw_request_shares: int
+    if_base: int
+    last_valid_ts: int
+    last_withdraw_request_value: int
+    last_withdraw_request_ts: int
+    market_index: int
+    cost_basis: int
+    padding: list[int]
+ 

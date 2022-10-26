@@ -113,5 +113,18 @@ def record_struct(name):
 for name in tree.keys():
     record_struct(name)
 
+flat_tree = []
+for name in tree.keys():
+    for child in tree[name]:
+        flat_tree.append(child)
+    flat_tree.append(name)
+
+for name in name2value.keys():
+    if name not in flat_tree and name2kind[name] == 'struct':
+        # record types which dont have any dependencies 
+        file_contents += f"{name2value[name]} \n"
+
 with open(output_file, 'w') as f: 
     f.write(file_contents)
+
+print('done! :)')

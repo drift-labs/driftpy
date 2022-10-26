@@ -162,7 +162,7 @@ class Admin(ClearingHouse):
         spot_vault_public_key = get_spot_market_vault_public_key(
             self.program_id, spot_index
         )
-        insurance_vault_public_key = get_insurance_fund_public_key(
+        insurance_vault_public_key = get_insurance_fund_vault_public_key(
             self.program_id, spot_index
         )
 
@@ -402,3 +402,4 @@ class Admin(ClearingHouse):
                 }
             ),
         )
+    

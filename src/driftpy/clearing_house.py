@@ -967,3 +967,137 @@ class ClearingHouse:
                 remaining_accounts=remaining_accounts,
             ),
         )
+    
+    async def request_remove_insurance_fund_stake(
+        self,
+        spot_market_index: int, 
+        amount: int
+    ):
+        return await self.send_ixs(
+            await self.get_request_remove_insurance_fund_stake_ix(spot_market_index, amount)
+        )
+    
+    async def get_request_remove_insurance_fund_stake_ix(
+        self,
+        spot_market_index: int, 
+        amount: int,
+    ):
+        ra = await self.get_remaining_accounts(
+            writable_spot_market_index=spot_market_index
+        )
+
+        return self.program.instruction["request_remove_insurance_fund_stake"](
+            spot_market_index,
+            amount,
+            ctx=Context(
+                accounts={
+                    "spot_market": get_spot_market_public_key(self.program_id, spot_market_index),
+                    "insurance_fund_stake": get_insurance_fund_stake_public_key(self.program_id, self.authority, spot_market_index),
+                    "user_stats": get_user_stats_account_public_key(self.program_id, self.authority),
+                    "authority": self.authority,
+                    "insurance_fund_vault": get_insurance_fund_vault_public_key(self.program_id, spot_market_index),
+                },
+                remaining_accounts=ra
+            ),
+        )
+    
+    async def remove_insurance_fund_stake(
+        self, 
+        spot_market_index: int
+    ):
+        return await self.send_ixs(
+            await self.get_remove_insurance_fund_stake_ix(
+                spot_market_index
+            )
+        )
+
+    async def get_remove_insurance_fund_stake_ix(
+        self, 
+        spot_market_index: int
+    ):
+        ra = await self.get_remaining_accounts(writable_spot_market_index=spot_market_index)
+
+        return self.program.instruction["remove_insurance_fund_stake"](
+            spot_market_index,
+            ctx=Context(
+                accounts={
+                    "state": get_state_public_key(self.program_id),
+                    "spot_market": get_spot_market_public_key(self.program_id, spot_market_index),
+                    "insurance_fund_stake": get_insurance_fund_stake_public_key(self.program_id, self.authority, spot_market_index),
+                    "user_stats": get_user_stats_account_public_key(self.program_id, self.authority),
+                    "authority": self.authority,
+                    "insurance_fund_vault": get_insurance_fund_vault_public_key(self.program_id, spot_market_index),
+                    "clearing_house_signer": get_clearing_house_signer_public_key(self.program_id), 
+                    "user_token_account": self.usdc_ata,
+                    "token_program": TOKEN_PROGRAM_ID,
+                },
+                remaining_accounts=ra
+            ),
+        )
+    
+    async def add_insurance_fund_stake(
+        self,
+        spot_market_index: int, 
+        amount: int
+    ):
+        return await self.send_ixs(
+            await self.get_add_insurance_fund_stake_ix(spot_market_index, amount)
+        )
+    
+    async def get_add_insurance_fund_stake_ix(
+        self,
+        spot_market_index: int, 
+        amount: int,
+    ):
+        remaining_accounts = await self.get_remaining_accounts(
+            writable_spot_market_index=spot_market_index,
+        )
+
+        assert self.usdc_ata is not None, 'please set self.usdc_ata as your usdc ata pubkey before this ix'
+        return self.program.instruction["add_insurance_fund_stake"](
+            spot_market_index,
+            amount,
+            ctx=Context(
+                accounts={
+                    "state": get_state_public_key(self.program_id),
+                    "spot_market": get_spot_market_public_key(self.program_id, spot_market_index),
+                    "insurance_fund_stake": get_insurance_fund_stake_public_key(self.program_id, self.authority, spot_market_index),
+                    "user_stats": get_user_stats_account_public_key(self.program_id, self.authority),
+                    "authority": self.authority,
+                    "spot_market_vault": get_spot_market_vault_public_key(self.program_id, spot_market_index),
+                    "insurance_fund_vault": get_insurance_fund_vault_public_key(self.program_id, spot_market_index),
+                    "clearing_house_signer": get_clearing_house_signer_public_key(self.program_id), 
+                    "user_token_account": self.usdc_ata, 
+                    "token_program": TOKEN_PROGRAM_ID,
+                },
+                remaining_accounts=remaining_accounts
+            ),
+        )
+
+    async def initialize_insurance_fund_stake(
+        self,
+        spot_market_index: int, 
+    ):
+        return await self.send_ixs(
+            self.get_initialize_insurance_fund_stake_ix(spot_market_index)
+        )
+    
+    def get_initialize_insurance_fund_stake_ix(
+        self,
+        spot_market_index: int, 
+    ):
+        return self.program.instruction["initialize_insurance_fund_stake"](
+            spot_market_index,
+            ctx=Context(
+                accounts={
+                    "spot_market": get_spot_market_public_key(self.program_id, spot_market_index),
+                    "insurance_fund_stake": get_insurance_fund_stake_public_key(self.program_id, self.authority, spot_market_index),
+                    "user_stats": get_user_stats_account_public_key(self.program_id, self.authority),
+                    "state": get_state_public_key(self.program_id),
+                    "authority": self.authority,
+                    "payer": self.authority, 
+                    "rent": SYSVAR_RENT_PUBKEY, 
+                    "system_program": SYS_PROGRAM_ID,
+                }
+            ),
+        )

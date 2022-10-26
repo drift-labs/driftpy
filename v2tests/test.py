@@ -77,7 +77,7 @@ async def user_usdc_account(
     return await _create_and_mint_user_usdc(
         usdc_mint, 
         provider, 
-        USDC_AMOUNT, 
+        USDC_AMOUNT * 2, 
         provider.wallet.public_key
     )
 
@@ -159,6 +159,7 @@ async def test_usdc_deposit(
     clearing_house: Admin,
     user_usdc_account: Keypair,
 ):
+    clearing_house.usdc_ata = user_usdc_account.public_key
     await clearing_house.deposit(
         USDC_AMOUNT, 
         0, 
@@ -246,6 +247,44 @@ async def test_open_close_position(
     )
     assert user_account.perp_positions[0].base_asset_amount == 0
     assert user_account.perp_positions[0].quote_asset_amount < 0
+
+@mark.asyncio
+async def test_stake_if(
+    clearing_house: Admin,
+    user_usdc_account: Keypair,
+):
+    # important
+    clearing_house.usdc_ata = user_usdc_account.public_key
+
+    await clearing_house.initialize_insurance_fund_stake(
+        0
+    )
+    if_acc = await get_if_stake_account(
+        clearing_house.program, 
+        clearing_house.authority, 
+        0
+    )
+    assert if_acc.market_index == 0 
+
+    await clearing_house.add_insurance_fund_stake(
+        0, 1 * QUOTE_PRECISION
+    )
+
+    ch = clearing_house
+    user_stats = await get_user_stats_account(ch.program, ch.authority)
+    assert user_stats.if_staked_quote_asset_amount == 1 * QUOTE_PRECISION
+
+    await clearing_house.request_remove_insurance_fund_stake(
+        0, 1 * QUOTE_PRECISION
+    )
+
+    await clearing_house.remove_insurance_fund_stake(
+        0
+    )
+
+    user_stats = await get_user_stats_account(ch.program, ch.authority)
+    assert user_stats.if_staked_quote_asset_amount == 0
+
 
 # note this goes at end bc the main clearing house loses all collateral ...
 @mark.asyncio
