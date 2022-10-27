@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "driftpy"
-version = "0.5.7"
+version = "0.6.0"
 description = "A Python client for the Drift DEX"
 authors = ["Kevin Heavey <kevinheavey123@gmail.com>", "Zane <zane@lunoho.company>"]
 license = "MIT"
@@ -9,11 +9,11 @@ homepage = "https://github.com/drift-labs/driftpy"
 documentation = "https://drift-labs.github.io/driftpy/"
 
 [tool.poetry.dependencies]
-python = "^3.9"
-anchorpy = "^0.8.0"
-solana = "^0.21.0"
-requests = "^2.27.1"
-types-requests = "^2.27.8"
+python = "^3.10"
+anchorpy = "0.10.0"
+solana = "^0.25.0"
+requests = "^2.28.1"
+types-requests = "^2.28.9"
 
 [tool.poetry.dev-dependencies]
 pytest = "^6.2.5"
