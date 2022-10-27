@@ -839,17 +839,21 @@ class ClearingHouse:
             writable_spot_market_index=QUOTE_ASSET_BANK_INDEX,
         )
 
-        return self.program.instruction["settle_pnl"](
-            market_index,
-            ctx=Context(
-                accounts={
-                    "state": self.get_state_public_key(),
-                    "authority": self.authority,
-                    "user": get_user_account_public_key(self.program_id, user_authority),
-                },
-                remaining_accounts=remaining_accounts,
-            ),
-        )
+        return [
+            self.get_increase_compute_ix(),
+            self.program.instruction["settle_pnl"](
+                market_index,
+                ctx=Context(
+                    accounts={
+                        "state": self.get_state_public_key(),
+                        "authority": self.authority,
+                        "user": get_user_account_public_key(self.program_id, user_authority),
+                        "spot_market_vault": get_spot_market_vault_public_key(self.program_id, QUOTE_ASSET_BANK_INDEX),
+                    },
+                    remaining_accounts=remaining_accounts,
+                ),
+            ), 
+        ]
 
     async def resolve_perp_bankruptcy(
         self,
