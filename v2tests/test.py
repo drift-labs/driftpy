@@ -209,6 +209,12 @@ async def test_add_remove_liquidity(
     assert user_account.perp_positions[0].lp_shares == 0
 
 @mark.asyncio
+async def test_update_amm(
+    clearing_house: Admin,
+):
+    await clearing_house.update_amm([0])
+
+@mark.asyncio
 async def test_open_close_position(
     clearing_house: Admin,
 ):

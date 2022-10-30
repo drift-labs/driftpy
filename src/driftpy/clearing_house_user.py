@@ -675,11 +675,12 @@ class ClearingHouseUser:
     async def get_leverage(
         self, margin_category: Optional[MarginCategory] = None
     ) -> int:
-        total_liability = self.get_margin_requirement(margin_category, None)
-        total_asset_value = self.get_total_collateral(margin_category)
+        total_liability = await self.get_margin_requirement(margin_category, None)
+        total_asset_value = await self.get_total_collateral(margin_category)
+
         if total_asset_value == 0 and total_liability == 0:
             return 0
 
-        leverage = await total_liability * 10_000 / await total_asset_value
+        leverage = total_liability * 10_000 / total_asset_value
 
         return leverage

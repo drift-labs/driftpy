@@ -664,6 +664,7 @@ class ClearingHouse:
     ):
         position = await self.get_user_position(market_index)
         if position is None or position.base_asset_amount == 0:
+            print('=> user has no position to close...')
             return
 
         order = self.default_order_params(
@@ -1103,5 +1104,48 @@ class ClearingHouse:
                     "rent": SYSVAR_RENT_PUBKEY, 
                     "system_program": SYS_PROGRAM_ID,
                 }
+            ),
+        )
+
+    async def update_amm(
+        self, 
+        market_indexs: list[int]
+    ):
+        return await self.send_ixs(
+            await self.get_update_amm_ix(market_indexs)
+        )
+
+    async def get_update_amm_ix(
+        self,
+        market_indexs: list[int], 
+    ):
+        n = len(market_indexs)
+        for _ in range(5 - n):
+            market_indexs.append(100)
+
+        market_infos = []
+        oracle_infos = [] 
+        for idx in market_indexs:
+            if idx != 100:
+                market = await get_perp_market_account(self.program, idx)
+                market_infos.append(AccountMeta(
+                    pubkey=market.pubkey,
+                    is_signer=False,
+                    is_writable=True,
+                ))
+                oracle_infos.append(AccountMeta(
+                    pubkey=market.amm.oracle, is_signer=False, is_writable=False
+                ))
+
+        remaining_accounts = oracle_infos + market_infos
+
+        return self.program.instruction["update_amms"](
+            market_indexs,
+            ctx=Context(
+                accounts={
+                    'state': self.get_state_public_key(), 
+                    'authority': self.authority,
+                },
+                remaining_accounts=remaining_accounts
             ),
         )
