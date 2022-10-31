@@ -40,6 +40,7 @@ async def main(
     with open(keypath, 'r') as f: secret = json.load(f) 
     kp = Keypair.from_secret_key(bytes(secret))
     print('using public key:', kp.public_key)
+    print('market:', market_index)
     
     config = configs[env]
     wallet = Wallet(kp)

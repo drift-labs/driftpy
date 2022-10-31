@@ -44,7 +44,7 @@ poetry install
 
 ### Testing
 
-1. `bash test.sh v2tests/test.py`
+1. `bash test.sh`
 
 ### Building the docs
 
