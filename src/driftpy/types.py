@@ -86,8 +86,10 @@ class OrderActionExplanation:
     ORDER_EXPIRED = constructor()
     CANCELED_FOR_LIQUIDATION = constructor()
     ORDER_FILLED_WITH_A_M_M = constructor()
+    ORDER_FILLED_WITH_A_M_M_JIT = constructor()
     ORDER_FILLED_WITH_MATCH = constructor()
     MARKET_EXPIRED = constructor()
+    RISKING_INCREASING_ORDER = constructor()
  
 @_rust_enum
 class LPAction:

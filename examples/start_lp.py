@@ -71,7 +71,8 @@ async def main(
     ix = await ch.add_liquidity(lp_amount, market_index)
     await view_logs(ix, connection)
 
-    percent_provided = (lp_amount / (market.amm.sqrt_k + lp_amount)) * 100
+    position = await ch.get_user_position(market_index)
+    percent_provided = (position.lp_shares  / (market.amm.sqrt_k + lp_amount)) * 100
 
     print(f"providing {percent_provided}% of total market liquidity")
     print('done! :)')

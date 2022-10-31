@@ -1,6 +1,6 @@
 {
-  "version": "1.0.0",
-  "name": "clearing_house",
+  "version": "2.0.0",
+  "name": "drift",
   "instructions": [
     {
       "name": "initializeUser",
@@ -176,7 +176,7 @@
           "isSigner": false
         },
         {
-          "name": "clearingHouseSigner",
+          "name": "driftSigner",
           "isMut": false,
           "isSigner": false
         },
@@ -1232,7 +1232,7 @@
           "isSigner": false
         },
         {
-          "name": "clearingHouseSigner",
+          "name": "driftSigner",
           "isMut": false,
           "isSigner": false
         },
@@ -1297,7 +1297,7 @@
           "isSigner": false
         },
         {
-          "name": "clearingHouseSigner",
+          "name": "driftSigner",
           "isMut": false,
           "isSigner": false
         },
@@ -1362,7 +1362,7 @@
           "isSigner": false
         },
         {
-          "name": "clearingHouseSigner",
+          "name": "driftSigner",
           "isMut": false,
           "isSigner": false
         },
@@ -1398,7 +1398,7 @@
           "isSigner": false
         },
         {
-          "name": "clearingHouseSigner",
+          "name": "driftSigner",
           "isMut": false,
           "isSigner": false
         },
@@ -1645,7 +1645,7 @@
           "isSigner": false
         },
         {
-          "name": "clearingHouseSigner",
+          "name": "driftSigner",
           "isMut": false,
           "isSigner": false
         },
@@ -1781,7 +1781,7 @@
           "isSigner": false
         },
         {
-          "name": "clearingHouseSigner",
+          "name": "driftSigner",
           "isMut": false,
           "isSigner": false
         },
@@ -1822,7 +1822,7 @@
           "isSigner": false
         },
         {
-          "name": "clearingHouseSigner",
+          "name": "driftSigner",
           "isMut": false,
           "isSigner": false
         },
@@ -1868,7 +1868,7 @@
           "isSigner": false
         },
         {
-          "name": "clearingHouseSigner",
+          "name": "driftSigner",
           "isMut": false,
           "isSigner": false
         },
@@ -1949,6 +1949,15 @@
         {
           "name": "activeStatus",
           "type": "bool"
+        },
+        {
+          "name": "name",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
         }
       ]
     },
@@ -1986,7 +1995,7 @@
           "isSigner": false
         },
         {
-          "name": "clearingHouseSigner",
+          "name": "driftSigner",
           "isMut": false,
           "isSigner": false
         },
@@ -2233,7 +2242,7 @@
           "isSigner": false
         },
         {
-          "name": "clearingHouseSigner",
+          "name": "driftSigner",
           "isMut": false,
           "isSigner": false
         },
@@ -2858,6 +2867,63 @@
         {
           "name": "orderSize",
           "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "updateSpotMarketOrdersEnabled",
+      "accounts": [
+        {
+          "name": "admin",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "state",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "spotMarket",
+          "isMut": true,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "ordersEnabled",
+          "type": "bool"
+        }
+      ]
+    },
+    {
+      "name": "updateSpotMarketName",
+      "accounts": [
+        {
+          "name": "admin",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "state",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "spotMarket",
+          "isMut": true,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "name",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
         }
       ]
     },
@@ -3572,7 +3638,7 @@
           "isSigner": false
         },
         {
-          "name": "clearingHouseSigner",
+          "name": "driftSigner",
           "isMut": false,
           "isSigner": false
         },
@@ -3809,6 +3875,15 @@
             "type": "publicKey"
           },
           {
+            "name": "name",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
             "name": "historicalOracleData",
             "type": {
               "defined": "HistoricalOracleData"
@@ -3911,6 +3986,10 @@
             "type": "u64"
           },
           {
+            "name": "nextDepositRecordId",
+            "type": "u64"
+          },
+          {
             "name": "initialAssetWeight",
             "type": "u32"
           },
@@ -3959,6 +4038,10 @@
             "type": "u16"
           },
           {
+            "name": "ordersEnabled",
+            "type": "bool"
+          },
+          {
             "name": "oracleSource",
             "type": {
               "defined": "OracleSource"
@@ -3981,7 +4064,7 @@
             "type": {
               "array": [
                 "u8",
-                7
+                6
               ]
             }
           }
@@ -4239,6 +4322,10 @@
           },
           {
             "name": "cumulativeSpotFees",
+            "type": "i64"
+          },
+          {
+            "name": "cumulativePerpFunding",
             "type": "i64"
           },
           {
@@ -4614,6 +4701,18 @@
           {
             "name": "ifPayment",
             "type": "u128"
+          },
+          {
+            "name": "clawbackUser",
+            "type": {
+              "option": "publicKey"
+            }
+          },
+          {
+            "name": "clawbackUserPayment",
+            "type": {
+              "option": "u128"
+            }
           },
           {
             "name": "cumulativeFundingRateDelta",
@@ -6211,6 +6310,11 @@
           "index": false
         },
         {
+          "name": "depositRecordId",
+          "type": "u64",
+          "index": false
+        },
+        {
           "name": "amount",
           "type": "u64",
           "index": false
@@ -7109,8 +7213,8 @@
     },
     {
       "code": 6007,
-      "name": "MarketIndexNotInitialized",
-      "msg": "Market Index Not Initialized"
+      "name": "MarketDelisted",
+      "msg": "Market Delisted"
     },
     {
       "code": 6008,
@@ -8131,6 +8235,16 @@
       "code": 6211,
       "name": "UnsupportedSpotMarket",
       "msg": "UnsupportedSpotMarket"
+    },
+    {
+      "code": 6212,
+      "name": "SpotOrdersDisabled",
+      "msg": "SpotOrdersDisabled"
+    },
+    {
+      "code": 6213,
+      "name": "MarketBeingInitialized",
+      "msg": "Market Being Initialized"
     }
   ]
 }
