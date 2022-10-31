@@ -48,7 +48,7 @@ from anchorpy.utils.token import get_token_account
 from driftpy.admin import Admin
 from driftpy.constants.numeric_constants import PRICE_PRECISION, AMM_RESERVE_PRECISION
 from driftpy.clearing_house import ClearingHouse
-from driftpy.setup.helpers import _create_usdc_mint, _create_and_mint_user_usdc, mock_oracle, set_price_feed, _airdrop_user
+from driftpy.setup.helpers import _create_usdc_mint, _create_and_mint_user_usdc, mock_oracle, set_price_feed, _airdrop_user, get_set_price_feed_detailed_ix
 
 from driftpy.addresses import * 
 from driftpy.types import * 
@@ -211,8 +211,24 @@ async def test_add_remove_liquidity(
 @mark.asyncio
 async def test_update_amm(
     clearing_house: Admin,
+    workspace
 ):
-    await clearing_house.update_amm([0])
+    market = await get_perp_market_account(clearing_house.program, 0)
+    # provider: Provider = clearing_house.program.provider
+
+    # pyth_program = workspace["pyth"]
+    # await set_price_feed(pyth_program, market.amm.oracle, 1.5)
+    # signer2 = pyth_program.provider.wallet.payer
+    # ix1 = await get_set_price_feed_detailed_ix(
+    #     pyth_program, market.amm.oracle, 1, 0, 1
+    # )
+
+    ix2 = await clearing_house.get_update_amm_ix([0])
+    ixs = [ix2]
+
+    # ixs = [ix1, ix2]
+
+    await clearing_house.send_ixs(ixs)
 
 @mark.asyncio
 async def test_open_close_position(

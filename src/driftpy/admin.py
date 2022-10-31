@@ -335,6 +335,43 @@ class Admin(ClearingHouse):
             ),
         )
 
+    async def update_perp_market_max_imbalances(
+        self, 
+        market_index,
+        unrealized_max_imbalance,
+        max_revenue_withdraw_per_period,
+        quote_max_insurance,
+    ):
+        return await self.program.rpc["update_perp_market_max_imbalances"](
+            unrealized_max_imbalance,
+            max_revenue_withdraw_per_period,
+            quote_max_insurance,
+            ctx=Context(
+                accounts={
+                    "state": self.get_state_public_key(),
+                    "admin": self.authority,
+                    "perp_market": get_perp_market_public_key(self.program_id, market_index),
+                },
+            ),
+        )
+
+    from driftpy.types import ContractTier
+    async def update_perp_market_contract_tier(
+        self, 
+        market_index: int,
+        contract_type: ContractTier
+    ):
+        return await self.program.rpc["update_perp_market_contract_tier"](
+            contract_type,
+            ctx=Context(
+                accounts={
+                    "state": self.get_state_public_key(),
+                    "admin": self.authority,
+                    "perp_market": get_perp_market_public_key(self.program_id, market_index),
+                },
+            ),
+        )
+
     async def settle_expired_market_pools_to_revenue_pool(
         self,
         market_index: int,

@@ -821,12 +821,10 @@ class ClearingHouse:
         market_index: int,
     ):
         return await self.send_ixs(
-            [
-                await self.get_settle_pnl_ix(
-                    user_authority,
-                    market_index,
-                )
-            ]
+            await self.get_settle_pnl_ix(
+                user_authority,
+                market_index,
+            )
         )
 
     async def get_settle_pnl_ix(
