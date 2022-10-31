@@ -44,8 +44,15 @@ ch = ClearingHouse.from_config(config, provider)
 
 # %%
 user = await get_user_account(ch.program, ch.authority)
-user.spot_positions[0].balance
+user.spot_positions[0].scaled_balance
 
+# %%
+from driftpy.clearing_house_user import ClearingHouseUser
+chu = ClearingHouseUser(ch)
+collateral = await chu.get_total_collateral()
+collateral / 1e6
+
+# %%
 # %%
 await ch.place_order(
     OrderParams(

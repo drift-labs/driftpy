@@ -69,10 +69,6 @@ class Admin(ClearingHouse):
         if state_account_rpc_response["result"]["value"] is not None:
             raise RuntimeError("Clearing house already initialized")
 
-        insurance_vault_public_key = PublicKey.find_program_address(
-            [b"insurance_vault"], self.program_id
-        )[0]
-
         state_public_key = get_state_public_key(self.program_id)
 
         initialize_tx_sig = await self.program.rpc["initialize"](
@@ -81,8 +77,7 @@ class Admin(ClearingHouse):
                     "admin": self.authority,
                     "state": state_public_key,
                     "quote_asset_mint": usdc_mint,
-                    "insurance_vault": insurance_vault_public_key,
-                    "clearing_house_signer": get_clearing_house_signer_public_key(
+                    "drift_signer": get_clearing_house_signer_public_key(
                         self.program_id
                     ),
                     "rent": SYSVAR_RENT_PUBKEY,
@@ -153,6 +148,7 @@ class Admin(ClearingHouse):
         imf_factor: int = 0,
         liquidation_fee: int = 0,
         active_status: bool = True,
+        name: list = [0] * 32,
     ):
         state_public_key = get_state_public_key(self.program_id)
         state = await get_state_account(self.program)
@@ -178,6 +174,7 @@ class Admin(ClearingHouse):
             imf_factor,
             liquidation_fee,
             active_status,
+            name,
             ctx=Context(
                 accounts={
                     "admin": self.authority,
@@ -185,7 +182,7 @@ class Admin(ClearingHouse):
                     "spot_market": spot_public_key,
                     "spot_market_vault": spot_vault_public_key,
                     "insurance_fund_vault": insurance_vault_public_key,
-                    "clearing_house_signer": get_clearing_house_signer_public_key(
+                    "drift_signer": get_clearing_house_signer_public_key(
                         self.program_id
                     ),
                     "spot_market_mint": mint,
@@ -242,6 +239,17 @@ class Admin(ClearingHouse):
             ),
         )
 
+    async def update_lp_cooldown_time(self, duration: int):
+        return await self.program.rpc["update_lp_cooldown_time"](
+            duration,
+            ctx=Context(
+                accounts={
+                    "admin": self.authority,
+                    "state": get_state_public_key(self.program_id),
+                }
+            ),
+        )
+    
     async def update_lp_cooldown_time(self, duration: int):
         return await self.program.rpc["update_lp_cooldown_time"](
             duration,
@@ -321,6 +329,43 @@ class Admin(ClearingHouse):
                     "state": get_state_public_key(self.program_id),
                     "perp_market": market_public_key,
                 }
+            ),
+        )
+
+    async def update_perp_market_max_imbalances(
+        self, 
+        market_index,
+        unrealized_max_imbalance,
+        max_revenue_withdraw_per_period,
+        quote_max_insurance,
+    ):
+        return await self.program.rpc["update_perp_market_max_imbalances"](
+            unrealized_max_imbalance,
+            max_revenue_withdraw_per_period,
+            quote_max_insurance,
+            ctx=Context(
+                accounts={
+                    "state": self.get_state_public_key(),
+                    "admin": self.authority,
+                    "perp_market": get_perp_market_public_key(self.program_id, market_index),
+                },
+            ),
+        )
+
+    from driftpy.types import ContractTier
+    async def update_perp_market_contract_tier(
+        self, 
+        market_index: int,
+        contract_type: ContractTier
+    ):
+        return await self.program.rpc["update_perp_market_contract_tier"](
+            contract_type,
+            ctx=Context(
+                accounts={
+                    "state": self.get_state_public_key(),
+                    "admin": self.authority,
+                    "perp_market": get_perp_market_public_key(self.program_id, market_index),
+                },
             ),
         )
 
