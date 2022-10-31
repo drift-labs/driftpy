@@ -84,7 +84,7 @@ async def user_usdc_account(
 @fixture(scope="session")
 def program(workspace: WorkspaceType) -> Program:
     """Create a Program instance."""
-    return workspace["clearing_house"]
+    return workspace["drift"]
 
 @fixture(scope="session")
 def provider(program: Program) -> Provider:
