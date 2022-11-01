@@ -63,6 +63,7 @@ class ClearingHouse:
         self.authority = authority.public_key
         self.signers = [self.signer]
         self.usdc_ata = None
+        self.spot_market_atas = {}
 
     @staticmethod
     def from_config(config: Config, provider: Provider, authority: Keypair = None):
@@ -181,6 +182,7 @@ class ClearingHouse:
         self,
         writable_market_index: int = None,
         writable_spot_market_index: int = None,
+        readable_spot_market_index: int = None,
         user_id=0,
         include_oracles: bool = True,
         include_spot_markets: bool = True,
@@ -241,6 +243,11 @@ class ClearingHouse:
                         await track_spot_market(
                             spot_market_balance.market_index, is_writable=False
                         )
+                
+                if readable_spot_market_index is not None:
+                    await track_spot_market(
+                        readable_spot_market_index, is_writable=False
+                    )
 
                 if writable_spot_market_index is not None:
                     await track_spot_market(
@@ -280,7 +287,8 @@ class ClearingHouse:
 
         spot_market = await get_spot_market_account(self.program, spot_market_index)
         remaining_accounts = await self.get_remaining_accounts(
-            writable_spot_market_index=spot_market_index
+            writable_spot_market_index=spot_market_index, 
+            readable_spot_market_index=QUOTE_ASSET_BANK_INDEX,
         )
         ch_signer = get_clearing_house_signer_public_key(self.program_id)
 

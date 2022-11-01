@@ -74,43 +74,46 @@ async def _airdrop_user(
     return user, tx_sig
 
 
-async def _create_usdc_mint(provider: Provider) -> Keypair:
-    fake_create_usdc_mint = Keypair()
+async def _create_mint(provider: Provider) -> Keypair:
+    fake_create_mint = Keypair()
     params = CreateAccountParams(
         from_pubkey=provider.wallet.public_key,
-        new_account_pubkey=fake_create_usdc_mint.public_key,
+        new_account_pubkey=fake_create_mint.public_key,
         lamports=await AsyncToken.get_min_balance_rent_for_exempt_for_mint(
             provider.connection
         ),
         space=MINT_LAYOUT.sizeof(),
         program_id=TOKEN_PROGRAM_ID,
     )
-    create_create_usdc_mint_account_ix = create_account(params)
+    create_create_mint_account_ix = create_account(params)
     init_collateral_mint_ix = initialize_mint(
         InitializeMintParams(
             decimals=6,
             program_id=TOKEN_PROGRAM_ID,
-            mint=fake_create_usdc_mint.public_key,
+            mint=fake_create_mint.public_key,
             mint_authority=provider.wallet.public_key,
             freeze_authority=None,
         )
     )
-    fake_usdc_tx = Transaction().add(
-        create_create_usdc_mint_account_ix, init_collateral_mint_ix
+    fake_tx = Transaction().add(
+        create_create_mint_account_ix, init_collateral_mint_ix
     )
-    await provider.send(fake_usdc_tx, [fake_create_usdc_mint])
-    return fake_create_usdc_mint
+    await provider.send(fake_tx, [fake_create_mint])
+    return fake_create_mint
 
 
-async def _create_user_usdc_ata_tx(
-    usdc_account: Keypair, provider: Provider, usdc_mint: Keypair, owner: PublicKey
+async def _create_user_ata_tx(
+    account: Keypair, 
+    provider: Provider, 
+    mint: Keypair, 
+    owner: PublicKey
 ) -> Transaction:
-    fake_usdc_tx = Transaction()
+    fake_tx = Transaction()
 
-    create_usdc_token_account_ix = create_account(
+    create_token_account_ix = create_account(
         CreateAccountParams(
             from_pubkey=provider.wallet.public_key,
-            new_account_pubkey=usdc_account.public_key,
+            new_account_pubkey=account.public_key,
             lamports=await AsyncToken.get_min_balance_rent_for_exempt_for_account(
                 provider.connection
             ),
@@ -118,19 +121,19 @@ async def _create_user_usdc_ata_tx(
             program_id=TOKEN_PROGRAM_ID,
         )
     )
-    fake_usdc_tx.add(create_usdc_token_account_ix)
+    fake_tx.add(create_token_account_ix)
 
-    init_usdc_token_account_ix = initialize_account(
+    init_token_account_ix = initialize_account(
         InitializeAccountParams(
             program_id=TOKEN_PROGRAM_ID,
-            account=usdc_account.public_key,
-            mint=usdc_mint.public_key,
+            account=account.public_key,
+            mint=mint.public_key,
             owner=owner,
         )
     )
-    fake_usdc_tx.add(init_usdc_token_account_ix)
+    fake_tx.add(init_token_account_ix)
 
-    return fake_usdc_tx
+    return fake_tx
 
 
 def _mint_usdc_tx(
@@ -160,7 +163,7 @@ async def _create_and_mint_user_usdc(
 ) -> Keypair:
     usdc_account = Keypair()
 
-    ata_tx: Transaction = await _create_user_usdc_ata_tx(
+    ata_tx: Transaction = await _create_user_ata_tx(
         usdc_account,
         provider,
         usdc_mint,
