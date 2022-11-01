@@ -369,6 +369,24 @@ class Admin(ClearingHouse):
             ),
         )
 
+    from driftpy.types import MarketStatus
+    async def update_perp_market_status(
+        self, 
+        market_index: int,
+        market_status: MarketStatus
+    ):
+        return await self.program.rpc["update_perp_market_status"](
+            market_status,
+            ctx=Context(
+                accounts={
+                    "state": self.get_state_public_key(),
+                    "admin": self.authority,
+                    "perp_market": get_perp_market_public_key(self.program_id, market_index),
+                },
+            ),
+        )
+    
+
     async def settle_expired_market_pools_to_revenue_pool(
         self,
         market_index: int,
@@ -444,6 +462,20 @@ class Admin(ClearingHouse):
                     "admin": self.authority,
                     "state": get_state_public_key(self.program_id),
                     "spot_market": get_spot_market_public_key(self.program_id, spot_market_index)
+                }
+            ),
+        )
+
+    async def update_state_settlement_duration(
+        self,
+        settlement_duration: int
+    ):
+        return await self.program.rpc["update_state_settlement_duration"](
+            settlement_duration,
+            ctx=Context(
+                accounts={
+                    "admin": self.authority,
+                    "state": get_state_public_key(self.program_id),
                 }
             ),
         )
