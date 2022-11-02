@@ -4424,7 +4424,7 @@
             "type": "u16"
           },
           {
-            "name": "maxSubAccountId",
+            "name": "numberOfSubAccountsCreated",
             "type": "u16"
           },
           {
@@ -4577,6 +4577,10 @@
           {
             "name": "liquidatorOrderId",
             "type": "u32"
+          },
+          {
+            "name": "liquidatorFee",
+            "type": "u64"
           },
           {
             "name": "ifFee",
@@ -5818,15 +5822,29 @@
       }
     },
     {
+      "name": "DepositExplanation",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "None"
+          },
+          {
+            "name": "Transfer"
+          }
+        ]
+      }
+    },
+    {
       "name": "DepositDirection",
       "type": {
         "kind": "enum",
         "variants": [
           {
-            "name": "DEPOSIT"
+            "name": "Deposit"
           },
           {
-            "name": "WITHDRAW"
+            "name": "Withdraw"
           }
         ]
       }
@@ -5875,7 +5893,7 @@
             "name": "OrderExpired"
           },
           {
-            "name": "CanceledForLiquidation"
+            "name": "Liquidation"
           },
           {
             "name": "OrderFilledWithAMM"
@@ -5891,6 +5909,9 @@
           },
           {
             "name": "RiskingIncreasingOrder"
+          },
+          {
+            "name": "OrderFillWithSerum"
           }
         ]
       }
@@ -5934,6 +5955,20 @@
           },
           {
             "name": "SpotBankruptcy"
+          }
+        ]
+      }
+    },
+    {
+      "name": "SettlePnlExplanation",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "None"
+          },
+          {
+            "name": "ExpiredPosition"
           }
         ]
       }
@@ -6357,6 +6392,13 @@
         {
           "name": "totalWithdrawsAfter",
           "type": "u64",
+          "index": false
+        },
+        {
+          "name": "explanation",
+          "type": {
+            "defined": "DepositExplanation"
+          },
           "index": false
         },
         {
@@ -7048,6 +7090,13 @@
         {
           "name": "settlePrice",
           "type": "i64",
+          "index": false
+        },
+        {
+          "name": "explanation",
+          "type": {
+            "defined": "SettlePnlExplanation"
+          },
           "index": false
         }
       ]
@@ -8245,6 +8294,11 @@
       "code": 6213,
       "name": "MarketBeingInitialized",
       "msg": "Market Being Initialized"
+    },
+    {
+      "code": 6214,
+      "name": "InvalidUserSubAccountId",
+      "msg": "Invalid Sub Account Id"
     }
   ]
 }
