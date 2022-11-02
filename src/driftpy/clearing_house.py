@@ -858,6 +858,7 @@ class ClearingHouse:
         perp_market_index: int,
         spot_market_index: int,
         max_pnl_transfer: int,
+        limit_price: int = None
     ):
         user_pk = get_user_account_public_key(self.program_id, user_authority)
         user_stats_pk = get_user_stats_account_public_key(
@@ -878,6 +879,7 @@ class ClearingHouse:
             perp_market_index,
             spot_market_index,
             max_pnl_transfer,
+            limit_price,
             ctx=Context(
                 accounts={
                     "state": self.get_state_public_key(),
