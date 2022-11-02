@@ -760,7 +760,8 @@ class ClearingHouse:
         user_authority: PublicKey,
         asset_market_index: int, 
         liability_market_index: int, 
-        max_liability_transfer: int
+        max_liability_transfer: int, 
+        limit_price: int = None
     ):
         user_pk = get_user_account_public_key(self.program_id, user_authority)
         user_stats_pk = get_user_stats_account_public_key(
@@ -780,6 +781,7 @@ class ClearingHouse:
             asset_market_index, 
             liability_market_index, 
             max_liability_transfer,
+            limit_price,
             ctx=Context(
                 accounts={
                     "state": self.get_state_public_key(),

@@ -2,7 +2,7 @@
 import json 
 import re 
 
-input_idl = 'src/driftpy/idl/clearing_house.json'
+input_idl = 'src/driftpy/idl/drift.json'
 output_file = 'src/driftpy/types.py'
 
 with open(input_idl, 'r') as f:
