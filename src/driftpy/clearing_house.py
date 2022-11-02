@@ -67,7 +67,7 @@ class ClearingHouse:
     @staticmethod
     def from_config(config: Config, provider: Provider, authority: Keypair = None):
         # read the idl
-        file = Path(str(driftpy.__path__[0]) + "/idl/clearing_house.json")
+        file = Path(str(driftpy.__path__[0]) + "/idl/drift.json")
         with file.open() as f:
             idl_dict = json.load(f)
         idl = Idl.from_json(idl_dict)
