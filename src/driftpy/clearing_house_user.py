@@ -569,7 +569,7 @@ class ClearingHouseUser:
     async def get_user_spot_position(
         self,
         market_index: int,
-    ) -> Optional[PerpPosition]:
+    ) -> Optional[SpotPosition]:
         user = await get_user_account(self.program, self.authority)
 
         found = False
@@ -695,7 +695,7 @@ class ClearingHouseUser:
         total_liability = await self.get_margin_requirement(margin_category, None)
         total_asset_value = await self.get_total_collateral(margin_category)
 
-        if total_asset_value == 0 and total_liability == 0:
+        if total_asset_value == 0 or total_liability == 0:
             return 0
 
         leverage = total_liability * 10_000 / total_asset_value
