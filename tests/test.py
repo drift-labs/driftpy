@@ -201,7 +201,7 @@ async def test_usdc_deposit(
     clearing_house: Admin,
     user_usdc_account: Keypair,
 ):
-    clearing_house.usdc_ata = user_usdc_account.public_key
+    clearing_house.spot_market_atas[0] = user_usdc_account.public_key
     await clearing_house.deposit(
         USDC_AMOUNT, 
         0, 
