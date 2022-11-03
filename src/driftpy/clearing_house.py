@@ -67,7 +67,7 @@ class ClearingHouse:
     @staticmethod
     def from_config(config: Config, provider: Provider, authority: Keypair = None):
         # read the idl
-        file = Path(str(driftpy.__path__[0]) + "/idl/clearing_house.json")
+        file = Path(str(driftpy.__path__[0]) + "/idl/drift.json")
         with file.open() as f:
             idl_dict = json.load(f)
         idl = Idl.from_json(idl_dict)
@@ -293,7 +293,7 @@ class ClearingHouse:
                     "state": self.get_state_public_key(),
                     "spot_market": spot_market.pubkey,
                     "spot_market_vault": spot_market.vault,
-                    "clearing_house_signer": ch_signer,
+                    "drift_signer": ch_signer,
                     "user": self.get_user_account_public_key(),
                     "user_stats": self.get_user_stats_public_key(),
                     "user_token_account": user_token_account,
@@ -664,6 +664,7 @@ class ClearingHouse:
     ):
         position = await self.get_user_position(market_index)
         if position is None or position.base_asset_amount == 0:
+            print('=> user has no position to close...')
             return
 
         order = self.default_order_params(
@@ -820,12 +821,10 @@ class ClearingHouse:
         market_index: int,
     ):
         return await self.send_ixs(
-            [
-                await self.get_settle_pnl_ix(
-                    user_authority,
-                    market_index,
-                )
-            ]
+            await self.get_settle_pnl_ix(
+                user_authority,
+                market_index,
+            )
         )
 
     async def get_settle_pnl_ix(
@@ -907,7 +906,7 @@ class ClearingHouse:
                     "liquidator_stats": liq_stats_pk,
                     "spot_market_vault": spot_market.vault,
                     "insurance_fund_vault": spot_market.insurance_fund.vault,
-                    "clearing_house_signer": ch_signer,
+                    "drift_signer": ch_signer,
                     "token_program": TOKEN_PROGRAM_ID,
                 },
                 remaining_accounts=remaining_accounts,
@@ -1031,7 +1030,7 @@ class ClearingHouse:
                     "user_stats": get_user_stats_account_public_key(self.program_id, self.authority),
                     "authority": self.authority,
                     "insurance_fund_vault": get_insurance_fund_vault_public_key(self.program_id, spot_market_index),
-                    "clearing_house_signer": get_clearing_house_signer_public_key(self.program_id), 
+                    "drift_signer": get_clearing_house_signer_public_key(self.program_id), 
                     "user_token_account": self.usdc_ata,
                     "token_program": TOKEN_PROGRAM_ID,
                 },
@@ -1070,7 +1069,7 @@ class ClearingHouse:
                     "authority": self.authority,
                     "spot_market_vault": get_spot_market_vault_public_key(self.program_id, spot_market_index),
                     "insurance_fund_vault": get_insurance_fund_vault_public_key(self.program_id, spot_market_index),
-                    "clearing_house_signer": get_clearing_house_signer_public_key(self.program_id), 
+                    "drift_signer": get_clearing_house_signer_public_key(self.program_id), 
                     "user_token_account": self.usdc_ata, 
                     "token_program": TOKEN_PROGRAM_ID,
                 },
@@ -1103,5 +1102,48 @@ class ClearingHouse:
                     "rent": SYSVAR_RENT_PUBKEY, 
                     "system_program": SYS_PROGRAM_ID,
                 }
+            ),
+        )
+
+    async def update_amm(
+        self, 
+        market_indexs: list[int]
+    ):
+        return await self.send_ixs(
+            await self.get_update_amm_ix(market_indexs)
+        )
+
+    async def get_update_amm_ix(
+        self,
+        market_indexs: list[int], 
+    ):
+        n = len(market_indexs)
+        for _ in range(5 - n):
+            market_indexs.append(100)
+
+        market_infos = []
+        oracle_infos = [] 
+        for idx in market_indexs:
+            if idx != 100:
+                market = await get_perp_market_account(self.program, idx)
+                market_infos.append(AccountMeta(
+                    pubkey=market.pubkey,
+                    is_signer=False,
+                    is_writable=True,
+                ))
+                oracle_infos.append(AccountMeta(
+                    pubkey=market.amm.oracle, is_signer=False, is_writable=False
+                ))
+
+        remaining_accounts = oracle_infos + market_infos
+
+        return self.program.instruction["update_amms"](
+            market_indexs,
+            ctx=Context(
+                accounts={
+                    'state': self.get_state_public_key(), 
+                    'authority': self.authority,
+                },
+                remaining_accounts=remaining_accounts
             ),
         )

@@ -60,13 +60,13 @@ def get_spot_market_vault_authority_public_key(
 def get_state_public_key(
     program_id: PublicKey,
 ) -> PublicKey:
-    return PublicKey.find_program_address([b"clearing_house"], program_id)[0]
+    return PublicKey.find_program_address([b"drift_state"], program_id)[0]
 
 
 def get_clearing_house_signer_public_key(
     program_id: PublicKey,
 ) -> PublicKey:
-    return PublicKey.find_program_address([b"clearing_house_signer"], program_id)[0]
+    return PublicKey.find_program_address([b"drift_signer"], program_id)[0]
 
 
 def get_user_stats_account_public_key(

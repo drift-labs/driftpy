@@ -65,9 +65,14 @@ class PositionUpdateType:
     FLIP = constructor()
  
 @_rust_enum
+class DepositExplanation:
+    NONE = constructor()
+    TRANSFER = constructor()
+ 
+@_rust_enum
 class DepositDirection:
-    D_E_P_O_S_I_T = constructor()
-    W_I_T_H_D_R_A_W = constructor()
+    DEPOSIT = constructor()
+    WITHDRAW = constructor()
  
 @_rust_enum
 class OrderAction:
@@ -84,10 +89,13 @@ class OrderActionExplanation:
     ORACLE_PRICE_BREACHED_LIMIT_PRICE = constructor()
     MARKET_ORDER_FILLED_TO_LIMIT_PRICE = constructor()
     ORDER_EXPIRED = constructor()
-    CANCELED_FOR_LIQUIDATION = constructor()
+    LIQUIDATION = constructor()
     ORDER_FILLED_WITH_A_M_M = constructor()
+    ORDER_FILLED_WITH_A_M_M_JIT = constructor()
     ORDER_FILLED_WITH_MATCH = constructor()
     MARKET_EXPIRED = constructor()
+    RISKING_INCREASING_ORDER = constructor()
+    ORDER_FILL_WITH_SERUM = constructor()
  
 @_rust_enum
 class LPAction:
@@ -103,6 +111,11 @@ class LiquidationType:
     LIQUIDATE_PERP_PNL_FOR_DEPOSIT = constructor()
     PERP_BANKRUPTCY = constructor()
     SPOT_BANKRUPTCY = constructor()
+ 
+@_rust_enum
+class SettlePnlExplanation:
+    NONE = constructor()
+    EXPIRED_POSITION = constructor()
  
 @_rust_enum
 class StakeAction:
@@ -181,6 +194,12 @@ class ExchangeStatus:
     PAUSED = constructor()
  
 @_rust_enum
+class UserStatus:
+    ACTIVE = constructor()
+    BEING_LIQUIDATED = constructor()
+    BANKRUPT = constructor()
+ 
+@_rust_enum
 class AssetType:
     BASE = constructor()
     QUOTE = constructor()
@@ -203,6 +222,8 @@ class OrderType:
 class OrderTriggerCondition:
     ABOVE = constructor()
     BELOW = constructor()
+    TRIGGERED_ABOVE = constructor()
+    TRIGGERED_BELOW = constructor()
  
 @_rust_enum
 class MarketType:
@@ -282,7 +303,7 @@ class AMM:
     total_liquidation_fee: int
     cumulative_funding_rate_long: int
     cumulative_funding_rate_short: int
-    cumulative_social_loss: int
+    total_social_loss: int
     ask_base_asset_reserve: int
     ask_quote_asset_reserve: int
     bid_base_asset_reserve: int
@@ -307,6 +328,7 @@ class AMM:
     short_intensity_volume: int
     last_trade_ts: int
     mark_std: int
+    oracle_std: int
     last_mark_price_twap_ts: int
     base_spread: int
     max_spread: int
@@ -320,6 +342,7 @@ class AMM:
     amm_jit_intensity: int
     oracle_source: OracleSource
     last_oracle_valid: bool
+    padding: list[int]
  
 @dataclass
 class PriceDivergenceGuardRails:
@@ -398,7 +421,6 @@ class Order:
     post_only: bool
     immediate_or_cancel: bool
     trigger_condition: OrderTriggerCondition
-    triggered: bool
     auction_duration: int
     padding: list[int]
  
@@ -465,6 +487,7 @@ class SpotMarket:
     oracle: PublicKey
     mint: PublicKey
     vault: PublicKey
+    name: list[int]
     historical_oracle_data: HistoricalOracleData
     historical_index_data: HistoricalIndexData
     revenue_pool: PoolBalance
@@ -475,6 +498,8 @@ class SpotMarket:
     borrow_balance: int
     cumulative_deposit_interest: int
     cumulative_borrow_interest: int
+    total_social_loss: int
+    total_quote_social_loss: int
     withdraw_guard_threshold: int
     max_token_deposits: int
     deposit_token_twap: int
@@ -488,6 +513,7 @@ class SpotMarket:
     min_order_size: int
     max_position_size: int
     next_fill_record_id: int
+    next_deposit_record_id: int
     initial_asset_weight: int
     maintenance_asset_weight: int
     initial_liability_weight: int
@@ -500,6 +526,7 @@ class SpotMarket:
     max_borrow_rate: int
     decimals: int
     market_index: int
+    orders_enabled: bool
     oracle_source: OracleSource
     status: MarketStatus
     asset_tier: AssetTier
@@ -534,6 +561,7 @@ class State:
     spot_fee_structure: FeeStructure
     oracle_guard_rails: OracleGuardRails
     number_of_authorities: int
+    number_of_sub_accounts: int
     lp_cooldown_time: int
     liquidation_margin_buffer_ratio: int
     settlement_duration: int
@@ -575,14 +603,17 @@ class User:
     last_add_perp_lp_shares_ts: int
     total_deposits: int
     total_withdraws: int
+    total_social_loss: int
     settled_perp_pnl: int
     cumulative_spot_fees: int
+    cumulative_perp_funding: int
+    liquidation_margin_freed: int
+    liquidation_start_ts: int
     next_order_id: int
     max_margin_ratio: int
     next_liquidation_id: int
     sub_account_id: int
-    is_being_liquidated: bool
-    is_bankrupt: bool
+    status: UserStatus
     is_margin_trading_enabled: bool
     padding: list[int]
  
@@ -609,7 +640,7 @@ class UserStats:
     last_filler_volume30d_ts: int
     if_staked_quote_asset_amount: int
     number_of_sub_accounts: int
-    max_sub_account_id: int
+    number_of_sub_accounts_created: int
     is_referrer: bool
     padding: list[int]
  
@@ -623,6 +654,7 @@ class LiquidatePerpRecord:
     fill_record_id: int
     user_order_id: int
     liquidator_order_id: int
+    liquidator_fee: int
     if_fee: int
  
 @dataclass
@@ -658,6 +690,8 @@ class PerpBankruptcyRecord:
     market_index: int
     pnl: int
     if_payment: int
+    clawback_user: Optional[PublicKey]
+    clawback_user_payment: Optional[int]
     cumulative_funding_rate_delta: int
  
 @dataclass
