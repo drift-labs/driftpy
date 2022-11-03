@@ -465,3 +465,19 @@ class Admin(ClearingHouse):
             ),
         )
     
+    async def update_update_insurance_fund_unstaking_period(
+        self,
+        spot_market_index: int, 
+        insurance_fund_unstaking_period: int
+    ):
+        return await self.program.rpc["update_insurance_fund_unstaking_period"](
+            insurance_fund_unstaking_period,
+            ctx=Context(
+                accounts={
+                    "admin": self.authority,
+                    "state": get_state_public_key(self.program_id),
+                    "spot_market": get_spot_market_public_key(self.program_id, spot_market_index)
+                }
+            ),
+        )
+    

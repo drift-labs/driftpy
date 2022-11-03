@@ -320,6 +320,10 @@ async def test_stake_if(
     # important
     clearing_house.usdc_ata = user_usdc_account.public_key
 
+    await clearing_house.update_update_insurance_fund_unstaking_period(
+        0, 0
+    )
+
     await clearing_house.initialize_insurance_fund_stake(
         0
     )
