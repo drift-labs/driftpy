@@ -1183,7 +1183,7 @@ class ClearingHouse:
                     "authority": self.authority,
                     "insurance_fund_vault": get_insurance_fund_vault_public_key(self.program_id, spot_market_index),
                     "drift_signer": get_clearing_house_signer_public_key(self.program_id), 
-                    "user_token_account": self.usdc_ata,
+                    "user_token_account": self.spot_market_atas[spot_market_index],
                     "token_program": TOKEN_PROGRAM_ID,
                 },
                 remaining_accounts=ra
@@ -1222,7 +1222,7 @@ class ClearingHouse:
                     "spot_market_vault": get_spot_market_vault_public_key(self.program_id, spot_market_index),
                     "insurance_fund_vault": get_insurance_fund_vault_public_key(self.program_id, spot_market_index),
                     "drift_signer": get_clearing_house_signer_public_key(self.program_id), 
-                    "user_token_account": self.usdc_ata, 
+                    "user_token_account": self.spot_market_atas[spot_market_index], 
                     "token_program": TOKEN_PROGRAM_ID,
                 },
                 remaining_accounts=remaining_accounts
