@@ -360,8 +360,6 @@ class ValidityGuardRails:
 class OracleGuardRails:
     price_divergence: PriceDivergenceGuardRails
     validity: ValidityGuardRails
-    use_for_liquidations: bool
-    padding: list[int]
  
 @dataclass
 class FeeTier:
