@@ -15,7 +15,7 @@ from pythclient.solana import (
     SOLANA_DEVNET_HTTP_ENDPOINT,
     SOLANA_DEVNET_WS_ENDPOINT,
     SOLANA_MAINNET_HTTP_ENDPOINT,
-    SOLANA_MAINNET_HTTP_ENDPOINT,
+    SOLANA_MAINNET_WS_ENDPOINT,
 )
 
 
@@ -41,20 +41,19 @@ class OracleData:
     has_sufficient_number_of_datapoints: bool
 
 
+from solana.rpc.async_api import AsyncClient
+
 # todo: support other than devnet
-async def get_oracle_data(address: PublicKey) -> OracleData:
+async def get_oracle_data(connection: AsyncClient, address: PublicKey) -> OracleData:
     address = str(address)
     account_key = SolanaPublicKey(address)
-    try:
-        solana_client = SolanaClient(endpoint="http://localhost:8899/", ws_endpoint="wss://localhost:8900/")
-        price: PythPriceAccount = PythPriceAccount(account_key, solana_client)
-        await price.update()
-    except:
-        await solana_client.close()
 
-        solana_client = SolanaClient(endpoint=SOLANA_DEVNET_HTTP_ENDPOINT, ws_endpoint=SOLANA_DEVNET_WS_ENDPOINT)
-        price: PythPriceAccount = PythPriceAccount(account_key, solana_client)
-        await price.update()
+    http_endpoint = connection._provider.endpoint_uri
+    ws_endpoint = http_endpoint.replace('https', 'wss')
+
+    solana_client = SolanaClient(endpoint=http_endpoint, ws_endpoint=ws_endpoint)
+    price: PythPriceAccount = PythPriceAccount(account_key, solana_client)
+    await price.update()
 
     # TODO: returns none rn
     # (twap, twac) = (price.derivations.get('TWAPVALUE'), price.derivations.get('TWACVALUE'))
@@ -616,7 +615,7 @@ class ClearingHouseUser:
                 continue
 
             market = await get_perp_market_account(self.program, position.market_index)
-            oracle_data = await get_oracle_data(market.amm.oracle)
+            oracle_data = await get_oracle_data(self.program.provider.connection, market.amm.oracle)
             position_unrealized_pnl = calculate_position_pnl(
                 market, position, oracle_data, with_funding
             )

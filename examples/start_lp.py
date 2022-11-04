@@ -16,6 +16,7 @@ from driftpy.clearing_house_user import ClearingHouseUser
 from driftpy.constants.numeric_constants import AMM_RESERVE_PRECISION
 from solana.rpc import commitment
 import pprint
+from driftpy.constants.numeric_constants import QUOTE_PRECISION
 
 async def view_logs(
     sig: str,
@@ -51,7 +52,7 @@ async def main(
     chu = ClearingHouseUser(ch)
 
     total_collateral = await chu.get_total_collateral()
-    print('total collateral:', total_collateral)
+    print('total collateral:', total_collateral/QUOTE_PRECISION)
 
     if total_collateral == 0:
         print('cannot lp with 0 collateral')
@@ -68,8 +69,10 @@ async def main(
     if lp_amount < market.amm.order_step_size:
         print('lp amount too small - exiting...')
 
+    print('adding liquidity...')
     ix = await ch.add_liquidity(lp_amount, market_index)
     await view_logs(ix, connection)
+    print(ix)
 
     position = await ch.get_user_position(market_index)
     percent_provided = (position.lp_shares  / (market.amm.sqrt_k + lp_amount)) * 100
@@ -89,12 +92,14 @@ if __name__ == '__main__':
 
     if args.keypath is None:
         raise NotImplementedError("need to provide keypath or set ANCHOR_WALLET")
-
+    
     match args.env:
         case 'devnet':
             url = 'https://api.devnet.solana.com'
+        case 'mainnet':
+            url = 'https://api.mainnet-beta.solana.com'
         case _:
-            raise NotImplementedError('only devnet env supported')
+            raise NotImplementedError('only devnet/mainnet env supported')
 
     import asyncio
     asyncio.run(main(
