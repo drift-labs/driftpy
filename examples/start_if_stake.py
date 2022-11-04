@@ -53,10 +53,11 @@ async def main(
     chu = ClearingHouseUser(ch)
 
     from spl.token.instructions import get_associated_token_address
-    usdc_market = await get_spot_market_account(ch.program, spot_market_index)
-    usdc_mint = usdc_market.mint
+    spot_market = await get_spot_market_account(ch.program, spot_market_index)
+    spot_mint = spot_market.mint
 
-    ata = get_associated_token_address(wallet.public_key, usdc_mint)
+    ata = get_associated_token_address(wallet.public_key, spot_mint)
+    ch.spot_market_atas[spot_market_index] = ata
     ch.usdc_ata = ata
     balance = await connection.get_token_account_balance(ata)
     print('current spot ata balance:', balance['result']['value']['uiAmount'])
@@ -75,6 +76,17 @@ async def main(
         if rpc_resp["result"]["value"] is None:
             print('initializing stake account...')
             await ch.initialize_insurance_fund_stake(spot_market_index)
+
+        # if_stake = await get_if_stake_account(
+        #     ch.program, ch.authority, spot_market_index
+        # )
+        # market = await get_spot_market_account(
+        #     ch.program, spot_market_index
+        # )
+        # print(
+        #     if_stake.market_index, 
+        #     ch.program_id
+        # )
 
         await ch.add_insurance_fund_stake(spot_market_index, if_amount)
     elif operation == 'remove':

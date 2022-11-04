@@ -18,7 +18,7 @@ configs = {
     "devnet": Config(
         env='devnet',
         pyth_oracle_mapping_address=PublicKey('BmA9Z6FjioHJPpjT39QazZyhDRUdZy2ezwx4GiDdE2u2'),
-		clearing_house_program_id=PublicKey('4PzAUP84r19y2whicgTysCiqxw5aHabLHyDh3oJiAtqe'),
+		clearing_house_program_id=PublicKey('dRiftyHA39MWEi3m9aunc5MzRF1JYuBsbn6VPcn33UH'),
 		usdc_mint_address=PublicKey('8zGuJQqwhZafTah7Uc7Z4tXRnguqkn5KLFAP8oV6PHe2'),
 		markets=devnet_markets,
 		banks=devnet_banks,
