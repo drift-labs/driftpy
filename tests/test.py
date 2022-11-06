@@ -48,7 +48,7 @@ from anchorpy.utils.token import get_token_account
 from driftpy.admin import Admin
 from driftpy.constants.numeric_constants import PRICE_PRECISION, AMM_RESERVE_PRECISION
 from driftpy.clearing_house import ClearingHouse
-from driftpy.setup.helpers import _create_usdc_mint, _create_and_mint_user_usdc, mock_oracle, set_price_feed, _airdrop_user, get_set_price_feed_detailed_ix
+from driftpy.setup.helpers import _create_mint, _create_and_mint_user_usdc, mock_oracle, set_price_feed, _airdrop_user, get_set_price_feed_detailed_ix
 
 from driftpy.addresses import * 
 from driftpy.types import * 
@@ -67,7 +67,7 @@ workspace = workspace_fixture(
 
 @async_fixture(scope="session")
 async def usdc_mint(provider: Provider):
-    return await _create_usdc_mint(provider)
+    return await _create_mint(provider)
 
 @async_fixture(scope="session")
 async def user_usdc_account(
@@ -104,6 +104,48 @@ async def initialized_spot_market(
     await clearing_house.initialize_spot_market(
         usdc_mint.public_key 
     )
+
+@mark.asyncio
+async def test_initialized_spot_market_2(
+    clearing_house: Admin, 
+    initialized_spot_market,
+    workspace: WorkspaceType
+): 
+    admin_clearing_house = clearing_house
+    oracle_price = 1
+    oracle_program = workspace["pyth"]
+
+    oracle = await mock_oracle(oracle_program, oracle_price, -7)
+    mint = await _create_mint(admin_clearing_house.program.provider)
+
+    optimal_util = SPOT_WEIGHT_PRECISION // 2
+    optimal_weight = int(SPOT_WEIGHT_PRECISION * 20)
+    max_rate = int(SPOT_WEIGHT_PRECISION * 50)
+    
+    init_weight = int(SPOT_WEIGHT_PRECISION * 8 / 10)
+    main_weight = int(SPOT_WEIGHT_PRECISION * 9 / 10)
+
+    init_liab_weight = int(SPOT_WEIGHT_PRECISION * 12 / 10)
+    main_liab_weight = int(SPOT_WEIGHT_PRECISION * 11 / 10)
+
+    await admin_clearing_house.initialize_spot_market(
+        mint.public_key, 
+        oracle=oracle, 
+        optimal_utilization=optimal_util, 
+        optimal_rate=optimal_weight, 
+        max_rate=max_rate,
+        oracle_source=OracleSource.PYTH(),
+        initial_asset_weight=init_weight, 
+        maintenance_asset_weight=main_weight, 
+        initial_liability_weight=init_liab_weight, 
+        maintenance_liability_weight=main_liab_weight
+    )
+
+    spot_market = await get_spot_market_account(admin_clearing_house.program, 1)
+    assert spot_market.market_index == 1
+    print(spot_market.market_index)
+
+
 
 @async_fixture(scope="session")
 async def initialized_market(
@@ -159,7 +201,7 @@ async def test_usdc_deposit(
     clearing_house: Admin,
     user_usdc_account: Keypair,
 ):
-    clearing_house.usdc_ata = user_usdc_account.public_key
+    clearing_house.spot_market_atas[0] = user_usdc_account.public_key
     await clearing_house.deposit(
         USDC_AMOUNT, 
         0, 
@@ -277,6 +319,10 @@ async def test_stake_if(
 ):
     # important
     clearing_house.usdc_ata = user_usdc_account.public_key
+
+    await clearing_house.update_update_insurance_fund_unstaking_period(
+        0, 0
+    )
 
     await clearing_house.initialize_insurance_fund_stake(
         0

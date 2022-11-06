@@ -15,7 +15,7 @@ from pythclient.solana import (
     SOLANA_DEVNET_HTTP_ENDPOINT,
     SOLANA_DEVNET_WS_ENDPOINT,
     SOLANA_MAINNET_HTTP_ENDPOINT,
-    SOLANA_MAINNET_HTTP_ENDPOINT,
+    SOLANA_MAINNET_WS_ENDPOINT,
 )
 
 
@@ -41,20 +41,19 @@ class OracleData:
     has_sufficient_number_of_datapoints: bool
 
 
+from solana.rpc.async_api import AsyncClient
+
 # todo: support other than devnet
-async def get_oracle_data(address: PublicKey) -> OracleData:
+async def get_oracle_data(connection: AsyncClient, address: PublicKey) -> OracleData:
     address = str(address)
     account_key = SolanaPublicKey(address)
-    try:
-        solana_client = SolanaClient(endpoint="http://localhost:8899/", ws_endpoint="wss://localhost:8900/")
-        price: PythPriceAccount = PythPriceAccount(account_key, solana_client)
-        await price.update()
-    except:
-        await solana_client.close()
 
-        solana_client = SolanaClient(endpoint=SOLANA_DEVNET_HTTP_ENDPOINT, ws_endpoint=SOLANA_DEVNET_WS_ENDPOINT)
-        price: PythPriceAccount = PythPriceAccount(account_key, solana_client)
-        await price.update()
+    http_endpoint = connection._provider.endpoint_uri
+    ws_endpoint = http_endpoint.replace('https', 'wss')
+
+    solana_client = SolanaClient(endpoint=http_endpoint, ws_endpoint=ws_endpoint)
+    price: PythPriceAccount = PythPriceAccount(account_key, solana_client)
+    await price.update()
 
     # TODO: returns none rn
     # (twap, twac) = (price.derivations.get('TWAPVALUE'), price.derivations.get('TWACVALUE'))
@@ -565,6 +564,23 @@ class ClearingHouseUser:
         free_collateral = total_collateral - init_margin_req
         free_collateral = max(0, free_collateral)
         return free_collateral
+    
+    async def get_user_spot_position(
+        self,
+        market_index: int,
+    ) -> Optional[SpotPosition]:
+        user = await get_user_account(self.program, self.authority)
+
+        found = False
+        for position in user.spot_positions:
+            if position.market_index == market_index and not is_spot_position_available(position):
+                found = True
+                break
+
+        if not found:
+            return None
+
+        return position
 
     async def get_user_position(
         self,
@@ -599,7 +615,7 @@ class ClearingHouseUser:
                 continue
 
             market = await get_perp_market_account(self.program, position.market_index)
-            oracle_data = await get_oracle_data(market.amm.oracle)
+            oracle_data = await get_oracle_data(self.program.provider.connection, market.amm.oracle)
             position_unrealized_pnl = calculate_position_pnl(
                 market, position, oracle_data, with_funding
             )
@@ -678,7 +694,7 @@ class ClearingHouseUser:
         total_liability = await self.get_margin_requirement(margin_category, None)
         total_asset_value = await self.get_total_collateral(margin_category)
 
-        if total_asset_value == 0 and total_liability == 0:
+        if total_asset_value == 0 or total_liability == 0:
             return 0
 
         leverage = total_liability * 10_000 / total_asset_value

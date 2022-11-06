@@ -37,7 +37,7 @@ class Admin(ClearingHouse):
         admin: bool = False,
     ):
         # read the idl
-        file = Path(str(driftpy.__path__[0]) + "/idl/clearing_house.json")
+        file = Path(str(driftpy.__path__[0]) + "/idl/drift.json")
         with file.open() as f:
             idl_dict = json.load(f)
         idl = Idl.from_json(idl_dict)
@@ -417,6 +417,23 @@ class Admin(ClearingHouse):
                 },
             ),
         )
+    
+    async def update_spot_market_expiry(
+        self,
+        spot_market_index: int,
+        expiry_ts: int,
+    ):
+        market_public_key = get_spot_market_public_key(self.program_id, spot_market_index)
+        return await self.program.rpc["update_spot_market_expiry"](
+            expiry_ts,
+            ctx=Context(
+                accounts={
+                    "admin": self.authority,
+                    "state": get_state_public_key(self.program_id),
+                    "spot_market": market_public_key,
+                }
+            ),
+        )
 
     async def update_perp_market_expiry(
         self,
@@ -476,6 +493,22 @@ class Admin(ClearingHouse):
                 accounts={
                     "admin": self.authority,
                     "state": get_state_public_key(self.program_id),
+                }
+            ),
+        )
+    
+    async def update_update_insurance_fund_unstaking_period(
+        self,
+        spot_market_index: int, 
+        insurance_fund_unstaking_period: int
+    ):
+        return await self.program.rpc["update_insurance_fund_unstaking_period"](
+            insurance_fund_unstaking_period,
+            ctx=Context(
+                accounts={
+                    "admin": self.authority,
+                    "state": get_state_public_key(self.program_id),
+                    "spot_market": get_spot_market_public_key(self.program_id, spot_market_index)
                 }
             ),
         )

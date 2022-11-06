@@ -51,20 +51,38 @@ async def main(
     from driftpy.constants.numeric_constants import QUOTE_PRECISION
     ch = ClearingHouse.from_config(config, provider)
     chu = ClearingHouseUser(ch)
+    print(ch.program_id)
 
     from spl.token.instructions import get_associated_token_address
-    usdc_market = await get_spot_market_account(ch.program, spot_market_index)
-    usdc_mint = usdc_market.mint
+    spot_market = await get_spot_market_account(ch.program, spot_market_index)
+    spot_mint = spot_market.mint
+    print(spot_mint)
 
-    ata = get_associated_token_address(wallet.public_key, usdc_mint)
+    ata = get_associated_token_address(wallet.public_key, spot_mint)
+    ch.spot_market_atas[spot_market_index] = ata
     ch.usdc_ata = ata
     balance = await connection.get_token_account_balance(ata)
     print('current spot ata balance:', balance['result']['value']['uiAmount'])
 
+    spot = await get_spot_market_account(ch.program, spot_market_index)
+    total_shares = spot.insurance_fund.total_shares
+    if_stake = await get_if_stake_account(ch.program, ch.authority, spot_market_index)
+    n_shares = if_stake.if_shares
+
+    conn = ch.program.provider.connection
+    vault_pk = get_insurance_fund_vault_public_key(ch.program_id, spot_market_index)
+    v_amount = int((await conn.get_token_account_balance(vault_pk))['result']['value']['amount'])
+
+    print(
+        f'vault_amount: {v_amount} n_shares: {n_shares} total_shares: {total_shares}'
+    )
+
+    return
+
     # await ch.add_insurance_fund_stake(spot_market_index, if_amount)
 
-    print(f'{operation}ing {if_amount}$ usdc...')
-    if_amount = if_amount * QUOTE_PRECISION
+    print(f'{operation}ing {if_amount}$ spot...')
+    if_amount = int(if_amount * QUOTE_PRECISION)
 
     if operation == 'add':
         rpc_resp = (
@@ -74,9 +92,12 @@ async def main(
         )
         if rpc_resp["result"]["value"] is None:
             print('initializing stake account...')
-            await ch.initialize_insurance_fund_stake(spot_market_index)
+            sig = await ch.initialize_insurance_fund_stake(spot_market_index)
+            print(sig)
 
-        await ch.add_insurance_fund_stake(spot_market_index, if_amount)
+        print('adding stake ....')
+        sig = await ch.add_insurance_fund_stake(spot_market_index, if_amount)
+        print(sig)
     elif operation == 'remove':
         
         if if_amount == None: 
@@ -123,7 +144,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--keypath', type=str, required=False, default=os.environ.get('ANCHOR_WALLET'))
     parser.add_argument('--env', type=str, default='devnet')
-    parser.add_argument('--amount', type=int, required=False)
+    parser.add_argument('--amount', type=float, required=False)
     parser.add_argument('--market', type=int, required=True)
     parser.add_argument('--operation', choices=['remove', 'add'], required=True)
 
@@ -141,8 +162,10 @@ if __name__ == '__main__':
     match args.env:
         case 'devnet':
             url = 'https://api.devnet.solana.com'
+        case 'mainnet':
+            url = 'https://api.mainnet-beta.solana.com'
         case _:
-            raise NotImplementedError('only devnet env supported')
+            raise NotImplementedError('only devnet/mainnet env supported')
 
     import asyncio
     asyncio.run(main(

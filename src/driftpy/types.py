@@ -360,7 +360,6 @@ class ValidityGuardRails:
 class OracleGuardRails:
     price_divergence: PriceDivergenceGuardRails
     validity: ValidityGuardRails
-    use_for_liquidations: bool
  
 @dataclass
 class FeeTier:
@@ -710,7 +709,7 @@ class InsuranceFundStake:
     last_valid_ts: int
     last_withdraw_request_value: int
     last_withdraw_request_ts: int
-    market_index: int
     cost_basis: int
+    market_index: int
     padding: list[int]
  
