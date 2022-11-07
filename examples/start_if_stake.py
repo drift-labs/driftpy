@@ -69,22 +69,15 @@ async def main(
     if_stake = await get_if_stake_account(ch.program, ch.authority, spot_market_index)
     n_shares = if_stake.if_shares
 
-    conn = ch.program.provider.connection
-    vault_pk = get_insurance_fund_vault_public_key(ch.program_id, spot_market_index)
-    v_amount = int((await conn.get_token_account_balance(vault_pk))['result']['value']['amount'])
-
-    print(
-        f'vault_amount: {v_amount} n_shares: {n_shares} total_shares: {total_shares}'
-    )
-
-    return
-
-    # await ch.add_insurance_fund_stake(spot_market_index, if_amount)
-
     print(f'{operation}ing {if_amount}$ spot...')
     if_amount = int(if_amount * QUOTE_PRECISION)
 
     if operation == 'add':
+        resp = input('confirm adding stake: Y?')
+        if resp != 'Y':
+            print('confirmation failed exiting...')
+            return
+
         rpc_resp = (
             await connection.get_account_info(get_insurance_fund_stake_public_key(
                 ch.program_id, kp.public_key, spot_market_index
@@ -99,7 +92,11 @@ async def main(
         sig = await ch.add_insurance_fund_stake(spot_market_index, if_amount)
         print(sig)
     elif operation == 'remove':
-        
+        resp = input('confirm removing stake: Y?')
+        if resp != 'Y':
+            print('confirmation failed exiting...')
+            return
+
         if if_amount == None: 
             vault_balance = (await connection.get_token_account_balance(
                 get_insurance_fund_vault_public_key(
@@ -127,15 +124,26 @@ async def main(
             spot_market_index
         )
         await view_logs(ix, connection)
-    else: 
-        return 
 
-    ifstake = await get_if_stake_account(
-        ch.program, 
-        ch.authority, 
-        spot_market_index
-    )
-    print('total if shares:', ifstake.if_shares)
+    elif operation == 'view': 
+        conn = ch.program.provider.connection
+        vault_pk = get_insurance_fund_vault_public_key(ch.program_id, spot_market_index)
+        v_amount = int((await conn.get_token_account_balance(vault_pk))['result']['value']['amount'])
+        balance = v_amount * n_shares / total_shares
+        print(
+            f'vault_amount: {v_amount/QUOTE_PRECISION:,.2f}$ \nn_shares: {n_shares} \ntotal_shares: {total_shares} \n>balance: {balance / QUOTE_PRECISION}'
+        )
+    else: 
+        return
+
+    if operation in ['add', 'remove']:
+        ifstake = await get_if_stake_account(
+            ch.program, 
+            ch.authority, 
+            spot_market_index
+        )
+        print('total if shares:', ifstake.if_shares)
+
     print('done! :)')
 
 if __name__ == '__main__':
@@ -146,7 +154,7 @@ if __name__ == '__main__':
     parser.add_argument('--env', type=str, default='devnet')
     parser.add_argument('--amount', type=float, required=False)
     parser.add_argument('--market', type=int, required=True)
-    parser.add_argument('--operation', choices=['remove', 'add'], required=True)
+    parser.add_argument('--operation', choices=['remove', 'add', 'view'], required=True)
 
     args = parser.parse_args()
 
