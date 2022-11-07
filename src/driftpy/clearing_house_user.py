@@ -654,7 +654,7 @@ class ClearingHouseUser:
                 total_value += spot_token_value
                 continue
 
-            oracle_data = await get_oracle_data(spot_market.oracle)
+            oracle_data = await get_oracle_data(self.program.provider.connection, spot_market.oracle)
 
             if not include_open_orders:
                 if str(position.balance_type) == "SpotBalanceType.Deposit()":
