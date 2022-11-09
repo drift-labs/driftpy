@@ -93,8 +93,10 @@ class OrderActionExplanation:
     ORDER_FILLED_WITH_A_M_M = constructor()
     ORDER_FILLED_WITH_A_M_M_JIT = constructor()
     ORDER_FILLED_WITH_MATCH = constructor()
+    ORDER_FILLED_WITH_MATCH_JIT = constructor()
     MARKET_EXPIRED = constructor()
     RISKING_INCREASING_ORDER = constructor()
+    REDUCE_ONLY_ORDER_INCREASED_POSITION = constructor()
     ORDER_FILL_WITH_SERUM = constructor()
  
 @_rust_enum
