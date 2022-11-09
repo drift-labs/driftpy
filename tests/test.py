@@ -1,28 +1,9 @@
-import pytest
-import asyncio
 from pytest import fixture, mark
 from pytest_asyncio import fixture as async_fixture
 from anchorpy import Provider, WorkspaceType, workspace_fixture, Program
 from solana.keypair import Keypair
-from solana.transaction import Transaction
-from solana.system_program import create_account, CreateAccountParams
-from spl.token.constants import TOKEN_PROGRAM_ID
-from spl.token._layouts import MINT_LAYOUT
-from spl.token.async_client import AsyncToken
-from spl.token.instructions import initialize_mint, InitializeMintParams
 
-from solana.system_program import create_account, CreateAccountParams
-from spl.token.async_client import AsyncToken
-from spl.token._layouts import ACCOUNT_LAYOUT
-from spl.token.constants import TOKEN_PROGRAM_ID
-from spl.token.instructions import (
-    initialize_account,
-    InitializeAccountParams,
-    mint_to,
-    MintToParams,
-)
 from anchorpy import Program, Provider, WorkspaceType
-from anchorpy.utils.token import get_token_account
 from driftpy.admin import Admin
 from driftpy.constants.numeric_constants import *
 from math import sqrt
@@ -31,79 +12,18 @@ from pytest import fixture, mark
 from pytest_asyncio import fixture as async_fixture
 from solana.keypair import Keypair
 from solana.publickey import PublicKey
-from solana.transaction import Transaction
-from solana.system_program import create_account, CreateAccountParams
-from spl.token.async_client import AsyncToken
-from spl.token._layouts import ACCOUNT_LAYOUT
-from spl.token.constants import TOKEN_PROGRAM_ID
-from spl.token.instructions import (
-    initialize_account,
-    InitializeAccountParams,
-    mint_to,
-    MintToParams,
-)
+
 from anchorpy import Program, Provider, WorkspaceType
-from anchorpy.utils.token import get_token_account
 
 from driftpy.admin import Admin
 from driftpy.constants.numeric_constants import PRICE_PRECISION, AMM_RESERVE_PRECISION
 from driftpy.clearing_house import ClearingHouse
 from driftpy.setup.helpers import _create_mint, _create_and_mint_user_usdc, mock_oracle, set_price_feed, _airdrop_user, get_set_price_feed_detailed_ix
-
 from driftpy.addresses import * 
 from driftpy.types import * 
 from driftpy.accounts import *
+from _fixtures import *
 
-MANTISSA_SQRT_SCALE = int(sqrt(PRICE_PRECISION))
-AMM_INITIAL_QUOTE_ASSET_AMOUNT = int((5 * AMM_RESERVE_PRECISION) * MANTISSA_SQRT_SCALE)
-AMM_INITIAL_BASE_ASSET_AMOUNT = int((5 * AMM_RESERVE_PRECISION) * MANTISSA_SQRT_SCALE)
-PERIODICITY = 60 * 60  # 1 HOUR
-USDC_AMOUNT = int(10 * QUOTE_PRECISION)
-MARKET_INDEX = 0
-
-workspace = workspace_fixture(
-    "protocol-v2", build_cmd="anchor build --skip-lint", scope="session"
-)
-
-@async_fixture(scope="session")
-async def usdc_mint(provider: Provider):
-    return await _create_mint(provider)
-
-@async_fixture(scope="session")
-async def user_usdc_account(
-    usdc_mint: Keypair,
-    provider: Provider,
-):
-    return await _create_and_mint_user_usdc(
-        usdc_mint, 
-        provider, 
-        USDC_AMOUNT * 2, 
-        provider.wallet.public_key
-    )
-
-@fixture(scope="session")
-def program(workspace: WorkspaceType) -> Program:
-    """Create a Program instance."""
-    return workspace["drift"]
-
-@fixture(scope="session")
-def provider(program: Program) -> Provider:
-    return program.provider
-
-@async_fixture(scope="session")
-async def clearing_house(program: Program, usdc_mint: Keypair) -> Admin:
-    admin = Admin(program)
-    await admin.initialize(usdc_mint.public_key, admin_controls_prices=True)
-    return admin 
-
-@async_fixture(scope="session")
-async def initialized_spot_market(
-    clearing_house: Admin, 
-    usdc_mint: Keypair,
-): 
-    await clearing_house.initialize_spot_market(
-        usdc_mint.public_key 
-    )
 
 @mark.asyncio
 async def test_initialized_spot_market_2(
@@ -146,22 +66,6 @@ async def test_initialized_spot_market_2(
     print(spot_market.market_index)
 
 
-
-@async_fixture(scope="session")
-async def initialized_market(
-    clearing_house: Admin, workspace: WorkspaceType
-) -> PublicKey:
-    pyth_program = workspace["pyth"]
-    sol_usd = await mock_oracle(pyth_program=pyth_program, price=1)
-
-    await clearing_house.initialize_perp_market(
-        sol_usd,
-        AMM_INITIAL_BASE_ASSET_AMOUNT,
-        AMM_INITIAL_QUOTE_ASSET_AMOUNT,
-        PERIODICITY,
-    )
-
-    return sol_usd
 
 @mark.asyncio
 async def test_spot(
