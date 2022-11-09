@@ -60,10 +60,10 @@ async def get_user_stats_account(
 async def get_user_account(
     program: Program,
     authority: PublicKey,
-    user_id: int = 0,
+    subaccount_id: int = 0,
 ) -> User:
     user_public_key = get_user_account_public_key(
-        program.program_id, authority, user_id
+        program.program_id, authority, subaccount_id
     )
     response = await program.account["User"].fetch(user_public_key)
     return cast(User, response)
