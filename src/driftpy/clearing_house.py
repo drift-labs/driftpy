@@ -453,6 +453,14 @@ class ClearingHouse:
         self,
         user_id: int = 0
     ): 
+        return await self.send_ixs(
+            await self.get_cancel_orders_ix(user_id)
+        )
+    
+    async def get_cancel_orders_ix(
+        self,
+        user_id: int = 0
+    ): 
         remaining_accounts = await self.get_remaining_accounts(user_id=user_id)
 
         return self.program.instruction["cancel_orders"](
@@ -713,7 +721,7 @@ class ClearingHouse:
     ):
         return await self.send_ixs(
             await self.get_close_position_ix(
-                market_index, limit_price, subaccount_id
+                market_index, limit_price, subaccount_id=subaccount_id
             )
         )
 
@@ -737,7 +745,7 @@ class ClearingHouse:
         order.limit_price = limit_price
         order.reduce_only = True
 
-        ix = await self.get_place_and_take_ix(order)
+        ix = await self.get_place_and_take_ix(order, subaccount_id=subaccount_id)
         return ix
 
     def default_order_params(
