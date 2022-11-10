@@ -1,21 +1,19 @@
 import sys
+import json 
+import pprint
 sys.path.append('../src/')
 
-from driftpy.constants.config import configs
-from anchorpy import Provider
-import json 
 from anchorpy import Wallet
+from anchorpy import Provider
+
 from solana.rpc.async_api import AsyncClient
+from solana.keypair import Keypair
+from solana.rpc import commitment
+
+from driftpy.constants.config import configs
 from driftpy.clearing_house import ClearingHouse
 from driftpy.accounts import *
-from solana.keypair import Keypair
-
-# todo: airdrop udsc + init account for any kp
-# rn do it through UI 
 from driftpy.clearing_house_user import ClearingHouseUser
-from driftpy.constants.numeric_constants import AMM_RESERVE_PRECISION
-from solana.rpc import commitment
-import pprint
 
 async def view_logs(
     sig: str,
