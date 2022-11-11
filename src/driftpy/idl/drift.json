@@ -5950,10 +5950,16 @@
             "name": "OrderFilledWithMatch"
           },
           {
+            "name": "OrderFilledWithMatchJit"
+          },
+          {
             "name": "MarketExpired"
           },
           {
             "name": "RiskingIncreasingOrder"
+          },
+          {
+            "name": "ReduceOnlyOrderIncreasedPosition"
           },
           {
             "name": "OrderFillWithSerum"
