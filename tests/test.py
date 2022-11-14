@@ -191,7 +191,7 @@ async def test_init_user(
     user: User = await get_user_account(
         clearing_house.program, 
         clearing_house.authority, 
-        user_id=0
+        subaccount_id=0
     )
     assert user.authority == clearing_house.authority
 

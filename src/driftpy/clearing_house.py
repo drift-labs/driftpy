@@ -513,12 +513,19 @@ class ClearingHouse:
         direction: PositionDirection,
         amount: int,
         market_index: int,
+        user_id: int = 0,
         limit_price: int = 0,
         ioc: bool = False,
-        user_id: int = 0,
     ):
         return await self.send_ixs(
-            await self.get_open_position_ix(direction, amount, market_index, limit_price, ioc, user_id=user_id),
+            await self.get_open_position_ix(
+                direction,
+                amount,
+                market_index, 
+                user_id,
+                limit_price,
+                ioc,
+            ),
         )
 
     async def get_open_position_ix(
