@@ -33,17 +33,6 @@ async def get_if_stake_account(
     response = await program.account["InsuranceFundStake"].fetch(if_stake_pk)
     return cast(InsuranceFundStake, response)
 
-async def get_user_account(
-    program: Program,
-    authority: PublicKey,
-) -> User:
-    user_public_key = get_user_stats_account_public_key(
-        program.program_id,
-        authority,
-    )
-    response = await program.account["UserStats"].fetch(user_public_key)
-    return cast(UserStats, response)
-
 
 async def get_user_stats_account(
     program: Program,
