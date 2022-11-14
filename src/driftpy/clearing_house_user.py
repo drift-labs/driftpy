@@ -49,7 +49,13 @@ async def get_oracle_data(connection: AsyncClient, address: PublicKey) -> Oracle
     account_key = SolanaPublicKey(address)
 
     http_endpoint = connection._provider.endpoint_uri
-    ws_endpoint = http_endpoint.replace('https', 'wss')
+    if 'https' in http_endpoint:
+        ws_endpoint = http_endpoint.replace('https', 'wss')
+    elif 'http' in http_endpoint:
+        ws_endpoint = http_endpoint.replace('http', 'wss')
+    else: 
+        print(http_endpoint)
+        raise
 
     solana_client = SolanaClient(endpoint=http_endpoint, ws_endpoint=ws_endpoint)
     price: PythPriceAccount = PythPriceAccount(account_key, solana_client)
@@ -393,6 +399,7 @@ class ClearingHouseUser:
 
         self.program = clearing_house.program
         self.oracle_program = clearing_house
+        self.connection = self.program.provider.connection
 
     async def get_spot_market_liability(
         self,
@@ -428,7 +435,7 @@ class ClearingHouseUser:
                 else:
                     continue
 
-            oracle_data = await get_oracle_data(spot_market.oracle)
+            oracle_data = await get_oracle_data(self.connection, spot_market.oracle)
             if not include_open_orders:
                 if str(position.balance_type) == "SpotBalanceType.Borrow()":
                     token_amount = get_token_amount(
@@ -488,7 +495,7 @@ class ClearingHouseUser:
             if position.lp_shares > 0:
                 pass
 
-            price = (await get_oracle_data(market.amm.oracle)).price
+            price = (await get_oracle_data(self.connection, market.amm.oracle)).price
             base_asset_amount = (
                 calculate_worst_case_base_asset_amount(position)
                 if include_open_orders
