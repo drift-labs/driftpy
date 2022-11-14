@@ -52,6 +52,12 @@ Run `mkdocs serve` to build the docs and serve them locally.
 
 ### Releasing a new version of the package
 
+- python new_release.py
+- After merging your PR on GitHub, create a new release at https://github.com/drift-labs/driftpy/releases.
+   The CI process will upload a new version of the package to PyPI.
+
+... 
+
 1. Make sure CHANGELOG.md is updated.
 2. Run `bumpversion major|minor|patch` to update the version number locally and create a tagged commit.
 3. Run `git push origin <version_number>` to push the tag to GitHub.
