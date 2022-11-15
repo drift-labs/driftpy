@@ -95,18 +95,13 @@ async def _create_mint(provider: Provider) -> Keypair:
             freeze_authority=None,
         )
     )
-    fake_tx = Transaction().add(
-        create_create_mint_account_ix, init_collateral_mint_ix
-    )
+    fake_tx = Transaction().add(create_create_mint_account_ix, init_collateral_mint_ix)
     await provider.send(fake_tx, [fake_create_mint])
     return fake_create_mint
 
 
 async def _create_user_ata_tx(
-    account: Keypair, 
-    provider: Provider, 
-    mint: Keypair, 
-    owner: PublicKey
+    account: Keypair, provider: Provider, mint: Keypair, owner: PublicKey
 ) -> Transaction:
     fake_tx = Transaction()
 
@@ -158,6 +153,7 @@ def _mint_usdc_tx(
 
     return fake_usdc_tx
 
+
 async def _create_and_mint_user_usdc(
     usdc_mint: Keypair, provider: Provider, usdc_amount: int, owner: PublicKey
 ) -> Keypair:
@@ -169,7 +165,9 @@ async def _create_and_mint_user_usdc(
         usdc_mint,
         owner,
     )
-    mint_tx: Transaction = _mint_usdc_tx(usdc_mint, provider, usdc_amount, usdc_account.public_key)
+    mint_tx: Transaction = _mint_usdc_tx(
+        usdc_mint, provider, usdc_amount, usdc_account.public_key
+    )
 
     for ix in mint_tx.instructions:
         ata_tx.add(ix)
@@ -186,10 +184,11 @@ async def set_price_feed(
 ):
     data = await get_feed_data(oracle_program, oracle_public_key)
     int_price = int(price * 10 ** -data.exponent)
-    print('setting oracle price', int_price)
+    print("setting oracle price", int_price)
     return await oracle_program.rpc["set_price"](
         int_price, ctx=Context(accounts={"price": oracle_public_key})
     )
+
 
 async def set_price_feed_detailed(
     oracle_program: Program,
@@ -201,10 +200,11 @@ async def set_price_feed_detailed(
     data = await get_feed_data(oracle_program, oracle_public_key)
     int_price = int(price * 10 ** -data.exponent)
     int_conf = int(abs(conf) * 10 ** -data.exponent)
-    print('setting oracle price', int_price, "+/-", int_conf, '@ slot=', slot)
+    print("setting oracle price", int_price, "+/-", int_conf, "@ slot=", slot)
     return await oracle_program.rpc["set_price_info"](
         int_price, int_conf, slot, ctx=Context(accounts={"price": oracle_public_key})
     )
+
 
 async def get_set_price_feed_detailed_ix(
     oracle_program: Program,
@@ -216,10 +216,11 @@ async def get_set_price_feed_detailed_ix(
     data = await get_feed_data(oracle_program, oracle_public_key)
     int_price = int(price * 10 ** -data.exponent)
     int_conf = int(abs(conf) * 10 ** -data.exponent)
-    print('setting oracle price', int_price, "+/-", int_conf, '@ slot=', slot)
+    print("setting oracle price", int_price, "+/-", int_conf, "@ slot=", slot)
     return oracle_program.instruction["set_price_info"](
         int_price, int_conf, slot, ctx=Context(accounts={"price": oracle_public_key})
     )
+
 
 async def create_price_feed(
     oracle_program: Program,

@@ -4,36 +4,43 @@ from borsh_construct.enum import _rust_enum
 from sumtypes import constructor
 from typing import Optional
 
+
 @_rust_enum
 class SwapDirection:
     ADD = constructor()
     REMOVE = constructor()
- 
+
+
 @_rust_enum
 class PositionDirection:
     LONG = constructor()
     SHORT = constructor()
- 
+
+
 @_rust_enum
 class SpotFulfillmentType:
     SERUM_V3 = constructor()
     NONE = constructor()
- 
+
+
 @_rust_enum
 class TwapPeriod:
     FUNDING_PERIOD = constructor()
     FIVE_MIN = constructor()
- 
+
+
 @_rust_enum
 class LiquidationMultiplierType:
     DISCOUNT = constructor()
     PREMIUM = constructor()
- 
+
+
 @_rust_enum
 class MarginRequirementType:
     INITIAL = constructor()
     MAINTENANCE = constructor()
- 
+
+
 @_rust_enum
 class OracleValidity:
     INVALID = constructor()
@@ -43,7 +50,8 @@ class OracleValidity:
     INSUFFICIENT_DATA_POINTS = constructor()
     STALE_FOR_A_M_M = constructor()
     VALID = constructor()
- 
+
+
 @_rust_enum
 class DriftAction:
     UPDATE_FUNDING = constructor()
@@ -55,7 +63,8 @@ class DriftAction:
     MARGIN_CALC = constructor()
     UPDATE_TWAP = constructor()
     UPDATE_A_M_M_CURVE = constructor()
- 
+
+
 @_rust_enum
 class PositionUpdateType:
     OPEN = constructor()
@@ -63,17 +72,20 @@ class PositionUpdateType:
     REDUCE = constructor()
     CLOSE = constructor()
     FLIP = constructor()
- 
+
+
 @_rust_enum
 class DepositExplanation:
     NONE = constructor()
     TRANSFER = constructor()
- 
+
+
 @_rust_enum
 class DepositDirection:
     DEPOSIT = constructor()
     WITHDRAW = constructor()
- 
+
+
 @_rust_enum
 class OrderAction:
     PLACE = constructor()
@@ -81,7 +93,8 @@ class OrderAction:
     FILL = constructor()
     TRIGGER = constructor()
     EXPIRE = constructor()
- 
+
+
 @_rust_enum
 class OrderActionExplanation:
     NONE = constructor()
@@ -98,13 +111,15 @@ class OrderActionExplanation:
     RISKING_INCREASING_ORDER = constructor()
     REDUCE_ONLY_ORDER_INCREASED_POSITION = constructor()
     ORDER_FILL_WITH_SERUM = constructor()
- 
+
+
 @_rust_enum
 class LPAction:
     ADD_LIQUIDITY = constructor()
     REMOVE_LIQUIDITY = constructor()
     SETTLE_LIQUIDITY = constructor()
- 
+
+
 @_rust_enum
 class LiquidationType:
     LIQUIDATE_PERP = constructor()
@@ -113,35 +128,41 @@ class LiquidationType:
     LIQUIDATE_PERP_PNL_FOR_DEPOSIT = constructor()
     PERP_BANKRUPTCY = constructor()
     SPOT_BANKRUPTCY = constructor()
- 
+
+
 @_rust_enum
 class SettlePnlExplanation:
     NONE = constructor()
     EXPIRED_POSITION = constructor()
- 
+
+
 @_rust_enum
 class StakeAction:
     STAKE = constructor()
     UNSTAKE_REQUEST = constructor()
     UNSTAKE_CANCEL_REQUEST = constructor()
     UNSTAKE = constructor()
- 
+
+
 @_rust_enum
 class PerpFulfillmentMethod:
     A_M_M = constructor()
     MATCH = constructor()
- 
+
+
 @_rust_enum
 class SpotFulfillmentMethod:
     SERUM_V3 = constructor()
     MATCH = constructor()
- 
+
+
 @_rust_enum
 class OracleSource:
     PYTH = constructor()
     SWITCHBOARD = constructor()
     QUOTE_ASSET = constructor()
- 
+
+
 @_rust_enum
 class MarketStatus:
     INITIALIZED = constructor()
@@ -153,12 +174,14 @@ class MarketStatus:
     REDUCE_ONLY = constructor()
     SETTLEMENT = constructor()
     DELISTED = constructor()
- 
+
+
 @_rust_enum
 class ContractType:
     PERPETUAL = constructor()
     FUTURE = constructor()
- 
+
+
 @_rust_enum
 class ContractTier:
     A = constructor()
@@ -166,17 +189,20 @@ class ContractTier:
     C = constructor()
     SPECULATIVE = constructor()
     ISOLATED = constructor()
- 
+
+
 @_rust_enum
 class SpotBalanceType:
     DEPOSIT = constructor()
     BORROW = constructor()
- 
+
+
 @_rust_enum
 class SpotFulfillmentStatus:
     ENABLED = constructor()
     DISABLED = constructor()
- 
+
+
 @_rust_enum
 class AssetTier:
     COLLATERAL = constructor()
@@ -184,7 +210,8 @@ class AssetTier:
     CROSS = constructor()
     ISOLATED = constructor()
     UNLISTED = constructor()
- 
+
+
 @_rust_enum
 class ExchangeStatus:
     ACTIVE = constructor()
@@ -194,44 +221,51 @@ class ExchangeStatus:
     LIQ_PAUSED = constructor()
     WITHDRAW_PAUSED = constructor()
     PAUSED = constructor()
- 
+
+
 @_rust_enum
 class UserStatus:
     ACTIVE = constructor()
     BEING_LIQUIDATED = constructor()
     BANKRUPT = constructor()
- 
+
+
 @_rust_enum
 class AssetType:
     BASE = constructor()
     QUOTE = constructor()
- 
+
+
 @_rust_enum
 class OrderStatus:
     INIT = constructor()
     OPEN = constructor()
     FILLED = constructor()
     CANCELED = constructor()
- 
+
+
 @_rust_enum
 class OrderType:
     MARKET = constructor()
     LIMIT = constructor()
     TRIGGER_MARKET = constructor()
     TRIGGER_LIMIT = constructor()
- 
+
+
 @_rust_enum
 class OrderTriggerCondition:
     ABOVE = constructor()
     BELOW = constructor()
     TRIGGERED_ABOVE = constructor()
     TRIGGERED_BELOW = constructor()
- 
+
+
 @_rust_enum
 class MarketType:
     SPOT = constructor()
     PERP = constructor()
- 
+
+
 @dataclass
 class OrderParams:
     order_type: OrderType
@@ -251,7 +285,8 @@ class OrderParams:
     auction_duration: Optional[int]
     auction_start_price: Optional[int]
     auction_end_price: Optional[int]
- 
+
+
 @dataclass
 class HistoricalOracleData:
     last_oracle_price: int
@@ -260,13 +295,15 @@ class HistoricalOracleData:
     last_oracle_price_twap: int
     last_oracle_price_twap5min: int
     last_oracle_price_twap_ts: int
- 
+
+
 @dataclass
 class PoolBalance:
     scaled_balance: int
     market_index: int
     padding: list[int]
- 
+
+
 @dataclass
 class AMM:
     oracle: PublicKey
@@ -345,24 +382,28 @@ class AMM:
     oracle_source: OracleSource
     last_oracle_valid: bool
     padding: list[int]
- 
+
+
 @dataclass
 class PriceDivergenceGuardRails:
     mark_oracle_divergence_numerator: int
     mark_oracle_divergence_denominator: int
- 
+
+
 @dataclass
 class ValidityGuardRails:
     slots_before_stale_for_amm: int
     slots_before_stale_for_margin: int
     confidence_interval_max_size: int
     too_volatile_ratio: int
- 
+
+
 @dataclass
 class OracleGuardRails:
     price_divergence: PriceDivergenceGuardRails
     validity: ValidityGuardRails
- 
+
+
 @dataclass
 class FeeTier:
     fee_numerator: int
@@ -373,20 +414,23 @@ class FeeTier:
     referrer_reward_denominator: int
     referee_fee_numerator: int
     referee_fee_denominator: int
- 
+
+
 @dataclass
 class OrderFillerRewardStructure:
     reward_numerator: int
     reward_denominator: int
     time_based_reward_lower_bound: int
- 
+
+
 @dataclass
 class FeeStructure:
     fee_tiers: list[FeeTier]
     filler_reward_structure: OrderFillerRewardStructure
     referrer_reward_epoch_upper_bound: int
     flat_filler_fee: int
- 
+
+
 @dataclass
 class SpotPosition:
     scaled_balance: int
@@ -397,7 +441,8 @@ class SpotPosition:
     balance_type: SpotBalanceType
     open_orders: int
     padding: list[int]
- 
+
+
 @dataclass
 class Order:
     slot: int
@@ -424,7 +469,8 @@ class Order:
     trigger_condition: OrderTriggerCondition
     auction_duration: int
     padding: list[int]
- 
+
+
 @dataclass
 class InsuranceClaim:
     revenue_withdraw_since_last_settle: int
@@ -432,7 +478,8 @@ class InsuranceClaim:
     quote_max_insurance: int
     quote_settled_insurance: int
     last_revenue_withdraw_ts: int
- 
+
+
 @dataclass
 class PerpMarket:
     pubkey: PublicKey
@@ -461,7 +508,8 @@ class PerpMarket:
     contract_type: ContractType
     contract_tier: ContractTier
     padding: list[int]
- 
+
+
 @dataclass
 class HistoricalIndexData:
     last_index_bid_price: int
@@ -469,7 +517,8 @@ class HistoricalIndexData:
     last_index_price_twap: int
     last_index_price_twap5min: int
     last_index_price_twap_ts: int
- 
+
+
 @dataclass
 class InsuranceFund:
     vault: PublicKey
@@ -481,7 +530,8 @@ class InsuranceFund:
     revenue_settle_period: int
     total_factor: int
     user_factor: int
- 
+
+
 @dataclass
 class SpotMarket:
     pubkey: PublicKey
@@ -532,7 +582,8 @@ class SpotMarket:
     status: MarketStatus
     asset_tier: AssetTier
     padding: list[int]
- 
+
+
 @dataclass
 class SerumV3FulfillmentConfig:
     pubkey: PublicKey
@@ -550,7 +601,8 @@ class SerumV3FulfillmentConfig:
     fulfillment_type: SpotFulfillmentType
     status: SpotFulfillmentStatus
     padding: list[int]
- 
+
+
 @dataclass
 class State:
     admin: PublicKey
@@ -574,7 +626,8 @@ class State:
     default_spot_auction_duration: int
     exchange_status: ExchangeStatus
     padding: list[int]
- 
+
+
 @dataclass
 class PerpPosition:
     last_cumulative_funding_rate: int
@@ -592,7 +645,8 @@ class PerpPosition:
     market_index: int
     open_orders: int
     padding: list[int]
- 
+
+
 @dataclass
 class User:
     authority: PublicKey
@@ -617,7 +671,8 @@ class User:
     status: UserStatus
     is_margin_trading_enabled: bool
     padding: list[int]
- 
+
+
 @dataclass
 class UserFees:
     total_fee_paid: int
@@ -626,7 +681,8 @@ class UserFees:
     total_referee_discount: int
     total_referrer_reward: int
     current_epoch_referrer_reward: int
- 
+
+
 @dataclass
 class UserStats:
     authority: PublicKey
@@ -644,7 +700,8 @@ class UserStats:
     number_of_sub_accounts_created: int
     is_referrer: bool
     padding: list[int]
- 
+
+
 @dataclass
 class LiquidatePerpRecord:
     market_index: int
@@ -657,7 +714,8 @@ class LiquidatePerpRecord:
     liquidator_order_id: int
     liquidator_fee: int
     if_fee: int
- 
+
+
 @dataclass
 class LiquidateSpotRecord:
     asset_market_index: int
@@ -667,7 +725,8 @@ class LiquidateSpotRecord:
     liability_price: int
     liability_transfer: int
     if_fee: int
- 
+
+
 @dataclass
 class LiquidateBorrowForPerpPnlRecord:
     perp_market_index: int
@@ -676,7 +735,8 @@ class LiquidateBorrowForPerpPnlRecord:
     liability_market_index: int
     liability_price: int
     liability_transfer: int
- 
+
+
 @dataclass
 class LiquidatePerpPnlForDepositRecord:
     perp_market_index: int
@@ -685,7 +745,8 @@ class LiquidatePerpPnlForDepositRecord:
     asset_market_index: int
     asset_price: int
     asset_transfer: int
- 
+
+
 @dataclass
 class PerpBankruptcyRecord:
     market_index: int
@@ -694,14 +755,16 @@ class PerpBankruptcyRecord:
     clawback_user: Optional[PublicKey]
     clawback_user_payment: Optional[int]
     cumulative_funding_rate_delta: int
- 
+
+
 @dataclass
 class SpotBankruptcyRecord:
     market_index: int
     borrow_amount: int
     if_payment: int
     cumulative_deposit_interest_delta: int
- 
+
+
 @dataclass
 class InsuranceFundStake:
     authority: PublicKey
@@ -714,4 +777,3 @@ class InsuranceFundStake:
     cost_basis: int
     market_index: int
     padding: list[int]
- 
