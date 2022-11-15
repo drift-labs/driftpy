@@ -217,7 +217,7 @@ class ClearingHouseUser:
 
             if worst_case_token_amount < 0:
                 baa_value = get_spot_liability_value(
-                    worst_case_token_amount,
+                    abs(worst_case_token_amount),
                     oracle_data,
                     spot_market,
                     margin_category,
@@ -226,12 +226,12 @@ class ClearingHouseUser:
                 )
                 total_liability += baa_value
 
-            if worst_case_quote_amount > 0:
+            if worst_case_quote_amount < 0:
                 weight = SPOT_WEIGHT_PRECISION
                 if margin_category == MarginCategory.INITIAL:
                     weight = max(weight, user.max_margin_ratio)
                 weighted_value = (
-                    worst_case_quote_amount * weight / SPOT_WEIGHT_PRECISION
+                    abs(worst_case_quote_amount) * weight / SPOT_WEIGHT_PRECISION
                 )
                 total_liability += weighted_value
 
