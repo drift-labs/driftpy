@@ -34,7 +34,7 @@ class ClearingHouseUser:
         clearing_house: ClearingHouse,
         authority: Optional[PublicKey] = None,
         subaccount_id: int = 0,
-        cache: bool = False,
+        use_cache: bool = False,
     ):
         """Initialize the ClearingHouse object.
 
@@ -56,9 +56,9 @@ class ClearingHouseUser:
         self.oracle_program = clearing_house
         self.connection = self.program.provider.connection
         self.subaccount_id = subaccount_id
-        self.cache = cache
+        self.use_cache = use_cache
 
-        if self.cache:
+        if self.use_cache:
             self.set_cache()
 
     # cache all state, perpmarket, oracle, etc. in single cache -- user calls reload 
@@ -95,13 +95,13 @@ class ClearingHouseUser:
         self.CACHE['user'] = user
     
     async def get_state(self):
-        if self.cache: 
+        if self.use_cache: 
             return self.CACHE['state']
         else: 
             return await get_state_account(self.program)
 
     async def get_spot_market(self, i):
-        if self.cache: 
+        if self.use_cache: 
             return self.CACHE['spot_markets'][i]
         else: 
             return await get_spot_market_account(
@@ -109,7 +109,7 @@ class ClearingHouseUser:
             )
     
     async def get_perp_market(self, i):
-        if self.cache: 
+        if self.use_cache: 
             return self.CACHE['perp_markets'][i]
         else: 
             return await get_perp_market_account(
@@ -117,7 +117,7 @@ class ClearingHouseUser:
             )
 
     async def get_user(self):
-        if self.cache: 
+        if self.use_cache: 
             return self.CACHE['user']
         else: 
             return await get_user_account(
