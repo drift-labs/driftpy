@@ -66,8 +66,12 @@ class ClearingHouseUser:
         # get_user 
         # if state = cache => get cached_market else get new market 
 
-    async def set_cache(self):
+    async def set_cache(self, CACHE=None):
         self.cache_is_set = True
+
+        if CACHE is not None:
+            self.CACHE = CACHE
+            return
 
         self.CACHE = {}
         state = await get_state_account(self.program)
