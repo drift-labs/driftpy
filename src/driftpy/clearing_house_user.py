@@ -387,7 +387,7 @@ class ClearingHouseUser:
             market = await self.get_perp_market(position.market_index)
 
             oracle_data = await self.get_perp_oracle_data(market)
-            position_unrealized_pnl = calculate_position_pnl(
+            position_unrealized_pnl = calculate_position_pnl_with_oracle(
                 market, position, oracle_data, with_funding
             )
 

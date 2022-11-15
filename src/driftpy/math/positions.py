@@ -61,7 +61,7 @@ def calculate_position_funding_pnl(market: PerpMarket, perp_position: PerpPositi
     return funding_rate_pnl
 
 
-def calculate_position_pnl(
+def calculate_position_pnl_with_oracle(
     market: PerpMarket,
     perp_position: PerpPosition,
     oracle_data,
@@ -103,83 +103,83 @@ def is_available(position: PerpPosition):
     )
 
 
-# def calculate_base_asset_value(market: PerpMarket, user_position: PerpPosition) -> int:
-#     if user_position.base_asset_amount == 0:
-#         return 0
+def calculate_base_asset_value(market: PerpMarket, user_position: PerpPosition) -> int:
+    if user_position.base_asset_amount == 0:
+        return 0
 
-#     direction_to_close = (
-#         PositionDirection.SHORT
-#         if user_position.base_asset_amount > 0
-#         else PositionDirection.LONG
-#     )
+    direction_to_close = (
+        PositionDirection.SHORT
+        if user_position.base_asset_amount > 0
+        else PositionDirection.LONG
+    )
 
-#     new_quote_asset_reserve, _ = calculate_amm_reserves_after_swap(
-#         market.amm,
-#         AssetType.BASE,
-#         abs(user_position.base_asset_amount),
-#         get_swap_direction(AssetType.BASE, direction_to_close),
-#     )
+    new_quote_asset_reserve, _ = calculate_amm_reserves_after_swap(
+        market.amm,
+        AssetType.BASE,
+        abs(user_position.base_asset_amount),
+        get_swap_direction(AssetType.BASE, direction_to_close),
+    )
 
-#     result = None
-#     if direction_to_close == PositionDirection.SHORT:
-#         result = (
-#             (market.amm.quote_asset_reserve - new_quote_asset_reserve)
-#             * market.amm.peg_multiplier
-#         ) / AMM_TIMES_PEG_TO_QUOTE_PRECISION_RATIO
-#     else:
-#         # PositionDirection.LONG:
-#         result = (
-#             (
-#                 (new_quote_asset_reserve - market.amm.quote_asset_reserve)
-#                 * market.amm.peg_multiplier
-#             )
-#             / AMM_TIMES_PEG_TO_QUOTE_PRECISION_RATIO
-#         ) + 1.0
+    result = None
+    if direction_to_close == PositionDirection.SHORT:
+        result = (
+            (market.amm.quote_asset_reserve - new_quote_asset_reserve)
+            * market.amm.peg_multiplier
+        ) / AMM_TIMES_PEG_TO_QUOTE_PRECISION_RATIO
+    else:
+        # PositionDirection.LONG:
+        result = (
+            (
+                (new_quote_asset_reserve - market.amm.quote_asset_reserve)
+                * market.amm.peg_multiplier
+            )
+            / AMM_TIMES_PEG_TO_QUOTE_PRECISION_RATIO
+        ) + 1.0
 
-#     return result
-
-
-# def calculate_position_pnl(
-#     market: PerpMarket, market_position: PerpPosition, with_funding=False
-# ):
-#     pnl = 0.0
-
-#     if market_position.base_asset_amount == 0:
-#         return pnl
-
-#     base_asset_value = calculate_base_asset_value(market, market_position)
-
-#     if market_position.base_asset_amount > 0:
-#         pnl = base_asset_value - market_position.quote_asset_amount
-#     else:
-#         pnl = market_position.quote_asset_amount - base_asset_value
-
-#     if with_funding:
-#         funding_rate_pnl = 0.0
-#         pnl += funding_rate_pnl / float(PRICE_TO_QUOTE_PRECISION_RATIO)
-
-#     return pnl
+    return result
 
 
-# def calculate_position_funding_pnl(market: PerpMarket, market_position: PerpPosition):
-#     funding_pnl = 0.0
+def calculate_position_pnl(
+    market: PerpMarket, market_position: PerpPosition, with_funding=False
+):
+    pnl = 0.0
 
-#     if market_position.base_asset_amount == 0:
-#         return funding_pnl
+    if market_position.base_asset_amount == 0:
+        return pnl
 
-#     amm_cum_funding_rate = (
-#         market.amm.cumulative_funding_rate_long
-#         if market_position.base_asset_amount > 0
-#         else market.amm.cumulative_funding_rate_short
-#     )
+    base_asset_value = calculate_base_asset_value(market, market_position)
 
-#     funding_pnl = (
-#         market_position.last_cumulative_funding_rate - amm_cum_funding_rate
-#     ) * market_position.base_asset_amount
+    if market_position.base_asset_amount > 0:
+        pnl = base_asset_value - market_position.quote_asset_amount
+    else:
+        pnl = market_position.quote_asset_amount - base_asset_value
 
-#     funding_pnl /= float(AMM_RESERVE_PRECISION * FUNDING_RATE_BUFFER)
+    if with_funding:
+        funding_rate_pnl = 0.0
+        pnl += funding_rate_pnl / float(PRICE_TO_QUOTE_PRECISION_RATIO)
 
-#     return funding_pnl
+    return pnl
+
+
+def calculate_position_funding_pnl(market: PerpMarket, market_position: PerpPosition):
+    funding_pnl = 0.0
+
+    if market_position.base_asset_amount == 0:
+        return funding_pnl
+
+    amm_cum_funding_rate = (
+        market.amm.cumulative_funding_rate_long
+        if market_position.base_asset_amount > 0
+        else market.amm.cumulative_funding_rate_short
+    )
+
+    funding_pnl = (
+        market_position.last_cumulative_funding_rate - amm_cum_funding_rate
+    ) * market_position.base_asset_amount
+
+    funding_pnl /= float(AMM_RESERVE_PRECISION * FUNDING_RATE_BUFFER)
+
+    return funding_pnl
 
 
 def calculate_entry_price(market_position: PerpPosition):

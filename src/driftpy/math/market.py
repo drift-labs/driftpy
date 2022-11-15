@@ -9,7 +9,7 @@ from driftpy.types import PositionDirection
 import copy
 from solana.publickey import PublicKey
 import numpy as np
-from driftpy.math.positions import calculate_base_asset_value, calculate_position_pnl
+# from driftpy.math.positions import calculate_base_asset_value, calculate_position_pnl
 from driftpy.constants.numeric_constants import (
     AMM_RESERVE_PRECISION,
     AMM_TIMES_PEG_TO_QUOTE_PRECISION_RATIO,
