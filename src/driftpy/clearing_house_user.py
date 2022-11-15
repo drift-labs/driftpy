@@ -10,7 +10,6 @@ from driftpy.math.margin import *
 from driftpy.math.spot_market import *
 from driftpy.math.oracle import *
 
-
 def find(l: list, f):
     valid_values = [v for v in l if f(v)]
     if len(valid_values) == 0:
@@ -34,6 +33,8 @@ class ClearingHouseUser:
         self,
         clearing_house: ClearingHouse,
         authority: Optional[PublicKey] = None,
+        subaccount_id: int = 0,
+        cache: bool = False,
     ):
         """Initialize the ClearingHouse object.
 
@@ -54,6 +55,74 @@ class ClearingHouseUser:
         self.program = clearing_house.program
         self.oracle_program = clearing_house
         self.connection = self.program.provider.connection
+        self.subaccount_id = subaccount_id
+        self.cache = cache
+
+        if self.cache:
+            self.set_cache()
+
+    # cache all state, perpmarket, oracle, etc. in single cache -- user calls reload 
+    # when they want to update the data? 
+        # get_spot_market
+        # get_perp_market 
+        # get_user 
+        # if state = cache => get cached_market else get new market 
+
+    async def set_cache(self):
+        self.CACHE = {}
+        state = await get_state_account(self.program)
+        self.CACHE['state'] = state
+
+        spot_markets = []
+        for i in range(state.number_of_spot_markets):
+            spot_market = await get_spot_market_account(
+                self.program, i
+            )
+            spot_markets.append(spot_market)
+        self.CACHE['spot_markets'] = spot_markets
+        
+        perp_markets = []
+        for i in range(state.number_of_markets):
+            perp_market = await get_perp_market_account(
+                self.program, i
+            )
+            perp_markets.append(perp_market)
+        self.CACHE['perp_markets'] = perp_markets
+
+        user = await get_user_account(
+            self.program, self.authority, self.subaccount_id
+        )
+        self.CACHE['user'] = user
+    
+    async def get_state(self):
+        if self.cache: 
+            return self.CACHE['state']
+        else: 
+            return await get_state_account(self.program)
+
+    async def get_spot_market(self, i):
+        if self.cache: 
+            return self.CACHE['spot_markets'][i]
+        else: 
+            return await get_spot_market_account(
+                self.program, i
+            )
+    
+    async def get_perp_market(self, i):
+        if self.cache: 
+            return self.CACHE['perp_markets'][i]
+        else: 
+            return await get_perp_market_account(
+                self.program, i
+            )
+
+    async def get_user(self):
+        if self.cache: 
+            return self.CACHE['user']
+        else: 
+            return await get_user_account(
+                self.program, self.authority, self.subaccount_id
+            )
 
     async def get_spot_market_liability(
         self,
@@ -62,7 +131,7 @@ class ClearingHouseUser:
         liquidation_buffer=None,
         include_open_orders=None,
     ):
-        user = await self.get_user_account()
+        user = await self.get_user()
         total_liability = 0
         for position in user.spot_positions:
             if is_spot_position_available(position) or (
@@ -70,9 +139,7 @@ class ClearingHouseUser:
             ):
                 continue
 
-            spot_market = await get_spot_market_account(
-                self.program, position.market_index
-            )
+            spot_market = await self.get_spot_market(position.market_index)
 
             if position.market_index == QUOTE_ASSET_BANK_INDEX:
                 if str(position.balance_type) == "SpotBalanceType.Borrow()":
@@ -141,10 +208,11 @@ class ClearingHouseUser:
         liquidation_buffer: Optional[int] = 0,
         include_open_orders: bool = False,
     ):
-        user = await self.get_user_account()
+        user = await self.get_user()
+
         unrealized_pnl = 0
         for position in user.perp_positions:
-            market = await get_perp_market_account(self.program, position.market_index)
+            market = await self.get_perp_market(position.market_index)
 
             if position.lp_shares > 0:
                 pass
@@ -180,11 +248,11 @@ class ClearingHouseUser:
     async def can_be_liquidated(self) -> bool:
         total_collateral = await self.get_total_collateral()
 
-        user = await self.get_user_account()
+        user = await self.get_user()
         liquidation_buffer = None
         if user.being_liquidated:
             liquidation_buffer = (
-                await get_state_account(self.program)
+                await self.get_state()
             ).liquidation_margin_buffer_ratio
 
         maintenance_req = await self.get_margin_requirement(
@@ -230,7 +298,7 @@ class ClearingHouseUser:
         self,
         market_index: int,
     ) -> Optional[SpotPosition]:
-        user = await get_user_account(self.program, self.authority)
+        user = await self.get_user()
 
         found = False
         for position in user.spot_positions:
@@ -250,7 +318,7 @@ class ClearingHouseUser:
         self,
         market_index: int,
     ) -> Optional[PerpPosition]:
-        user = await get_user_account(self.program, self.authority)
+        user = await self.get_user()
 
         found = False
         for position in user.perp_positions:
@@ -261,7 +329,6 @@ class ClearingHouseUser:
         if not found:
             return None
 
-        # assert position.market_index == market_index, "no position in market"
         return position
 
     async def get_unrealized_pnl(
@@ -270,15 +337,15 @@ class ClearingHouseUser:
         market_index: int = None,
         with_weight_margin_category: Optional[MarginCategory] = None,
     ):
-        # quote_spot_market = get_spot_market_account(self.program, QUOTE_SPOT_MARKET_INDEX)
-        user = await get_user_account(self.clearing_house.program, self.authority)
+        user = await self.get_user()
+
         unrealized_pnl = 0
         position: PerpPosition
         for position in user.perp_positions:
             if market_index is not None and position.market_index != market_index:
                 continue
-
-            market = await get_perp_market_account(self.program, position.market_index)
+            
+            market = await self.get_perp_market(position.market_index)
             oracle_data = await get_oracle_data(
                 self.program.provider.connection, market.amm.oracle
             )
@@ -301,7 +368,7 @@ class ClearingHouseUser:
         include_open_orders=True,
         market_index: Optional[int] = None,
     ):
-        user = await get_user_account(self.clearing_house.program, self.authority)
+        user = await self.get_user()
         total_value = 0
         for position in user.spot_positions:
             if is_spot_position_available(position) or (
@@ -309,9 +376,7 @@ class ClearingHouseUser:
             ):
                 continue
 
-            spot_market = await get_spot_market_account(
-                self.program, position.market_index
-            )
+            spot_market = await self.get_spot_market(position.market_index)
 
             if position.market_index == QUOTE_ASSET_BANK_INDEX:
                 spot_token_value = get_token_amount(
@@ -352,9 +417,6 @@ class ClearingHouseUser:
                 total_value += worst_case_quote_amount
 
         return total_value
-
-    async def get_user_account(self) -> User:
-        return await get_user_account(self.program, self.authority)
 
     async def get_leverage(
         self, margin_category: Optional[MarginCategory] = None
