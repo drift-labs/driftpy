@@ -477,22 +477,27 @@ class ClearingHouseUser:
     async def get_liq_price(
         self, 
         perp_market_index: int, 
-    ):
+    ) -> Optional[int]:
         # get total collateral 
         # get margin requirement 
         # compute difference = liq_delta (how much -pnl before liq)
         # delta_per_baa = liq_delta / baa
         # liq_price = oracle + delta_per_baa
+        position = await self.get_user_position(perp_market_index)
+        if position is None or position.base_asset_amount == 0:
+            return None
 
         total_collateral = await self.get_total_collateral(MarginCategory.MAINTENANCE)
         margin_req = await self.get_margin_requirement(MarginCategory.MAINTENANCE)
         delta_liq = total_collateral - margin_req
 
-        perp_market = await get_perp_market_account(self.program, perp_market_index)
-        position = await self.get_user_position(perp_market_index)
+        perp_market = await self.get_perp_market(perp_market_index)
         delta_per_baa = delta_liq / (position.base_asset_amount / AMM_RESERVE_PRECISION)
         
         oracle_price = (await self.get_perp_oracle_data(perp_market)).price / PRICE_PRECISION
 
         liq_price = oracle_price - (delta_per_baa / QUOTE_PRECISION)
+        if liq_price < 0:
+            return None
+
         return liq_price

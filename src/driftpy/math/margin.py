@@ -168,14 +168,14 @@ def calculate_liability_weight(
         case MarginCategory.INITIAL:
             asset_weight = calculate_size_premium_liability_weight(
                 size_in_amm_reserve_precision,
-                spot_market.imf_factorm,
+                spot_market.imf_factor,
                 spot_market.initial_liability_weight,
                 SPOT_WEIGHT_PRECISION,
             )
         case MarginCategory.MAINTENANCE:
             asset_weight = calculate_size_premium_liability_weight(
                 size_in_amm_reserve_precision,
-                spot_market.imf_factorm,
+                spot_market.imf_factor,
                 spot_market.maintenance_liability_weight,
                 SPOT_WEIGHT_PRECISION,
             )
