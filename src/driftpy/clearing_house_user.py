@@ -86,7 +86,9 @@ class ClearingHouseUser:
             spot_markets.append(spot_market)
 
             if i == 0: 
-                spot_market_oracle_data.append(1)
+                spot_market_oracle_data.append(OracleData(
+                    PRICE_PRECISION, 0, 1, 1, 0, True
+                ))
             else:
                 oracle_data = await get_oracle_data(self.connection, spot_market.oracle)
                 spot_market_oracle_data.append(oracle_data)
@@ -543,5 +545,8 @@ class ClearingHouseUser:
         price = (await self.get_spot_oracle_data(spot_market)).price
         liq_price = price + liq_price_delta
         liq_price /= PRICE_PRECISION
+
+        if liq_price < 0:
+            return None
         
         return liq_price
