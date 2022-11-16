@@ -474,32 +474,10 @@ class ClearingHouseUser:
 
         return leverage
 
-    async def can_be_liquidated(
-        self, 
-        perp_market_index: int
-    ) -> bool: 
-        position = await self.get_user_position(perp_market_index)
-        if position is None or position.base_asset_amount == 0: 
-            return False
-
-        liq_price = await self.get_liq_price(perp_market_index)
-        perp_market = await self.get_perp_market(perp_market_index)
-        oracle_price = (await self.get_perp_oracle_data(perp_market)).price / PRICE_PRECISION
-
-        if position.base_asset_amount < 0:
-            return oracle_price >= liq_price
-        elif position.base_asset_amount > 0: 
-            return oracle_price <= liq_price
-
-    async def get_liq_price(
+    async def get_perp_liq_price(
         self, 
         perp_market_index: int, 
     ) -> Optional[int]:
-        # get total collateral 
-        # get margin requirement 
-        # compute difference = liq_delta (how much -pnl before liq)
-        # delta_per_baa = liq_delta / baa
-        # liq_price = oracle + delta_per_baa
         position = await self.get_user_position(perp_market_index)
         if position is None or position.base_asset_amount == 0:
             return None
@@ -517,4 +495,53 @@ class ClearingHouseUser:
         if liq_price < 0:
             return None
 
+        return liq_price
+
+    async def get_spot_liq_price(
+        self, 
+        spot_market_index: int, 
+    ) -> Optional[int]:
+        position = await self.get_user_spot_position(spot_market_index)
+        if position is None: 
+            return None
+
+        total_collateral = await self.get_total_collateral(MarginCategory.MAINTENANCE)
+        margin_req = await self.get_margin_requirement(MarginCategory.MAINTENANCE)
+        delta_liq = total_collateral - margin_req
+
+        spot_market = await self.get_spot_market(spot_market_index)
+        token_amount = get_token_amount(
+            position.scaled_balance, 
+            spot_market, 
+            position.balance_type
+        )
+        token_amount_qp = token_amount * QUOTE_PRECISION / (10 ** spot_market.decimals)
+        if abs(token_amount_qp) == 0: 
+            return None 
+
+        match str(position.balance_type):
+            case "SpotBalanceType.Borrow()":
+                liq_price_delta = (
+                    delta_liq 
+                    * PRICE_PRECISION
+                    * SPOT_WEIGHT_PRECISION
+                    / token_amount_qp
+                    / spot_market.maintenance_liability_weight
+                )
+            case "SpotBalanceType.Deposit()":
+                liq_price_delta = (
+                    delta_liq 
+                    * PRICE_PRECISION
+                    * SPOT_WEIGHT_PRECISION
+                    / token_amount_qp
+                    / spot_market.maintenance_asset_weight
+                    * -1 
+                )
+            case _:
+                raise Exception(f"Invalid balance type: {position.balance_type}")
+        
+        price = (await self.get_spot_oracle_data(spot_market)).price
+        liq_price = price + liq_price_delta
+        liq_price /= PRICE_PRECISION
+        
         return liq_price
