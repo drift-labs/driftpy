@@ -474,6 +474,23 @@ class ClearingHouseUser:
 
         return leverage
 
+    async def can_be_liquidated(
+        self, 
+        perp_market_index: int
+    ) -> bool: 
+        position = await self.get_user_position(perp_market_index)
+        if position is None or position.base_asset_amount == 0: 
+            return False
+
+        liq_price = await self.get_liq_price(perp_market_index)
+        perp_market = await self.get_perp_market(perp_market_index)
+        oracle_price = (await self.get_perp_oracle_data(perp_market)).price / PRICE_PRECISION
+
+        if position.base_asset_amount < 0:
+            return oracle_price >= liq_price
+        elif position.base_asset_amount > 0: 
+            return oracle_price <= liq_price
+
     async def get_liq_price(
         self, 
         perp_market_index: int, 
