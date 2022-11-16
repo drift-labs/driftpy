@@ -303,13 +303,13 @@ class ClearingHouseUser:
     async def get_margin_requirement(
         self, margin_category: MarginCategory, liquidation_buffer: Optional[int] = 0
     ) -> int:
-        perp_liability = self.get_total_perp_positon(
+        perp_liability = await self.get_total_perp_positon(
             margin_category, liquidation_buffer, True
         )
-        spot_liability = self.get_spot_market_liability(
+        spot_liability = await self.get_spot_market_liability(
             None, margin_category, liquidation_buffer, True
         )
-        return await perp_liability + await spot_liability
+        return perp_liability + spot_liability
 
     async def get_total_collateral(
         self, margin_category: Optional[MarginCategory] = None
@@ -321,8 +321,8 @@ class ClearingHouseUser:
         pnl = await self.get_unrealized_pnl(
             True, with_weight_margin_category=margin_category
         )
-        total_collatearl = spot_collateral + pnl
-        return total_collatearl
+        total_collateral = spot_collateral + pnl
+        return total_collateral
 
     async def get_free_collateral(self):
         total_collateral = await self.get_total_collateral()
@@ -377,6 +377,7 @@ class ClearingHouseUser:
         with_weight_margin_category: Optional[MarginCategory] = None,
     ):
         user = await self.get_user()
+        quote_spot_market = await self.get_spot_market(QUOTE_ASSET_BANK_INDEX)
 
         unrealized_pnl = 0
         position: PerpPosition
@@ -392,9 +393,15 @@ class ClearingHouseUser:
             )
 
             if with_weight_margin_category is not None:
-                raise NotImplementedError(
-                    "Only with_weight_margin_category = None supported"
-                )
+                if position_unrealized_pnl > 0: 
+                    unrealized_asset_weight = calculate_unrealized_asset_weight(
+                        market, 
+                        quote_spot_market, 
+                        position_unrealized_pnl,
+                        with_weight_margin_category, 
+                        oracle_data
+                    )
+                    position_unrealized_pnl = position_unrealized_pnl * unrealized_asset_weight / SPOT_WEIGHT_PRECISION
 
             unrealized_pnl += position_unrealized_pnl
 
@@ -466,3 +473,26 @@ class ClearingHouseUser:
         leverage = total_liability * 10_000 / total_asset_value
 
         return leverage
+
+    async def get_liq_price(
+        self, 
+        perp_market_index: int, 
+    ):
+        # get total collateral 
+        # get margin requirement 
+        # compute difference = liq_delta (how much -pnl before liq)
+        # delta_per_baa = liq_delta / baa
+        # liq_price = oracle + delta_per_baa
+
+        total_collateral = await self.get_total_collateral(MarginCategory.MAINTENANCE)
+        margin_req = await self.get_margin_requirement(MarginCategory.MAINTENANCE)
+        delta_liq = total_collateral - margin_req
+
+        perp_market = await get_perp_market_account(self.program, perp_market_index)
+        position = await self.get_user_position(perp_market_index)
+        delta_per_baa = delta_liq / (position.base_asset_amount / AMM_RESERVE_PRECISION)
+        
+        oracle_price = (await self.get_perp_oracle_data(perp_market)).price / PRICE_PRECISION
+
+        liq_price = oracle_price - (delta_per_baa / QUOTE_PRECISION)
+        return liq_price

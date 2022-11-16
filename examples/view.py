@@ -9,6 +9,7 @@ from driftpy.clearing_house import ClearingHouse
 from driftpy.accounts import *
 from solana.keypair import Keypair
 from driftpy.math.positions import is_available
+from driftpy.constants.numeric_constants import *
 
 from driftpy.clearing_house_user import ClearingHouseUser
 
@@ -58,6 +59,17 @@ async def main(
         'spot_liability', spot_liability
     )
 
+    perp_market = await chu.get_perp_market(0)
+    oracle = (await chu.get_perp_oracle_data(perp_market)).price / PRICE_PRECISION
+    print('oracle price', oracle)
+
+    print('init leverage, main leverage:', MARGIN_PRECISION / perp_market.margin_ratio_initial, MARGIN_PRECISION / perp_market.margin_ratio_maintenance)
+
+    liq_price = await chu.get_liq_price(0)
+    print(
+        'liq price', liq_price
+    )
+
     total_liability = await chu.get_margin_requirement(None)
     total_asset_value = await chu.get_total_collateral()
     print(
@@ -66,6 +78,8 @@ async def main(
     )
     print('leverage:', (await chu.get_leverage()) / 10_000)
 
+    chu.CACHE['perp_market_oracles'][0].price = liq_price * PRICE_PRECISION
+    print('leverage (at liq price):', (await chu.get_leverage()) / 10_000)
 
     user = await chu.get_user()
     print('perp positions:')

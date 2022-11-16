@@ -64,7 +64,7 @@ def calculate_position_funding_pnl(market: PerpMarket, perp_position: PerpPositi
 def calculate_position_pnl_with_oracle(
     market: PerpMarket,
     perp_position: PerpPosition,
-    oracle_data,
+    oracle_data: OracleData,
     with_funding=False,
 ):
     if perp_position.base_asset_amount == 0:
