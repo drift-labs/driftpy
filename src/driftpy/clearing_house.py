@@ -1341,3 +1341,27 @@ class ClearingHouse:
                 remaining_accounts=remaining_accounts,
             ),
         )
+
+    async def settle_revenue_to_insurance_fund(
+        self, 
+        spot_market_index: int
+    ):
+        return await self.program.rpc["settle_revenue_to_insurance_fund"](
+            spot_market_index,
+            ctx=Context(
+                accounts={
+                    "state": get_state_public_key(self.program_id),
+                    "spot_market": get_spot_market_public_key(
+                        self.program_id, spot_market_index
+                    ),
+                    "spot_market_vault": get_spot_market_vault_public_key(
+                        self.program_id, spot_market_index
+                    ),
+                    "drift_signer": get_clearing_house_signer_public_key(self.program_id),
+                    "insurance_fund_vault": get_insurance_fund_vault_public_key(
+                        self.program_id, spot_market_index,
+                    ),
+                    "token_program": TOKEN_PROGRAM_ID,
+                }
+            ),
+        ) 
