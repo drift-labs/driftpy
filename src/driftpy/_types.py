@@ -458,13 +458,15 @@ class Market:
     padding3: int = 0
     padding4: int = 0
 
+
 from driftpy.types import OracleSource
 from driftpy.constants.numeric_constants import SPOT_RATE_PRECISION
 
+
 @dataclass
 class SpotMarket:
-    mint: PublicKey # this
-    oracle: PublicKey = PublicKey([0] * PublicKey.LENGTH) # this
+    mint: PublicKey  # this
+    oracle: PublicKey = PublicKey([0] * PublicKey.LENGTH)  # this
     oracle_source: OracleSource = OracleSource.QUOTE_ASSET()
     optimal_utilization: int = SPOT_RATE_PRECISION // 2
     optimal_rate: int = SPOT_RATE_PRECISION

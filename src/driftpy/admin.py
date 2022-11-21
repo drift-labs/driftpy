@@ -102,7 +102,7 @@ class Admin(ClearingHouse):
         margin_ratio_maintenance: int = 500,
         liquidation_fee: int = 0,
         active_status: bool = True,
-        name: list = [0] * 32
+        name: list = [0] * 32,
     ) -> TransactionSignature:
         state_public_key = get_state_public_key(self.program.program_id)
         state = await get_state_account(self.program)
@@ -210,9 +210,11 @@ class Admin(ClearingHouse):
         )
 
     async def update_perp_market_curve_update_intensity(
-        self, market_index: int, curve_update_intensity: int, 
+        self,
+        market_index: int,
+        curve_update_intensity: int,
     ):
-        assert(curve_update_intensity >=0 and curve_update_intensity <= 100)
+        assert curve_update_intensity >= 0 and curve_update_intensity <= 100
         market_public_key = get_perp_market_public_key(self.program_id, market_index)
         return await self.program.rpc["update_perp_market_curve_update_intensity"](
             curve_update_intensity,
@@ -226,7 +228,9 @@ class Admin(ClearingHouse):
         )
 
     async def update_perp_market_max_fill_reserve_fraction(
-        self, market_index: int, max_fill_reserve_fraction: int, 
+        self,
+        market_index: int,
+        max_fill_reserve_fraction: int,
     ):
         market_public_key = get_perp_market_public_key(self.program_id, market_index)
         return await self.program.rpc["update_perp_market_max_fill_reserve_fraction"](
@@ -250,7 +254,7 @@ class Admin(ClearingHouse):
                 }
             ),
         )
-    
+
     async def update_lp_cooldown_time(self, duration: int):
         return await self.program.rpc["update_lp_cooldown_time"](
             duration,
@@ -296,7 +300,6 @@ class Admin(ClearingHouse):
             ),
         )
 
-
     async def update_perp_market_max_spread(
         self,
         market_index: int,
@@ -334,7 +337,7 @@ class Admin(ClearingHouse):
         )
 
     async def update_perp_market_max_imbalances(
-        self, 
+        self,
         market_index,
         unrealized_max_imbalance,
         max_revenue_withdraw_per_period,
@@ -348,16 +351,17 @@ class Admin(ClearingHouse):
                 accounts={
                     "state": self.get_state_public_key(),
                     "admin": self.authority,
-                    "perp_market": get_perp_market_public_key(self.program_id, market_index),
+                    "perp_market": get_perp_market_public_key(
+                        self.program_id, market_index
+                    ),
                 },
             ),
         )
 
     from driftpy.types import ContractTier
+
     async def update_perp_market_contract_tier(
-        self, 
-        market_index: int,
-        contract_type: ContractTier
+        self, market_index: int, contract_type: ContractTier
     ):
         return await self.program.rpc["update_perp_market_contract_tier"](
             contract_type,
@@ -365,16 +369,17 @@ class Admin(ClearingHouse):
                 accounts={
                     "state": self.get_state_public_key(),
                     "admin": self.authority,
-                    "perp_market": get_perp_market_public_key(self.program_id, market_index),
+                    "perp_market": get_perp_market_public_key(
+                        self.program_id, market_index
+                    ),
                 },
             ),
         )
 
     from driftpy.types import MarketStatus
+
     async def update_perp_market_status(
-        self, 
-        market_index: int,
-        market_status: MarketStatus
+        self, market_index: int, market_status: MarketStatus
     ):
         return await self.program.rpc["update_perp_market_status"](
             market_status,
@@ -382,11 +387,12 @@ class Admin(ClearingHouse):
                 accounts={
                     "state": self.get_state_public_key(),
                     "admin": self.authority,
-                    "perp_market": get_perp_market_public_key(self.program_id, market_index),
+                    "perp_market": get_perp_market_public_key(
+                        self.program_id, market_index
+                    ),
                 },
             ),
         )
-    
 
     async def settle_expired_market_pools_to_revenue_pool(
         self,
@@ -414,17 +420,21 @@ class Admin(ClearingHouse):
                     "spot_market": get_spot_market_public_key(
                         self.program_id, QUOTE_SPOT_MARKET_INDEX
                     ),
-                    "perp_market": get_perp_market_public_key(self.program_id, market_index),
+                    "perp_market": get_perp_market_public_key(
+                        self.program_id, market_index
+                    ),
                 },
             ),
         )
-    
+
     async def update_spot_market_expiry(
         self,
         spot_market_index: int,
         expiry_ts: int,
     ):
-        market_public_key = get_spot_market_public_key(self.program_id, spot_market_index)
+        market_public_key = get_spot_market_public_key(
+            self.program_id, spot_market_index
+        )
         return await self.program.rpc["update_spot_market_expiry"](
             expiry_ts,
             ctx=Context(
@@ -453,11 +463,7 @@ class Admin(ClearingHouse):
             ),
         )
 
-
-    async def update_oracle_guard_rails(
-        self,
-        oracle_guard_rails: OracleGuardRails
-    ):
+    async def update_oracle_guard_rails(self, oracle_guard_rails: OracleGuardRails):
         return await self.program.rpc["update_oracle_guard_rails"](
             oracle_guard_rails,
             ctx=Context(
@@ -467,11 +473,9 @@ class Admin(ClearingHouse):
                 }
             ),
         )
-    
+
     async def update_withdraw_guard_threshold(
-        self,
-        spot_market_index: int, 
-        withdraw_guard_threshold: int
+        self, spot_market_index: int, withdraw_guard_threshold: int
     ):
         return await self.program.rpc["update_withdraw_guard_threshold"](
             withdraw_guard_threshold,
@@ -479,15 +483,14 @@ class Admin(ClearingHouse):
                 accounts={
                     "admin": self.authority,
                     "state": get_state_public_key(self.program_id),
-                    "spot_market": get_spot_market_public_key(self.program_id, spot_market_index)
+                    "spot_market": get_spot_market_public_key(
+                        self.program_id, spot_market_index
+                    ),
                 }
             ),
         )
 
-    async def update_state_settlement_duration(
-        self,
-        settlement_duration: int
-    ):
+    async def update_state_settlement_duration(self, settlement_duration: int):
         return await self.program.rpc["update_state_settlement_duration"](
             settlement_duration,
             ctx=Context(
@@ -497,11 +500,9 @@ class Admin(ClearingHouse):
                 }
             ),
         )
-    
+
     async def update_update_insurance_fund_unstaking_period(
-        self,
-        spot_market_index: int, 
-        insurance_fund_unstaking_period: int
+        self, spot_market_index: int, insurance_fund_unstaking_period: int
     ):
         return await self.program.rpc["update_insurance_fund_unstaking_period"](
             insurance_fund_unstaking_period,
@@ -509,7 +510,9 @@ class Admin(ClearingHouse):
                 accounts={
                     "admin": self.authority,
                     "state": get_state_public_key(self.program_id),
-                    "spot_market": get_spot_market_public_key(self.program_id, spot_market_index)
+                    "spot_market": get_spot_market_public_key(
+                        self.program_id, spot_market_index
+                    ),
                 }
             ),
         )

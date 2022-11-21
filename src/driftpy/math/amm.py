@@ -241,7 +241,8 @@ def calculate_peg_multiplier(
             # print('budget to repeg:', budget_cost, 'to target_price', target_px)
 
         new_peg = int(
-            calculate_budgeted_repeg(amm, budget_cost, target_px=target_px) * PEG_PRECISION
+            calculate_budgeted_repeg(amm, budget_cost, target_px=target_px)
+            * PEG_PRECISION
         )
         return new_peg
     elif "PreFreePeg" in amm.strategies:
@@ -254,7 +255,8 @@ def calculate_peg_multiplier(
             budget_cost = max(0, fee_pool)
 
         new_peg = int(
-            calculate_budgeted_repeg(amm, budget_cost, target_px=target_px) * PEG_PRECISION
+            calculate_budgeted_repeg(amm, budget_cost, target_px=target_px)
+            * PEG_PRECISION
         )
         return new_peg
     else:
@@ -303,7 +305,9 @@ def calculate_spread_reserves(
             * amm.peg_multiplier
             / PEG_PRECISION
         )
-        local_base_asset_value = mark_price * (effective_position / AMM_RESERVE_PRECISION)
+        local_base_asset_value = mark_price * (
+            effective_position / AMM_RESERVE_PRECISION
+        )
 
         local_pnl = local_base_asset_value - net_cost_basis
         net_pnl = net_base_asset_value - net_cost_basis

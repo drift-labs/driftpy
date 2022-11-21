@@ -188,7 +188,7 @@ def calculate_target_price_trade(
         else:
             direction = PositionDirection.LONG
         tradeSize = 0
-        print('canot trade:', bid_price_before, target_price, ask_price_before)
+        print("canot trade:", bid_price_before, target_price, ask_price_before)
         return [direction, tradeSize, target_price, target_price]
     elif mark_price_before > target_price:
         base_asset_reserve_after = (
@@ -213,7 +213,7 @@ def calculate_target_price_trade(
         quote_asset_reserve_after = (k / PRICE_PRECISION) / base_asset_reserve_after
 
         direction = PositionDirection.LONG
-        print('long', quote_asset_reserve_after, quote_asset_reserve_before, peg)
+        print("long", quote_asset_reserve_after, quote_asset_reserve_before, peg)
         trade_size = (
             (quote_asset_reserve_after - quote_asset_reserve_before)
             * ((peg) / PEG_PRECISION)

@@ -13,6 +13,7 @@ def get_perp_market_public_key(
         [b"perp_market", int_to_le_bytes(market_index)], program_id
     )[0]
 
+
 def get_insurance_fund_vault_public_key(
     program_id: PublicKey,
     spot_market_index: int,
@@ -21,14 +22,17 @@ def get_insurance_fund_vault_public_key(
         [b"insurance_fund_vault", int_to_le_bytes(spot_market_index)], program_id
     )[0]
 
+
 def get_insurance_fund_stake_public_key(
     program_id: PublicKey,
     authority: PublicKey,
     spot_market_index: int,
 ) -> PublicKey:
     return PublicKey.find_program_address(
-        [b"insurance_fund_stake", bytes(authority), int_to_le_bytes(spot_market_index)], program_id
+        [b"insurance_fund_stake", bytes(authority), int_to_le_bytes(spot_market_index)],
+        program_id,
     )[0]
+
 
 def get_spot_market_public_key(
     program_id: PublicKey,

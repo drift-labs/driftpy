@@ -18,9 +18,7 @@ Note: requires Python >= 3.9.
 
 ## Examples
 
-[Arbitrage Trading](https://github.com/0xbigz/driftpy-arb)
-
-[Querying and Visualization](https://gist.github.com/mcclurejt/b244d4ca8b0000ce5078ef8f60e937d9)
+- `examples/` folder includes how to provide liquidity/become an lp, stake in the insurance fund, etc.
 
 ## Development
 

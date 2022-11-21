@@ -131,6 +131,15 @@ async def main(
         print(
             f'vault_amount: {v_amount/QUOTE_PRECISION:,.2f}$ \nn_shares: {n_shares} \ntotal_shares: {total_shares} \n>balance: {balance / QUOTE_PRECISION}'
         )
+
+    elif operation == 'settle':
+        resp = input('confirm settling revenue to if stake: Y?')
+        if resp != 'Y':
+            print('confirmation failed exiting...')
+            return
+            
+        await ch.settle_revenue_to_insurance_fund(spot_market_index)
+        
     else: 
         return
 
@@ -152,7 +161,7 @@ if __name__ == '__main__':
     parser.add_argument('--env', type=str, default='devnet')
     parser.add_argument('--amount', type=float, required=False)
     parser.add_argument('--market', type=int, required=True)
-    parser.add_argument('--operation', choices=['remove', 'add', 'view'], required=True)
+    parser.add_argument('--operation', choices=['remove', 'add', 'view', 'settle'], required=True)
 
     args = parser.parse_args()
 

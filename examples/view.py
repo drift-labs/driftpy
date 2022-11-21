@@ -3,84 +3,103 @@ sys.path.append('../src/')
 
 from driftpy.constants.config import configs
 from anchorpy import Provider
-import json 
 from anchorpy import Wallet
 from solana.rpc.async_api import AsyncClient
-from driftpy.clearing_house import ClearingHouse, is_available
+from driftpy.clearing_house import ClearingHouse
 from driftpy.accounts import *
 from solana.keypair import Keypair
+from driftpy.math.positions import is_available
+from driftpy.constants.numeric_constants import *
 
-# todo: airdrop udsc + init account for any kp
-# rn do it through UI 
 from driftpy.clearing_house_user import ClearingHouseUser
-from driftpy.constants.numeric_constants import AMM_RESERVE_PRECISION
-from solana.rpc import commitment
-import pprint
-
-async def view_logs(
-    sig: str,
-    connection: AsyncClient
-):
-    connection._commitment = commitment.Confirmed 
-    logs = ''
-    try: 
-        await connection.confirm_transaction(sig, commitment.Confirmed)
-        logs = (await connection.get_transaction(sig))["result"]["meta"]["logMessages"]
-    finally:
-        connection._commitment = commitment.Processed 
-    pprint.pprint(logs)
 
 async def main(
-    keypath, 
-    env, 
-    url, 
+    authority, 
+    subaccount,
 ):
-    with open(keypath, 'r') as f: secret = json.load(f) 
-    kp = Keypair.from_secret_key(bytes(secret))
-    print('using public key:', kp.public_key)
+    authority = PublicKey(authority)
+
+    import time 
+    s = time.time()
     
+    env = 'mainnet'
     config = configs[env]
-    wallet = Wallet(kp)
-    connection = AsyncClient(url)
+    wallet = Wallet(Keypair()) # throwaway
+    connection = AsyncClient(config.default_http)
     provider = Provider(connection, wallet)
 
     ch = ClearingHouse.from_config(config, provider)
-    chu = ClearingHouseUser(ch)
+    chu = ClearingHouseUser(ch, authority=authority, subaccount_id=subaccount, use_cache=True)
+    await chu.set_cache()
+
+    user = await chu.get_user()
+    print('subaccount name:', bytes(user.name))
+
+    from driftpy.constants.numeric_constants import QUOTE_PRECISION
+    spot_collateral = await chu.get_spot_market_asset_value(
+        None,
+        include_open_orders=True,
+    )
+    print('spot collat:', spot_collateral/QUOTE_PRECISION)
+
+    pnl = await chu.get_unrealized_pnl(False)
+    print('pnl:', pnl/QUOTE_PRECISION)
 
     total_collateral = await chu.get_total_collateral()
     print('total collateral:', total_collateral)
-    print('leverage:', await chu.get_leverage())
 
-    user = await ch.get_user()
+    perp_liability = await chu.get_total_perp_positon(
+        None, 0, True
+    )
+    spot_liability = await chu.get_spot_market_liability(
+        None, None, 0, True
+    )
+    print(
+        'perp_liability', perp_liability, 
+        'spot_liability', spot_liability
+    )
+
+    perp_market = await chu.get_perp_market(0)
+    oracle = (await chu.get_perp_oracle_data(perp_market)).price / PRICE_PRECISION
+    print('oracle price', oracle)
+
+    print('init leverage, main leverage:', MARGIN_PRECISION / perp_market.margin_ratio_initial, MARGIN_PRECISION / perp_market.margin_ratio_maintenance)
+
+    liq_price = await chu.get_liq_price(0)
+    print(
+        'liq price', liq_price
+    )
+
+    total_liability = await chu.get_margin_requirement(None)
+    total_asset_value = await chu.get_total_collateral()
+    print(
+        'total_liab', total_liability, 
+        'total_asset', total_asset_value
+    )
+    print('leverage:', (await chu.get_leverage()) / 10_000)
+
+    chu.CACHE['perp_market_oracles'][0].price = liq_price * PRICE_PRECISION
+    print('leverage (at liq price):', (await chu.get_leverage()) / 10_000)
+
+    user = await chu.get_user()
     print('perp positions:')
     for position in user.perp_positions:
         if not is_available(position):
-            # market = await get_perp_market_account(ch.program, position.market_index)
             print('>', position) 
-    
+
+    print('time taken:', time.time() - s)    
     print('done! :)')
 
 if __name__ == '__main__':
     import argparse
-    import os 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--keypath', type=str, required=False, default=os.environ.get('ANCHOR_WALLET'))
-    parser.add_argument('--env', type=str, default='devnet')
+    parser.add_argument('--pubkey', type=str, required=True)
+    parser.add_argument('--subacc', type=int, required=False, default=0)
     args = parser.parse_args()
-
-    if args.keypath is None:
-        raise NotImplementedError("need to provide keypath or set ANCHOR_WALLET")
-
-    match args.env:
-        case 'devnet':
-            url = 'https://api.devnet.solana.com'
-        case _:
-            raise NotImplementedError('only devnet env supported')
 
     import asyncio
     asyncio.run(main(
-        args.keypath, 
-        args.env, 
-        url,
+        args.pubkey, 
+        args.subacc
     ))
 
