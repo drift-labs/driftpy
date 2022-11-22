@@ -65,19 +65,22 @@ async def main(
     )
     lp_amount = liquidity_amount * AMM_RESERVE_PRECISION
     lp_amount -= lp_amount % market.amm.order_step_size
+    lp_amount = int(lp_amount)
     print('standardized lp amount:', lp_amount / AMM_RESERVE_PRECISION)
     
     if lp_amount < market.amm.order_step_size:
         print('lp amount too small - exiting...')
     
+    
     print(f'{operation}ing {lp_amount} lp shares...')
 
+    sig = None
     if operation == 'add':
         resp = input('confirm adding liquidity: Y?')
         if resp != 'Y':
             print('confirmation failed exiting...')
             return
-        sig = ch.add_liquidity(lp_amount, market_index)
+        sig = await ch.add_liquidity(lp_amount, market_index)
         print(sig)
 
     elif operation == 'remove':
@@ -101,6 +104,10 @@ async def main(
         
     else: 
         return
+
+    if sig:
+        print('confirming tx...')
+        await connection.confirm_transaction(sig)
 
     position = await ch.get_user_position(market_index)
     market = await get_perp_market_account(ch.program, market_index)
@@ -137,6 +144,7 @@ if __name__ == '__main__':
         args.env, 
         url,
         args.market, 
-        args.amount
+        args.amount,
+        args.operation,
     ))
 
