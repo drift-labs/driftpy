@@ -103,7 +103,8 @@ async def main(
         return
 
     position = await ch.get_user_position(market_index)
-    percent_provided = (position.lp_shares  / (market.amm.sqrt_k + lp_amount)) * 100
+    market = await get_perp_market_account(ch.program, market_index)
+    percent_provided = (position.lp_shares  / market.amm.sqrt_k) * 100
     print(f"lp shares: {position.lp_shares}")
     print(f"providing {percent_provided}% of total market liquidity")
     print('done! :)')
