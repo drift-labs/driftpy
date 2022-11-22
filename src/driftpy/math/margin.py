@@ -229,8 +229,8 @@ def get_spot_liability_value(
         weight = calculate_liability_weight(token_amount, spot_market, margin_category)
 
         if margin_category == MarginCategory.INITIAL:
-            assert max_margin_ratio, "set = user.max_margin_ratio"
-            weight = max(weight, max_margin_ratio)
+            if max_margin_ratio:
+                weight = max(weight, max_margin_ratio)
 
         if liquidation_buffer is not None:
             weight += liquidation_buffer
