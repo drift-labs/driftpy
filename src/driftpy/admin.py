@@ -26,6 +26,7 @@ from driftpy.constants.numeric_constants import (
     SPOT_RATE_PRECISION,
     SPOT_WEIGHT_PRECISION,
 )
+from driftpy.accounts import get_perp_market_account
 
 
 class Admin(ClearingHouse):
@@ -515,3 +516,64 @@ class Admin(ClearingHouse):
                 }
             ),
         )
+
+    async def update_k(
+        self, 
+        sqrt_k: int,
+        perp_market_index: int,
+    ):
+       return await self.send_ixs(
+            await self.update_k_ix(sqrt_k, perp_market_index)
+       ) 
+    
+    async def update_k_ix(
+        self, 
+        sqrt_k: int,
+        perp_market_index: int,
+    ):
+        market = await get_perp_market_account(
+            self.program, perp_market_index
+        )
+
+        return self.program.instruction["update_k"](
+            sqrt_k, 
+            ctx=Context(
+                accounts={
+                    "admin": self.authority,
+                    "state": get_state_public_key(self.program_id),
+                    "perp_market": get_perp_market_public_key(self.program_id, perp_market_index),
+                    "oracle": market.amm.oracle,
+                }
+            )
+        )
+    
+    async def repeg_curve(
+        self, 
+        peg: int,
+        perp_market_index: int,
+    ):
+        return await self.send_ixs(
+            await self.repeg_curve_ix(peg, perp_market_index)
+        )
+
+    async def repeg_curve_ix(
+        self, 
+        peg: int,
+        perp_market_index: int,
+    ):
+        market = await get_perp_market_account(
+            self.program, perp_market_index
+        )
+
+        return self.program.instruction["repeg_amm_curve"](
+            peg, 
+            ctx=Context(
+                accounts={
+                    "admin": self.authority,
+                    "state": get_state_public_key(self.program_id),
+                    "perp_market": get_perp_market_public_key(self.program_id, perp_market_index),
+                    "oracle": market.amm.oracle,
+                }
+            )
+        )
+    

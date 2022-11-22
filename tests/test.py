@@ -214,6 +214,35 @@ async def test_usdc_deposit(
     )
     assert user_account.spot_positions[0].scaled_balance == USDC_AMOUNT / QUOTE_PRECISION * SPOT_BALANCE_PRECISION
 
+@mark.asyncio
+async def test_update_curve(
+    workspace,
+    clearing_house: Admin,
+):
+    market = await get_perp_market_account(clearing_house.program, 0)
+    new_sqrt_k = int(market.amm.sqrt_k * 1.05)
+    await clearing_house.update_k(
+        new_sqrt_k, 
+        0
+    )
+    market = await get_perp_market_account(clearing_house.program, 0)
+    assert market.amm.sqrt_k == new_sqrt_k
+
+    from driftpy.setup.helpers import set_price_feed_detailed
+
+    pyth_program = workspace["pyth"]
+    slot = (await clearing_house.program.provider.connection.get_slot())['result']
+    await set_price_feed_detailed(
+        pyth_program, market.amm.oracle, 1.07, 0, slot
+    )
+
+    new_peg = int(market.amm.peg_multiplier * 1.05)
+    await clearing_house.repeg_curve(
+        new_peg, 
+        0
+    )
+    market = await get_perp_market_account(clearing_house.program, 0)
+    assert market.amm.peg_multiplier == new_peg
 
 @mark.asyncio
 async def test_add_remove_liquidity(
