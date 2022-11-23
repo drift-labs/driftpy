@@ -14,7 +14,7 @@ DriftPy is the Python client for the [Drift](https://www.drift.trade/) protocol.
 pip install driftpy
 ```
 
-Note: requires Python >= 3.9.
+Note: requires Python >= 3.10.
 
 ## SDK Examples
 
