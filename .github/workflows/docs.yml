@@ -27,7 +27,8 @@ jobs:
           virtualenvs-in-project: true
           installer-parallel: true
 
-      - run: poetry build
+      - name: Install dependencies
+        run: poetry install --no-interaction --no-root
 
       - name: Deploy docs
         run: poetry run mkdocs gh-deploy --force
