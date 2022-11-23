@@ -56,7 +56,7 @@ sig = await ch.open_position(
     PositionDirection.LONG(), # long
     int(10 * BASE_PRECISION), # 10 in base precision
     0, # sol market index
-)
+) 
 
 # mint 100 LP shares on the SOL market
 await ch.add_liquidity(
