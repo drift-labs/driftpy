@@ -2,14 +2,13 @@ name: Docs
 on:
   push:
     branches: [master]
-
 jobs:
   docs:
     name: Deploy docs
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout master
-        uses: actions/checkout@v2
+      - name: Checkout
+        uses: actions/checkout@v2.5.0
 
       - name: Set up Python
         uses: actions/setup-python@v4.3.0
