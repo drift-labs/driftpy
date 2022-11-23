@@ -6,7 +6,7 @@
 
 DriftPy is the Python client for the [Drift](https://www.drift.trade/) protocol. It allows you to trade and fetch data from Drift using Python.
 
-[Read The Documentation](https://drift-labs.github.io/driftpy/)
+**[Read the full SDK documentation here!](https://drift-labs.github.io/driftpy/)**
 
 ## Installation
 
@@ -24,17 +24,17 @@ Note: requires Python >= 3.9.
 
 `bash setup.sh`
 
-### Running Unit Tests
+## Running Unit Tests
 
 `bash test.sh`
 
-### Building the docs
+## Building the docs
 
 Local Docs: `mkdocs serve` 
 
 Updating public docs: `poetry run mkdocs gh-deploy --force`
 
-### Releasing a new version of the package
+## Releasing a new version of the package
 
 - `python new_release.py`
 - Create a new release at https://github.com/drift-labs/driftpy/releases.
