@@ -32,26 +32,16 @@ DEFAULT_USER_NAME = "Main Account"
 
 
 class ClearingHouse:
-    """This class is the main way to interact with Drift Protocol.
-
-    It allows you to subscribe to the various accounts where the Market's state is
-    stored, as well as: opening positions, liquidating, settling funding, depositing &
-    withdrawing, and more.
-
-    The default way to construct a ClearingHouse instance is using the
-    [create][driftpy.clearing_house.ClearingHouse.create] method.
+    """This class is the main way to interact with Drift Protocol including 
+    depositing, opening new positions, closing positions, placing orders, etc.
     """
 
     def __init__(self, program: Program, authority: Keypair = None):
-        """Initialize the ClearingHouse object.
-
-        Note: you probably want to use
-        [create][driftpy.clearing_house.ClearingHouse.create]
-        instead of this method.
+        """Initializes the clearing house object -- likely want to use the .from_config method instead of this one
 
         Args:
-            program: The AnchorPy program object.
-            pdas: The required PDAs for the ClearingHouse object.
+            program (Program): Drift anchor program (see from_config on how to initialize it)
+            authority (Keypair, optional): Authority of all txs - if None will default to the Anchor Provider.Wallet Keypair.
         """
         self.program = program
         self.program_id = program.program_id
@@ -69,6 +59,16 @@ class ClearingHouse:
 
     @staticmethod
     def from_config(config: Config, provider: Provider, authority: Keypair = None):
+        """Initializes the clearing house object from a Config 
+
+        Args:
+            config (Config): the config to initialize form
+            provider (Provider): anchor provider
+            authority (Keypair, optional):  _description_. Defaults to None.
+
+        Returns:
+            ClearingHouse: the clearing house object
+        """
         # read the idl
         file = Path(str(driftpy.__path__[0]) + "/idl/drift.json")
         with file.open() as f:
@@ -118,6 +118,14 @@ class ClearingHouse:
         return await self.program.provider.send(tx, signers=signers)
 
     async def intialize_user(self, user_id: int = 0):
+        """intializes a drift user 
+
+        Args:
+            user_id (int, optional): subaccount id to initialize. Defaults to 0.
+
+        Returns:
+            str: tx signature
+        """
         ixs = []
         if user_id == 0:
             ixs.append(self.get_initialize_user_stats())
@@ -283,6 +291,18 @@ class ClearingHouse:
         reduce_only: bool = False,
         user_id: int = 0,
     ):
+        """withdraws from drift protocol (can also allow borrowing)
+
+        Args:
+            amount (int): amount to withdraw
+            spot_market_index (int): 
+            user_token_account (PublicKey): ata of the account to withdraw to
+            reduce_only (bool, optional): if True will only withdraw existing funds else if False will allow taking out borrows. Defaults to False.
+            user_id (int, optional): subaccount. Defaults to 0.
+
+        Returns:
+            str: tx sig
+        """
         return await self.send_ixs(
             [
                 await self.get_withdraw_collateral_ix(
@@ -337,6 +357,19 @@ class ClearingHouse:
         reduce_only=False,
         user_initialized=True,
     ):
+        """deposits collateral into protocol
+
+        Args:
+            amount (int): amount to deposit
+            spot_market_index (int): 
+            user_token_account (PublicKey): 
+            user_id (int, optional): subaccount to deposit into. Defaults to 0.
+            reduce_only (bool, optional): paying back borrow vs depositing new assets. Defaults to False.
+            user_initialized (bool, optional): if need to initialize user account too set this to False. Defaults to True.
+
+        Returns:
+            str: sig
+        """
         return await self.send_ixs(
             [
                 await self.get_deposit_collateral_ix(
@@ -394,6 +427,16 @@ class ClearingHouse:
         )
 
     async def add_liquidity(self, amount: int, market_index: int, user_id: int = 0):
+        """mint LP tokens and add liquidity to the DAMM
+
+        Args:
+            amount (int): amount of lp tokens to mint
+            market_index (int): market you want to lp in
+            user_id (int, optional): subaccount id. Defaults to 0.
+
+        Returns:
+            str: tx sig
+        """
         return await self.send_ixs(
             [await self.get_add_liquidity_ix(amount, market_index, user_id)]
         )
@@ -422,6 +465,16 @@ class ClearingHouse:
         )
 
     async def remove_liquidity(self, amount: int, market_index: int, user_id: int = 0):
+        """burns LP tokens and removes liquidity to the DAMM
+
+        Args:
+            amount (int): amount of lp tokens to burn
+            market_index (int): 
+            user_id (int, optional): subaccount id. Defaults to 0.
+
+        Returns:
+            str: tx sig
+        """
         return await self.send_ixs(
             [await self.get_remove_liquidity_ix(amount, market_index, user_id)]
         )
@@ -448,6 +501,14 @@ class ClearingHouse:
         )
 
     async def cancel_orders(self, user_id: int = 0):
+        """cancel all existing orders on the book
+
+        Args:
+            user_id (int, optional): subaccount id. Defaults to 0.
+
+        Returns:
+            str: tx sig
+        """
         return await self.send_ixs(await self.get_cancel_orders_ix(user_id))
 
     async def get_cancel_orders_ix(self, user_id: int = 0):
@@ -472,6 +533,15 @@ class ClearingHouse:
         order_id: Optional[int] = None,
         user_id: int = 0,
     ):
+        """cancel specific order (if order_id=None will be most recent order)
+
+        Args:
+            order_id (Optional[int], optional): Defaults to None.
+            user_id (int, optional): subaccount id which contains order. Defaults to 0.
+
+        Returns:
+            str: tx sig
+        """
         return await self.send_ixs(
             await self.get_cancel_order_ix(order_id, user_id),
         )
