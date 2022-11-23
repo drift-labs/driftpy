@@ -30,7 +30,6 @@ from driftpy.math.positions import is_available, is_spot_position_available
 
 DEFAULT_USER_NAME = "Main Account"
 
-
 class ClearingHouse:
     """This class is the main way to interact with Drift Protocol including 
     depositing, opening new positions, closing positions, placing orders, etc.
