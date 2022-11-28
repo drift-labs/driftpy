@@ -130,6 +130,23 @@ async def _create_user_ata_tx(
 
     return fake_tx
 
+def mint_ix(
+    usdc_mint: PublicKey,
+    mint_auth: PublicKey,
+    usdc_amount: int,
+    ata_account: PublicKey,
+) -> Transaction:
+    mint_to_user_account_tx = mint_to(
+        MintToParams(
+            program_id=TOKEN_PROGRAM_ID,
+            mint=usdc_mint,
+            dest=ata_account,
+            mint_authority=mint_auth,
+            signers=[],
+            amount=usdc_amount,
+        )
+    )
+    return mint_to_user_account_tx
 
 def _mint_usdc_tx(
     usdc_mint: Keypair,
