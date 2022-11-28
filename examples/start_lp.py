@@ -35,8 +35,9 @@ async def main(
     keypath, 
     env, 
     url, 
-    market_index, 
+    market_index,
     liquidity_amount,
+    operation,
 ):
     with open(keypath, 'r') as f: secret = json.load(f) 
     kp = Keypair.from_secret_key(bytes(secret))
@@ -64,19 +65,54 @@ async def main(
     )
     lp_amount = liquidity_amount * AMM_RESERVE_PRECISION
     lp_amount -= lp_amount % market.amm.order_step_size
+    lp_amount = int(lp_amount)
     print('standardized lp amount:', lp_amount / AMM_RESERVE_PRECISION)
     
     if lp_amount < market.amm.order_step_size:
         print('lp amount too small - exiting...')
+    
+    
+    print(f'{operation}ing {lp_amount} lp shares...')
 
-    print('adding liquidity...')
-    ix = await ch.add_liquidity(lp_amount, market_index)
-    await view_logs(ix, connection)
-    print(ix)
+    sig = None
+    if operation == 'add':
+        resp = input('confirm adding liquidity: Y?')
+        if resp != 'Y':
+            print('confirmation failed exiting...')
+            return
+        sig = await ch.add_liquidity(lp_amount, market_index)
+        print(sig)
+
+    elif operation == 'remove':
+        resp = input('confirm removing liquidity: Y?')
+        if resp != 'Y':
+            print('confirmation failed exiting...')
+            return
+        sig = await ch.remove_liquidity(lp_amount, market_index)
+        print(sig)
+
+    elif operation == 'view': 
+        pass
+
+    elif operation == 'settle':
+        resp = input('confirm settling revenue to if stake: Y?')
+        if resp != 'Y':
+            print('confirmation failed exiting...')
+            return
+        sig = await ch.settle_lp(ch.authority, market_index)
+        print(sig)
+        
+    else: 
+        return
+
+    if sig:
+        print('confirming tx...')
+        await connection.confirm_transaction(sig)
 
     position = await ch.get_user_position(market_index)
-    percent_provided = (position.lp_shares  / (market.amm.sqrt_k + lp_amount)) * 100
-
+    market = await get_perp_market_account(ch.program, market_index)
+    percent_provided = (position.lp_shares  / market.amm.sqrt_k) * 100
+    print(f"lp shares: {position.lp_shares}")
     print(f"providing {percent_provided}% of total market liquidity")
     print('done! :)')
 
@@ -86,8 +122,9 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--keypath', type=str, required=False, default=os.environ.get('ANCHOR_WALLET'))
     parser.add_argument('--env', type=str, default='devnet')
-    parser.add_argument('--amount', type=int, required=True)
+    parser.add_argument('--amount', type=float, required=False)
     parser.add_argument('--market', type=int, required=True)
+    parser.add_argument('--operation', choices=['remove', 'add', 'view', 'settle'], required=True)
     args = parser.parse_args()
 
     if args.keypath is None:
@@ -107,6 +144,7 @@ if __name__ == '__main__':
         args.env, 
         url,
         args.market, 
-        args.amount
+        args.amount,
+        args.operation,
     ))
 

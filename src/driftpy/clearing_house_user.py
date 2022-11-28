@@ -19,14 +19,7 @@ def find(l: list, f):
 
 
 class ClearingHouseUser:
-    """This class is the main way to interact with Drift Protocol.
-
-    It allows you to subscribe to the various accounts where the Market's state is
-    stored, as well as: opening positions, liquidating, settling funding, depositing &
-    withdrawing, and more.
-
-    The default way to construct a ClearingHouse instance is using the
-    [create][driftpy.clearing_house.ClearingHouse.create] method.
+    """This class is the main way to retrieve and inspect data on Drift Protocol.  
     """
 
     def __init__(
@@ -36,16 +29,13 @@ class ClearingHouseUser:
         subaccount_id: int = 0,
         use_cache: bool = False,
     ):
-        """Initialize the ClearingHouse object.
-
-        Note: you probably want to use
-        [create][driftpy.clearing_house.ClearingHouse.create]
-        instead of this method.
+        """Initialize the clearing house user object
 
         Args:
-            clearing_house: The Drift ClearingHouse object.
-            authority: user authority to focus on (if None, the clearing
-            house's .program.provider.wallet.pk is used as the auth)
+            clearing_house (ClearingHouse): required for program_id, idl, things (keypair doesnt matter)
+            authority (Optional[PublicKey], optional): authority to investigate if None will use clearing_house.authority
+            subaccount_id (int, optional): subaccount of authority to investigate. Defaults to 0.
+            use_cache (bool, optional): sdk uses a lot of rpc calls rn - use this flag and .set_cache() to cache accounts and reduce rpc calls. Defaults to False.
         """
         self.clearing_house = clearing_house
         self.authority = authority
@@ -67,6 +57,11 @@ class ClearingHouseUser:
         # if state = cache => get cached_market else get new market 
 
     async def set_cache(self, CACHE=None):
+        """sets the cache of the accounts to use to inspect
+
+        Args:
+            CACHE (dict, optional): other existing cache object - if None will pull ƒresh accounts from RPC. Defaults to None.
+        """
         self.cache_is_set = True
 
         if CACHE is not None:
@@ -243,7 +238,7 @@ class ClearingHouseUser:
 
         return total_liability
 
-    async def get_total_perp_positon(
+    async def get_total_perp_liability(
         self,
         margin_category: Optional[MarginCategory] = None,
         liquidation_buffer: Optional[int] = 0,
@@ -305,7 +300,7 @@ class ClearingHouseUser:
     async def get_margin_requirement(
         self, margin_category: MarginCategory, liquidation_buffer: Optional[int] = 0
     ) -> int:
-        perp_liability = await self.get_total_perp_positon(
+        perp_liability = await self.get_total_perp_liability(
             margin_category, liquidation_buffer, True
         )
         spot_liability = await self.get_spot_market_liability(

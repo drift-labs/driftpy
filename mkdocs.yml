@@ -42,7 +42,10 @@ plugins:
   - search
 nav:
   - index.md
-  - api_reference.md
+  - clearing_house.md
+  - clearing_house_user.md
+  - accounts.md
+  - addresses.md
 extra_css:
   - css/mkdocstrings.css
   - css/custom.css
