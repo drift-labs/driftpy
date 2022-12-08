@@ -1203,6 +1203,7 @@ class ClearingHouse:
     ):
         return await self.send_ixs(
             [
+                self.get_increase_compute_ix(),
                 await self.get_settle_expired_market_ix(
                     market_index,
                 )
