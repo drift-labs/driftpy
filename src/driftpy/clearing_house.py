@@ -1349,8 +1349,9 @@ class ClearingHouse:
         )
 
         assert (
-            self.usdc_ata is not None
-        ), "please set self.usdc_ata as your usdc ata pubkey before this ix"
+            self.spot_market_atas[spot_market_index] is not None
+        ), "please set self.spot_market_atas[spot_market_index] as your spot ata pubkey before this ix"
+
         return self.program.instruction["add_insurance_fund_stake"](
             spot_market_index,
             amount,
