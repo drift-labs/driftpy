@@ -62,11 +62,6 @@ async def main(
     balance = await connection.get_token_account_balance(ata)
     print('current spot ata balance:', balance['result']['value']['uiAmount'])
 
-    spot = await get_spot_market_account(ch.program, spot_market_index)
-    total_shares = spot.insurance_fund.total_shares
-    if_stake = await get_if_stake_account(ch.program, ch.authority, spot_market_index)
-    n_shares = if_stake.if_shares
-
     print(f'{operation}ing {if_amount}$ spot...')
     if_amount = int(if_amount * QUOTE_PRECISION)
 
@@ -124,6 +119,11 @@ async def main(
         await view_logs(ix, connection)
 
     elif operation == 'view': 
+        spot = await get_spot_market_account(ch.program, spot_market_index)
+        total_shares = spot.insurance_fund.total_shares
+        if_stake = await get_if_stake_account(ch.program, ch.authority, spot_market_index)
+        n_shares = if_stake.if_shares
+
         conn = ch.program.provider.connection
         vault_pk = get_insurance_fund_vault_public_key(ch.program_id, spot_market_index)
         v_amount = int((await conn.get_token_account_balance(vault_pk))['result']['value']['amount'])
