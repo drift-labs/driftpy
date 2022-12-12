@@ -51,24 +51,42 @@ async def main(
     chu = ClearingHouseUser(ch)
     print(ch.program_id)
 
-    from spl.token.instructions import get_associated_token_address
+    from spl.token.instructions import get_associated_token_address, transfer, TransferParams
     spot_market = await get_spot_market_account(ch.program, spot_market_index)
     spot_mint = spot_market.mint
     print(spot_mint)
 
     ata = get_associated_token_address(wallet.public_key, spot_mint)
     ch.spot_market_atas[spot_market_index] = ata
-    ch.usdc_ata = ata
     balance = await connection.get_token_account_balance(ata)
     print('current spot ata balance:', balance['result']['value']['uiAmount'])
+    print('ATA addr:', ata)
+
+    if operation == 'add' or operation == 'remove' and spot_market_index == 1:
+        from spl.token.instructions import create_associated_token_account
+        ix = create_associated_token_account(ch.authority, ch.authority, spot_market.mint)
+        await ch.send_ixs(ix)
+        ata = get_associated_token_address(ch.authority, spot_market.mint)
+        ch.spot_market_atas[spot_market_index] = ata
+
+        # send to WSOL and sync 
+        # https://github.dev/solana-labs/solana-program-library/token/js/src/ix/types.ts
+        keys = [AccountMeta(pubkey=ch.spot_market_atas[spot_market_index], is_signer=False, is_writable=True)]
+        data = int.to_bytes(17, 1, 'little')
+        program_id = TOKEN_PROGRAM_ID
+        ix = TransactionInstruction(
+            keys=keys, 
+            program_id=program_id, 
+            data=data
+        )
+        await ch.send_ixs(ix)
 
     spot = await get_spot_market_account(ch.program, spot_market_index)
     total_shares = spot.insurance_fund.total_shares
-    if_stake = await get_if_stake_account(ch.program, ch.authority, spot_market_index)
-    n_shares = if_stake.if_shares
 
     print(f'{operation}ing {if_amount}$ spot...')
-    if_amount = int(if_amount * QUOTE_PRECISION)
+    spot_percision = 10 ** spot.decimals
+    if_amount = int(if_amount * spot_percision)
 
     if operation == 'add':
         resp = input('confirm adding stake: Y?')
@@ -124,6 +142,9 @@ async def main(
         await view_logs(ix, connection)
 
     elif operation == 'view': 
+        if_stake = await get_if_stake_account(ch.program, ch.authority, spot_market_index)
+        n_shares = if_stake.if_shares
+
         conn = ch.program.provider.connection
         vault_pk = get_insurance_fund_vault_public_key(ch.program_id, spot_market_index)
         v_amount = int((await conn.get_token_account_balance(vault_pk))['result']['value']['amount'])
