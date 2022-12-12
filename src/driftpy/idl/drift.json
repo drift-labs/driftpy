@@ -1,5 +1,5 @@
 {
-  "version": "2.0.0",
+  "version": "2.4.0",
   "name": "drift",
   "instructions": [
     {
@@ -1432,7 +1432,7 @@
         },
         {
           "name": "spotMarket",
-          "isMut": false,
+          "isMut": true,
           "isSigner": false
         },
         {
@@ -3234,6 +3234,48 @@
       ]
     },
     {
+      "name": "updateInitialPctToLiquidate",
+      "accounts": [
+        {
+          "name": "admin",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "state",
+          "isMut": true,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "initialPctToLiquidate",
+          "type": "u16"
+        }
+      ]
+    },
+    {
+      "name": "updateLiquidationDuration",
+      "accounts": [
+        {
+          "name": "admin",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "state",
+          "isMut": true,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "liquidationDuration",
+          "type": "u8"
+        }
+      ]
+    },
+    {
       "name": "updateOracleGuardRails",
       "accounts": [
         {
@@ -4321,11 +4363,19 @@
             }
           },
           {
+            "name": "liquidationDuration",
+            "type": "u8"
+          },
+          {
+            "name": "initialPctToLiquidate",
+            "type": "u16"
+          },
+          {
             "name": "padding",
             "type": {
               "array": [
                 "u8",
-                17
+                14
               ]
             }
           }
@@ -4420,8 +4470,8 @@
             "type": "u64"
           },
           {
-            "name": "liquidationStartTs",
-            "type": "i64"
+            "name": "liquidationStartSlot",
+            "type": "u64"
           },
           {
             "name": "nextOrderId",
@@ -4622,13 +4672,13 @@
           {
             "name": "auctionStartPrice",
             "type": {
-              "option": "u64"
+              "option": "i64"
             }
           },
           {
             "name": "auctionEndPrice",
             "type": {
-              "option": "u64"
+              "option": "i64"
             }
           }
         ]
@@ -5596,11 +5646,11 @@
             "type": "u64"
           },
           {
-            "name": "lastNetBaseAssetAmountPerLp",
+            "name": "lastBaseAssetAmountPerLp",
             "type": "i64"
           },
           {
-            "name": "lastNetQuoteAssetAmountPerLp",
+            "name": "lastQuoteAssetAmountPerLp",
             "type": "i64"
           },
           {
@@ -5658,11 +5708,11 @@
           },
           {
             "name": "auctionStartPrice",
-            "type": "u64"
+            "type": "i64"
           },
           {
             "name": "auctionEndPrice",
-            "type": "u64"
+            "type": "i64"
           },
           {
             "name": "maxTs",
@@ -6016,6 +6066,9 @@
           },
           {
             "name": "OrderFillWithSerum"
+          },
+          {
+            "name": "NoBorrowLiquidity"
           }
         ]
       }
@@ -6366,6 +6419,9 @@
           },
           {
             "name": "TriggerLimit"
+          },
+          {
+            "name": "Oracle"
           }
         ]
       }
@@ -8466,6 +8522,11 @@
       "code": 6221,
       "name": "SpotFulfillmentConfigDisabled",
       "msg": "Spot Fulfullment Config Disabled"
+    },
+    {
+      "code": 6222,
+      "name": "InvalidMaker",
+      "msg": "Invalid Maker"
     }
   ]
 }
