@@ -1297,6 +1297,44 @@ class ClearingHouse:
             ),
         )
 
+    async def cancel_request_remove_insurance_fund_stake(self, spot_market_index: int):
+        return await self.send_ixs(
+            await self.get_cancel_request_remove_insurance_fund_stake_ix(spot_market_index)
+        )
+
+    async def get_cancel_request_remove_insurance_fund_stake_ix(self, spot_market_index: int):
+        ra = await self.get_remaining_accounts(
+            writable_spot_market_index=spot_market_index
+        )
+
+        return self.program.instruction["cancel_request_remove_insurance_fund_stake"](
+            spot_market_index,
+            ctx=Context(
+                accounts={
+                    "state": get_state_public_key(self.program_id),
+                    "spot_market": get_spot_market_public_key(
+                        self.program_id, spot_market_index
+                    ),
+                    "insurance_fund_stake": get_insurance_fund_stake_public_key(
+                        self.program_id, self.authority, spot_market_index
+                    ),
+                    "user_stats": get_user_stats_account_public_key(
+                        self.program_id, self.authority
+                    ),
+                    "authority": self.authority,
+                    "insurance_fund_vault": get_insurance_fund_vault_public_key(
+                        self.program_id, spot_market_index
+                    ),
+                    "drift_signer": get_clearing_house_signer_public_key(
+                        self.program_id
+                    ),
+                    "user_token_account": self.spot_market_atas[spot_market_index],
+                    "token_program": TOKEN_PROGRAM_ID,
+                },
+                remaining_accounts=ra,
+            ),
+        )
+
     async def remove_insurance_fund_stake(self, spot_market_index: int):
         return await self.send_ixs(
             await self.get_remove_insurance_fund_stake_ix(spot_market_index)
