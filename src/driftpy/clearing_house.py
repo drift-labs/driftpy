@@ -207,7 +207,7 @@ class ClearingHouse:
 
         if isinstance(user_id, int):
             user_id = [user_id]
-        assert len(user_id) == len(authority)
+        assert len(user_id) == len(authority) or len(user_id) == 0
 
         accounts = []
         for pk, id in zip(authority, user_id):
@@ -250,9 +250,6 @@ class ClearingHouse:
                     market_index = position.market_index
                     await track_market(market_index, is_writable=True)
 
-            if writable_market_index is not None:
-                await track_market(writable_market_index, is_writable=True)
-
             if include_spot_markets:
                 for spot_market_balance in user_account.spot_positions:
                     if not is_spot_position_available(spot_market_balance):
@@ -267,12 +264,15 @@ class ClearingHouse:
                     for i in readable_spot_market_index:
                         await track_spot_market(i, is_writable=False)
 
-                if writable_spot_market_index is not None:
-                    if isinstance(writable_spot_market_index, int):
-                        writable_spot_market_index = [writable_spot_market_index]
+        if writable_market_index is not None:
+            await track_market(writable_market_index, is_writable=True)
 
-                    for i in writable_spot_market_index:
-                        await track_spot_market(i, is_writable=True)
+        if writable_spot_market_index is not None and include_spot_markets:
+            if isinstance(writable_spot_market_index, int):
+                writable_spot_market_index = [writable_spot_market_index]
+
+            for i in writable_spot_market_index:
+                await track_spot_market(i, is_writable=True)
 
         remaining_accounts = [
             *oracle_map.values(),
@@ -1271,7 +1271,8 @@ class ClearingHouse:
         amount: int,
     ):
         ra = await self.get_remaining_accounts(
-            writable_spot_market_index=spot_market_index
+            writable_spot_market_index=spot_market_index, 
+            user_id=[] # dont need the user account (might not exist)
         )
 
         return self.program.instruction["request_remove_insurance_fund_stake"](
@@ -1342,7 +1343,8 @@ class ClearingHouse:
 
     async def get_remove_insurance_fund_stake_ix(self, spot_market_index: int):
         ra = await self.get_remaining_accounts(
-            writable_spot_market_index=spot_market_index
+            writable_spot_market_index=spot_market_index, 
+            user_id=[] # dont need the user account (might not exist)
         )
 
         return self.program.instruction["remove_insurance_fund_stake"](
