@@ -26,7 +26,7 @@ from driftpy.constants.config import Config
 from anchorpy import Provider
 
 from typing import Union, Optional, Dict, List, Any, Sequence, cast
-from driftpy.math.positions import is_available, is_spot_position_available
+# from driftpy.math.positions import is_available, is_spot_position_available
 
 DEFAULT_USER_NAME = "Main Account"
 
@@ -636,7 +636,7 @@ class ClearingHouse:
             writable_market_index=order_params.market_index, user_id=user_id
         )
 
-        ix = self.program.instruction["place_order"](
+        ix = self.program.instruction["place_perp_order"](
             order_params,
             ctx=Context(
                 accounts={
