@@ -1,4 +1,4 @@
-from driftpy.constants.banks import devnet_banks, Bank
+from driftpy.constants.banks import devnet_banks, mainnet_banks, Bank
 from driftpy.constants.markets import devnet_markets, mainnet_markets, Market
 from dataclasses import dataclass
 from solana.publickey import PublicKey
@@ -35,6 +35,6 @@ configs = {
         default_http='https://api.mainnet-beta.solana.com',
         default_ws='wss://api.mainnet-beta.solana.com',
         markets=mainnet_markets, 
-        banks=None
+        banks=mainnet_banks
     )
 }

@@ -614,7 +614,45 @@ class ClearingHouse:
 
         return compute_ix
 
-    async def place_order(
+
+    async def place_spot_order(self,
+        order_params: OrderParams,
+        maker_info: MakerInfo = None,
+        user_id: int = 0,
+    ):
+        return await self.send_ixs([
+                self.get_increase_compute_ix(),
+            await self.get_place_spot_order_ix(order_params, maker_info, user_id),
+        ]
+        )
+
+    async def get_place_spot_order_ix(
+        self,
+        order_params: OrderParams,
+        user_id: int = 0,
+    ):
+        user_account_public_key = self.get_user_account_public_key(user_id)
+
+        remaining_accounts = await self.get_remaining_accounts(
+            readable_spot_market_index=[0, order_params.market_index], 
+            user_id=user_id
+        )
+
+        ix = self.program.instruction["place_spot_order"](
+            order_params,
+            ctx=Context(
+                accounts={
+                    "state": self.get_state_public_key(),
+                    "user": user_account_public_key,
+                    "authority": self.authority,
+                },
+                remaining_accounts=remaining_accounts,
+            ),
+        )
+
+        return ix
+
+    async def place_perp_order(
         self,
         order_params: OrderParams,
         maker_info: MakerInfo = None,
@@ -622,11 +660,11 @@ class ClearingHouse:
     ):
         return await self.send_ixs([
                 self.get_increase_compute_ix(),
-            await self.get_place_order_ix(order_params, maker_info, user_id),
+            await self.get_place_perp_order_ix(order_params, maker_info, user_id),
         ]
         )
 
-    async def get_place_order_ix(
+    async def get_place_perp_order_ix(
         self,
         order_params: OrderParams,
         user_id: int = 0,
@@ -1017,7 +1055,6 @@ class ClearingHouse:
             ),
         )
         return result
-
 
     async def settle_pnl(
         self,

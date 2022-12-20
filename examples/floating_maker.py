@@ -19,7 +19,7 @@ from driftpy.clearing_house import ClearingHouse
 from driftpy.constants.numeric_constants import BASE_PRECISION, QUOTE_PRECISION
 
 
-def order_print(orders: list[OrderParams]):
+def order_print(orders: list[OrderParams], market_str=None):
     for order in orders:
         if order.price == 0:
             pricestr = '$ORACLE'
@@ -30,7 +30,8 @@ def order_print(orders: list[OrderParams]):
         else:
             pricestr = '$' + str(order.price/1e6)
 
-        market_str = configs['mainnet'].markets[order.market_index].symbol
+        if market_str == None:
+            market_str = configs['mainnet'].markets[order.market_index].symbol
 
         print(str(order.direction).split('.')[-1].replace('()',''), market_str, '@', pricestr)
 
@@ -39,7 +40,7 @@ async def main(
     keypath, 
     env, 
     url, 
-    market_index,
+    market_name,
     base_asset_amount,
     subaccount_id,
 ):
@@ -52,16 +53,27 @@ async def main(
     provider = Provider(connection, wallet)
     drift_acct = ClearingHouse.from_config(config, provider)
 
+    is_perp  = 'PERP' in market_name.upper()
+    market_type = MarketType.PERP() if is_perp else MarketType.SPOT()
+
+    market_index = -1
+    for perp_market_config in config.markets:
+        if perp_market_config.symbol == market_name:
+            market_index = perp_market_config.market_index
+    for spot_market_config in config.banks:
+        if spot_market_config.symbol == market_name:
+            market_index = spot_market_config.bank_index
+
     default_order_params = OrderParams(
                 order_type=OrderType.LIMIT(),
-                market_type=MarketType.PERP(),
+                market_type=market_type,
                 direction=PositionDirection.LONG(),
                 user_order_id=0,
                 base_asset_amount=int(base_asset_amount * BASE_PRECISION),
                 price=0,
                 market_index=market_index,
                 reduce_only=False,
-                post_only=False,
+                post_only=True,
                 immediate_or_cancel=False,
                 trigger_price=0,
                 trigger_condition=OrderTriggerCondition.ABOVE(),
@@ -80,14 +92,25 @@ async def main(
     ask_order_params.direction = PositionDirection.SHORT()
     ask_order_params.oracle_price_offset = 1
 
-    order_print([bid_order_params, ask_order_params])
+    order_print([bid_order_params, ask_order_params], market_name)
+
+    perp_orders_ix = []
+    spot_orders_ix = []
+    if is_perp:
+        perp_orders_ix = [
+        await drift_acct.get_place_perp_order_ix(bid_order_params),
+            await drift_acct.get_place_perp_order_ix(ask_order_params)
+            ]
+    else:
+        spot_orders_ix =  [
+        await drift_acct.get_place_spot_order_ix(bid_order_params),
+            await drift_acct.get_place_spot_order_ix(ask_order_params)
+        ]
 
     await drift_acct.send_ixs(
         [
         await drift_acct.get_cancel_orders_ix(subaccount_id),
-        await drift_acct.get_place_order_ix(bid_order_params),
-        await drift_acct.get_place_order_ix(ask_order_params),
-        ]
+        ] + perp_orders_ix + spot_orders_ix
     )
 
 if __name__ == '__main__':
@@ -96,7 +119,7 @@ if __name__ == '__main__':
     parser.add_argument('--keypath', type=str, required=False, default=os.environ.get('ANCHOR_WALLET'))
     parser.add_argument('--env', type=str, default='devnet')
     parser.add_argument('--amount', type=float, required=True)
-    parser.add_argument('--market', type=int, required=True)
+    parser.add_argument('--market', type=str, required=True)
     parser.add_argument('--operation', choices=['remove', 'add', 'view', 'settle', 'cancel'], required=False)
     parser.add_argument('--subaccount', type=int, required=False, default=0)
 

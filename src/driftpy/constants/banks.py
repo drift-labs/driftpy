@@ -47,7 +47,7 @@ mainnet_banks: list[Bank] = [
     Bank(
         symbol="SOL",
         bank_index=1,
-        oracle=PublicKey("J83w4HKfqxwcq3BEMMkPFSppX3gqekLyLJBexebFVkix"),
+        oracle=PublicKey("H6ARHf6YXhGYeQfUzQNGk6rDNnLBQKrenN712K4AQJEG"),
         oracle_source=OracleSource.PYTH,
         mint=PublicKey("So11111111111111111111111111111111111111112"),
     ),
