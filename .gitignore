@@ -1,4 +1,5 @@
 .tmp
+.DS_Store
 node.txt
 accounts/
 keypairs/
@@ -14,6 +15,7 @@ __pycache__/
 
 # Distribution / packaging
 .Python
+docs/.DS_Store
 build/
 develop-eggs/
 dist/

@@ -10,7 +10,7 @@ from solana.system_program import SYS_PROGRAM_ID
 from solana.sysvar import SYSVAR_RENT_PUBKEY
 from solana.transaction import AccountMeta
 from spl.token.constants import TOKEN_PROGRAM_ID
-from anchorpy import Program, Context, Idl
+from anchorpy import Program, Context, Idl, Wallet, Provider
 from struct import pack_into
 from pathlib import Path
 
@@ -21,12 +21,10 @@ from driftpy.sdk_types import *
 from driftpy.types import *
 from driftpy.accounts import *
 
-from anchorpy import Wallet
 from driftpy.constants.config import Config
-from anchorpy import Provider
 
 from typing import Union, Optional, Dict, List, Any, Sequence, cast
-# from driftpy.math.positions import is_available, is_spot_position_available
+from driftpy.math.positions import is_available, is_spot_position_available
 
 DEFAULT_USER_NAME = "Main Account"
 
@@ -70,6 +68,7 @@ class ClearingHouse:
         """
         # read the idl
         file = Path(str(driftpy.__path__[0]) + "/idl/drift.json")
+        print(file)
         with file.open() as f:
             idl_dict = json.load(f)
         idl = Idl.from_json(idl_dict)
@@ -621,8 +620,10 @@ class ClearingHouse:
         maker_info: MakerInfo = None,
         user_id: int = 0,
     ):
-        return await self.send_ixs(
+        return await self.send_ixs([
+                self.get_increase_compute_ix(),
             await self.get_place_order_ix(order_params, maker_info, user_id),
+        ]
         )
 
     async def get_place_order_ix(
@@ -648,7 +649,7 @@ class ClearingHouse:
             ),
         )
 
-        return [self.get_increase_compute_ix(), ix]
+        return ix
 
     async def place_and_take(
         self,
@@ -657,7 +658,10 @@ class ClearingHouse:
         subaccount_id: int = 0,
     ):
         return await self.send_ixs(
-            await self.get_place_and_take_ix(order_params, maker_info, subaccount_id),
+             [
+                self.get_increase_compute_ix(),
+                await self.get_place_and_take_ix(order_params, maker_info, subaccount_id),
+             ]
         )
 
     async def get_place_and_take_ix(
@@ -681,9 +685,7 @@ class ClearingHouse:
                 AccountMeta(pubkey=maker_info.maker, is_signer=False, is_writable=True)
             )
 
-        return [
-            self.get_increase_compute_ix(),
-            self.program.instruction["place_and_take_perp_order"](
+        return self.program.instruction["place_and_take_perp_order"](
                 order_params,
                 maker_order_id,
                 ctx=Context(
@@ -695,8 +697,7 @@ class ClearingHouse:
                     },
                     remaining_accounts=remaining_accounts,
                 ),
-            ),
-        ]
+            )
 
     async def settle_lp(
         self,

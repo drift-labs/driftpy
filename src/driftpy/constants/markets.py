@@ -31,28 +31,26 @@ devnet_markets: list[Market] = [
     ),
 ]
 
-# MARKETS: list[Market] = [
-#     Market(
-#         symbol="SOL-PERP",
-#         base_asset_symbol="SOL",
-#         market_index=0,
-#         devnet_pyth_oracle="J83w4HKfqxwcq3BEMMkPFSppX3gqekLyLJBexebFVkix",
-#         mainnet_pyth_oracle="H6ARHf6YXhGYeQfUzQNGk6rDNnLBQKrenN712K4AQJEG",
-#     ),
-#     Market(
-#         symbol="BTC-PERP",
-#         base_asset_symbol="BTC",
-#         market_index=1,
-#         devnet_pyth_oracle="HovQMDrbAgAYPCmHVSrezcSmkMtXSSUsLDFANExrZh2J",
-#         mainnet_pyth_oracle="GVXRSBjFk6e6J3NbVPXohDJetcTjaeeuykUpbQF8UoMU",
-#     ),
-#     Market(
-#         symbol="ETH-PERP",
-#         base_asset_symbol="ETH",
-#         market_index=2,
-#         devnet_pyth_oracle="EdVCmQ9FSPcVe5YySXDPCRmc8aDQLKJ9xvYBMZPie1Vw",
-#         mainnet_pyth_oracle="JBu1AL4obBcCMqKBBxhpWCNUt136ijcuMZLFvTP7iWdB",
-#     ),
+mainnet_markets: list[Market] = [
+    Market(
+        symbol="SOL-PERP",
+        base_asset_symbol="SOL",
+        market_index=0,
+        pyth_oracle="H6ARHf6YXhGYeQfUzQNGk6rDNnLBQKrenN712K4AQJEG",
+    ),
+    Market(
+        symbol="BTC-PERP",
+        base_asset_symbol="BTC",
+        market_index=1,
+        pyth_oracle="GVXRSBjFk6e6J3NbVPXohDJetcTjaeeuykUpbQF8UoMU",
+    ),
+    Market(
+        symbol="ETH-PERP",
+        base_asset_symbol="ETH",
+        market_index=2,
+        pyth_oracle="JBu1AL4obBcCMqKBBxhpWCNUt136ijcuMZLFvTP7iWdB",
+    ),
+]
 #     Market(
 #         symbol="LUNA-PERP",
 #         base_asset_symbol="LUNA",
