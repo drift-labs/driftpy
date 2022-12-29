@@ -55,6 +55,63 @@ class ClearingHouseUser:
         # get_perp_market 
         # get_user 
         # if state = cache => get cached_market else get new market 
+    async def set_cache_last(self, CACHE=None):
+        """sets the cache of the accounts to use to inspect
+
+        Args:
+            CACHE (dict, optional): other existing cache object - if None will pull ƒresh accounts from RPC. Defaults to None.
+        """
+        self.cache_is_set = True
+
+        if CACHE is not None:
+            self.CACHE = CACHE
+            return
+
+        self.CACHE = {}
+        state = await get_state_account(self.program)
+        self.CACHE['state'] = state
+
+        spot_markets = []
+        spot_market_oracle_data = []
+        for i in range(state.number_of_spot_markets):
+            spot_market = await get_spot_market_account(
+                self.program, i
+            )
+            spot_markets.append(spot_market)
+
+            if i == 0: 
+                spot_market_oracle_data.append(OracleData(
+                    PRICE_PRECISION, 0, 1, 1, 0, True
+                ))
+            else:
+                oracle_data = OracleData(
+                    spot_market.historical_oracle_data.last_oracle_price, 0, 1, 1, 0, True
+                )
+                spot_market_oracle_data.append(oracle_data)
+            
+        self.CACHE['spot_markets'] = spot_markets
+        self.CACHE['spot_market_oracles'] = spot_market_oracle_data
+        
+        perp_markets = []
+        perp_market_oracle_data = []
+        for i in range(state.number_of_markets):
+            perp_market = await get_perp_market_account(
+                self.program, i
+            )
+            perp_markets.append(perp_market)
+
+            oracle_data = OracleData(
+                    perp_market.amm.historical_oracle_data.last_oracle_price, 0, 1, 1, 0, True
+                )
+            perp_market_oracle_data.append(oracle_data)
+
+        self.CACHE['perp_markets'] = perp_markets
+        self.CACHE['perp_market_oracles'] = perp_market_oracle_data
+
+        user = await get_user_account(
+            self.program, self.authority, self.subaccount_id
+        )
+        self.CACHE['user'] = user
 
     async def set_cache(self, CACHE=None):
         """sets the cache of the accounts to use to inspect
@@ -298,15 +355,22 @@ class ClearingHouseUser:
         return total_collateral < maintenance_req
 
     async def get_margin_requirement(
-        self, margin_category: MarginCategory, liquidation_buffer: Optional[int] = 0
+        self, margin_category: MarginCategory, liquidation_buffer: Optional[int] = 0,
+        include_open_orders=True,
+        include_spot=True
     ) -> int:
         perp_liability = await self.get_total_perp_liability(
-            margin_category, liquidation_buffer, True
+            margin_category, liquidation_buffer, include_open_orders
         )
-        spot_liability = await self.get_spot_market_liability(
-            None, margin_category, liquidation_buffer, True
-        )
-        return perp_liability + spot_liability
+        
+        result = perp_liability
+        if include_spot:
+            spot_liability = await self.get_spot_market_liability(
+            None, margin_category, liquidation_buffer, include_open_orders
+            )
+            result += spot_liability
+
+        return result
 
     async def get_total_collateral(
         self, margin_category: Optional[MarginCategory] = None
@@ -424,6 +488,15 @@ class ClearingHouseUser:
                 spot_token_value = get_token_amount(
                     position.scaled_balance, spot_market, position.balance_type
                 )
+
+                match str(position.balance_type):
+                    case "SpotBalanceType.Deposit()":
+                        spot_token_value *= 1
+                    case "SpotBalanceType.Borrow()":
+                        spot_token_value *= -1
+                    case _:
+                        raise Exception(f"Invalid balance type: {position.balance_type}")
+
                 total_value += spot_token_value
                 continue
 
@@ -503,7 +576,7 @@ class ClearingHouseUser:
             return None
 
         total_collateral = await self.get_total_collateral(MarginCategory.MAINTENANCE)
-        margin_req = await self.get_margin_requirement(MarginCategory.MAINTENANCE)
+        margin_req = await self.get_margin_requirement(MarginCategory.MAINTENANCE, None, True, False)
         delta_liq = total_collateral - margin_req
 
         spot_market = await self.get_spot_market(spot_market_index)

@@ -13,7 +13,7 @@ def calculate_size_discount_asset_weight(
     asset_weight,
 ):
     if imf_factor == 0:
-        return 0
+        return asset_weight
 
     size_sqrt = int((size * 10) ** 0.5) + 1
     imf_num = SPOT_IMF_PRECISION + (SPOT_IMF_PRECISION / 10)
@@ -53,11 +53,12 @@ def calculate_asset_weight(
                 spot_market.initial_asset_weight,
             )
         case MarginCategory.MAINTENANCE:
-            asset_weight = calculate_size_discount_asset_weight(
-                size_in_amm_precision,
-                spot_market.imf_factor,
-                spot_market.maintenance_asset_weight,
-            )
+            asset_weight = spot_market.maintenance_asset_weight 
+            # calculate_size_discount_asset_weight(
+            #     size_in_amm_precision,
+            #     spot_market.imf_factor,
+            #     spot_market.maintenance_asset_weight,
+            # )
         case None:
             asset_weight = spot_market.initial_asset_weight
         case _:
