@@ -142,6 +142,9 @@ class OracleSource:
     PYTH = constructor()
     SWITCHBOARD = constructor()
     QUOTE_ASSET = constructor()
+    PYTH_1K = constructor()
+    PYTH_1M = constructor()
+    
  
 @_rust_enum
 class MarketStatus:

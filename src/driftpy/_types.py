@@ -107,6 +107,8 @@ class OracleSource:
     Pyth = constructor()
     Switchboard = constructor()
     QuoteAsset = constructor()
+    Pyth_1K = constructor()
+    Pyth_1M = constructor()
 
 
 @_rust_enum
@@ -127,6 +129,7 @@ class OrderType:
     LIMIT = constructor()
     TRIGGER_MARKET = constructor()
     TRIGGER_LIMIT = constructor()
+    ORACLE = constructor()
 
 
 @_rust_enum
