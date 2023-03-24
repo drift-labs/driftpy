@@ -236,7 +236,13 @@ class OrderTriggerCondition:
 class MarketType:
     SPOT = constructor()
     PERP = constructor()
- 
+
+@_rust_enum
+class PostOnlyParams:
+    NONE = constructor()
+    TRY_POST_ONLY = constructor()
+    MUST_POST_ONLY = constructor()
+
 @dataclass
 class OrderParams:
     order_type: OrderType
@@ -247,7 +253,7 @@ class OrderParams:
     price: int
     market_index: int
     reduce_only: bool
-    post_only: bool
+    post_only: PostOnlyParams
     immediate_or_cancel: bool
     max_ts: Optional[int]
     trigger_price: Optional[int]
@@ -424,7 +430,7 @@ class Order:
     existing_position_direction: PositionDirection
     direction: PositionDirection
     reduce_only: bool
-    post_only: bool
+    post_only: PostOnlyParams
     immediate_or_cancel: bool
     trigger_condition: OrderTriggerCondition
     auction_duration: int
