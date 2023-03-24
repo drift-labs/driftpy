@@ -48,7 +48,7 @@ async def main(
     total_collateral = await chu.get_total_collateral()
     print('total collateral:', total_collateral)
 
-    perp_liability = await chu.get_total_perp_positon(
+    perp_liability = await chu.get_total_perp_liability(
         None, 0, True
     )
     spot_liability = await chu.get_spot_market_liability(
@@ -65,7 +65,7 @@ async def main(
 
     print('init leverage, main leverage:', MARGIN_PRECISION / perp_market.margin_ratio_initial, MARGIN_PRECISION / perp_market.margin_ratio_maintenance)
 
-    liq_price = await chu.get_liq_price(0)
+    liq_price = await chu.get_perp_liq_price(0)
     print(
         'liq price', liq_price
     )
@@ -77,9 +77,10 @@ async def main(
         'total_asset', total_asset_value
     )
     print('leverage:', (await chu.get_leverage()) / 10_000)
-
-    chu.CACHE['perp_market_oracles'][0].price = liq_price * PRICE_PRECISION
-    print('leverage (at liq price):', (await chu.get_leverage()) / 10_000)
+    # Putting liq_price in if to skip if there is no position
+    if liq_price:
+        chu.CACHE['perp_market_oracles'][0].price = liq_price * PRICE_PRECISION
+        print('leverage (at liq price):', (await chu.get_leverage()) / 10_000)
 
     user = await chu.get_user()
     print('perp positions:')
