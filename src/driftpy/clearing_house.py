@@ -852,7 +852,7 @@ class ClearingHouse:
             price=0,
             market_index=market_index,
             reduce_only=False,
-            post_only=False,
+            post_only=PostOnlyParams.NONE(),
             immediate_or_cancel=False,
             trigger_price=0,
             trigger_condition=OrderTriggerCondition.ABOVE(),

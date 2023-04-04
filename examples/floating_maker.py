@@ -73,7 +73,7 @@ async def main(
                 price=0,
                 market_index=market_index,
                 reduce_only=False,
-                post_only=True,
+                post_only=PostOnlyParams.TRY_POST_ONLY,
                 immediate_or_cancel=False,
                 trigger_price=0,
                 trigger_condition=OrderTriggerCondition.ABOVE(),
