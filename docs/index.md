@@ -30,7 +30,8 @@ Note: requires Python >= 3.10.
 from solana.keypair import Keypair
 from driftpy.clearing_house import ClearingHouse 
 from driftpy.clearing_house_user import ClearingHouseUser
-from driftpy.constants.numeric_constants import BASE_PRECISION, AMM_RESERVE_PRECISION 
+from driftpy.constants.numeric_constants import BASE_PRECISION, AMM_RESERVE_PRECISION
+from driftpy.constants.config import configs
 
 from anchorpy import Provider, Wallet
 from solana.rpc.async_api import AsyncClient
