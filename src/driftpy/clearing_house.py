@@ -238,7 +238,7 @@ class ClearingHouse:
                 is_writable=is_writable,
             )
 
-            if spot_market_index != 0 and include_oracles:
+            if include_oracles:
                 oracle_map[str(spot_market.pubkey)] = AccountMeta(
                     pubkey=spot_market.oracle, is_signer=False, is_writable=False
                 )
