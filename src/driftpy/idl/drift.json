@@ -1,5 +1,5 @@
 {
-  "version": "2.23.0",
+  "version": "2.25.0",
   "name": "drift",
   "instructions": [
     {
@@ -424,6 +424,72 @@
             "option": {
               "defined": "PositionDirection"
             }
+          }
+        }
+      ]
+    },
+    {
+      "name": "modifyOrder",
+      "accounts": [
+        {
+          "name": "state",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "user",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "authority",
+          "isMut": false,
+          "isSigner": true
+        }
+      ],
+      "args": [
+        {
+          "name": "orderId",
+          "type": {
+            "option": "u32"
+          }
+        },
+        {
+          "name": "modifyOrderParams",
+          "type": {
+            "defined": "ModifyOrderParams"
+          }
+        }
+      ]
+    },
+    {
+      "name": "modifyOrderByUserId",
+      "accounts": [
+        {
+          "name": "state",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "user",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "authority",
+          "isMut": false,
+          "isSigner": true
+        }
+      ],
+      "args": [
+        {
+          "name": "userOrderId",
+          "type": "u8"
+        },
+        {
+          "name": "modifyOrderParams",
+          "type": {
+            "defined": "ModifyOrderParams"
           }
         }
       ]
@@ -2284,6 +2350,10 @@
       ],
       "args": [
         {
+          "name": "marketIndex",
+          "type": "u16"
+        },
+        {
           "name": "ammBaseAssetReserve",
           "type": "u128"
         },
@@ -2329,6 +2399,32 @@
               32
             ]
           }
+        }
+      ]
+    },
+    {
+      "name": "deleteInitializedPerpMarket",
+      "accounts": [
+        {
+          "name": "admin",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "state",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "perpMarket",
+          "isMut": true,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "marketIndex",
+          "type": "u16"
         }
       ]
     },
@@ -4853,6 +4949,98 @@
       }
     },
     {
+      "name": "ModifyOrderParams",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "direction",
+            "type": {
+              "option": {
+                "defined": "PositionDirection"
+              }
+            }
+          },
+          {
+            "name": "baseAssetAmount",
+            "type": {
+              "option": "u64"
+            }
+          },
+          {
+            "name": "price",
+            "type": {
+              "option": "u64"
+            }
+          },
+          {
+            "name": "reduceOnly",
+            "type": {
+              "option": "bool"
+            }
+          },
+          {
+            "name": "postOnly",
+            "type": {
+              "option": {
+                "defined": "PostOnlyParam"
+              }
+            }
+          },
+          {
+            "name": "immediateOrCancel",
+            "type": {
+              "option": "bool"
+            }
+          },
+          {
+            "name": "maxTs",
+            "type": {
+              "option": "i64"
+            }
+          },
+          {
+            "name": "triggerPrice",
+            "type": {
+              "option": "u64"
+            }
+          },
+          {
+            "name": "triggerCondition",
+            "type": {
+              "option": {
+                "defined": "OrderTriggerCondition"
+              }
+            }
+          },
+          {
+            "name": "oraclePriceOffset",
+            "type": {
+              "option": "i32"
+            }
+          },
+          {
+            "name": "auctionDuration",
+            "type": {
+              "option": "u8"
+            }
+          },
+          {
+            "name": "auctionStartPrice",
+            "type": {
+              "option": "i64"
+            }
+          },
+          {
+            "name": "auctionEndPrice",
+            "type": {
+              "option": "i64"
+            }
+          }
+        ]
+      }
+    },
+    {
       "name": "LiquidatePerpRecord",
       "type": {
         "kind": "struct",
@@ -5127,7 +5315,7 @@
         "fields": [
           {
             "name": "revenueWithdrawSinceLastSettle",
-            "type": "u64"
+            "type": "i64"
           },
           {
             "name": "maxRevenueWithdrawPerPeriod",
@@ -5981,6 +6169,26 @@
       }
     },
     {
+      "name": "ModifyOrderId",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "UserOrderId",
+            "fields": [
+              "u8"
+            ]
+          },
+          {
+            "name": "OrderId",
+            "fields": [
+              "u32"
+            ]
+          }
+        ]
+      }
+    },
+    {
       "name": "PositionDirection",
       "type": {
         "kind": "enum",
@@ -5995,22 +6203,6 @@
       }
     },
     {
-      "name": "FulfillmentParams",
-      "type": {
-        "kind": "enum",
-        "variants": [
-          {
-            "name": "SerumFulfillmentParams",
-            "fields": [
-              {
-                "defined": "SerumFulfillmentParams<'a,'b>"
-              }
-            ]
-          }
-        ]
-      }
-    },
-    {
       "name": "SpotFulfillmentType",
       "type": {
         "kind": "enum",
@@ -6019,7 +6211,7 @@
             "name": "SerumV3"
           },
           {
-            "name": "None"
+            "name": "Match"
           }
         ]
       }
@@ -6380,7 +6572,7 @@
         "kind": "enum",
         "variants": [
           {
-            "name": "SerumV3"
+            "name": "ExternalMarket"
           },
           {
             "name": "Match"
@@ -8826,6 +9018,16 @@
       "code": 6239,
       "name": "RevertFill",
       "msg": "RevertFill"
+    },
+    {
+      "code": 6240,
+      "name": "InvalidMarketAccountforDeletion",
+      "msg": "Invalid MarketAccount for Deletion"
+    },
+    {
+      "code": 6241,
+      "name": "InvalidSpotFulfillmentParams",
+      "msg": "Invalid Spot Fulfillment Params"
     }
   ]
 }
