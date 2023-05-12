@@ -24,13 +24,10 @@ Note: requires Python >= 3.10.
 
 `bash setup.sh`
 
-## Running Unit Tests
-
-`bash test.sh`
 
 ## Building the docs
 
-Local Docs: `mkdocs serve` 
+Local Docs: `mkdocs serve`
 
 Updating public docs: `poetry run mkdocs gh-deploy --force`
 
@@ -39,3 +36,27 @@ Updating public docs: `poetry run mkdocs gh-deploy --force`
 - `python new_release.py`
 - Create a new release at https://github.com/drift-labs/driftpy/releases.
   - (The CI process will upload a new version of the package to PyPI.)
+
+# Development
+
+Ensure correct python version (using pyenv is recommended):
+```
+pyenv install 3.10.11
+pyenv global 3.10.11
+poetry env use $(pyenv which python)
+```
+
+Install dependencies:
+```
+poetry install
+```
+
+Run tests:
+```
+poetry run bash test.sh
+```
+
+Run Acceptance Tests
+```
+poetry run bash acceptance_test.sh
+```
