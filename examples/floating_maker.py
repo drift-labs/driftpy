@@ -1,7 +1,3 @@
-import sys
-import json 
-sys.path.insert(0, '../src/')
-
 import os
 import json
 import copy
@@ -16,8 +12,14 @@ from driftpy.types import *
 #MarketType, OrderType, OrderParams, PositionDirection, OrderTriggerCondition
 
 from driftpy.clearing_house import ClearingHouse
-from driftpy.constants.numeric_constants import BASE_PRECISION, QUOTE_PRECISION
+from driftpy.constants.numeric_constants import BASE_PRECISION, PRICE_PRECISION
+from borsh_construct.enum import _rust_enum
 
+@_rust_enum
+class PostOnlyParams:
+    NONE = constructor()
+    TRY_POST_ONLY = constructor()
+    MUST_POST_ONLY = constructor()
 
 def order_print(orders: list[OrderParams], market_str=None):
     for order in orders:
@@ -43,6 +45,8 @@ async def main(
     market_name,
     base_asset_amount,
     subaccount_id,
+    spread = .01,
+    offset = 0,
 ):
     with open(os.path.expanduser(keypath), 'r') as f: secret = json.load(f) 
     kp = Keypair.from_secret_key(bytes(secret))
@@ -73,7 +77,7 @@ async def main(
                 price=0,
                 market_index=market_index,
                 reduce_only=False,
-                post_only=PostOnlyParams.TRY_POST_ONLY,
+                post_only=PostOnlyParams.TRY_POST_ONLY(),
                 immediate_or_cancel=False,
                 trigger_price=0,
                 trigger_condition=OrderTriggerCondition.ABOVE(),
@@ -86,11 +90,11 @@ async def main(
 
     bid_order_params = copy.deepcopy(default_order_params)
     bid_order_params.direction = PositionDirection.LONG()
-    bid_order_params.oracle_price_offset = -1
+    bid_order_params.oracle_price_offset = int((offset - spread/2) * PRICE_PRECISION)
              
     ask_order_params = copy.deepcopy(default_order_params)
     ask_order_params.direction = PositionDirection.SHORT()
-    ask_order_params.oracle_price_offset = 1
+    ask_order_params.oracle_price_offset = int((offset + spread/2) * PRICE_PRECISION)
 
     order_print([bid_order_params, ask_order_params], market_name)
 
@@ -98,13 +102,13 @@ async def main(
     spot_orders_ix = []
     if is_perp:
         perp_orders_ix = [
-        await drift_acct.get_place_perp_order_ix(bid_order_params),
-            await drift_acct.get_place_perp_order_ix(ask_order_params)
+            await drift_acct.get_place_perp_order_ix(bid_order_params, subaccount_id),
+            await drift_acct.get_place_perp_order_ix(ask_order_params, subaccount_id)
             ]
     else:
         spot_orders_ix =  [
-        await drift_acct.get_place_spot_order_ix(bid_order_params),
-            await drift_acct.get_place_spot_order_ix(ask_order_params)
+            await drift_acct.get_place_spot_order_ix(bid_order_params, subaccount_id),
+            await drift_acct.get_place_spot_order_ix(ask_order_params, subaccount_id)
         ]
 
     await drift_acct.send_ixs(
@@ -120,10 +124,14 @@ if __name__ == '__main__':
     parser.add_argument('--env', type=str, default='devnet')
     parser.add_argument('--amount', type=float, required=True)
     parser.add_argument('--market', type=str, required=True)
-    parser.add_argument('--operation', choices=['remove', 'add', 'view', 'settle', 'cancel'], required=False)
     parser.add_argument('--subaccount', type=int, required=False, default=0)
+    parser.add_argument('--spread', type=float, required=False, default=.01) # $0.01
+    parser.add_argument('--offset', type=float, required=False, default=0) # $0.00
 
     args = parser.parse_args()
+
+    # assert(args.spread > 0, 'spread must be > $0')
+    # assert(args.spread+args.offset < 2000, 'Invalid offset + spread (> $2000)')
 
     if args.keypath is None:
         if os.environ['ANCHOR_WALLET'] is None:
@@ -146,7 +154,8 @@ if __name__ == '__main__':
         args.market, 
         args.amount,
         args.subaccount,
+        args.spread,
+        args.offset,
     ))
-
 
 

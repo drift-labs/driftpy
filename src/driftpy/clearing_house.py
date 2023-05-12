@@ -29,7 +29,7 @@ from driftpy.math.positions import is_available, is_spot_position_available
 DEFAULT_USER_NAME = "Main Account"
 
 class ClearingHouse:
-    """This class is the main way to interact with Drift Protocol including
+    """This class is the main way to interact with Drift Protocol including 
     depositing, opening new positions, closing positions, placing orders, etc.
     """
 
@@ -56,7 +56,7 @@ class ClearingHouse:
 
     @staticmethod
     def from_config(config: Config, provider: Provider, authority: Keypair = None):
-        """Initializes the clearing house object from a Config
+        """Initializes the clearing house object from a Config 
 
         Args:
             config (Config): the config to initialize form
@@ -68,6 +68,7 @@ class ClearingHouse:
         """
         # read the idl
         file = Path(str(driftpy.__path__[0]) + "/idl/drift.json")
+        print(file)
         with file.open() as f:
             idl_dict = json.load(f)
         idl = Idl.from_json(idl_dict)
@@ -115,7 +116,7 @@ class ClearingHouse:
         return await self.program.provider.send(tx, signers=signers)
 
     async def intialize_user(self, user_id: int = 0):
-        """intializes a drift user
+        """intializes a drift user 
 
         Args:
             user_id (int, optional): subaccount id to initialize. Defaults to 0.
@@ -292,7 +293,7 @@ class ClearingHouse:
 
         Args:
             amount (int): amount to withdraw
-            spot_market_index (int):
+            spot_market_index (int): 
             user_token_account (PublicKey): ata of the account to withdraw to
             reduce_only (bool, optional): if True will only withdraw existing funds else if False will allow taking out borrows. Defaults to False.
             user_id (int, optional): subaccount. Defaults to 0.
@@ -358,8 +359,8 @@ class ClearingHouse:
 
         Args:
             amount (int): amount to deposit
-            spot_market_index (int):
-            user_token_account (PublicKey):
+            spot_market_index (int): 
+            user_token_account (PublicKey): 
             user_id (int, optional): subaccount to deposit into. Defaults to 0.
             reduce_only (bool, optional): paying back borrow vs depositing new assets. Defaults to False.
             user_initialized (bool, optional): if need to initialize user account too set this to False. Defaults to True.
@@ -466,7 +467,7 @@ class ClearingHouse:
 
         Args:
             amount (int): amount of lp tokens to burn
-            market_index (int):
+            market_index (int): 
             user_id (int, optional): subaccount id. Defaults to 0.
 
         Returns:
@@ -633,7 +634,7 @@ class ClearingHouse:
         user_account_public_key = self.get_user_account_public_key(user_id)
 
         remaining_accounts = await self.get_remaining_accounts(
-            readable_spot_market_index=[0, order_params.market_index],
+            readable_spot_market_index=[0, order_params.market_index], 
             user_id=user_id
         )
 
@@ -650,7 +651,49 @@ class ClearingHouse:
         )
 
         return ix
+    
+    async def get_place_spot_orders_ix(
+        self,
+        order_params: List[OrderParams],
+        user_id: int = 0,
+    ):
+        user_account_public_key = self.get_user_account_public_key(user_id)
 
+        remaining_accounts = await self.get_remaining_accounts(
+            writable_market_index=order_params[0].market_index, user_id=user_id
+        )
+
+        ixs = [
+            self.program.instruction["cancel_orders"](
+                None,
+                None,
+                None,
+                ctx=Context(
+                    accounts={
+                        "state": self.get_state_public_key(),
+                        "user": self.get_user_account_public_key(user_id),
+                        "authority": self.authority,
+                    },
+                    remaining_accounts=remaining_accounts,
+                ),
+            )
+        ]
+        for order_param in order_params:
+            ix = self.program.instruction["place_spot_order"](
+                order_param,
+                ctx=Context(
+                    accounts={
+                        "state": self.get_state_public_key(),
+                        "user": user_account_public_key,
+                        "authority": self.authority,
+                    },
+                    remaining_accounts=remaining_accounts,
+                ),
+            )
+            ixs.append(ix)
+
+        return ixs
+    
     async def place_perp_order(
         self,
         order_params: OrderParams,
@@ -687,6 +730,49 @@ class ClearingHouse:
         )
 
         return ix
+
+
+    async def get_place_perp_orders_ix(
+        self,
+        order_params: List[OrderParams],
+        user_id: int = 0,
+    ):
+        user_account_public_key = self.get_user_account_public_key(user_id)
+
+        remaining_accounts = await self.get_remaining_accounts(
+            writable_market_index=order_params.market_index, user_id=user_id
+        )
+
+        ixs = [
+            self.program.instruction["cancel_orders"](
+                None,
+                None,
+                None,
+                ctx=Context(
+                    accounts={
+                        "state": self.get_state_public_key(),
+                        "user": self.get_user_account_public_key(user_id),
+                        "authority": self.authority,
+                    },
+                    remaining_accounts=remaining_accounts,
+                ),
+            )
+        ]
+        for order_param in order_params:
+            ix = self.program.instruction["place_perp_order"](
+                order_param,
+                ctx=Context(
+                    accounts={
+                        "state": self.get_state_public_key(),
+                        "user": user_account_public_key,
+                        "authority": self.authority,
+                    },
+                    remaining_accounts=remaining_accounts,
+                ),
+            )
+        ixs.append(ix)
+
+        return ixs
 
     async def place_and_take(
         self,
@@ -865,8 +951,8 @@ class ClearingHouse:
     async def liquidate_spot(
         self,
         user_authority: PublicKey,
-        asset_market_index: int,
-        liability_market_index: int,
+        asset_market_index: int, 
+        liability_market_index: int, 
         max_liability_transfer: int,
         user_subaccount_id: int = 0,
         liq_subaccount_id: int = 0,
@@ -887,9 +973,9 @@ class ClearingHouse:
     async def get_liquidate_spot_ix(
         self,
         user_authority: PublicKey,
-        asset_market_index: int,
-        liability_market_index: int,
-        max_liability_transfer: int,
+        asset_market_index: int, 
+        liability_market_index: int, 
+        max_liability_transfer: int, 
         limit_price: int = None,
         user_subaccount_id: int = 0,
         liq_subaccount_id: int = 0,
@@ -968,7 +1054,7 @@ class ClearingHouse:
         liq_stats_pk = self.get_user_stats_public_key()
 
         remaining_accounts = await self.get_remaining_accounts(
-            writable_market_index=market_index,
+            writable_market_index=market_index, 
             authority=[user_authority, self.authority],
             user_id=[user_subaccount_id, liq_subaccount_id]
         )
@@ -991,7 +1077,7 @@ class ClearingHouse:
         )
 
     async def liquidate_perp_pnl_for_deposit(
-        self,
+        self, 
         user_authority: PublicKey,
         perp_market_index: int,
         spot_market_index: int,
@@ -1308,7 +1394,7 @@ class ClearingHouse:
         amount: int,
     ):
         ra = await self.get_remaining_accounts(
-            writable_spot_market_index=spot_market_index,
+            writable_spot_market_index=spot_market_index, 
             user_id=[] # dont need the user account (might not exist)
         )
 
@@ -1380,7 +1466,7 @@ class ClearingHouse:
 
     async def get_remove_insurance_fund_stake_ix(self, spot_market_index: int):
         ra = await self.get_remaining_accounts(
-            writable_spot_market_index=spot_market_index,
+            writable_spot_market_index=spot_market_index, 
             user_id=[] # dont need the user account (might not exist)
         )
 
@@ -1539,7 +1625,7 @@ class ClearingHouse:
         )
 
     async def settle_revenue_to_insurance_fund(
-        self,
+        self, 
         spot_market_index: int
     ):
         return await self.program.rpc["settle_revenue_to_insurance_fund"](
@@ -1560,4 +1646,4 @@ class ClearingHouse:
                     "token_program": TOKEN_PROGRAM_ID,
                 }
             ),
-        )
+        ) 
