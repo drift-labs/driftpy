@@ -218,17 +218,24 @@ class ClearingHouse:
         market_map = {}
 
         async def track_market(market_index, is_writable):
-            market = await get_perp_market_account(self.program, market_index)
+            perp_market = await get_perp_market_account(self.program, market_index)
             market_map[market_index] = AccountMeta(
-                pubkey=market.pubkey,
+                pubkey=perp_market.pubkey,
                 is_signer=False,
                 is_writable=is_writable,
             )
 
+
             if include_oracles:
-                oracle_map[str(market.pubkey)] = AccountMeta(
-                    pubkey=market.amm.oracle, is_signer=False, is_writable=False
+                spot_market = await get_spot_market_account(self.program, perp_market.quote_spot_market_index)
+                if spot_market.oracle is not None:
+                    oracle_map[str(spot_market.oracle)] = AccountMeta(
+                        pubkey=spot_market.oracle, is_signer=False, is_writable=False
+                    )
+                oracle_map[str(perp_market.pubkey)] = AccountMeta(
+                    pubkey=perp_market.amm.oracle, is_signer=False, is_writable=False
                 )
+
 
         async def track_spot_market(spot_market_index, is_writable):
             spot_market = await get_spot_market_account(self.program, spot_market_index)
