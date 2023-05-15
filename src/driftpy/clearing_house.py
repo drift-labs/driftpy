@@ -272,7 +272,11 @@ class ClearingHouse:
                         await track_spot_market(i, is_writable=False)
 
         if writable_market_index is not None:
-            await track_market(writable_market_index, is_writable=True)
+            if isinstance(writable_market_index, int):
+                writable_market_index = [writable_market_index]
+
+            for i in writable_market_index:
+                await track_spot_market(i, is_writable=True)
 
         if writable_spot_market_index is not None and include_spot_markets:
             if isinstance(writable_spot_market_index, int):
@@ -744,9 +748,9 @@ class ClearingHouse:
         user_id: int = 0,
     ):
         user_account_public_key = self.get_user_account_public_key(user_id)
-
+        writeable_market_indexes = list(set([x.market_index for x in order_params]))
         remaining_accounts = await self.get_remaining_accounts(
-            writable_market_index=order_params.market_index, user_id=user_id
+            writable_market_index=writeable_market_indexes, user_id=user_id
         )
 
         ixs = [
@@ -776,7 +780,7 @@ class ClearingHouse:
                     remaining_accounts=remaining_accounts,
                 ),
             )
-        ixs.append(ix)
+            ixs.append(ix)
 
         return ixs
 
