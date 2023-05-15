@@ -38,7 +38,7 @@ def calculate_asset_weight(
     spot_market: SpotMarket,
     margin_category: MarginCategory,
 ):
-    size_precision = 10 ** spot_market.decimals
+    size_precision = 10**spot_market.decimals
 
     if size_precision > AMM_RESERVE_PRECISION:
         size_in_amm_precision = amount / (size_precision / AMM_RESERVE_PRECISION)
@@ -53,7 +53,7 @@ def calculate_asset_weight(
                 spot_market.initial_asset_weight,
             )
         case MarginCategory.MAINTENANCE:
-            asset_weight = spot_market.maintenance_asset_weight 
+            asset_weight = spot_market.maintenance_asset_weight
             # calculate_size_discount_asset_weight(
             #     size_in_amm_precision,
             #     spot_market.imf_factor,
@@ -87,10 +87,8 @@ def calculate_size_premium_liability_weight(
     max_liability_weight = max(liability_weight, size_premium_liability_weight)
     return max_liability_weight
 
-def calculate_net_user_pnl(
-    perp_market: PerpMarket, 
-    oracle_data: OracleData
-):
+
+def calculate_net_user_pnl(perp_market: PerpMarket, oracle_data: OracleData):
     net_user_position_value = (
         perp_market.amm.base_asset_amount_with_amm
         * oracle_data.price
@@ -103,59 +101,56 @@ def calculate_net_user_pnl(
 
     return net_user_pnl
 
+
 def calculate_net_user_pnl_imbalance(
-    perp_market: PerpMarket, 
-    spot_market: SpotMarket, 
-    oracle_data: OracleData
+    perp_market: PerpMarket, spot_market: SpotMarket, oracle_data: OracleData
 ):
-    user_pnl = calculate_net_user_pnl(
-        perp_market, oracle_data
-    )
+    user_pnl = calculate_net_user_pnl(perp_market, oracle_data)
 
     pnl_pool = get_token_amount(
-        perp_market.pnl_pool.scaled_balance, 
-        spot_market, 
-        "SpotBalanceType.Deposit()"
+        perp_market.pnl_pool.scaled_balance, spot_market, "SpotBalanceType.Deposit()"
     )
 
     imbalance = user_pnl - pnl_pool
     return imbalance
 
+
 def calculate_unrealized_asset_weight(
-    perp_market: PerpMarket, 
-    spot_market: SpotMarket, 
-    unrealized_pnl: int, 
-    margin_category: MarginCategory, 
-    oracle_data: OracleData
+    perp_market: PerpMarket,
+    spot_market: SpotMarket,
+    unrealized_pnl: int,
+    margin_category: MarginCategory,
+    oracle_data: OracleData,
 ):
     match margin_category:
         case MarginCategory.INITIAL:
             asset_weight = perp_market.unrealized_pnl_initial_asset_weight
-            if perp_market.unrealized_pnl_max_imbalance > 0: 
+            if perp_market.unrealized_pnl_max_imbalance > 0:
                 net_unsettled_pnl = calculate_net_user_pnl_imbalance(
-                    perp_market, 
-                    spot_market, 
-                    oracle_data
+                    perp_market, spot_market, oracle_data
                 )
                 if net_unsettled_pnl > perp_market.unrealized_pnl_max_imbalance:
-                    asset_weight = asset_weight * perp_market.unrealized_pnl_max_imbalance / net_unsettled_pnl
-                
+                    asset_weight = (
+                        asset_weight
+                        * perp_market.unrealized_pnl_max_imbalance
+                        / net_unsettled_pnl
+                    )
+
             asset_weight = calculate_size_discount_asset_weight(
-                unrealized_pnl, 
-                perp_market.unrealized_pnl_imf_factor, 
-                asset_weight
+                unrealized_pnl, perp_market.unrealized_pnl_imf_factor, asset_weight
             )
         case MarginCategory.MAINTENANCE:
             asset_weight = perp_market.unrealized_pnl_maintenance_asset_weight
-        case _: 
+        case _:
             raise Exception(f"invalid margin category: {margin_category}")
 
     return asset_weight
 
+
 def calculate_liability_weight(
     balance_amount: int, spot_market: SpotMarket, margin_category: MarginCategory
 ) -> int:
-    size_precision = 10 ** spot_market.decimals
+    size_precision = 10**spot_market.decimals
     if size_precision > AMM_RESERVE_PRECISION:
         size_in_amm_reserve_precision = balance_amount / (
             size_precision / AMM_RESERVE_PRECISION

@@ -28,8 +28,9 @@ from driftpy.math.positions import is_available, is_spot_position_available
 
 DEFAULT_USER_NAME = "Main Account"
 
+
 class ClearingHouse:
-    """This class is the main way to interact with Drift Protocol including 
+    """This class is the main way to interact with Drift Protocol including
     depositing, opening new positions, closing positions, placing orders, etc.
     """
 
@@ -56,7 +57,7 @@ class ClearingHouse:
 
     @staticmethod
     def from_config(config: Config, provider: Provider, authority: Keypair = None):
-        """Initializes the clearing house object from a Config 
+        """Initializes the clearing house object from a Config
 
         Args:
             config (Config): the config to initialize form
@@ -116,7 +117,7 @@ class ClearingHouse:
         return await self.program.provider.send(tx, signers=signers)
 
     async def intialize_user(self, user_id: int = 0):
-        """intializes a drift user 
+        """intializes a drift user
 
         Args:
             user_id (int, optional): subaccount id to initialize. Defaults to 0.
@@ -225,9 +226,10 @@ class ClearingHouse:
                 is_writable=is_writable,
             )
 
-
             if include_oracles:
-                spot_market = await get_spot_market_account(self.program, perp_market.quote_spot_market_index)
+                spot_market = await get_spot_market_account(
+                    self.program, perp_market.quote_spot_market_index
+                )
                 if spot_market.oracle is not None:
                     oracle_map[str(spot_market.oracle)] = AccountMeta(
                         pubkey=spot_market.oracle, is_signer=False, is_writable=False
@@ -235,7 +237,6 @@ class ClearingHouse:
                 oracle_map[str(perp_market.pubkey)] = AccountMeta(
                     pubkey=perp_market.amm.oracle, is_signer=False, is_writable=False
                 )
-
 
         async def track_spot_market(spot_market_index, is_writable):
             spot_market = await get_spot_market_account(self.program, spot_market_index)
@@ -300,7 +301,7 @@ class ClearingHouse:
 
         Args:
             amount (int): amount to withdraw
-            spot_market_index (int): 
+            spot_market_index (int):
             user_token_account (PublicKey): ata of the account to withdraw to
             reduce_only (bool, optional): if True will only withdraw existing funds else if False will allow taking out borrows. Defaults to False.
             user_id (int, optional): subaccount. Defaults to 0.
@@ -324,7 +325,6 @@ class ClearingHouse:
         reduce_only: bool = False,
         user_id: int = 0,
     ):
-
         spot_market = await get_spot_market_account(self.program, spot_market_index)
         remaining_accounts = await self.get_remaining_accounts(
             writable_spot_market_index=spot_market_index,
@@ -366,8 +366,8 @@ class ClearingHouse:
 
         Args:
             amount (int): amount to deposit
-            spot_market_index (int): 
-            user_token_account (PublicKey): 
+            spot_market_index (int):
+            user_token_account (PublicKey):
             user_id (int, optional): subaccount to deposit into. Defaults to 0.
             reduce_only (bool, optional): paying back borrow vs depositing new assets. Defaults to False.
             user_initialized (bool, optional): if need to initialize user account too set this to False. Defaults to True.
@@ -397,7 +397,6 @@ class ClearingHouse:
         reduce_only=False,
         user_initialized=True,
     ) -> TransactionInstruction:
-
         if user_initialized:
             remaining_accounts = await self.get_remaining_accounts(
                 writable_spot_market_index=spot_market_index, user_id=user_id
@@ -474,7 +473,7 @@ class ClearingHouse:
 
         Args:
             amount (int): amount of lp tokens to burn
-            market_index (int): 
+            market_index (int):
             user_id (int, optional): subaccount id. Defaults to 0.
 
         Returns:
@@ -621,16 +620,17 @@ class ClearingHouse:
 
         return compute_ix
 
-
-    async def place_spot_order(self,
+    async def place_spot_order(
+        self,
         order_params: OrderParams,
         maker_info: MakerInfo = None,
         user_id: int = 0,
     ):
-        return await self.send_ixs([
+        return await self.send_ixs(
+            [
                 self.get_increase_compute_ix(),
-            await self.get_place_spot_order_ix(order_params, maker_info, user_id),
-        ]
+                await self.get_place_spot_order_ix(order_params, maker_info, user_id),
+            ]
         )
 
     async def get_place_spot_order_ix(
@@ -641,8 +641,7 @@ class ClearingHouse:
         user_account_public_key = self.get_user_account_public_key(user_id)
 
         remaining_accounts = await self.get_remaining_accounts(
-            readable_spot_market_index=[0, order_params.market_index], 
-            user_id=user_id
+            readable_spot_market_index=[0, order_params.market_index], user_id=user_id
         )
 
         ix = self.program.instruction["place_spot_order"](
@@ -658,7 +657,7 @@ class ClearingHouse:
         )
 
         return ix
-    
+
     async def get_place_spot_orders_ix(
         self,
         order_params: List[OrderParams],
@@ -700,17 +699,18 @@ class ClearingHouse:
             ixs.append(ix)
 
         return ixs
-    
+
     async def place_perp_order(
         self,
         order_params: OrderParams,
         maker_info: MakerInfo = None,
         user_id: int = 0,
     ):
-        return await self.send_ixs([
+        return await self.send_ixs(
+            [
                 self.get_increase_compute_ix(),
-            await self.get_place_perp_order_ix(order_params, maker_info, user_id),
-        ]
+                await self.get_place_perp_order_ix(order_params, maker_info, user_id),
+            ]
         )
 
     async def get_place_perp_order_ix(
@@ -737,7 +737,6 @@ class ClearingHouse:
         )
 
         return ix
-
 
     async def get_place_perp_orders_ix(
         self,
@@ -788,10 +787,12 @@ class ClearingHouse:
         subaccount_id: int = 0,
     ):
         return await self.send_ixs(
-             [
+            [
                 self.get_increase_compute_ix(),
-                await self.get_place_and_take_ix(order_params, maker_info, subaccount_id),
-             ]
+                await self.get_place_and_take_ix(
+                    order_params, maker_info, subaccount_id
+                ),
+            ]
         )
 
     async def get_place_and_take_ix(
@@ -816,18 +817,18 @@ class ClearingHouse:
             )
 
         return self.program.instruction["place_and_take_perp_order"](
-                order_params,
-                maker_order_id,
-                ctx=Context(
-                    accounts={
-                        "state": self.get_state_public_key(),
-                        "user": user_account_public_key,
-                        "user_stats": self.get_user_stats_public_key(),
-                        "authority": self.authority,
-                    },
-                    remaining_accounts=remaining_accounts,
-                ),
-            )
+            order_params,
+            maker_order_id,
+            ctx=Context(
+                accounts={
+                    "state": self.get_state_public_key(),
+                    "user": user_account_public_key,
+                    "user_stats": self.get_user_stats_public_key(),
+                    "authority": self.authority,
+                },
+                remaining_accounts=remaining_accounts,
+            ),
+        )
 
     async def settle_lp(
         self,
@@ -958,8 +959,8 @@ class ClearingHouse:
     async def liquidate_spot(
         self,
         user_authority: PublicKey,
-        asset_market_index: int, 
-        liability_market_index: int, 
+        asset_market_index: int,
+        liability_market_index: int,
         max_liability_transfer: int,
         user_subaccount_id: int = 0,
         liq_subaccount_id: int = 0,
@@ -980,14 +981,16 @@ class ClearingHouse:
     async def get_liquidate_spot_ix(
         self,
         user_authority: PublicKey,
-        asset_market_index: int, 
-        liability_market_index: int, 
-        max_liability_transfer: int, 
+        asset_market_index: int,
+        liability_market_index: int,
+        max_liability_transfer: int,
         limit_price: int = None,
         user_subaccount_id: int = 0,
         liq_subaccount_id: int = 0,
     ):
-        user_pk = get_user_account_public_key(self.program_id, user_authority, user_id=user_subaccount_id)
+        user_pk = get_user_account_public_key(
+            self.program_id, user_authority, user_id=user_subaccount_id
+        )
         user_stats_pk = get_user_stats_account_public_key(
             self.program_id,
             user_authority,
@@ -1051,7 +1054,9 @@ class ClearingHouse:
         user_subaccount_id: int = 0,
         liq_subaccount_id: int = 0,
     ):
-        user_pk = get_user_account_public_key(self.program_id, user_authority, user_subaccount_id)
+        user_pk = get_user_account_public_key(
+            self.program_id, user_authority, user_subaccount_id
+        )
         user_stats_pk = get_user_stats_account_public_key(
             self.program_id,
             user_authority,
@@ -1061,9 +1066,9 @@ class ClearingHouse:
         liq_stats_pk = self.get_user_stats_public_key()
 
         remaining_accounts = await self.get_remaining_accounts(
-            writable_market_index=market_index, 
+            writable_market_index=market_index,
             authority=[user_authority, self.authority],
-            user_id=[user_subaccount_id, liq_subaccount_id]
+            user_id=[user_subaccount_id, liq_subaccount_id],
         )
 
         return self.program.instruction["liquidate_perp"](
@@ -1084,7 +1089,7 @@ class ClearingHouse:
         )
 
     async def liquidate_perp_pnl_for_deposit(
-        self, 
+        self,
         user_authority: PublicKey,
         perp_market_index: int,
         spot_market_index: int,
@@ -1113,7 +1118,9 @@ class ClearingHouse:
         user_subaccount_id: int = 0,
         liq_subaccount_id: int = 0,
     ):
-        user_pk = get_user_account_public_key(self.program_id, user_authority, user_subaccount_id)
+        user_pk = get_user_account_public_key(
+            self.program_id, user_authority, user_subaccount_id
+        )
         user_stats_pk = get_user_stats_account_public_key(
             self.program_id,
             user_authority,
@@ -1216,7 +1223,9 @@ class ClearingHouse:
         user_subaccount_id: int = 0,
         liq_subaccount_id: int = 0,
     ):
-        user_pk = get_user_account_public_key(self.program_id, user_authority, user_subaccount_id)
+        user_pk = get_user_account_public_key(
+            self.program_id, user_authority, user_subaccount_id
+        )
         user_stats_pk = get_user_stats_account_public_key(
             self.program_id,
             user_authority,
@@ -1228,7 +1237,7 @@ class ClearingHouse:
         remaining_accounts = await self.get_remaining_accounts(
             writable_spot_market_index=spot_market_index,
             authority=[user_authority, self.authority],
-            user_id=[user_subaccount_id, liq_subaccount_id]
+            user_id=[user_subaccount_id, liq_subaccount_id],
         )
 
         if_vault = get_insurance_fund_vault_public_key(
@@ -1283,7 +1292,9 @@ class ClearingHouse:
         user_subaccount_id: int = 0,
         liq_subaccount_id: int = 0,
     ):
-        user_pk = get_user_account_public_key(self.program_id, user_authority, user_subaccount_id)
+        user_pk = get_user_account_public_key(
+            self.program_id, user_authority, user_subaccount_id
+        )
         user_stats_pk = get_user_stats_account_public_key(
             self.program_id,
             user_authority,
@@ -1296,15 +1307,11 @@ class ClearingHouse:
             writable_market_index=market_index,
             writable_spot_market_index=QUOTE_ASSET_BANK_INDEX,
             authority=[user_authority, self.authority],
-            user_id=[user_subaccount_id, liq_subaccount_id]
+            user_id=[user_subaccount_id, liq_subaccount_id],
         )
 
-        if_vault = get_insurance_fund_vault_public_key(
-            self.program_id, market_index
-        )
-        spot_vault = get_spot_market_vault_public_key(
-            self.program_id, market_index
-        )
+        if_vault = get_insurance_fund_vault_public_key(self.program_id, market_index)
+        spot_vault = get_spot_market_vault_public_key(self.program_id, market_index)
         ch_signer = get_clearing_house_signer_public_key(self.program_id)
 
         return self.program.instruction["resolve_perp_bankruptcy"](
@@ -1336,7 +1343,7 @@ class ClearingHouse:
                 self.get_increase_compute_ix(),
                 await self.get_settle_expired_market_ix(
                     market_index,
-                )
+                ),
             ]
         )
 
@@ -1401,8 +1408,8 @@ class ClearingHouse:
         amount: int,
     ):
         ra = await self.get_remaining_accounts(
-            writable_spot_market_index=spot_market_index, 
-            user_id=[] # dont need the user account (might not exist)
+            writable_spot_market_index=spot_market_index,
+            user_id=[],  # dont need the user account (might not exist)
         )
 
         return self.program.instruction["request_remove_insurance_fund_stake"](
@@ -1430,10 +1437,14 @@ class ClearingHouse:
 
     async def cancel_request_remove_insurance_fund_stake(self, spot_market_index: int):
         return await self.send_ixs(
-            await self.get_cancel_request_remove_insurance_fund_stake_ix(spot_market_index)
+            await self.get_cancel_request_remove_insurance_fund_stake_ix(
+                spot_market_index
+            )
         )
 
-    async def get_cancel_request_remove_insurance_fund_stake_ix(self, spot_market_index: int):
+    async def get_cancel_request_remove_insurance_fund_stake_ix(
+        self, spot_market_index: int
+    ):
         ra = await self.get_remaining_accounts(
             writable_spot_market_index=spot_market_index
         )
@@ -1473,8 +1484,8 @@ class ClearingHouse:
 
     async def get_remove_insurance_fund_stake_ix(self, spot_market_index: int):
         ra = await self.get_remaining_accounts(
-            writable_spot_market_index=spot_market_index, 
-            user_id=[] # dont need the user account (might not exist)
+            writable_spot_market_index=spot_market_index,
+            user_id=[],  # dont need the user account (might not exist)
         )
 
         return self.program.instruction["remove_insurance_fund_stake"](
@@ -1631,10 +1642,7 @@ class ClearingHouse:
             ),
         )
 
-    async def settle_revenue_to_insurance_fund(
-        self, 
-        spot_market_index: int
-    ):
+    async def settle_revenue_to_insurance_fund(self, spot_market_index: int):
         return await self.program.rpc["settle_revenue_to_insurance_fund"](
             spot_market_index,
             ctx=Context(
@@ -1646,11 +1654,14 @@ class ClearingHouse:
                     "spot_market_vault": get_spot_market_vault_public_key(
                         self.program_id, spot_market_index
                     ),
-                    "drift_signer": get_clearing_house_signer_public_key(self.program_id),
+                    "drift_signer": get_clearing_house_signer_public_key(
+                        self.program_id
+                    ),
                     "insurance_fund_vault": get_insurance_fund_vault_public_key(
-                        self.program_id, spot_market_index,
+                        self.program_id,
+                        spot_market_index,
                     ),
                     "token_program": TOKEN_PROGRAM_ID,
                 }
             ),
-        ) 
+        )

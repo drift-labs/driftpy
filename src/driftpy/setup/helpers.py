@@ -130,6 +130,7 @@ async def _create_user_ata_tx(
 
     return fake_tx
 
+
 def mint_ix(
     usdc_mint: PublicKey,
     mint_auth: PublicKey,
@@ -147,6 +148,7 @@ def mint_ix(
         )
     )
     return mint_to_user_account_tx
+
 
 def _mint_usdc_tx(
     usdc_mint: Keypair,
@@ -200,7 +202,7 @@ async def set_price_feed(
     price: float,
 ):
     data = await get_feed_data(oracle_program, oracle_public_key)
-    int_price = int(price * 10 ** -data.exponent)
+    int_price = int(price * 10**-data.exponent)
     print("setting oracle price", int_price)
     return await oracle_program.rpc["set_price"](
         int_price, ctx=Context(accounts={"price": oracle_public_key})
@@ -215,8 +217,8 @@ async def set_price_feed_detailed(
     slot: int,
 ):
     data = await get_feed_data(oracle_program, oracle_public_key)
-    int_price = int(price * 10 ** -data.exponent)
-    int_conf = int(abs(conf) * 10 ** -data.exponent)
+    int_price = int(price * 10**-data.exponent)
+    int_conf = int(abs(conf) * 10**-data.exponent)
     print("setting oracle price", int_price, "+/-", int_conf, "@ slot=", slot)
     return await oracle_program.rpc["set_price_info"](
         int_price, int_conf, slot, ctx=Context(accounts={"price": oracle_public_key})
@@ -231,8 +233,8 @@ async def get_set_price_feed_detailed_ix(
     slot: int,
 ):
     data = await get_feed_data(oracle_program, oracle_public_key)
-    int_price = int(price * 10 ** -data.exponent)
-    int_conf = int(abs(conf) * 10 ** -data.exponent)
+    int_price = int(price * 10**-data.exponent)
+    int_conf = int(abs(conf) * 10**-data.exponent)
     print("setting oracle price", int_price, "+/-", int_conf, "@ slot=", slot)
     return oracle_program.instruction["set_price_info"](
         int_price, int_conf, slot, ctx=Context(accounts={"price": oracle_public_key})
@@ -245,7 +247,7 @@ async def create_price_feed(
     confidence: Optional[int] = None,
     expo: int = -4,
 ) -> PublicKey:
-    conf = int((init_price / 10) * 10 ** -expo) if confidence is None else confidence
+    conf = int((init_price / 10) * 10**-expo) if confidence is None else confidence
     collateral_token_feed = Keypair()
     space = 3312
     mbre_resp = (
@@ -255,7 +257,7 @@ async def create_price_feed(
     )
     lamports = mbre_resp["result"]
     await oracle_program.rpc["initialize"](
-        int(init_price * 10 ** -expo),
+        int(init_price * 10**-expo),
         expo,
         conf,
         ctx=Context(
@@ -286,7 +288,7 @@ class PriceData:
 def parse_price_data(data: bytes) -> PriceData:
     exponent = Int32sl.parse(data[20:24])
     raw_price = Int64ul.parse(data[208:216])
-    price = raw_price * 10 ** exponent
+    price = raw_price * 10**exponent
     return PriceData(exponent, price)
 
 

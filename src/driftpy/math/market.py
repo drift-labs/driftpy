@@ -9,6 +9,7 @@ from driftpy.types import PositionDirection
 import copy
 from solana.publickey import PublicKey
 import numpy as np
+
 # from driftpy.math.positions import calculate_base_asset_value, calculate_position_pnl
 from driftpy.constants.numeric_constants import (
     AMM_RESERVE_PRECISION,
@@ -118,7 +119,7 @@ def calculate_candidate_amm(market, oracle_price=None):
             candidate_amm.base_asset_reserve * candidate_amm.quote_asset_reserve
         )
 
-    candidate_amm.terminal_quote_asset_reserve = (candidate_amm.sqrt_k ** 2) / (
+    candidate_amm.terminal_quote_asset_reserve = (candidate_amm.sqrt_k**2) / (
         candidate_amm.base_asset_reserve + candidate_amm.base_asset_amount_with_amm
     )
     return candidate_amm

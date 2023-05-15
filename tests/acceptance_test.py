@@ -36,10 +36,11 @@ workspace = workspace_fixture(
     "protocol-v2", build_cmd="anchor build --skip-lint", scope="session"
 )
 
+
 @async_fixture(scope="session")
 async def clearing_house() -> ClearingHouse:
-
-    with open(os.path.expanduser(os.environ["ANCHOR_WALLET"]), 'r') as f: secret = json.load(f)
+    with open(os.path.expanduser(os.environ["ANCHOR_WALLET"]), "r") as f:
+        secret = json.load(f)
     kp = Keypair.from_secret_key(bytes(secret))
 
     wallet = Wallet(kp)
@@ -52,29 +53,32 @@ async def clearing_house() -> ClearingHouse:
 
     return ClearingHouse.from_config(config, provider)
 
+
 @mark.asyncio
 async def test_get_perp_market(
     clearing_house: ClearingHouse,
 ):
-    ix = await clearing_house.get_place_perp_order_ix(OrderParams(
-        order_type=OrderType.LIMIT(),
-        market_type=MarketType.PERP(),
-        direction=PositionDirection.LONG(),
-        user_order_id=0,
-        base_asset_amount=BASE_PRECISION,
-        price=10 * PRICE_PRECISION,
-        market_index=0,
-        reduce_only=False,
-        post_only=PostOnlyParams.NONE(),
-        immediate_or_cancel=False,
-        max_ts=None,
-        trigger_price=None,
-        trigger_condition=OrderTriggerCondition.ABOVE(),
-        oracle_price_offset=None,
-        auction_duration=None,
-        auction_start_price=None,
-        auction_end_price=None,
-    ))
+    ix = await clearing_house.get_place_perp_order_ix(
+        OrderParams(
+            order_type=OrderType.LIMIT(),
+            market_type=MarketType.PERP(),
+            direction=PositionDirection.LONG(),
+            user_order_id=0,
+            base_asset_amount=BASE_PRECISION,
+            price=10 * PRICE_PRECISION,
+            market_index=0,
+            reduce_only=False,
+            post_only=PostOnlyParams.NONE(),
+            immediate_or_cancel=False,
+            max_ts=None,
+            trigger_price=None,
+            trigger_condition=OrderTriggerCondition.ABOVE(),
+            oracle_price_offset=None,
+            auction_duration=None,
+            auction_start_price=None,
+            auction_end_price=None,
+        )
+    )
     # print(ix)
     # pprint.pprint(ix.keys)
 
@@ -83,5 +87,9 @@ async def test_get_perp_market(
     # spot_market_acc = await get_spot_market_account(clearing_house.program, 0)
     # pprint.pprint(spot_market_acc)
 
-    assert str(ix.keys[3].pubkey) == "5SSkXsEKQepHHAewytPVwdej4epN1nxgLVM84L4KXgy7", "incorrect spot oracle address"
-    assert str(ix.keys[4].pubkey) == "J83w4HKfqxwcq3BEMMkPFSppX3gqekLyLJBexebFVkix", "incorrect perp oracle address"
+    assert (
+        str(ix.keys[3].pubkey) == "5SSkXsEKQepHHAewytPVwdej4epN1nxgLVM84L4KXgy7"
+    ), "incorrect spot oracle address"
+    assert (
+        str(ix.keys[4].pubkey) == "J83w4HKfqxwcq3BEMMkPFSppX3gqekLyLJBexebFVkix"
+    ), "incorrect perp oracle address"
