@@ -1,52 +1,18 @@
-import pytest
-import asyncio
-from pytest import fixture, mark
-from pytest_asyncio import fixture as async_fixture
-from anchorpy import Provider, WorkspaceType, workspace_fixture, Program
-from solana.keypair import Keypair
-from solana.transaction import Transaction
-from solana.system_program import create_account, CreateAccountParams
-from spl.token.constants import TOKEN_PROGRAM_ID
-from spl.token._layouts import MINT_LAYOUT
-from spl.token.async_client import AsyncToken
-from spl.token.instructions import initialize_mint, InitializeMintParams
-
-from solana.system_program import create_account, CreateAccountParams
-from spl.token.async_client import AsyncToken
-from spl.token._layouts import ACCOUNT_LAYOUT
-from spl.token.constants import TOKEN_PROGRAM_ID
-from spl.token.instructions import (
-    initialize_account,
-    InitializeAccountParams,
-    mint_to,
-    MintToParams,
-)
-from anchorpy import Program, Provider, WorkspaceType
-from anchorpy.utils.token import get_token_account
-from driftpy.admin import Admin
-from driftpy.constants.numeric_constants import *
-from math import sqrt
-from typing import cast
 from pytest import fixture, mark
 from pytest_asyncio import fixture as async_fixture
 from solana.keypair import Keypair
 from solana.publickey import PublicKey
-from solana.transaction import Transaction
-from solana.system_program import create_account, CreateAccountParams
-from spl.token.async_client import AsyncToken
-from spl.token._layouts import ACCOUNT_LAYOUT
-from spl.token.constants import TOKEN_PROGRAM_ID
-from spl.token.instructions import (
-    initialize_account,
-    InitializeAccountParams,
-    mint_to,
-    MintToParams,
-)
-from anchorpy import Program, Provider, WorkspaceType
-from anchorpy.utils.token import get_token_account
-
+from anchorpy import Program, Provider, WorkspaceType, workspace_fixture
 from driftpy.admin import Admin
-from driftpy.constants.numeric_constants import PRICE_PRECISION, AMM_RESERVE_PRECISION
+from driftpy.constants.numeric_constants import (
+    PRICE_PRECISION,
+    AMM_RESERVE_PRECISION,
+    QUOTE_PRECISION,
+    SPOT_BALANCE_PRECISION,
+    SPOT_WEIGHT_PRECISION,
+)
+from math import sqrt
+
 from driftpy.clearing_house import ClearingHouse
 from driftpy.setup.helpers import (
     _create_mint,
@@ -54,12 +20,24 @@ from driftpy.setup.helpers import (
     mock_oracle,
     set_price_feed,
     _airdrop_user,
-    get_set_price_feed_detailed_ix,
 )
 
 from driftpy.addresses import *
-from driftpy.types import *
-from driftpy.accounts import *
+from driftpy.types import (
+    User,
+    PositionDirection,
+    OracleSource,
+    PerpMarket,
+    # SwapDirection,
+)
+from driftpy.accounts import (
+    get_user_account,
+    get_user_stats_account,
+    get_perp_market_account,
+    get_spot_market_account,
+    get_state_account,
+    get_if_stake_account,
+)
 
 MANTISSA_SQRT_SCALE = int(sqrt(PRICE_PRECISION))
 AMM_INITIAL_QUOTE_ASSET_AMOUNT = int((5 * AMM_RESERVE_PRECISION) * MANTISSA_SQRT_SCALE)
@@ -288,6 +266,8 @@ async def test_update_amm(clearing_house: Admin, workspace):
     # ixs = [ix1, ix2]
 
     await clearing_house.send_ixs(ixs)
+    market_after = await get_perp_market_account(clearing_house.program, 0)
+    assert market.amm.last_update_slot != market_after.amm.last_update_slot
 
 
 @mark.asyncio
@@ -306,7 +286,7 @@ async def test_open_close_position(
     from solana.rpc.commitment import Confirmed, Processed
 
     clearing_house.program.provider.connection._commitment = Confirmed
-    tx = await clearing_house.program.provider.connection.get_transaction(sig)
+    await clearing_house.program.provider.connection.get_transaction(sig)
     clearing_house.program.provider.connection._commitment = Processed
     # print(tx)
 
@@ -403,7 +383,7 @@ async def test_liq_perp(
     pyth_program = workspace["pyth"]
     await set_price_feed(pyth_program, market.amm.oracle, 1.5)
 
-    sig = await liq_ch.liquidate_perp(clearing_house.authority, 0, int(baa) // 10)
+    await liq_ch.liquidate_perp(clearing_house.authority, 0, int(baa) // 10)
 
     # liq takes on position
     position = await liq_ch.get_user_position(0)
