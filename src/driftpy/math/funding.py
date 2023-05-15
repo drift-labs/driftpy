@@ -26,7 +26,6 @@ def calculate_long_short_funding(market: PerpMarket):
 
 
 def calculate_capped_funding(market: PerpMarket):
-
     smaller_side = min(
         abs(market.amm.base_asset_amount_short), market.amm.base_asset_amount_long
     )

@@ -61,7 +61,6 @@ class Admin(ClearingHouse):
         usdc_mint: PublicKey,
         admin_controls_prices: bool,
     ) -> tuple[TransactionSignature, TransactionSignature]:
-
         state_account_rpc_response = (
             await self.program.provider.connection.get_account_info(
                 get_state_public_key(self.program_id)
@@ -518,62 +517,57 @@ class Admin(ClearingHouse):
         )
 
     async def update_k(
-        self, 
+        self,
         sqrt_k: int,
         perp_market_index: int,
     ):
-       return await self.send_ixs(
-            await self.update_k_ix(sqrt_k, perp_market_index)
-       ) 
-    
+        return await self.send_ixs(await self.update_k_ix(sqrt_k, perp_market_index))
+
     async def update_k_ix(
-        self, 
+        self,
         sqrt_k: int,
         perp_market_index: int,
     ):
-        market = await get_perp_market_account(
-            self.program, perp_market_index
-        )
+        market = await get_perp_market_account(self.program, perp_market_index)
 
         return self.program.instruction["update_k"](
-            sqrt_k, 
+            sqrt_k,
             ctx=Context(
                 accounts={
                     "admin": self.authority,
                     "state": get_state_public_key(self.program_id),
-                    "perp_market": get_perp_market_public_key(self.program_id, perp_market_index),
+                    "perp_market": get_perp_market_public_key(
+                        self.program_id, perp_market_index
+                    ),
                     "oracle": market.amm.oracle,
                 }
-            )
+            ),
         )
-    
+
     async def repeg_curve(
-        self, 
+        self,
         peg: int,
         perp_market_index: int,
     ):
-        return await self.send_ixs(
-            await self.repeg_curve_ix(peg, perp_market_index)
-        )
+        return await self.send_ixs(await self.repeg_curve_ix(peg, perp_market_index))
 
     async def repeg_curve_ix(
-        self, 
+        self,
         peg: int,
         perp_market_index: int,
     ):
-        market = await get_perp_market_account(
-            self.program, perp_market_index
-        )
+        market = await get_perp_market_account(self.program, perp_market_index)
 
         return self.program.instruction["repeg_amm_curve"](
-            peg, 
+            peg,
             ctx=Context(
                 accounts={
                     "admin": self.authority,
                     "state": get_state_public_key(self.program_id),
-                    "perp_market": get_perp_market_public_key(self.program_id, perp_market_index),
+                    "perp_market": get_perp_market_public_key(
+                        self.program_id, perp_market_index
+                    ),
                     "oracle": market.amm.oracle,
                 }
-            )
+            ),
         )
-    

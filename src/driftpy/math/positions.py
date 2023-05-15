@@ -11,7 +11,6 @@ def get_worst_case_token_amounts(
     spot_market: SpotMarket,
     oracle_data,
 ):
-
     token_amount = get_signed_token_amount(
         get_token_amount(position.scaled_balance, spot_market, position.balance_type),
         position.balance_type,

@@ -31,5 +31,5 @@ def get_token_amount(
 
 
 def get_token_value(amount, spot_decimals, oracle_data: OracleData):
-    precision_decrease = 10 ** spot_decimals
+    precision_decrease = 10**spot_decimals
     return amount * oracle_data.price / precision_decrease

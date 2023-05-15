@@ -147,7 +147,7 @@ def calculate_rebalance_market(market, market_index):
     )
 
     cur_base_terminal = market.amm.base_asset_reserve + market.base_asset_amount
-    cur_quote_terminal = market.amm.sqrt_k ** 2 / cur_base_terminal
+    cur_quote_terminal = market.amm.sqrt_k**2 / cur_base_terminal
 
     newSqrtK = 0
     if new_peg < market.amm.peg_multiplier:
@@ -160,7 +160,7 @@ def calculate_rebalance_market(market, market_index):
 
     marketNewPeg.amm.base_asset_reserve = newSqrtK - marketNewPeg.base_asset_amount
     marketNewPeg.amm.quote_asset_reserve = (
-        newSqrtK ** 2 / marketNewPeg.amm.base_asset_reserve
+        newSqrtK**2 / marketNewPeg.amm.base_asset_reserve
     )
     marketNewPeg.amm.sqrt_k = newSqrtK
     marketNewPeg.amm.peg_multiplier = new_peg

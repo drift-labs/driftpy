@@ -10,6 +10,7 @@ from driftpy.math.margin import *
 from driftpy.math.spot_market import *
 from driftpy.math.oracle import *
 
+
 def find(l: list, f):
     valid_values = [v for v in l if f(v)]
     if len(valid_values) == 0:
@@ -19,8 +20,7 @@ def find(l: list, f):
 
 
 class ClearingHouseUser:
-    """This class is the main way to retrieve and inspect data on Drift Protocol.  
-    """
+    """This class is the main way to retrieve and inspect data on Drift Protocol."""
 
     def __init__(
         self,
@@ -49,12 +49,12 @@ class ClearingHouseUser:
         self.use_cache = use_cache
         self.cache_is_set = False
 
-    # cache all state, perpmarket, oracle, etc. in single cache -- user calls reload 
-    # when they want to update the data? 
-        # get_spot_market
-        # get_perp_market 
-        # get_user 
-        # if state = cache => get cached_market else get new market 
+    # cache all state, perpmarket, oracle, etc. in single cache -- user calls reload
+    # when they want to update the data?
+    # get_spot_market
+    # get_perp_market
+    # get_user
+    # if state = cache => get cached_market else get new market
     async def set_cache_last(self, CACHE=None):
         """sets the cache of the accounts to use to inspect
 
@@ -69,49 +69,53 @@ class ClearingHouseUser:
 
         self.CACHE = {}
         state = await get_state_account(self.program)
-        self.CACHE['state'] = state
+        self.CACHE["state"] = state
 
         spot_markets = []
         spot_market_oracle_data = []
         for i in range(state.number_of_spot_markets):
-            spot_market = await get_spot_market_account(
-                self.program, i
-            )
+            spot_market = await get_spot_market_account(self.program, i)
             spot_markets.append(spot_market)
 
-            if i == 0: 
-                spot_market_oracle_data.append(OracleData(
-                    PRICE_PRECISION, 0, 1, 1, 0, True
-                ))
+            if i == 0:
+                spot_market_oracle_data.append(
+                    OracleData(PRICE_PRECISION, 0, 1, 1, 0, True)
+                )
             else:
                 oracle_data = OracleData(
-                    spot_market.historical_oracle_data.last_oracle_price, 0, 1, 1, 0, True
+                    spot_market.historical_oracle_data.last_oracle_price,
+                    0,
+                    1,
+                    1,
+                    0,
+                    True,
                 )
                 spot_market_oracle_data.append(oracle_data)
-            
-        self.CACHE['spot_markets'] = spot_markets
-        self.CACHE['spot_market_oracles'] = spot_market_oracle_data
-        
+
+        self.CACHE["spot_markets"] = spot_markets
+        self.CACHE["spot_market_oracles"] = spot_market_oracle_data
+
         perp_markets = []
         perp_market_oracle_data = []
         for i in range(state.number_of_markets):
-            perp_market = await get_perp_market_account(
-                self.program, i
-            )
+            perp_market = await get_perp_market_account(self.program, i)
             perp_markets.append(perp_market)
 
             oracle_data = OracleData(
-                    perp_market.amm.historical_oracle_data.last_oracle_price, 0, 1, 1, 0, True
-                )
+                perp_market.amm.historical_oracle_data.last_oracle_price,
+                0,
+                1,
+                1,
+                0,
+                True,
+            )
             perp_market_oracle_data.append(oracle_data)
 
-        self.CACHE['perp_markets'] = perp_markets
-        self.CACHE['perp_market_oracles'] = perp_market_oracle_data
+        self.CACHE["perp_markets"] = perp_markets
+        self.CACHE["perp_market_oracles"] = perp_market_oracle_data
 
-        user = await get_user_account(
-            self.program, self.authority, self.subaccount_id
-        )
-        self.CACHE['user'] = user
+        user = await get_user_account(self.program, self.authority, self.subaccount_id)
+        self.CACHE["user"] = user
 
     async def set_cache(self, CACHE=None):
         """sets the cache of the accounts to use to inspect
@@ -127,92 +131,82 @@ class ClearingHouseUser:
 
         self.CACHE = {}
         state = await get_state_account(self.program)
-        self.CACHE['state'] = state
+        self.CACHE["state"] = state
 
         spot_markets = []
         spot_market_oracle_data = []
         for i in range(state.number_of_spot_markets):
-            spot_market = await get_spot_market_account(
-                self.program, i
-            )
+            spot_market = await get_spot_market_account(self.program, i)
             spot_markets.append(spot_market)
 
-            if i == 0: 
-                spot_market_oracle_data.append(OracleData(
-                    PRICE_PRECISION, 0, 1, 1, 0, True
-                ))
+            if i == 0:
+                spot_market_oracle_data.append(
+                    OracleData(PRICE_PRECISION, 0, 1, 1, 0, True)
+                )
             else:
                 oracle_data = await get_oracle_data(self.connection, spot_market.oracle)
                 spot_market_oracle_data.append(oracle_data)
-            
-        self.CACHE['spot_markets'] = spot_markets
-        self.CACHE['spot_market_oracles'] = spot_market_oracle_data
-        
+
+        self.CACHE["spot_markets"] = spot_markets
+        self.CACHE["spot_market_oracles"] = spot_market_oracle_data
+
         perp_markets = []
         perp_market_oracle_data = []
         for i in range(state.number_of_markets):
-            perp_market = await get_perp_market_account(
-                self.program, i
-            )
+            perp_market = await get_perp_market_account(self.program, i)
             perp_markets.append(perp_market)
 
             oracle_data = await get_oracle_data(self.connection, perp_market.amm.oracle)
             perp_market_oracle_data.append(oracle_data)
 
-        self.CACHE['perp_markets'] = perp_markets
-        self.CACHE['perp_market_oracles'] = perp_market_oracle_data
+        self.CACHE["perp_markets"] = perp_markets
+        self.CACHE["perp_market_oracles"] = perp_market_oracle_data
 
-        user = await get_user_account(
-            self.program, self.authority, self.subaccount_id
-        )
-        self.CACHE['user'] = user
+        user = await get_user_account(self.program, self.authority, self.subaccount_id)
+        self.CACHE["user"] = user
 
     async def get_spot_oracle_data(self, spot_market: SpotMarket):
-        if self.use_cache: 
-            assert self.cache_is_set, 'must call clearing_house_user.set_cache() first'
-            return self.CACHE['spot_market_oracles'][spot_market.market_index]
-        else: 
-            oracle_data = await get_oracle_data(self.connection, spot_market.oracle)        
+        if self.use_cache:
+            assert self.cache_is_set, "must call clearing_house_user.set_cache() first"
+            return self.CACHE["spot_market_oracles"][spot_market.market_index]
+        else:
+            oracle_data = await get_oracle_data(self.connection, spot_market.oracle)
             return oracle_data
-    
+
     async def get_perp_oracle_data(self, perp_market: PerpMarket):
-        if self.use_cache: 
-            assert self.cache_is_set, 'must call clearing_house_user.set_cache() first'
-            return self.CACHE['perp_market_oracles'][perp_market.market_index]
-        else: 
-            oracle_data = await get_oracle_data(self.connection, perp_market.amm.oracle)        
+        if self.use_cache:
+            assert self.cache_is_set, "must call clearing_house_user.set_cache() first"
+            return self.CACHE["perp_market_oracles"][perp_market.market_index]
+        else:
+            oracle_data = await get_oracle_data(self.connection, perp_market.amm.oracle)
             return oracle_data
-    
+
     async def get_state(self):
-        if self.use_cache: 
-            assert self.cache_is_set, 'must call clearing_house_user.set_cache() first'
-            return self.CACHE['state']
-        else: 
+        if self.use_cache:
+            assert self.cache_is_set, "must call clearing_house_user.set_cache() first"
+            return self.CACHE["state"]
+        else:
             return await get_state_account(self.program)
 
     async def get_spot_market(self, i):
-        if self.use_cache: 
-            assert self.cache_is_set, 'must call clearing_house_user.set_cache() first'
-            return self.CACHE['spot_markets'][i]
-        else: 
-            return await get_spot_market_account(
-                self.program, i
-            )
-    
+        if self.use_cache:
+            assert self.cache_is_set, "must call clearing_house_user.set_cache() first"
+            return self.CACHE["spot_markets"][i]
+        else:
+            return await get_spot_market_account(self.program, i)
+
     async def get_perp_market(self, i):
-        if self.use_cache: 
-            assert self.cache_is_set, 'must call clearing_house_user.set_cache() first'
-            return self.CACHE['perp_markets'][i]
-        else: 
-            return await get_perp_market_account(
-                self.program, i
-            )
+        if self.use_cache:
+            assert self.cache_is_set, "must call clearing_house_user.set_cache() first"
+            return self.CACHE["perp_markets"][i]
+        else:
+            return await get_perp_market_account(self.program, i)
 
     async def get_user(self):
-        if self.use_cache: 
-            assert self.cache_is_set, 'must call clearing_house_user.set_cache() first'
-            return self.CACHE['user']
-        else: 
+        if self.use_cache:
+            assert self.cache_is_set, "must call clearing_house_user.set_cache() first"
+            return self.CACHE["user"]
+        else:
             return await get_user_account(
                 self.program, self.authority, self.subaccount_id
             )
@@ -355,18 +349,20 @@ class ClearingHouseUser:
         return total_collateral < maintenance_req
 
     async def get_margin_requirement(
-        self, margin_category: MarginCategory, liquidation_buffer: Optional[int] = 0,
+        self,
+        margin_category: MarginCategory,
+        liquidation_buffer: Optional[int] = 0,
         include_open_orders=True,
-        include_spot=True
+        include_spot=True,
     ) -> int:
         perp_liability = await self.get_total_perp_liability(
             margin_category, liquidation_buffer, include_open_orders
         )
-        
+
         result = perp_liability
         if include_spot:
             spot_liability = await self.get_spot_market_liability(
-            None, margin_category, liquidation_buffer, include_open_orders
+                None, margin_category, liquidation_buffer, include_open_orders
             )
             result += spot_liability
 
@@ -445,7 +441,7 @@ class ClearingHouseUser:
         for position in user.perp_positions:
             if market_index is not None and position.market_index != market_index:
                 continue
-            
+
             market = await self.get_perp_market(position.market_index)
 
             oracle_data = await self.get_perp_oracle_data(market)
@@ -454,15 +450,19 @@ class ClearingHouseUser:
             )
 
             if with_weight_margin_category is not None:
-                if position_unrealized_pnl > 0: 
+                if position_unrealized_pnl > 0:
                     unrealized_asset_weight = calculate_unrealized_asset_weight(
-                        market, 
-                        quote_spot_market, 
+                        market,
+                        quote_spot_market,
                         position_unrealized_pnl,
-                        with_weight_margin_category, 
-                        oracle_data
+                        with_weight_margin_category,
+                        oracle_data,
                     )
-                    position_unrealized_pnl = position_unrealized_pnl * unrealized_asset_weight / SPOT_WEIGHT_PRECISION
+                    position_unrealized_pnl = (
+                        position_unrealized_pnl
+                        * unrealized_asset_weight
+                        / SPOT_WEIGHT_PRECISION
+                    )
 
             unrealized_pnl += position_unrealized_pnl
 
@@ -495,7 +495,9 @@ class ClearingHouseUser:
                     case "SpotBalanceType.Borrow()":
                         spot_token_value *= -1
                     case _:
-                        raise Exception(f"Invalid balance type: {position.balance_type}")
+                        raise Exception(
+                            f"Invalid balance type: {position.balance_type}"
+                        )
 
                 total_value += spot_token_value
                 continue
@@ -545,8 +547,8 @@ class ClearingHouseUser:
         return leverage
 
     async def get_perp_liq_price(
-        self, 
-        perp_market_index: int, 
+        self,
+        perp_market_index: int,
     ) -> Optional[int]:
         position = await self.get_user_position(perp_market_index)
         if position is None or position.base_asset_amount == 0:
@@ -558,8 +560,10 @@ class ClearingHouseUser:
 
         perp_market = await self.get_perp_market(perp_market_index)
         delta_per_baa = delta_liq / (position.base_asset_amount / AMM_RESERVE_PRECISION)
-        
-        oracle_price = (await self.get_perp_oracle_data(perp_market)).price / PRICE_PRECISION
+
+        oracle_price = (
+            await self.get_perp_oracle_data(perp_market)
+        ).price / PRICE_PRECISION
 
         liq_price = oracle_price - (delta_per_baa / QUOTE_PRECISION)
         if liq_price < 0:
@@ -568,31 +572,31 @@ class ClearingHouseUser:
         return liq_price
 
     async def get_spot_liq_price(
-        self, 
-        spot_market_index: int, 
+        self,
+        spot_market_index: int,
     ) -> Optional[int]:
         position = await self.get_user_spot_position(spot_market_index)
-        if position is None: 
+        if position is None:
             return None
 
         total_collateral = await self.get_total_collateral(MarginCategory.MAINTENANCE)
-        margin_req = await self.get_margin_requirement(MarginCategory.MAINTENANCE, None, True, False)
+        margin_req = await self.get_margin_requirement(
+            MarginCategory.MAINTENANCE, None, True, False
+        )
         delta_liq = total_collateral - margin_req
 
         spot_market = await self.get_spot_market(spot_market_index)
         token_amount = get_token_amount(
-            position.scaled_balance, 
-            spot_market, 
-            position.balance_type
+            position.scaled_balance, spot_market, position.balance_type
         )
-        token_amount_qp = token_amount * QUOTE_PRECISION / (10 ** spot_market.decimals)
-        if abs(token_amount_qp) == 0: 
-            return None 
+        token_amount_qp = token_amount * QUOTE_PRECISION / (10**spot_market.decimals)
+        if abs(token_amount_qp) == 0:
+            return None
 
         match str(position.balance_type):
             case "SpotBalanceType.Borrow()":
                 liq_price_delta = (
-                    delta_liq 
+                    delta_liq
                     * PRICE_PRECISION
                     * SPOT_WEIGHT_PRECISION
                     / token_amount_qp
@@ -600,21 +604,21 @@ class ClearingHouseUser:
                 )
             case "SpotBalanceType.Deposit()":
                 liq_price_delta = (
-                    delta_liq 
+                    delta_liq
                     * PRICE_PRECISION
                     * SPOT_WEIGHT_PRECISION
                     / token_amount_qp
                     / spot_market.maintenance_asset_weight
-                    * -1 
+                    * -1
                 )
             case _:
                 raise Exception(f"Invalid balance type: {position.balance_type}")
-        
+
         price = (await self.get_spot_oracle_data(spot_market)).price
         liq_price = price + liq_price_delta
         liq_price /= PRICE_PRECISION
 
         if liq_price < 0:
             return None
-        
+
         return liq_price
