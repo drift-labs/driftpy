@@ -1,6 +1,8 @@
 import os
 import json
 import copy
+import sys
+sys.path.append('../src/')
 
 from anchorpy import Wallet
 from anchorpy import Provider
@@ -17,6 +19,7 @@ from driftpy.clearing_house import ClearingHouse
 from driftpy.clearing_house_user import ClearingHouseUser
 from driftpy.constants.numeric_constants import BASE_PRECISION, PRICE_PRECISION
 from borsh_construct.enum import _rust_enum
+import time
 
 @_rust_enum
 class PostOnlyParams:
@@ -43,9 +46,9 @@ def order_print(orders: list[OrderParams], market_str=None):
 
 def calculate_grid_prices(num_of_grids, upper_price, lower_price, current_price, chunk_increment=0.0):
     if upper_price is None and lower_price is None:
-        # default to 5% grid around oracle
-        upper_price = current_price * 1.025
-        lower_price = current_price * .975
+        # default to .5% grid around oracle
+        upper_price = current_price * 1.005
+        lower_price = current_price * .9995
     elif upper_price is not None and lower_price is None:
         lower_price = current_price
     elif lower_price is not None and upper_price is None:
@@ -81,6 +84,8 @@ async def main(
     lower_price,
     min_position,
     max_position,
+    authority=None,
+    taker=False
 ):
     if min_position is not None and max_position is not None:
         assert(min_position < max_position)
@@ -91,9 +96,8 @@ async def main(
     wallet = Wallet(kp)
     connection = AsyncClient(url)
     provider = Provider(connection, wallet)
-    drift_acct = ClearingHouse.from_config(config, provider)
+    drift_acct = ClearingHouse.from_config(config, provider, authority=PublicKey(authority))
     chu = ClearingHouseUser(drift_acct)
-
     is_perp  = 'PERP' in market_name.upper()
     market_type = MarketType.PERP() if is_perp else MarketType.SPOT()
 
@@ -113,14 +117,25 @@ async def main(
         market = await get_perp_market_account(
                 drift_acct.program, market_index
             )
-        oracle_data = await get_oracle_data(connection, market.amm.oracle)
-        current_price = oracle_data.price/PRICE_PRECISION
-        current_pos = (await chu.get_user_position(market_index)).base_asset_amount/float(BASE_PRECISION)
+        try:
+            oracle_data = await get_oracle_data(connection, market.amm.oracle)
+            current_price = oracle_data.price/PRICE_PRECISION
+        except:
+            current_price = market.amm.historical_oracle_data.last_oracle_price/PRICE_PRECISION
+        # current_price = 20.00
+        current_pos_raw = (await chu.get_user_position(market_index))
+        if current_pos_raw is not None:
+            current_pos = (current_pos_raw.base_asset_amount/float(BASE_PRECISION))
+        else:
+            current_pos = 0
 
     else:
         market = await get_spot_market_account( drift_acct.program, market_index)
-        oracle_data = await get_oracle_data(connection, market.oracle)
-        current_price = oracle_data.price/PRICE_PRECISION
+        try:
+            oracle_data = await get_oracle_data(connection, market.oracle)
+            current_price = oracle_data.price/PRICE_PRECISION
+        except:
+            current_price = market.historical_oracle_data.last_oracle_price/PRICE_PRECISION
 
         spot_pos = await chu.get_user_spot_position(market_index)
         tokens = get_token_amount(spot_pos.scaled_balance, market, spot_pos.balance_type)
@@ -154,7 +169,7 @@ async def main(
                 price=0,
                 market_index=market_index,
                 reduce_only=False,
-                post_only=PostOnlyParams.TRY_POST_ONLY(),
+                post_only=PostOnlyParams.TRY_POST_ONLY() if not taker else PostOnlyParams.NONE(),
                 immediate_or_cancel=False,
                 trigger_price=0,
                 trigger_condition=OrderTriggerCondition.ABOVE(),
@@ -180,7 +195,7 @@ async def main(
         ask_order_params.price = int(x * PRICE_PRECISION)
         if ask_order_params.base_asset_amount > 0:
             order_params.append(ask_order_params)
-    print(order_params)
+    # print(order_params)
     # order_print([bid_order_params, ask_order_params], market_name)
 
     perp_orders_ix = []
@@ -189,7 +204,7 @@ async def main(
         perp_orders_ix = await drift_acct.get_place_perp_orders_ix(order_params, subaccount_id)
     else:
         spot_orders_ix =  await drift_acct.get_place_spot_orders_ix(order_params, subaccount_id)
-
+    # perp_orders_ix = [ await drift_acct.get_place_perp_order_ix(order_params[0], subaccount_id)]
     await drift_acct.send_ixs(
         perp_orders_ix + spot_orders_ix
     )
@@ -207,7 +222,9 @@ if __name__ == '__main__':
     parser.add_argument('--upper-price', type=float, required=False,  default=None)
     parser.add_argument('--grids', type=int, required=True)
     parser.add_argument('--subaccount', type=int, required=False, default=0)
-
+    parser.add_argument('--authority', type=str, required=False, default=None)
+    parser.add_argument('--taker', type=bool, required=False, default=False)
+    parser.add_argument('--loop', type=int, required=False, default=0)
     args = parser.parse_args()
 
     # assert(args.spread > 0, 'spread must be > $0')
@@ -225,20 +242,41 @@ if __name__ == '__main__':
         url = 'https://api.mainnet-beta.solana.com'
     else:
         raise NotImplementedError('only devnet/mainnet env supported')
-
     import asyncio
-    asyncio.run(main(
-        args.keypath, 
-        args.env, 
-        url,
-        args.subaccount,
-        args.market, 
-        args.amount,
-        args.grids,
-        args.upper_price,
-        args.lower_price,
-        args.min_position,
-        args.max_position
-    ))
+
+    if args.loop > 0:
+        while 1:
+            asyncio.run(main(
+                args.keypath, 
+                args.env, 
+                url,
+                args.subaccount,
+                args.market, 
+                args.amount,
+                args.grids,
+                args.upper_price,
+                args.lower_price,
+                args.min_position,
+                args.max_position,
+                args.authority,
+                args.taker
+            ))
+            time.sleep(args.loop)
+    else:
+        asyncio.run(main(
+                args.keypath, 
+                args.env, 
+                url,
+                args.subaccount,
+                args.market, 
+                args.amount,
+                args.grids,
+                args.upper_price,
+                args.lower_price,
+                args.min_position,
+                args.max_position,
+                args.authority,
+                args.taker
+            ))
 
 

@@ -34,7 +34,7 @@ class ClearingHouse:
     depositing, opening new positions, closing positions, placing orders, etc.
     """
 
-    def __init__(self, program: Program, authority: Keypair = None):
+    def __init__(self, program: Program, signer: Keypair = None, authority: PublicKey = None):
         """Initializes the clearing house object -- likely want to use the .from_config method instead of this one
 
         Args:
@@ -45,11 +45,11 @@ class ClearingHouse:
         self.program_id = program.program_id
         self.user_index = None
 
-        if authority is None:
-            authority = program.provider.wallet.payer
+        if signer is None:
+            signer = program.provider.wallet.payer
 
-        self.signer = authority
-        self.authority = authority.public_key
+        self.signer = signer
+        self.authority = authority
         self.signers = [self.signer]
         self.usdc_ata = None
         self.spot_market_atas = {}
@@ -276,7 +276,7 @@ class ClearingHouse:
                 writable_market_index = [writable_market_index]
 
             for i in writable_market_index:
-                await track_spot_market(i, is_writable=True)
+                await track_market(i, is_writable=True)
 
         if writable_spot_market_index is not None and include_spot_markets:
             if isinstance(writable_spot_market_index, int):
@@ -654,7 +654,7 @@ class ClearingHouse:
                 accounts={
                     "state": self.get_state_public_key(),
                     "user": user_account_public_key,
-                    "authority": self.authority,
+                    "authority": self.signer.public_key,
                 },
                 remaining_accounts=remaining_accounts,
             ),
@@ -682,7 +682,7 @@ class ClearingHouse:
                     accounts={
                         "state": self.get_state_public_key(),
                         "user": self.get_user_account_public_key(user_id),
-                        "authority": self.authority,
+                        "authority": self.signer.public_key,
                     },
                     remaining_accounts=remaining_accounts,
                 ),
@@ -695,7 +695,7 @@ class ClearingHouse:
                     accounts={
                         "state": self.get_state_public_key(),
                         "user": user_account_public_key,
-                        "authority": self.authority,
+                        "authority": self.signer.public_key,
                     },
                     remaining_accounts=remaining_accounts,
                 ),
@@ -723,7 +723,6 @@ class ClearingHouse:
         user_id: int = 0,
     ):
         user_account_public_key = self.get_user_account_public_key(user_id)
-
         remaining_accounts = await self.get_remaining_accounts(
             writable_market_index=order_params.market_index, user_id=user_id
         )
@@ -734,7 +733,7 @@ class ClearingHouse:
                 accounts={
                     "state": self.get_state_public_key(),
                     "user": user_account_public_key,
-                    "authority": self.authority,
+                    "authority": self.signer.public_key,
                 },
                 remaining_accounts=remaining_accounts,
             ),
@@ -762,7 +761,7 @@ class ClearingHouse:
                     accounts={
                         "state": self.get_state_public_key(),
                         "user": self.get_user_account_public_key(user_id),
-                        "authority": self.authority,
+                        "authority": self.signer.public_key,
                     },
                     remaining_accounts=remaining_accounts,
                 ),
@@ -775,7 +774,7 @@ class ClearingHouse:
                     accounts={
                         "state": self.get_state_public_key(),
                         "user": user_account_public_key,
-                        "authority": self.authority,
+                        "authority": self.signer.public_key,
                     },
                     remaining_accounts=remaining_accounts,
                 ),
