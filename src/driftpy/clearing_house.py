@@ -276,7 +276,7 @@ class ClearingHouse:
                 writable_market_index = [writable_market_index]
 
             for i in writable_market_index:
-                await track_spot_market(i, is_writable=True)
+                await track_market(i, is_writable=True)
 
         if writable_spot_market_index is not None and include_spot_markets:
             if isinstance(writable_spot_market_index, int):
