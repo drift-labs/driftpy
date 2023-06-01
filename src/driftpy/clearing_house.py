@@ -34,7 +34,7 @@ class ClearingHouse:
     depositing, opening new positions, closing positions, placing orders, etc.
     """
 
-    def __init__(self, program: Program, authority: PublicKey = None, signer: Keypair = None):
+    def __init__(self, program: Program, signer: Keypair = None, authority: PublicKey = None):
         """Initializes the clearing house object -- likely want to use the .from_config method instead of this one
 
         Args:
