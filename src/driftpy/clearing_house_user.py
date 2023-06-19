@@ -144,7 +144,7 @@ class ClearingHouseUser:
                     OracleData(PRICE_PRECISION, 0, 1, 1, 0, True)
                 )
             else:
-                oracle_data = await get_oracle_data(self.connection, spot_market.oracle)
+                oracle_data = await get_oracle_data(self.connection, spot_market.oracle,  spot_market.oracle_source)
                 spot_market_oracle_data.append(oracle_data)
 
         self.CACHE["spot_markets"] = spot_markets
@@ -156,7 +156,7 @@ class ClearingHouseUser:
             perp_market = await get_perp_market_account(self.program, i)
             perp_markets.append(perp_market)
 
-            oracle_data = await get_oracle_data(self.connection, perp_market.amm.oracle)
+            oracle_data = await get_oracle_data(self.connection, perp_market.amm.oracle, perp_market.amm.oracle_source)
             perp_market_oracle_data.append(oracle_data)
 
         self.CACHE["perp_markets"] = perp_markets
@@ -170,7 +170,7 @@ class ClearingHouseUser:
             assert self.cache_is_set, "must call clearing_house_user.set_cache() first"
             return self.CACHE["spot_market_oracles"][spot_market.market_index]
         else:
-            oracle_data = await get_oracle_data(self.connection, spot_market.oracle)
+            oracle_data = await get_oracle_data(self.connection, spot_market.oracle, spot_market.oracle_source)
             return oracle_data
 
     async def get_perp_oracle_data(self, perp_market: PerpMarket):
@@ -178,7 +178,7 @@ class ClearingHouseUser:
             assert self.cache_is_set, "must call clearing_house_user.set_cache() first"
             return self.CACHE["perp_market_oracles"][perp_market.market_index]
         else:
-            oracle_data = await get_oracle_data(self.connection, perp_market.amm.oracle)
+            oracle_data = await get_oracle_data(self.connection, perp_market.amm.oracle,  perp_market.amm.oracle_source)
             return oracle_data
 
     async def get_state(self):
@@ -505,17 +505,23 @@ class ClearingHouseUser:
             oracle_data = await self.get_spot_oracle_data(spot_market)
 
             if not include_open_orders:
-                if str(position.balance_type) == "SpotBalanceType.Deposit()":
-                    token_amount = get_token_amount(
+                token_amount = get_token_amount(
                         position.scaled_balance, spot_market, position.balance_type
                     )
-                    asset_value = get_spot_asset_value(
+                spot_token_value = get_spot_asset_value(
                         token_amount, oracle_data, spot_market, margin_category
-                    )
-                    total_value += asset_value
-                    continue
-                else:
-                    continue
+                    )           
+                match str(position.balance_type):
+                    case "SpotBalanceType.Deposit()":
+                        spot_token_value *= 1
+                    case "SpotBalanceType.Borrow()":
+                        spot_token_value *= -1
+                    case _:
+                        raise Exception(
+                            f"Invalid balance type: {position.balance_type}"
+                        )
+                total_value += spot_token_value
+                continue
 
             (
                 worst_case_token_amount,
