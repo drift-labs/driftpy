@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from driftpy.constants.numeric_constants import *
+from driftpy.types import OracleSource
 
 from solana.publickey import PublicKey
 from pythclient.pythaccounts import PythPriceAccount
@@ -10,8 +11,8 @@ from pythclient.solana import (
 from solana.rpc.async_api import AsyncClient
 
 
-def convert_pyth_price(price):
-    return int(price * PRICE_PRECISION)
+def convert_pyth_price(price, scale=1):
+    return int(price * PRICE_PRECISION * scale)
 
 
 @dataclass
@@ -24,7 +25,7 @@ class OracleData:
     has_sufficient_number_of_datapoints: bool
 
 
-async def get_oracle_data(connection: AsyncClient, address: PublicKey) -> OracleData:
+async def get_oracle_data(connection: AsyncClient, address: PublicKey, oracle_source=OracleSource.PYTH()) -> OracleData:
     address = str(address)
     account_key = SolanaPublicKey(address)
 
@@ -38,22 +39,28 @@ async def get_oracle_data(connection: AsyncClient, address: PublicKey) -> Oracle
         raise
 
     solana_client = SolanaClient(endpoint=http_endpoint, ws_endpoint=ws_endpoint)
-    price: PythPriceAccount = PythPriceAccount(account_key, solana_client)
-    await price.update()
+    if 'Pyth' in str(oracle_source):
+        price: PythPriceAccount = PythPriceAccount(account_key, solana_client)
+        await price.update()
 
-    # TODO: returns none rn
-    # (twap, twac) = (price.derivations.get('TWAPVALUE'), price.derivations.get('TWACVALUE'))
-    (twap, twac) = (0, 0)
+        # TODO: returns none rn
+        # (twap, twac) = (price.derivations.get('TWAPVALUE'), price.derivations.get('TWACVALUE'))
+        (twap, twac) = (0, 0)
+        scale = 1
+        if '1K' in str(oracle_source):
+            scale = 1e3
+        elif '1M' in str(oracle_source):
+            scale = 1e6
 
-    oracle_data = OracleData(
-        price=convert_pyth_price(price.aggregate_price_info.price),
-        slot=price.last_slot,
-        confidence=convert_pyth_price(price.aggregate_price_info.confidence_interval),
-        twap=convert_pyth_price(twap),
-        twap_confidence=convert_pyth_price(twac),
-        has_sufficient_number_of_datapoints=True,
-    )
+        oracle_data = OracleData(
+            price=convert_pyth_price(price.aggregate_price_info.price, scale),
+            slot=price.last_slot,
+            confidence=convert_pyth_price(price.aggregate_price_info.confidence_interval, scale),
+            twap=convert_pyth_price(twap, scale),
+            twap_confidence=convert_pyth_price(twac,  scale),
+            has_sufficient_number_of_datapoints=True,
+        )       
 
-    await solana_client.close()
+        await solana_client.close()
 
     return oracle_data
