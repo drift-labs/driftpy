@@ -9,7 +9,7 @@ from solana.system_program import SYS_PROGRAM_ID
 from solana.sysvar import SYSVAR_RENT_PUBKEY
 from solana.transaction import AccountMeta
 from spl.token.constants import TOKEN_PROGRAM_ID
-from anchorpy import Program, Context, Idl
+from anchorpy import Program, ProgramAccount, Context, Idl
 
 from driftpy.types import *
 from driftpy.addresses import *
@@ -61,9 +61,8 @@ async def get_perp_market_account(program: Program, market_index: int) -> PerpMa
     return cast(PerpMarket, response)
 
 
-async def get_all_perp_market_accounts(program: Program) -> list[PerpMarket]:
-    response = await program.account["PerpMarket"].all()
-    return cast(list[PerpMarket], response)
+async def get_all_perp_market_accounts(program: Program) -> list[ProgramAccount]:
+    return await program.account["PerpMarket"].all()
 
 
 async def get_spot_market_account(
@@ -76,6 +75,5 @@ async def get_spot_market_account(
     return cast(SpotMarket, response)
 
 
-async def get_all_spot_market_accounts(program: Program) -> list[SpotMarket]:
-    response = await program.account["SpotMarket"].all()
-    return cast(list[SpotMarket], response)
+async def get_all_spot_market_accounts(program: Program) -> list[ProgramAccount]:
+    return await program.account["SpotMarket"].all()
