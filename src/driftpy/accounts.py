@@ -61,6 +61,11 @@ async def get_perp_market_account(program: Program, market_index: int) -> PerpMa
     return cast(PerpMarket, response)
 
 
+async def get_all_perp_market_accounts(program: Program) -> list[PerpMarket]:
+    response = await program.account["PerpMarket"].all()
+    return cast(list[PerpMarket], response)
+
+
 async def get_spot_market_account(
     program: Program, spot_market_index: int
 ) -> SpotMarket:
@@ -69,3 +74,8 @@ async def get_spot_market_account(
     )
     response = await program.account["SpotMarket"].fetch(spot_market_public_key)
     return cast(SpotMarket, response)
+
+
+async def get_all_spot_market_accounts(program: Program) -> list[SpotMarket]:
+    response = await program.account["SpotMarket"].all()
+    return cast(list[SpotMarket], response)
