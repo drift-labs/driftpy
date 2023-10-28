@@ -346,8 +346,8 @@ def calculate_spread_reserves(
 # async def main():
 #     # Try out  the functions here
 
-#     # Initiate ClearingHouse
-#     drift_acct = await ClearingHouse.create(program)
+#     # Initiate drift client
+#     drift_acct = await driftClient.create(program)
 #     drift_user_acct = await drift_acct.get_user_account()
 
 #     # Get the total value of your collateral

@@ -1,7 +1,7 @@
 from solana.publickey import PublicKey
 from typing import Optional
 
-from driftpy.clearing_house import ClearingHouse
+from driftpy.drift_client import driftClient
 from driftpy.constants.numeric_constants import *
 from driftpy.types import *
 from driftpy.accounts import *
@@ -19,31 +19,31 @@ def find(l: list, f):
         return valid_values[0]
 
 
-class ClearingHouseUser:
+class User:
     """This class is the main way to retrieve and inspect data on Drift Protocol."""
 
     def __init__(
         self,
-        clearing_house: ClearingHouse,
+        drift_client: driftClient,
         authority: Optional[PublicKey] = None,
         subaccount_id: int = 0,
         use_cache: bool = False,
     ):
-        """Initialize the clearing house user object
+        """Initialize the user object
 
         Args:
-            clearing_house (ClearingHouse): required for program_id, idl, things (keypair doesnt matter)
-            authority (Optional[PublicKey], optional): authority to investigate if None will use clearing_house.authority
+            drift_client(driftClient): required for program_id, idl, things (keypair doesnt matter)
+            authority (Optional[PublicKey], optional): authority to investigate if None will use drift_client.authority
             subaccount_id (int, optional): subaccount of authority to investigate. Defaults to 0.
             use_cache (bool, optional): sdk uses a lot of rpc calls rn - use this flag and .set_cache() to cache accounts and reduce rpc calls. Defaults to False.
         """
-        self.clearing_house = clearing_house
+        self.drift_client = drift_client
         self.authority = authority
         if self.authority is None:
-            self.authority = clearing_house.authority
+            self.authority = drift_client.authority
 
-        self.program = clearing_house.program
-        self.oracle_program = clearing_house
+        self.program = drift_client.program
+        self.oracle_program = drift_client
         self.connection = self.program.provider.connection
         self.subaccount_id = subaccount_id
         self.use_cache = use_cache
@@ -167,7 +167,7 @@ class ClearingHouseUser:
 
     async def get_spot_oracle_data(self, spot_market: SpotMarket):
         if self.use_cache:
-            assert self.cache_is_set, "must call clearing_house_user.set_cache() first"
+            assert self.cache_is_set, "must call user.set_cache() first"
             return self.CACHE["spot_market_oracles"][spot_market.market_index]
         else:
             oracle_data = await get_oracle_data(self.connection, spot_market.oracle, spot_market.oracle_source)
@@ -175,7 +175,7 @@ class ClearingHouseUser:
 
     async def get_perp_oracle_data(self, perp_market: PerpMarket):
         if self.use_cache:
-            assert self.cache_is_set, "must call clearing_house_user.set_cache() first"
+            assert self.cache_is_set, "must call user.set_cache() first"
             return self.CACHE["perp_market_oracles"][perp_market.market_index]
         else:
             oracle_data = await get_oracle_data(self.connection, perp_market.amm.oracle,  perp_market.amm.oracle_source)
@@ -183,28 +183,28 @@ class ClearingHouseUser:
 
     async def get_state(self):
         if self.use_cache:
-            assert self.cache_is_set, "must call clearing_house_user.set_cache() first"
+            assert self.cache_is_set, "must call user.set_cache() first"
             return self.CACHE["state"]
         else:
             return await get_state_account(self.program)
 
     async def get_spot_market(self, i):
         if self.use_cache:
-            assert self.cache_is_set, "must call clearing_house_user.set_cache() first"
+            assert self.cache_is_set, "must call user.set_cache() first"
             return self.CACHE["spot_markets"][i]
         else:
             return await get_spot_market_account(self.program, i)
 
     async def get_perp_market(self, i):
         if self.use_cache:
-            assert self.cache_is_set, "must call clearing_house_user.set_cache() first"
+            assert self.cache_is_set, "must call user.set_cache() first"
             return self.CACHE["perp_markets"][i]
         else:
             return await get_perp_market_account(self.program, i)
 
     async def get_user(self):
         if self.use_cache:
-            assert self.cache_is_set, "must call clearing_house_user.set_cache() first"
+            assert self.cache_is_set, "must call user.set_cache() first"
             return self.CACHE["user"]
         else:
             return await get_user_account(

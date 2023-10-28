@@ -9,8 +9,8 @@ from solana.sysvar import SYSVAR_RENT_PUBKEY
 from spl.token.constants import TOKEN_PROGRAM_ID
 from anchorpy import Program, Provider, Context
 
-from driftpy.clearing_house import (
-    ClearingHouse,
+from driftpy.drift_client import (
+    driftClient,
 )
 from driftpy.constants.numeric_constants import PEG_PRECISION
 from driftpy.types import OracleGuardRails, OracleSource
@@ -29,7 +29,7 @@ from driftpy.constants.numeric_constants import (
 from driftpy.accounts import get_perp_market_account
 
 
-class Admin(ClearingHouse):
+class Admin(driftClient):
     @staticmethod
     def from_config(
         config: Config,
@@ -46,15 +46,15 @@ class Admin(ClearingHouse):
         # create the program
         program = Program(
             idl,
-            config.clearing_house_program_id,
+            config.drift_client_program_id,
             provider,
         )
 
-        clearing_house = Admin(program, authority)
-        clearing_house.config = config
-        clearing_house.idl = idl
+        drift_client = Admin(program, authority)
+        drift_client.config = config
+        drift_client.idl = idl
 
-        return clearing_house
+        return drift_client
 
     async def initialize(
         self,
@@ -67,7 +67,7 @@ class Admin(ClearingHouse):
             )
         )
         if state_account_rpc_response["result"]["value"] is not None:
-            raise RuntimeError("Clearing house already initialized")
+            raise RuntimeError("Drift Client already initialized")
 
         state_public_key = get_state_public_key(self.program_id)
 
@@ -77,7 +77,7 @@ class Admin(ClearingHouse):
                     "admin": self.authority,
                     "state": state_public_key,
                     "quote_asset_mint": usdc_mint,
-                    "drift_signer": get_clearing_house_signer_public_key(
+                    "drift_signer": get_drift_client_signer_public_key(
                         self.program_id
                     ),
                     "rent": SYSVAR_RENT_PUBKEY,
@@ -182,7 +182,7 @@ class Admin(ClearingHouse):
                     "spot_market": spot_public_key,
                     "spot_market_vault": spot_vault_public_key,
                     "insurance_fund_vault": insurance_vault_public_key,
-                    "drift_signer": get_clearing_house_signer_public_key(
+                    "drift_signer": get_drift_client_signer_public_key(
                         self.program_id
                     ),
                     "spot_market_mint": mint,
