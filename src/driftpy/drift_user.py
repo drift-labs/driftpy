@@ -1,6 +1,6 @@
 from solana.publickey import PublicKey
 from typing import Optional
-
+from events import Events
 from driftpy.drift_client import driftClient
 from driftpy.constants.numeric_constants import *
 from driftpy.types import *
@@ -9,6 +9,7 @@ from driftpy.math.positions import *
 from driftpy.math.margin import *
 from driftpy.math.spot_market import *
 from driftpy.math.oracle import *
+import asyncio
 
 
 def find(l: list, f):
@@ -28,6 +29,9 @@ class User:
         authority: Optional[PublicKey] = None,
         subaccount_id: int = 0,
         use_cache: bool = False,
+        is_subscribed: bool = False,
+        
+
     ):
         """Initialize the user object
 
@@ -48,6 +52,9 @@ class User:
         self.subaccount_id = subaccount_id
         self.use_cache = use_cache
         self.cache_is_set = False
+        self.events = Events()
+        self.events.data_updated += self.on_data_updated
+        self.is_subscribed = is_subscribed
 
     # cache all state, perpmarket, oracle, etc. in single cache -- user calls reload
     # when they want to update the data?
@@ -164,6 +171,22 @@ class User:
 
         user = await get_user_account(self.program, self.authority, self.subaccount_id)
         self.CACHE["user"] = user
+
+    async def subscribe(self):
+        if self.is_subscribed:
+            while self.is_subscribed:
+                await self.poll_data()
+                await asyncio.sleep()
+
+    async def unsubscribe(self):
+        self.is_subscribed = False
+
+    async def poll_data(self):
+        await self.set_cache()
+        self.events.data_updated(self.CACHE)
+
+    async def on_data_updated(self,data):
+        return data
 
     async def get_spot_oracle_data(self, spot_market: SpotMarket):
         if self.use_cache:
