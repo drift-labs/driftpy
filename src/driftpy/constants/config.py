@@ -8,7 +8,7 @@ from solana.publickey import PublicKey
 class Config:
     env: str
     pyth_oracle_mapping_address: PublicKey
-    clearing_house_program_id: PublicKey
+    drift_client_program_id: PublicKey
     usdc_mint_address: PublicKey
     default_http: str
     default_ws: str
@@ -22,7 +22,7 @@ configs = {
         pyth_oracle_mapping_address=PublicKey(
             "BmA9Z6FjioHJPpjT39QazZyhDRUdZy2ezwx4GiDdE2u2"
         ),
-        clearing_house_program_id=PublicKey(
+        drift_client_program_id=PublicKey(
             "dRiftyHA39MWEi3m9aunc5MzRF1JYuBsbn6VPcn33UH"
         ),
         usdc_mint_address=PublicKey("8zGuJQqwhZafTah7Uc7Z4tXRnguqkn5KLFAP8oV6PHe2"),
