@@ -9,7 +9,7 @@ old_version = result.group(1)
 print(f'current version: {old_version}')
 
 Popen(
-    f'bumpversion patch --allow-dirty'.split(' '), 
+    'bumpversion patch --allow-dirty'.split(' '), 
 ).wait()
 
 with open('pyproject.toml', 'r') as f: 

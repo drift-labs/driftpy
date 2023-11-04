@@ -1,19 +1,15 @@
 import os
 import json
-import pprint
 
-import pytest
 from pytest import mark
 from pytest_asyncio import fixture as async_fixture
-from anchorpy import workspace_fixture, Program, Wallet, Provider
-from driftpy.admin import Admin
+from anchorpy import workspace_fixture, Wallet, Provider
 from driftpy.constants.numeric_constants import (
     QUOTE_PRECISION,
     BASE_PRECISION,
 )
 from math import sqrt
 
-from driftpy.admin import Admin
 from driftpy.constants.config import configs
 from driftpy.constants.numeric_constants import PRICE_PRECISION, AMM_RESERVE_PRECISION
 from driftpy.drift_client import driftClient

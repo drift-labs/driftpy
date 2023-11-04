@@ -1,5 +1,3 @@
-from typing import Type
-import asyncio
 
 from solana.publickey import PublicKey
 from solana.transaction import TransactionSignature
@@ -10,13 +8,12 @@ from spl.token.constants import TOKEN_PROGRAM_ID
 from anchorpy import Program, Provider, Context
 
 from driftpy.drift_client import (
-    driftClient,
+    DriftClient,
 )
 from driftpy.constants.numeric_constants import PEG_PRECISION
 from driftpy.types import OracleGuardRails, OracleSource
 from driftpy.addresses import *
 from driftpy.accounts import get_state_account
-from anchorpy import Wallet
 from driftpy.constants.config import Config
 from anchorpy import Provider, Idl
 import driftpy
@@ -29,7 +26,7 @@ from driftpy.constants.numeric_constants import (
 from driftpy.accounts import get_perp_market_account
 
 
-class Admin(driftClient):
+class Admin(DriftClient):
     @staticmethod
     def from_config(
         config: Config,

@@ -1,16 +1,14 @@
-from dataclasses import dataclass
 from solana.publickey import PublicKey
 import json
-from importlib import resources
-from typing import Optional, TypeVar, Type, cast
+from typing import Optional
 from solana.publickey import PublicKey
 from solana.keypair import Keypair
-from solana.transaction import Transaction, TransactionSignature, TransactionInstruction
+from solana.transaction import Transaction, TransactionInstruction
 from solana.system_program import SYS_PROGRAM_ID
 from solana.sysvar import SYSVAR_RENT_PUBKEY
 from solana.transaction import AccountMeta
 from spl.token.constants import TOKEN_PROGRAM_ID
-from anchorpy import Program, Context, Idl, Wallet, Provider
+from anchorpy import Program, Context, Idl, Provider
 from struct import pack_into
 from pathlib import Path
 
@@ -23,13 +21,13 @@ from driftpy.accounts import *
 
 from driftpy.constants.config import Config
 
-from typing import Union, Optional, Dict, List, Any, Sequence, cast
+from typing import Union, Optional, List, Sequence
 from driftpy.math.positions import is_available, is_spot_position_available
 
 DEFAULT_USER_NAME = "Main Account"
 
 
-class driftClient:
+class DriftClient:
     """This class is the main way to interact with Drift Protocol including
     depositing, opening new positions, closing positions, placing orders, etc.
     """
@@ -65,7 +63,8 @@ class driftClient:
             authority (Keypair, optional):  _description_. Defaults to None.
 
         Returns:
-            driftClient: the drift client object
+            DriftClient
+        : the drift client object
         """
         # read the idl
         file = Path(str(driftpy.__path__[0]) + "/idl/drift.json")
@@ -81,7 +80,8 @@ class driftClient:
             provider,
         )
 
-        drift_client = driftClient(program, authority)
+        drift_client = DriftClient
+        (program, authority)
         drift_client.config = config
         drift_client.idl = idl
 
