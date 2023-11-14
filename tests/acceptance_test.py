@@ -40,8 +40,6 @@ async def drift_client() -> driftClient:
     kp = Keypair.from_secret_key(bytes(secret))
 
     wallet = Wallet(kp)
-    print("hi")
-    print(wallet.public_key.to_base58())
     connection = AsyncClient("https://api.devnet.solana.com")
 
     provider = Provider(connection, wallet)
@@ -75,13 +73,6 @@ async def test_get_perp_market(
             auction_end_price=None,
         )
     )
-    # print(ix)
-    # pprint.pprint(ix.keys)
-
-    # market_acc = await get_perp_market_account(drift_client.program, 0)
-    # pprint.pprint(market_acc)
-    # spot_market_acc = await get_spot_market_account(drift_client.program, 0)
-    # pprint.pprint(spot_market_acc)
 
     assert (
         str(ix.keys[3].pubkey) == "5SSkXsEKQepHHAewytPVwdej4epN1nxgLVM84L4KXgy7"
