@@ -15,8 +15,8 @@ from driftpy.types import *
 from driftpy.accounts import get_perp_market_account, get_spot_market_account
 from driftpy.math.oracle import get_oracle_data
 from driftpy.math.spot_market import get_signed_token_amount, get_token_amount
-from driftpy.clearing_house import ClearingHouse
-from driftpy.clearing_house_user import ClearingHouseUser
+from driftpy.drift_client import DriftClient
+from driftpy.drift_user import User
 from driftpy.constants.numeric_constants import BASE_PRECISION, PRICE_PRECISION
 from borsh_construct.enum import _rust_enum
 import time
@@ -96,8 +96,8 @@ async def main(
     wallet = Wallet(kp)
     connection = AsyncClient(url)
     provider = Provider(connection, wallet)
-    drift_acct = ClearingHouse.from_config(config, provider, authority=PublicKey(authority))
-    chu = ClearingHouseUser(drift_acct)
+    drift_acct = DriftClient.from_config(config, provider, authority=PublicKey(authority))
+    drift_user = User(drift_acct)
     is_perp  = 'PERP' in market_name.upper()
     market_type = MarketType.PERP() if is_perp else MarketType.SPOT()
 
@@ -123,7 +123,7 @@ async def main(
         except:
             current_price = market.amm.historical_oracle_data.last_oracle_price/PRICE_PRECISION
         # current_price = 20.00
-        current_pos_raw = (await chu.get_user_position(market_index))
+        current_pos_raw = (await drift_user.get_user_position(market_index))
         if current_pos_raw is not None:
             current_pos = (current_pos_raw.base_asset_amount/float(BASE_PRECISION))
         else:
@@ -137,7 +137,7 @@ async def main(
         except:
             current_price = market.historical_oracle_data.last_oracle_price/PRICE_PRECISION
 
-        spot_pos = await chu.get_user_spot_position(market_index)
+        spot_pos = await drift_user.get_user_spot_position(market_index)
         tokens = get_token_amount(spot_pos.scaled_balance, market, spot_pos.balance_type)
         current_pos = get_signed_token_amount(tokens, spot_pos.balance_type) / (10**market.decimals)
     

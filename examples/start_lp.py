@@ -6,13 +6,13 @@ from anchorpy import Provider
 import json 
 from anchorpy import Wallet
 from solana.rpc.async_api import AsyncClient
-from driftpy.clearing_house import ClearingHouse
+from driftpy.drift_client import DriftClient
 from driftpy.accounts import *
 from solana.keypair import Keypair
 
 # todo: airdrop udsc + init account for any kp
 # rn do it through UI 
-from driftpy.clearing_house_user import ClearingHouseUser
+from driftpy.drift_user import User
 from driftpy.constants.numeric_constants import AMM_RESERVE_PRECISION
 from solana.rpc import commitment
 import pprint
@@ -49,10 +49,10 @@ async def main(
     connection = AsyncClient(url)
     provider = Provider(connection, wallet)
 
-    ch = ClearingHouse.from_config(config, provider)
-    chu = ClearingHouseUser(ch)
+    dc = DriftClient.from_config(config, provider)
+    drift_user = User(dc)
 
-    total_collateral = await chu.get_total_collateral()
+    total_collateral = await drift_user.get_total_collateral()
     print('total collateral:', total_collateral/QUOTE_PRECISION)
 
     if total_collateral == 0:
@@ -60,7 +60,7 @@ async def main(
         return
 
     market = await get_perp_market_account(
-        ch.program, 
+        dc.program, 
         market_index
     )
     lp_amount = liquidity_amount * AMM_RESERVE_PRECISION
@@ -80,7 +80,7 @@ async def main(
         if resp != 'Y':
             print('confirmation failed exiting...')
             return
-        sig = await ch.add_liquidity(lp_amount, market_index)
+        sig = await dc.add_liquidity(lp_amount, market_index)
         print(sig)
 
     elif operation == 'remove':
@@ -88,7 +88,7 @@ async def main(
         if resp != 'Y':
             print('confirmation failed exiting...')
             return
-        sig = await ch.remove_liquidity(lp_amount, market_index)
+        sig = await dc.remove_liquidity(lp_amount, market_index)
         print(sig)
 
     elif operation == 'view': 
@@ -99,7 +99,7 @@ async def main(
         if resp != 'Y':
             print('confirmation failed exiting...')
             return
-        sig = await ch.settle_lp(ch.authority, market_index)
+        sig = await dc.settle_lp(dc.authority, market_index)
         print(sig)
         
     else: 
@@ -109,8 +109,8 @@ async def main(
         print('confirming tx...')
         await connection.confirm_transaction(sig)
 
-    position = await ch.get_user_position(market_index)
-    market = await get_perp_market_account(ch.program, market_index)
+    position = await dc.get_user_position(market_index)
+    market = await get_perp_market_account(dc.program, market_index)
     percent_provided = (position.lp_shares  / market.amm.sqrt_k) * 100
     print(f"lp shares: {position.lp_shares}")
     print(f"providing {percent_provided}% of total market liquidity")

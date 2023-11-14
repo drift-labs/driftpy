@@ -1,15 +1,6 @@
-from dataclasses import dataclass
-import json
-from importlib import resources
-from typing import Optional, TypeVar, Type, cast
+from typing import cast
 from solana.publickey import PublicKey
-from solana.keypair import Keypair
-from solana.transaction import Transaction, TransactionSignature, TransactionInstruction
-from solana.system_program import SYS_PROGRAM_ID
-from solana.sysvar import SYSVAR_RENT_PUBKEY
-from solana.transaction import AccountMeta
-from spl.token.constants import TOKEN_PROGRAM_ID
-from anchorpy import Program, ProgramAccount, Context, Idl
+from anchorpy import Program, ProgramAccount
 
 from driftpy.types import *
 from driftpy.addresses import *

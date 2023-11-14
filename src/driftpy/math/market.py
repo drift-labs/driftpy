@@ -2,12 +2,10 @@ from driftpy.math.amm import (
     calculate_price,
     calculate_spread_reserves,
     calculate_peg_multiplier,
-    calculate_terminal_price,
     calculate_budgeted_repeg,
 )
 from driftpy.types import PositionDirection
 import copy
-from solana.publickey import PublicKey
 import numpy as np
 
 # from driftpy.math.positions import calculate_base_asset_value, calculate_position_pnl

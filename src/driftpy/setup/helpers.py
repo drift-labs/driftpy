@@ -25,7 +25,6 @@ from spl.token.instructions import (
     mint_to,
     MintToParams,
 )
-from solana.rpc.commitment import Processed, Finalized, Confirmed
 from solana.transaction import TransactionSignature
 
 from driftpy.sdk_types import AssetType

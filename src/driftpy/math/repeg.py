@@ -1,14 +1,8 @@
 from driftpy.math.amm import calculate_terminal_price, calculate_budgeted_repeg
-from driftpy.math.trade import (
-    calculate_trade_slippage,
-    calculate_target_price_trade,
-    calculate_trade_acquired_amounts,
-)
 from driftpy.math.positions import calculate_base_asset_value, calculate_position_pnl
-from driftpy.types import PositionDirection, PerpPosition
+from driftpy.types import PerpPosition
 from driftpy.math.market import calculate_mark_price
 from driftpy.constants.numeric_constants import (
-    AMM_TIMES_PEG_TO_QUOTE_PRECISION_RATIO,
     PEG_PRECISION,
 )
 from solana.publickey import PublicKey

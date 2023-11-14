@@ -11,9 +11,9 @@ from solana.keypair import Keypair
 from solana.rpc import commitment
 
 from driftpy.constants.config import configs
-from driftpy.clearing_house import ClearingHouse
+from driftpy.drift_client import DriftClient
 from driftpy.accounts import *
-from driftpy.clearing_house_user import ClearingHouseUser
+from driftpy.drift_user import User
 
 async def view_logs(
     sig: str,
@@ -55,32 +55,32 @@ async def main(
     provider = Provider(connection, wallet)
 
     from driftpy.constants.numeric_constants import QUOTE_PRECISION
-    ch = ClearingHouse.from_config(config, provider)
-    chu = ClearingHouseUser(ch)
-    print(ch.program_id)
+    dc = DriftClient.from_config(config, provider)
+    drift_user = User(dc)
+    print(dc.program_id)
 
-    from spl.token.instructions import get_associated_token_address, transfer, TransferParams
-    spot_market = await get_spot_market_account(ch.program, spot_market_index)
+    from spl.token.instructions import get_associated_token_address
+    spot_market = await get_spot_market_account(dc.program, spot_market_index)
     spot_mint = spot_market.mint
     print(spot_mint)
 
     ata = get_associated_token_address(wallet.public_key, spot_mint)
-    ch.spot_market_atas[spot_market_index] = ata
+    dc.spot_market_atas[spot_market_index] = ata
     balance = await connection.get_token_account_balance(ata)
     print('current spot ata balance:', balance['result']['value']['uiAmount'])
     print('ATA addr:', ata)
 
     if operation == 'add' or operation == 'remove' and spot_market_index == 1:
-        ata = get_associated_token_address(ch.authority, spot_market.mint)
+        ata = get_associated_token_address(dc.authority, spot_market.mint)
         if not does_account_exist(connection, ata):
             from spl.token.instructions import create_associated_token_account
-            ix = create_associated_token_account(ch.authority, ch.authority, spot_market.mint)
-            await ch.send_ixs(ix)
-        ch.spot_market_atas[spot_market_index] = ata
+            ix = create_associated_token_account(dc.authority, dc.authority, spot_market.mint)
+            await dc.send_ixs(ix)
+        dc.spot_market_atas[spot_market_index] = ata
 
         # send to WSOL and sync 
         # https://github.dev/solana-labs/solana-program-library/token/js/src/ix/types.ts
-        keys = [AccountMeta(pubkey=ch.spot_market_atas[spot_market_index], is_signer=False, is_writable=True)]
+        keys = [AccountMeta(pubkey=dc.spot_market_atas[spot_market_index], is_signer=False, is_writable=True)]
         data = int.to_bytes(17, 1, 'little')
         program_id = TOKEN_PROGRAM_ID
         ix = TransactionInstruction(
@@ -88,9 +88,9 @@ async def main(
             program_id=program_id, 
             data=data
         )
-        await ch.send_ixs(ix)
+        await dc.send_ixs(ix)
 
-    spot = await get_spot_market_account(ch.program, spot_market_index)
+    spot = await get_spot_market_account(dc.program, spot_market_index)
     total_shares = spot.insurance_fund.total_shares
 
     print(f'{operation}ing {if_amount}$ spot...')
@@ -104,20 +104,20 @@ async def main(
             return
 
         if_addr = get_insurance_fund_stake_public_key(
-            ch.program_id, kp.public_key, spot_market_index
+            dc.program_id, kp.public_key, spot_market_index
         )
         if not does_account_exist(connection, if_addr):
             print('initializing stake account...')
-            sig = await ch.initialize_insurance_fund_stake(spot_market_index)
+            sig = await dc.initialize_insurance_fund_stake(spot_market_index)
             print(sig)
 
         print('adding stake ....')
-        sig = await ch.add_insurance_fund_stake(spot_market_index, if_amount)
+        sig = await dc.add_insurance_fund_stake(spot_market_index, if_amount)
         print(sig)
 
     elif operation == 'cancel':
         print('canceling...')
-        sig = await ch.cancel_request_remove_insurance_fund_stake(spot_market_index)
+        sig = await dc.cancel_request_remove_insurance_fund_stake(spot_market_index)
         print(sig)
 
     elif operation == 'remove':
@@ -126,16 +126,16 @@ async def main(
             print('confirmation failed exiting...')
             return
 
-        if if_amount == None: 
+        if if_amount is None: 
             vault_balance = (await connection.get_token_account_balance(
                 get_insurance_fund_vault_public_key(
-                    ch.program_id, spot_market_index
+                    dc.program_id, spot_market_index
                 )
             ))['result']['value']['uiAmount']
-            spot_market = await get_spot_market_account(ch.program, spot_market_index)
+            spot_market = await get_spot_market_account(dc.program, spot_market_index)
             ifstake = await get_if_stake_account(
-                ch.program, 
-                ch.authority, 
+                dc.program, 
+                dc.authority, 
                 spot_market_index
             )
             total_amount = vault_balance * ifstake.if_shares / spot_market.insurance_fund.total_shares
@@ -143,14 +143,14 @@ async def main(
             if_amount = int(total_amount * QUOTE_PRECISION)
 
         print('requesting to remove if stake...') 
-        ix = await ch.request_remove_insurance_fund_stake(
+        ix = await dc.request_remove_insurance_fund_stake(
             spot_market_index, if_amount
         )
         await view_logs(ix, connection)
         
         print('removing if stake...') 
         try:
-            ix = await ch.remove_insurance_fund_stake(
+            ix = await dc.remove_insurance_fund_stake(
                 spot_market_index
             )
             await view_logs(ix, connection)
@@ -160,11 +160,11 @@ async def main(
             return
 
     elif operation == 'view': 
-        if_stake = await get_if_stake_account(ch.program, ch.authority, spot_market_index)
+        if_stake = await get_if_stake_account(dc.program, dc.authority, spot_market_index)
         n_shares = if_stake.if_shares
 
-        conn = ch.program.provider.connection
-        vault_pk = get_insurance_fund_vault_public_key(ch.program_id, spot_market_index)
+        conn = dc.program.provider.connection
+        vault_pk = get_insurance_fund_vault_public_key(dc.program_id, spot_market_index)
         v_amount = int((await conn.get_token_account_balance(vault_pk))['result']['value']['amount'])
         balance = v_amount * n_shares / total_shares
         print(
@@ -177,15 +177,15 @@ async def main(
             print('confirmation failed exiting...')
             return
             
-        await ch.settle_revenue_to_insurance_fund(spot_market_index)
+        await dc.settle_revenue_to_insurance_fund(spot_market_index)
         
     else: 
         return
 
     if operation in ['add', 'remove']:
         ifstake = await get_if_stake_account(
-            ch.program, 
-            ch.authority, 
+            dc.program, 
+            dc.authority, 
             spot_market_index
         )
         print('total if shares:', ifstake.if_shares)

@@ -6,13 +6,9 @@ from driftpy.types import (
 from collections.abc import Mapping
 
 from driftpy.math.market import calculate_mark_price
-from driftpy.math.amm import calculate_amm_reserves_after_swap, get_swap_direction
 from driftpy.math.positions import calculate_position_pnl, calculate_base_asset_value
 from driftpy.constants.numeric_constants import (
-    PRICE_PRECISION,
     AMM_RESERVE_PRECISION,
-    AMM_TO_QUOTE_PRECISION_RATIO,
-    AMM_TIMES_PEG_TO_QUOTE_PRECISION_RATIO,
 )
 import numpy as np
 

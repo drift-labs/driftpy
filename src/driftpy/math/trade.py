@@ -4,7 +4,6 @@ from driftpy.math.amm import (
     calculate_price,
     calculate_amm_reserves_after_swap,
     calculate_spread_reserves,
-    calculate_peg_multiplier,
     get_swap_direction,
 )
 from driftpy.math.market import (

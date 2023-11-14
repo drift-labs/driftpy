@@ -1,16 +1,14 @@
-from dataclasses import dataclass
 from solana.publickey import PublicKey
 import json
-from importlib import resources
-from typing import Optional, TypeVar, Type, cast
+from typing import Optional
 from solana.publickey import PublicKey
 from solana.keypair import Keypair
-from solana.transaction import Transaction, TransactionSignature, TransactionInstruction
+from solana.transaction import Transaction, TransactionInstruction
 from solana.system_program import SYS_PROGRAM_ID
 from solana.sysvar import SYSVAR_RENT_PUBKEY
 from solana.transaction import AccountMeta
 from spl.token.constants import TOKEN_PROGRAM_ID
-from anchorpy import Program, Context, Idl, Wallet, Provider
+from anchorpy import Program, Context, Idl, Provider
 from struct import pack_into
 from pathlib import Path
 
@@ -23,19 +21,19 @@ from driftpy.accounts import *
 
 from driftpy.constants.config import Config
 
-from typing import Union, Optional, Dict, List, Any, Sequence, cast
+from typing import Union, Optional, List, Sequence
 from driftpy.math.positions import is_available, is_spot_position_available
 
 DEFAULT_USER_NAME = "Main Account"
 
 
-class ClearingHouse:
+class DriftClient:
     """This class is the main way to interact with Drift Protocol including
     depositing, opening new positions, closing positions, placing orders, etc.
     """
 
     def __init__(self, program: Program, signer: Keypair = None, authority: PublicKey = None):
-        """Initializes the clearing house object -- likely want to use the .from_config method instead of this one
+        """Initializes the drift client object -- likely want to use the .from_config method instead of this one
 
         Args:
             program (Program): Drift anchor program (see from_config on how to initialize it)
@@ -57,7 +55,7 @@ class ClearingHouse:
 
     @staticmethod
     def from_config(config: Config, provider: Provider, authority: Keypair = None):
-        """Initializes the clearing house object from a Config
+        """Initializes the drift client object from a Config
 
         Args:
             config (Config): the config to initialize form
@@ -65,7 +63,8 @@ class ClearingHouse:
             authority (Keypair, optional):  _description_. Defaults to None.
 
         Returns:
-            ClearingHouse: the clearing house object
+            DriftClient
+        : the drift client object
         """
         # read the idl
         file = Path(str(driftpy.__path__[0]) + "/idl/drift.json")
@@ -77,16 +76,16 @@ class ClearingHouse:
         # create the program
         program = Program(
             idl,
-            config.clearing_house_program_id,
+            config.drift_client_program_id,
             provider,
         )
 
-        clearing_house = ClearingHouse(program, authority)
-        clearing_house.config = config
-        clearing_house.idl = idl
+        drift_client = DriftClient
+        (program, authority)
+        drift_client.config = config
+        drift_client.idl = idl
 
-        return clearing_house
-
+        return drift_client
     def get_user_account_public_key(self, user_id=0) -> PublicKey:
         return get_user_account_public_key(self.program_id, self.authority, user_id)
 
@@ -335,7 +334,7 @@ class ClearingHouse:
             readable_spot_market_index=QUOTE_ASSET_BANK_INDEX,
             user_id=user_id,
         )
-        ch_signer = get_clearing_house_signer_public_key(self.program_id)
+        dc_signer = get_drift_client_signer_public_key(self.program_id)
 
         return self.program.instruction["withdraw"](
             spot_market_index,
@@ -346,7 +345,7 @@ class ClearingHouse:
                     "state": self.get_state_public_key(),
                     "spot_market": spot_market.pubkey,
                     "spot_market_vault": spot_market.vault,
-                    "drift_signer": ch_signer,
+                    "drift_signer": dc_signer,
                     "user": self.get_user_account_public_key(user_id),
                     "user_stats": self.get_user_stats_public_key(),
                     "user_token_account": user_token_account,
@@ -948,7 +947,7 @@ class ClearingHouse:
             price=0,
             market_index=market_index,
             reduce_only=False,
-            post_only=PostOnlyParams.NONE(),
+            post_only=PostOnlyParam.NONE(),
             immediate_or_cancel=False,
             trigger_price=0,
             trigger_condition=OrderTriggerCondition.ABOVE(),
@@ -1249,7 +1248,7 @@ class ClearingHouse:
         spot_vault = get_spot_market_vault_public_key(
             self.program_id, spot_market_index
         )
-        ch_signer = get_clearing_house_signer_public_key(self.program_id)
+        dc_signer = get_drift_client_signer_public_key(self.program_id)
 
         return self.program.instruction["resolve_spot_bankruptcy"](
             spot_market_index,
@@ -1263,7 +1262,7 @@ class ClearingHouse:
                     "liquidator_stats": liq_stats_pk,
                     "spot_market_vault": spot_vault,
                     "insurance_fund_vault": if_vault,
-                    "drift_signer": ch_signer,
+                    "drift_signer": dc_signer,
                     "token_program": TOKEN_PROGRAM_ID,
                 },
                 remaining_accounts=remaining_accounts,
@@ -1315,7 +1314,7 @@ class ClearingHouse:
 
         if_vault = get_insurance_fund_vault_public_key(self.program_id, market_index)
         spot_vault = get_spot_market_vault_public_key(self.program_id, market_index)
-        ch_signer = get_clearing_house_signer_public_key(self.program_id)
+        dc_signer = get_drift_client_signer_public_key(self.program_id)
 
         return self.program.instruction["resolve_perp_bankruptcy"](
             QUOTE_ASSET_BANK_INDEX,
@@ -1330,7 +1329,7 @@ class ClearingHouse:
                     "liquidator_stats": liq_stats_pk,
                     "spot_market_vault": spot_vault,
                     "insurance_fund_vault": if_vault,
-                    "drift_signer": ch_signer,
+                    "drift_signer": dc_signer,
                     "token_program": TOKEN_PROGRAM_ID,
                 },
                 remaining_accounts=remaining_accounts,
@@ -1470,7 +1469,7 @@ class ClearingHouse:
                     "insurance_fund_vault": get_insurance_fund_vault_public_key(
                         self.program_id, spot_market_index
                     ),
-                    "drift_signer": get_clearing_house_signer_public_key(
+                    "drift_signer": get_drift_client_signer_public_key(
                         self.program_id
                     ),
                     "user_token_account": self.spot_market_atas[spot_market_index],
@@ -1509,7 +1508,7 @@ class ClearingHouse:
                     "insurance_fund_vault": get_insurance_fund_vault_public_key(
                         self.program_id, spot_market_index
                     ),
-                    "drift_signer": get_clearing_house_signer_public_key(
+                    "drift_signer": get_drift_client_signer_public_key(
                         self.program_id
                     ),
                     "user_token_account": self.spot_market_atas[spot_market_index],
@@ -1559,7 +1558,7 @@ class ClearingHouse:
                     "insurance_fund_vault": get_insurance_fund_vault_public_key(
                         self.program_id, spot_market_index
                     ),
-                    "drift_signer": get_clearing_house_signer_public_key(
+                    "drift_signer": get_drift_client_signer_public_key(
                         self.program_id
                     ),
                     "user_token_account": self.spot_market_atas[spot_market_index],
@@ -1657,7 +1656,7 @@ class ClearingHouse:
                     "spot_market_vault": get_spot_market_vault_public_key(
                         self.program_id, spot_market_index
                     ),
-                    "drift_signer": get_clearing_house_signer_public_key(
+                    "drift_signer": get_drift_client_signer_public_key(
                         self.program_id
                     ),
                     "insurance_fund_vault": get_insurance_fund_vault_public_key(
