@@ -1,5 +1,5 @@
 #%%
-from gazpacho import get, Soup
+from gazpacho import get
 from bs4 import BeautifulSoup
 
 url = 'https://github.com/drift-labs/protocol-v2/releases'

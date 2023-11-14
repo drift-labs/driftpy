@@ -1,22 +1,18 @@
 import os
 import json
-import pprint
 
-import pytest
 from pytest import mark
 from pytest_asyncio import fixture as async_fixture
-from anchorpy import workspace_fixture, Program, Wallet, Provider
-from driftpy.admin import Admin
+from anchorpy import workspace_fixture, Wallet, Provider
 from driftpy.constants.numeric_constants import (
     QUOTE_PRECISION,
     BASE_PRECISION,
 )
 from math import sqrt
 
-from driftpy.admin import Admin
 from driftpy.constants.config import configs
 from driftpy.constants.numeric_constants import PRICE_PRECISION, AMM_RESERVE_PRECISION
-from driftpy.clearing_house import ClearingHouse
+from driftpy.drift_client import driftClient
 
 from driftpy.addresses import *
 from driftpy.types import *
@@ -38,7 +34,7 @@ workspace = workspace_fixture(
 
 
 @async_fixture(scope="session")
-async def clearing_house() -> ClearingHouse:
+async def drift_client() -> driftClient:
     with open(os.path.expanduser(os.environ["ANCHOR_WALLET"]), "r") as f:
         secret = json.load(f)
     kp = Keypair.from_secret_key(bytes(secret))
@@ -49,14 +45,14 @@ async def clearing_house() -> ClearingHouse:
     provider = Provider(connection, wallet)
     config = configs["devnet"]
 
-    return ClearingHouse.from_config(config, provider)
+    return driftClient.from_config(config, provider)
 
 
 @mark.asyncio
 async def test_get_perp_market(
-    clearing_house: ClearingHouse,
+    drift_client: driftClient,
 ):
-    ix = await clearing_house.get_place_perp_order_ix(
+    ix = await drift_client.get_place_perp_order_ix(
         OrderParams(
             order_type=OrderType.LIMIT(),
             market_type=MarketType.PERP(),
@@ -66,7 +62,7 @@ async def test_get_perp_market(
             price=10 * PRICE_PRECISION,
             market_index=0,
             reduce_only=False,
-            post_only=PostOnlyParams.NONE(),
+            post_only=PostOnlyParam.NONE(),
             immediate_or_cancel=False,
             max_ts=None,
             trigger_price=None,

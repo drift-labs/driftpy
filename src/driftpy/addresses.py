@@ -67,7 +67,7 @@ def get_state_public_key(
     return PublicKey.find_program_address([b"drift_state"], program_id)[0]
 
 
-def get_clearing_house_signer_public_key(
+def get_drift_client_signer_public_key(
     program_id: PublicKey,
 ) -> PublicKey:
     return PublicKey.find_program_address([b"drift_signer"], program_id)[0]

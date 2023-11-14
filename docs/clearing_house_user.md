@@ -1,30 +1,29 @@
-# Clearing House User
+# User
 
 This object is used to fetch data from the protocol and view user metrics (leverage, free collateral, etc.)
 
-## Example 
+## Example
 
-```python 
-clearing_house = ClearingHouse.from_config(config, provider)
-clearing_house_user = ClearingHouseUser(clearing_house)
+```python
+drift_client = DriftClient.from_config(config, provider)
+drift_user = User(drift_client)
 
-# inspect user's leverage 
-leverage = await clearing_house_user.get_leverage()
+# inspect user's leverage
+leverage = await drift_user.get_leverage()
 print('current leverage:', leverage / 10_000)
 
 # you can also inspect other accounts information using the (authority=) flag
-bigz_chu = ClearingHouseUser(clearing_house, authority=PublicKey('bigZ'))
-leverage = await bigz_chu.get_leverage()
+bigz_acc = User(drift_client, authority=PublicKey('bigZ'))
+leverage = await bigz_acc.get_leverage()
 print('bigZs leverage:', leverage / 10_000)
 
-# clearing house user calls can be expensive on the rpc so we can cache them 
-clearing_house_user = ClearingHouseUser(clearing_house, use_cache=True)
-await clearing_house_user.set_cache()
+# user calls can be expensive on the rpc so we can cache them
+drift_user = User(drift_client, use_cache=True)
+await drift_user.set_cache()
 
 # works without any rpc calls (uses the cached data)
-upnl = await chu.get_unrealized_pnl(with_funding=True)
+upnl = await drift_user.get_unrealized_pnl(with_funding=True)
 print('upnl:', upnl)
 ```
 
-
-:::driftpy.clearing_house_user
+:::driftpy.drift_user

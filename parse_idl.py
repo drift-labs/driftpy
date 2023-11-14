@@ -98,7 +98,7 @@ def record_struct(name):
 
     children = tree[name]
     for child in children:
-        if not child in recorded_names and name2kind[child] != 'enum':
+        if child not in recorded_names and name2kind[child] != 'enum':
             if child in tree: 
                 record_struct(child)
 
