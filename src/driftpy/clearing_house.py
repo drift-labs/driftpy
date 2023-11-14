@@ -48,6 +48,9 @@ class ClearingHouse:
         if signer is None:
             signer = program.provider.wallet.payer
 
+        if authority is None:
+            authority = signer.public_key
+
         self.signer = signer
         self.authority = authority
         self.signers = [self.signer]
