@@ -88,6 +88,7 @@ class Admin(DriftClient):
 
     async def initialize_perp_market(
         self,
+        market_index: int,
         price_oracle: PublicKey,
         base_asset_reserve: int,
         quote_asset_reserve: int,
@@ -108,6 +109,7 @@ class Admin(DriftClient):
         )
 
         return await self.program.rpc["initialize_perp_market"](
+            market_index,
             base_asset_reserve,
             quote_asset_reserve,
             periodicity,

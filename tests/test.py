@@ -13,7 +13,7 @@ from driftpy.constants.numeric_constants import (
 )
 from math import sqrt
 
-from driftpy.drift_client import driftClient
+from driftpy.drift_client import DriftClient
 from driftpy.setup.helpers import (
     _create_mint,
     _create_and_mint_user_usdc,
@@ -137,8 +137,9 @@ async def initialized_market(
 ) -> PublicKey:
     pyth_program = workspace["pyth"]
     sol_usd = await mock_oracle(pyth_program=pyth_program, price=1)
-
+    perp_market_index = 0
     await drift_client.initialize_perp_market(
+        perp_market_index,
         sol_usd,
         AMM_INITIAL_BASE_ASSET_AMOUNT,
         AMM_INITIAL_QUOTE_ASSET_AMOUNT,
@@ -186,6 +187,8 @@ async def test_usdc_deposit(
     drift_client: Admin,
     user_usdc_account: Keypair,
 ):
+    usdc_spot_market = await get_spot_market_account(drift_client.program, 0)
+    assert(usdc_spot_market.market_index == 0)
     drift_client.spot_market_atas[0] = user_usdc_account.public_key
     await drift_client.deposit(
         USDC_AMOUNT, 0, user_usdc_account.public_key, user_initialized=True
