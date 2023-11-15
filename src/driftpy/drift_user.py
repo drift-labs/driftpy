@@ -215,6 +215,16 @@ class User:
                 self.program, self.authority, self.subaccount_id
             )
 
+
+    async def get_open_orders(self, 
+                            #   market_type: MarketType, 
+                            #   market_index: int,
+                            #   position_direction: PositionDirection
+                              ):
+        user: User = await self.get_user()
+        return user.orders
+
+
     async def get_spot_market_liability(
         self,
         market_index=None,
