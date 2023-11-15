@@ -26,6 +26,7 @@ from driftpy.math.positions import is_available, is_spot_position_available
 
 DEFAULT_USER_NAME = "Main Account"
 
+DEFAULT_PUBKEY = PublicKey("11111111111111111111111111111111")
 
 class DriftClient:
     """This class is the main way to interact with Drift Protocol including
@@ -232,7 +233,7 @@ class DriftClient:
                 spot_market = await get_spot_market_account(
                     self.program, perp_market.quote_spot_market_index
                 )
-                if spot_market.oracle is not None:
+                if spot_market.oracle != DEFAULT_PUBKEY:
                     oracle_map[str(spot_market.oracle)] = AccountMeta(
                         pubkey=spot_market.oracle, is_signer=False, is_writable=False
                     )
@@ -248,7 +249,7 @@ class DriftClient:
                 is_writable=is_writable,
             )
 
-            if include_oracles:
+            if include_oracles and spot_market.oracle != DEFAULT_PUBKEY:
                 oracle_map[str(spot_market.pubkey)] = AccountMeta(
                     pubkey=spot_market.oracle, is_signer=False, is_writable=False
                 )

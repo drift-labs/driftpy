@@ -13,7 +13,7 @@ from driftpy.constants.numeric_constants import (
 )
 from math import sqrt
 
-from driftpy.drift_client import driftClient
+from driftpy.drift_client import DriftClient
 from driftpy.setup.helpers import (
     _create_mint,
     _create_and_mint_user_usdc,
@@ -137,8 +137,9 @@ async def initialized_market(
 ) -> PublicKey:
     pyth_program = workspace["pyth"]
     sol_usd = await mock_oracle(pyth_program=pyth_program, price=1)
-
+    perp_market_index = 0
     await drift_client.initialize_perp_market(
+        perp_market_index,
         sol_usd,
         AMM_INITIAL_BASE_ASSET_AMOUNT,
         AMM_INITIAL_QUOTE_ASSET_AMOUNT,
@@ -186,6 +187,8 @@ async def test_usdc_deposit(
     drift_client: Admin,
     user_usdc_account: Keypair,
 ):
+    usdc_spot_market = await get_spot_market_account(drift_client.program, 0)
+    assert(usdc_spot_market.market_index == 0)
     drift_client.spot_market_atas[0] = user_usdc_account.public_key
     await drift_client.deposit(
         USDC_AMOUNT, 0, user_usdc_account.public_key, user_initialized=True
@@ -324,15 +327,14 @@ async def test_stake_if(
 
     await drift_client.add_insurance_fund_stake(0, 1 * QUOTE_PRECISION)
 
-    ch = drift_client
-    user_stats = await get_user_stats_account(ch.program, ch.authority)
+    user_stats = await get_user_stats_account(drift_client.program, drift_client.authority)
     assert user_stats.if_staked_quote_asset_amount == 1 * QUOTE_PRECISION
 
     await drift_client.request_remove_insurance_fund_stake(0, 1 * QUOTE_PRECISION)
 
     await drift_client.remove_insurance_fund_stake(0)
 
-    user_stats = await get_user_stats_account(ch.program, ch.authority)
+    user_stats = await get_user_stats_account(drift_client.program, drift_client.authority)
     assert user_stats.if_staked_quote_asset_amount == 0
 
 
@@ -347,12 +349,12 @@ async def test_liq_perp(
     )
 
     liq, _ = await _airdrop_user(drift_client.program.provider)
-    liq_ch = driftClient(drift_client.program, liq)
+    liq_drift_client = DriftClient(drift_client.program, liq)
     usdc_acc = await _create_and_mint_user_usdc(
         usdc_mint, drift_client.program.provider, USDC_AMOUNT, liq.public_key
     )
-    await liq_ch.intialize_user()
-    await liq_ch.deposit(
+    await liq_drift_client.intialize_user()
+    await liq_drift_client.deposit(
         USDC_AMOUNT,
         0,
         usdc_acc.public_key,
@@ -383,8 +385,8 @@ async def test_liq_perp(
     pyth_program = workspace["pyth"]
     await set_price_feed(pyth_program, market.amm.oracle, 1.5)
 
-    await liq_ch.liquidate_perp(drift_client.authority, 0, int(baa) // 10)
+    await liq_drift_client.liquidate_perp(drift_client.authority, 0, int(baa) // 10)
 
     # liq takes on position
-    position = await liq_ch.get_user_position(0)
+    position = await liq_drift_client.get_user_position(0)
     assert position.base_asset_amount != 0
