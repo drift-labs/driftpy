@@ -1,10 +1,8 @@
-from driftpy.constants.numeric_constants import *
-from driftpy.types import *
-from driftpy.accounts import *
-from driftpy.math.oracle import OracleData
 from driftpy.math.spot_market import *
 
 from enum import Enum
+
+from driftpy.types import OraclePriceData
 
 
 def calculate_size_discount_asset_weight(
@@ -88,7 +86,7 @@ def calculate_size_premium_liability_weight(
     return max_liability_weight
 
 
-def calculate_net_user_pnl(perp_market: PerpMarket, oracle_data: OracleData):
+def calculate_net_user_pnl(perp_market: PerpMarket, oracle_data: OraclePriceData):
     net_user_position_value = (
         perp_market.amm.base_asset_amount_with_amm
         * oracle_data.price
@@ -103,7 +101,7 @@ def calculate_net_user_pnl(perp_market: PerpMarket, oracle_data: OracleData):
 
 
 def calculate_net_user_pnl_imbalance(
-    perp_market: PerpMarket, spot_market: SpotMarket, oracle_data: OracleData
+    perp_market: PerpMarket, spot_market: SpotMarket, oracle_data: OraclePriceData
 ):
     user_pnl = calculate_net_user_pnl(perp_market, oracle_data)
 
@@ -120,7 +118,7 @@ def calculate_unrealized_asset_weight(
     spot_market: SpotMarket,
     unrealized_pnl: int,
     margin_category: MarginCategory,
-    oracle_data: OracleData,
+    oracle_data: OraclePriceData,
 ):
     match margin_category:
         case MarginCategory.INITIAL:
@@ -213,7 +211,7 @@ def calculate_market_margin_ratio(
 
 def get_spot_liability_value(
     token_amount: int,
-    oracle_data: OracleData,
+    oracle_data: OraclePriceData,
     spot_market: SpotMarket,
     margin_category: MarginCategory,
     liquidation_buffer: int = None,

@@ -1,9 +1,5 @@
-from driftpy.types import PositionDirection, PerpMarket, PerpPosition, SpotPosition
-from driftpy.constants.numeric_constants import *
-from driftpy.types import *
-from driftpy.accounts import *
-from driftpy.math.oracle import *
 from driftpy.math.spot_market import *
+from driftpy.types import OraclePriceData
 
 
 def get_worst_case_token_amounts(
@@ -28,7 +24,7 @@ def get_worst_case_token_amounts(
 
 
 def calculate_base_asset_value_with_oracle(
-    perp_position: PerpPosition, oracle_data: OracleData
+    perp_position: PerpPosition, oracle_data: OraclePriceData
 ):
     return (
         abs(perp_position.base_asset_amount)
@@ -63,7 +59,7 @@ def calculate_position_funding_pnl(market: PerpMarket, perp_position: PerpPositi
 def calculate_position_pnl_with_oracle(
     market: PerpMarket,
     perp_position: PerpPosition,
-    oracle_data: OracleData,
+    oracle_data: OraclePriceData,
     with_funding=False,
 ):
     if perp_position.base_asset_amount == 0:

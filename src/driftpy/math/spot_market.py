@@ -1,7 +1,5 @@
-from driftpy.constants.numeric_constants import *
-from driftpy.types import *
 from driftpy.accounts import *
-from driftpy.math.oracle import *
+from driftpy.types import OraclePriceData
 
 
 def get_signed_token_amount(amount, balance_type):
@@ -30,6 +28,6 @@ def get_token_amount(
     return balance * cumm_interest / percision_decrease
 
 
-def get_token_value(amount, spot_decimals, oracle_data: OracleData):
+def get_token_value(amount, spot_decimals, oracle_data: OraclePriceData):
     precision_decrease = 10**spot_decimals
     return amount * oracle_data.price / precision_decrease

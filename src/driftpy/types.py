@@ -836,4 +836,12 @@ class ReferrerName:
     user: PublicKey
     user_stats: PublicKey
     name: list[int]
- 
+
+@dataclass
+class OraclePriceData:
+    price: int
+    slot: int
+    confidence: int
+    twap: int
+    twap_confidence: int
+    has_sufficient_number_of_datapoints: bool

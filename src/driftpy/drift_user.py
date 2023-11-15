@@ -1,35 +1,22 @@
-from solana.publickey import PublicKey
-from typing import Optional
+from driftpy.accounts import UserAccountSubscriber
+from driftpy.accounts.cache import CachedUserAccountSubscriber
 from driftpy.drift_client import DriftClient
-from driftpy.constants.numeric_constants import *
-from driftpy.types import *
-from driftpy.accounts import *
 from driftpy.math.positions import *
 from driftpy.math.margin import *
 from driftpy.math.spot_market import *
-from driftpy.math.oracle import *
-
-
-def find(l: list, f):
-    valid_values = [v for v in l if f(v)]
-    if len(valid_values) == 0:
-        return None
-    else:
-        return valid_values[0]
+from driftpy.accounts.oracle import *
+from driftpy.types import OraclePriceData
 
 
 class User:
-    """This class is the main way to retrieve and inspect data on Drift Protocol."""
+    """This class is the main way to retrieve and inspect user account data."""
 
     def __init__(
         self,
         drift_client: DriftClient,
         authority: Optional[PublicKey] = None,
         subaccount_id: int = 0,
-        use_cache: bool = False,
-        
-        
-
+        account_subscriber: Optional[UserAccountSubscriber] = None,
     ):
         """Initialize the user object
 
@@ -37,7 +24,6 @@ class User:
             drift_client(DriftClient): required for program_id, idl, things (keypair doesnt matter)
             authority (Optional[PublicKey], optional): authority to investigate if None will use drift_client.authority
             subaccount_id (int, optional): subaccount of authority to investigate. Defaults to 0.
-            use_cache (bool, optional): sdk uses a lot of rpc calls rn - use this flag and .set_cache() to cache accounts and reduce rpc calls. Defaults to False.
         """
         self.drift_client = drift_client
         self.authority = authority
@@ -48,172 +34,32 @@ class User:
         self.oracle_program = drift_client
         self.connection = self.program.provider.connection
         self.subaccount_id = subaccount_id
-        self.use_cache = use_cache
-        self.cache_is_set = False
-        
-        
 
-    # cache all state, perpmarket, oracle, etc. in single cache -- user calls reload
-    # when they want to update the data?
-    # get_spot_market
-    # get_perp_market
-    # get_user
-    # if state = cache => get cached_market else get new market
-    async def set_cache_last(self, CACHE=None):
-        """sets the cache of the accounts to use to inspect
+        self.user_public_key = get_user_account_public_key(self.program.program_id, self.authority, self.subaccount_id)
 
-        Args:
-            CACHE (dict, optional): other existing cache object - if None will pull ƒresh accounts from RPC. Defaults to None.
-        """
-        self.cache_is_set = True
+        if account_subscriber is None:
+            account_subscriber = CachedUserAccountSubscriber(self.user_public_key, self.program)
 
-        if CACHE is not None:
-            self.CACHE = CACHE
-            return
+        self.account_subscriber = account_subscriber
 
-        self.CACHE = {}
-        state = await get_state_account(self.program)
-        self.CACHE["state"] = state
 
-        spot_markets = []
-        spot_market_oracle_data = []
-        for i in range(state.number_of_spot_markets):
-            spot_market = await get_spot_market_account(self.program, i)
-            spot_markets.append(spot_market)
+    async def get_spot_oracle_data(self, spot_market: SpotMarket) -> Optional[OraclePriceData]:
+        return await self.drift_client.get_oracle_price_data(spot_market.oracle)
 
-            if i == 0:
-                spot_market_oracle_data.append(
-                    OracleData(PRICE_PRECISION, 0, 1, 1, 0, True)
-                )
-            else:
-                oracle_data = OracleData(
-                    spot_market.historical_oracle_data.last_oracle_price,
-                    0,
-                    1,
-                    1,
-                    0,
-                    True,
-                )
-                spot_market_oracle_data.append(oracle_data)
+    async def get_perp_oracle_data(self, perp_market: PerpMarket) -> Optional[OraclePriceData]:
+        return await self.drift_client.get_oracle_price_data(perp_market.amm.oracle)
 
-        self.CACHE["spot_markets"] = spot_markets
-        self.CACHE["spot_market_oracles"] = spot_market_oracle_data
+    async def get_state(self) -> State:
+        return await self.drift_client.get_state()
 
-        perp_markets = []
-        perp_market_oracle_data = []
-        for i in range(state.number_of_markets):
-            perp_market = await get_perp_market_account(self.program, i)
-            perp_markets.append(perp_market)
+    async def get_spot_market(self, market_index: int) -> SpotMarket:
+        return await self.drift_client.get_spot_market(market_index)
 
-            oracle_data = OracleData(
-                perp_market.amm.historical_oracle_data.last_oracle_price,
-                0,
-                1,
-                1,
-                0,
-                True,
-            )
-            perp_market_oracle_data.append(oracle_data)
+    async def get_perp_market(self, market_index: int) -> PerpMarket:
+        return await self.drift_client.get_perp_market(market_index)
 
-        self.CACHE["perp_markets"] = perp_markets
-        self.CACHE["perp_market_oracles"] = perp_market_oracle_data
-
-        user = await get_user_account(self.program, self.authority, self.subaccount_id)
-        self.CACHE["user"] = user
-
-    async def set_cache(self, CACHE=None):
-        """sets the cache of the accounts to use to inspect
-
-        Args:
-            CACHE (dict, optional): other existing cache object - if None will pull ƒresh accounts from RPC. Defaults to None.
-        """
-        self.cache_is_set = True
-
-        if CACHE is not None:
-            self.CACHE = CACHE
-            return
-
-        self.CACHE = {}
-        state = await get_state_account(self.program)
-        self.CACHE["state"] = state
-
-        spot_markets = []
-        spot_market_oracle_data = []
-        for i in range(state.number_of_spot_markets):
-            spot_market = await get_spot_market_account(self.program, i)
-            spot_markets.append(spot_market)
-
-            if i == 0:
-                spot_market_oracle_data.append(
-                    OracleData(PRICE_PRECISION, 0, 1, 1, 0, True)
-                )
-            else:
-                oracle_data = await get_oracle_data(self.connection, spot_market.oracle,  spot_market.oracle_source)
-                spot_market_oracle_data.append(oracle_data)
-
-        self.CACHE["spot_markets"] = spot_markets
-        self.CACHE["spot_market_oracles"] = spot_market_oracle_data
-
-        perp_markets = []
-        perp_market_oracle_data = []
-        for i in range(state.number_of_markets):
-            perp_market = await get_perp_market_account(self.program, i)
-            perp_markets.append(perp_market)
-
-            oracle_data = await get_oracle_data(self.connection, perp_market.amm.oracle, perp_market.amm.oracle_source)
-            perp_market_oracle_data.append(oracle_data)
-
-        self.CACHE["perp_markets"] = perp_markets
-        self.CACHE["perp_market_oracles"] = perp_market_oracle_data
-
-        user = await get_user_account(self.program, self.authority, self.subaccount_id)
-        self.CACHE["user"] = user
-
-    async def get_spot_oracle_data(self, spot_market: SpotMarket):
-        if self.use_cache:
-            assert self.cache_is_set, "must call user.set_cache() first"
-            return self.CACHE["spot_market_oracles"][spot_market.market_index]
-        else:
-            oracle_data = await get_oracle_data(self.connection, spot_market.oracle, spot_market.oracle_source)
-            return oracle_data
-
-    async def get_perp_oracle_data(self, perp_market: PerpMarket):
-        if self.use_cache:
-            assert self.cache_is_set, "must call user.set_cache() first"
-            return self.CACHE["perp_market_oracles"][perp_market.market_index]
-        else:
-            oracle_data = await get_oracle_data(self.connection, perp_market.amm.oracle,  perp_market.amm.oracle_source)
-            return oracle_data
-
-    async def get_state(self):
-        if self.use_cache:
-            assert self.cache_is_set, "must call user.set_cache() first"
-            return self.CACHE["state"]
-        else:
-            return await get_state_account(self.program)
-
-    async def get_spot_market(self, i):
-        if self.use_cache:
-            assert self.cache_is_set, "must call user.set_cache() first"
-            return self.CACHE["spot_markets"][i]
-        else:
-            return await get_spot_market_account(self.program, i)
-
-    async def get_perp_market(self, i):
-        if self.use_cache:
-            assert self.cache_is_set, "must call user.set_cache() first"
-            return self.CACHE["perp_markets"][i]
-        else:
-            return await get_perp_market_account(self.program, i)
-
-    async def get_user(self):
-        if self.use_cache:
-            assert self.cache_is_set, "must call user.set_cache() first"
-            return self.CACHE["user"]
-        else:
-            return await get_user_account(
-                self.program, self.authority, self.subaccount_id
-            )
+    async def get_user(self) -> User:
+        return (await self.account_subscriber.get_user_account_and_slot()).data
 
     async def get_spot_market_liability(
         self,
