@@ -350,7 +350,7 @@ async def test_liq_perp(
     )
 
     liq, _ = await _airdrop_user(drift_client.program.provider)
-    liq_ch = driftClient(drift_client.program, liq)
+    liq_ch = DriftClient(drift_client.program, liq)
     usdc_acc = await _create_and_mint_user_usdc(
         usdc_mint, drift_client.program.provider, USDC_AMOUNT, liq.public_key
     )
