@@ -84,8 +84,7 @@ class DriftClient:
             provider,
         )
 
-        drift_client = DriftClient
-        (program, authority)
+        drift_client = DriftClient(program, authority)
         drift_client.config = config
         drift_client.idl = idl
 
