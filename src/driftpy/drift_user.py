@@ -18,7 +18,7 @@ def find(l: list, f):
         return valid_values[0]
 
 
-class User:
+class DriftUser:
     """This class is the main way to retrieve and inspect data on Drift Protocol."""
 
     def __init__(

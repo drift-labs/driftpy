@@ -14,7 +14,7 @@ from driftpy.constants.numeric_constants import (
 )
 from math import sqrt
 
-from driftpy.drift_user import User as DriftUser
+from driftpy.drift_user import DriftUser as DriftUser
 from driftpy.drift_client import DriftClient
 from driftpy.setup.helpers import (
     _create_mint,
