@@ -118,7 +118,7 @@ async def main(
                 drift_acct.program, market_index
             )
         try:
-            oracle_data = await get_oracle_price_data_and_slot(connection, market.amm.oracle)
+            oracle_data = (await get_oracle_price_data_and_slot(connection, market.amm.oracle)).data
             current_price = oracle_data.price/PRICE_PRECISION
         except:
             current_price = market.amm.historical_oracle_data.last_oracle_price/PRICE_PRECISION
@@ -132,7 +132,7 @@ async def main(
     else:
         market = await get_spot_market_account( drift_acct.program, market_index)
         try:
-            oracle_data = await get_oracle_price_data_and_slot(connection, market.oracle)
+            oracle_data = (await get_oracle_price_data_and_slot(connection, market.oracle)).data
             current_price = oracle_data.price/PRICE_PRECISION
         except:
             current_price = market.historical_oracle_data.last_oracle_price/PRICE_PRECISION
