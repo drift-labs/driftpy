@@ -1,5 +1,5 @@
 from anchorpy import Program
-from solana.publickey import PublicKey
+from solders.pubkey import Pubkey
 from solana.rpc.commitment import Commitment
 
 from driftpy.accounts import get_state_account_and_slot, get_spot_market_account_and_slot, \
@@ -69,7 +69,7 @@ class CachedDriftClientAccountSubscriber(DriftClientAccountSubscriber):
         await self.cache_if_needed()
         return self.cache["spot_markets"][market_index]
 
-    async def get_oracle_data_and_slot(self, oracle: PublicKey) -> Optional[DataAndSlot[OraclePriceData]]:
+    async def get_oracle_data_and_slot(self, oracle: Pubkey) -> Optional[DataAndSlot[OraclePriceData]]:
         await self.cache_if_needed()
         return self.cache["oracle_price_data"][str(oracle)]
 

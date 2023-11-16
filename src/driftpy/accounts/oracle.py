@@ -1,10 +1,10 @@
-from solana.rpc.types import RPCResponse
+from solders.rpc.responses import GetAccountInfoResp
 
 from .types import DataAndSlot
 from driftpy.constants.numeric_constants import *
 from driftpy.types import OracleSource, OraclePriceData
 
-from solana.publickey import PublicKey
+from solders.pubkey import Pubkey
 from pythclient.pythaccounts import PythPriceInfo, _ACCOUNT_HEADER_BYTES, EmaType
 from solana.rpc.async_api import AsyncClient
 import base64
@@ -13,11 +13,11 @@ import struct
 def convert_pyth_price(price, scale=1):
     return int(price * PRICE_PRECISION * scale)
 
-async def get_oracle_price_data_and_slot(connection: AsyncClient, address: PublicKey, oracle_source=OracleSource.PYTH()) -> DataAndSlot[
+async def get_oracle_price_data_and_slot(connection: AsyncClient, address: Pubkey, oracle_source=OracleSource.PYTH()) -> DataAndSlot[
     OraclePriceData]:
     if 'Pyth' in str(oracle_source):
         rpc_reponse = await connection.get_account_info(address)
-        rpc_response_slot = rpc_reponse['result']['context']['slot']
+        rpc_response_slot = rpc_reponse.context.slot
         (pyth_price_info, last_slot, twac, twap) =  await _parse_pyth_price_info(rpc_reponse)
 
         scale = 1
@@ -41,10 +41,8 @@ async def get_oracle_price_data_and_slot(connection: AsyncClient, address: Publi
     else:
         raise NotImplementedError('Unsupported Oracle Source', str(oracle_source))
 
-async def _parse_pyth_price_info(resp: RPCResponse) -> (PythPriceInfo, int, int, int):
-    value = resp["result"].get("value")
-    data_base64, data_format = value["data"]
-    buffer = base64.b64decode(data_base64)
+async def _parse_pyth_price_info(resp: GetAccountInfoResp) -> (PythPriceInfo, int, int, int):
+    buffer = resp.value.data
 
     offset = _ACCOUNT_HEADER_BYTES
     _, exponent, _ = struct.unpack_from("<IiI", buffer, offset)

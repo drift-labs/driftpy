@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from solana.publickey import PublicKey
+from solders.pubkey import Pubkey
 from borsh_construct.enum import _rust_enum
 from sumtypes import constructor
 from typing import Optional
@@ -342,7 +342,7 @@ class PoolBalance:
  
 @dataclass
 class AMM:
-    oracle: PublicKey
+    oracle: Pubkey
     historical_oracle_data: HistoricalOracleData
     base_asset_amount_per_lp: int
     quote_asset_amount_per_lp: int
@@ -505,12 +505,12 @@ class Order:
  
 @dataclass
 class PhoenixV1FulfillmentConfig:
-    pubkey: PublicKey
-    phoenix_program_id: PublicKey
-    phoenix_log_authority: PublicKey
-    phoenix_market: PublicKey
-    phoenix_base_vault: PublicKey
-    phoenix_quote_vault: PublicKey
+    pubkey: Pubkey
+    phoenix_program_id: Pubkey
+    phoenix_log_authority: Pubkey
+    phoenix_market: Pubkey
+    phoenix_base_vault: Pubkey
+    phoenix_quote_vault: Pubkey
     market_index: int
     fulfillment_type: SpotFulfillmentType
     status: SpotFulfillmentConfigStatus
@@ -518,16 +518,16 @@ class PhoenixV1FulfillmentConfig:
  
 @dataclass
 class SerumV3FulfillmentConfig:
-    pubkey: PublicKey
-    serum_program_id: PublicKey
-    serum_market: PublicKey
-    serum_request_queue: PublicKey
-    serum_event_queue: PublicKey
-    serum_bids: PublicKey
-    serum_asks: PublicKey
-    serum_base_vault: PublicKey
-    serum_quote_vault: PublicKey
-    serum_open_orders: PublicKey
+    pubkey: Pubkey
+    serum_program_id: Pubkey
+    serum_market: Pubkey
+    serum_request_queue: Pubkey
+    serum_event_queue: Pubkey
+    serum_bids: Pubkey
+    serum_asks: Pubkey
+    serum_base_vault: Pubkey
+    serum_quote_vault: Pubkey
+    serum_open_orders: Pubkey
     serum_signer_nonce: int
     market_index: int
     fulfillment_type: SpotFulfillmentType
@@ -544,7 +544,7 @@ class InsuranceClaim:
  
 @dataclass
 class PerpMarket:
-    pubkey: PublicKey
+    pubkey: Pubkey
     amm: AMM
     pnl_pool: PoolBalance
     name: list[int]
@@ -584,7 +584,7 @@ class HistoricalIndexData:
  
 @dataclass
 class InsuranceFund:
-    vault: PublicKey
+    vault: Pubkey
     total_shares: int
     user_shares: int
     shares_base: int
@@ -596,10 +596,10 @@ class InsuranceFund:
  
 @dataclass
 class SpotMarket:
-    pubkey: PublicKey
-    oracle: PublicKey
-    mint: PublicKey
-    vault: PublicKey
+    pubkey: Pubkey
+    oracle: Pubkey
+    mint: Pubkey
+    vault: Pubkey
     name: list[int]
     historical_oracle_data: HistoricalOracleData
     historical_index_data: HistoricalIndexData
@@ -652,11 +652,11 @@ class SpotMarket:
  
 @dataclass
 class State:
-    admin: PublicKey
-    whitelist_mint: PublicKey
-    discount_mint: PublicKey
-    signer: PublicKey
-    srm_vault: PublicKey
+    admin: Pubkey
+    whitelist_mint: Pubkey
+    discount_mint: Pubkey
+    signer: Pubkey
+    srm_vault: Pubkey
     perp_fee_structure: FeeStructure
     spot_fee_structure: FeeStructure
     oracle_guard_rails: OracleGuardRails
@@ -696,8 +696,8 @@ class PerpPosition:
  
 @dataclass
 class User:
-    authority: PublicKey
-    delegate: PublicKey
+    authority: Pubkey
+    delegate: Pubkey
     name: list[int]
     spot_positions: list[SpotPosition]
     perp_positions: list[PerpPosition]
@@ -735,8 +735,8 @@ class UserFees:
  
 @dataclass
 class UserStats:
-    authority: PublicKey
-    referrer: PublicKey
+    authority: Pubkey
+    referrer: Pubkey
     fees: UserFees
     next_epoch_ts: int
     maker_volume30d: int
@@ -798,7 +798,7 @@ class PerpBankruptcyRecord:
     market_index: int
     pnl: int
     if_payment: int
-    clawback_user: Optional[PublicKey]
+    clawback_user: Optional[Pubkey]
     clawback_user_payment: Optional[int]
     cumulative_funding_rate_delta: int
  
@@ -811,7 +811,7 @@ class SpotBankruptcyRecord:
  
 @dataclass
 class InsuranceFundStake:
-    authority: PublicKey
+    authority: Pubkey
     if_shares: int
     last_withdraw_request_shares: int
     if_base: int
@@ -824,7 +824,7 @@ class InsuranceFundStake:
  
 @dataclass
 class ProtocolIfSharesTransferConfig:
-    whitelisted_signers: list[PublicKey]
+    whitelisted_signers: list[Pubkey]
     max_transfer_per_epoch: int
     current_epoch_transfer: int
     next_epoch_ts: int
@@ -832,9 +832,9 @@ class ProtocolIfSharesTransferConfig:
  
 @dataclass
 class ReferrerName:
-    authority: PublicKey
-    user: PublicKey
-    user_stats: PublicKey
+    authority: Pubkey
+    user: Pubkey
+    user_stats: Pubkey
     name: list[int]
 
 @dataclass
@@ -845,3 +845,8 @@ class OraclePriceData:
     twap: int
     twap_confidence: int
     has_sufficient_number_of_datapoints: bool
+
+@dataclass
+class TxParams:
+    compute_units: Optional[int]
+    compute_units_price: Optional[int]

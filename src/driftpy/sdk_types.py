@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from solana.publickey import PublicKey
+from solders.pubkey import Pubkey
 from borsh_construct.enum import _rust_enum
 from sumtypes import constructor
 from driftpy.types import *
@@ -13,5 +13,5 @@ class AssetType:
 
 @dataclass
 class MakerInfo:
-    maker: PublicKey
+    maker: Pubkey
     order: Order

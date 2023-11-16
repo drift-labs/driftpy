@@ -1,7 +1,7 @@
 from pytest import fixture, mark
 from pytest_asyncio import fixture as async_fixture
-from solana.keypair import Keypair
-from solana.publickey import PublicKey
+from solders.keypair import Keypair
+from solders.pubkey import Pubkey
 from anchorpy import Program, Provider, WorkspaceType, workspace_fixture
 from driftpy.admin import Admin
 from driftpy.constants.numeric_constants import (
@@ -80,7 +80,7 @@ def provider(program: Program) -> Provider:
 @async_fixture(scope="session")
 async def drift_client(program: Program, usdc_mint: Keypair) -> Admin:
     admin = Admin(program)
-    await admin.initialize(usdc_mint.public_key, admin_controls_prices=True)
+    await admin.initialize(usdc_mint.pubkey(), admin_controls_prices=True)
     return admin
 
 
@@ -89,7 +89,7 @@ async def initialized_spot_market(
     drift_client: Admin,
     usdc_mint: Keypair,
 ):
-    await drift_client.initialize_spot_market(usdc_mint.public_key)
+    await drift_client.initialize_spot_market(usdc_mint.pubkey())
 
 
 @mark.asyncio
@@ -114,7 +114,7 @@ async def test_initialized_spot_market_2(
     main_liab_weight = int(SPOT_WEIGHT_PRECISION * 11 / 10)
 
     await admin_drift_client.initialize_spot_market(
-        mint.public_key,
+        mint.pubkey(),
         oracle=oracle,
         optimal_utilization=optimal_util,
         optimal_rate=optimal_weight,
@@ -134,7 +134,7 @@ async def test_initialized_spot_market_2(
 @async_fixture(scope="session")
 async def initialized_market(
     drift_client: Admin, workspace: WorkspaceType
-) -> PublicKey:
+) -> Pubkey:
     pyth_program = workspace["pyth"]
     sol_usd = await mock_oracle(pyth_program=pyth_program, price=1)
     perp_market_index = 0
@@ -152,7 +152,7 @@ async def initialized_market(
 @mark.asyncio
 async def test_spot(
     drift_client: Admin,
-    initialized_spot_market: PublicKey,
+    initialized_spot_market: Pubkey,
 ):
     program = drift_client.program
     spot_market = await get_spot_market_account(program, 0)
@@ -162,7 +162,7 @@ async def test_spot(
 @mark.asyncio
 async def test_market(
     drift_client: Admin,
-    initialized_market: PublicKey,
+    initialized_market: Pubkey,
 ):
     program = drift_client.program
     market_oracle_public_key = initialized_market
@@ -190,9 +190,9 @@ async def test_usdc_deposit(
 ):
     usdc_spot_market = await get_spot_market_account(drift_client.program, 0)
     assert(usdc_spot_market.market_index == 0)
-    drift_client.spot_market_atas[0] = user_usdc_account.public_key
+    drift_client.spot_market_atas[0] = user_usdc_account.pubkey()
     await drift_client.deposit(
-        USDC_AMOUNT, 0, user_usdc_account.public_key, user_initialized=True
+        USDC_AMOUNT, 0, user_usdc_account.pubkey(), user_initialized=True
     )
     user_account = await drift_client.get_user(0)
     assert (
@@ -215,7 +215,7 @@ async def test_update_curve(
     from driftpy.setup.helpers import set_price_feed_detailed
 
     pyth_program = workspace["pyth"]
-    slot = (await drift_client.program.provider.connection.get_slot())["result"]
+    slot = (await drift_client.program.provider.connection.get_slot()).value
     await set_price_feed_detailed(pyth_program, market.amm.oracle, 1.07, 0, slot)
 
     new_peg = int(market.amm.peg_multiplier * 1.05)
@@ -306,7 +306,7 @@ async def test_stake_if(
     user_usdc_account: Keypair,
 ):
     # important
-    drift_client.usdc_ata = user_usdc_account.public_key
+    drift_client.usdc_ata = user_usdc_account.pubkey()
 
     await drift_client.update_update_insurance_fund_unstaking_period(0, 0)
 
@@ -340,13 +340,13 @@ async def test_liq_perp(
     liq, _ = await _airdrop_user(drift_client.program.provider)
     liq_drift_client = DriftClient(drift_client.program, liq)
     usdc_acc = await _create_and_mint_user_usdc(
-        usdc_mint, drift_client.program.provider, USDC_AMOUNT, liq.public_key
+        usdc_mint, drift_client.program.provider, USDC_AMOUNT, liq.pubkey()
     )
     await liq_drift_client.intialize_user()
     await liq_drift_client.deposit(
         USDC_AMOUNT,
         0,
-        usdc_acc.public_key,
+        usdc_acc.pubkey(),
     )
 
     from driftpy.constants.numeric_constants import AMM_RESERVE_PRECISION

@@ -2,20 +2,17 @@ from base64 import b64decode
 from dataclasses import dataclass
 from typing import Optional
 from construct import Int32sl, Int64ul
-from solana.keypair import Keypair
-from solana.publickey import PublicKey
-from solana.system_program import create_account, CreateAccountParams
+from solders.keypair import Keypair
+from solders.pubkey import Pubkey
+from solders.system_program import create_account, CreateAccountParams
 from anchorpy import Program, Context, Provider
-from solana.keypair import Keypair
 from solana.transaction import Transaction
-from solana.system_program import create_account, CreateAccountParams
 from spl.token.constants import TOKEN_PROGRAM_ID
 from spl.token._layouts import MINT_LAYOUT
 from spl.token.async_client import AsyncToken
 from spl.token.instructions import initialize_mint, InitializeMintParams
 import math
 
-from solana.system_program import create_account, CreateAccountParams
 from spl.token.async_client import AsyncToken
 from spl.token._layouts import ACCOUNT_LAYOUT
 from spl.token.constants import TOKEN_PROGRAM_ID
@@ -25,7 +22,7 @@ from spl.token.instructions import (
     mint_to,
     MintToParams,
 )
-from solana.transaction import TransactionSignature
+from solana.transaction import Signature
 
 from driftpy.sdk_types import AssetType
 from driftpy.types import *
@@ -63,13 +60,13 @@ async def adjust_oracle_pretrade(
 
 async def _airdrop_user(
     provider: Provider, user: Optional[Keypair] = None
-) -> tuple[Keypair, TransactionSignature]:
+) -> tuple[Keypair, Signature]:
     if user is None:
         user = Keypair()
     resp = await provider.connection.request_airdrop(
-        user.public_key, 100_0 * 1000000000
+        user.pubkey(), 100_0 * 1000000000
     )
-    tx_sig = resp["result"]
+    tx_sig = resp.value
     return user, tx_sig
 
 
@@ -77,42 +74,50 @@ async def _create_mint(provider: Provider) -> Keypair:
     fake_create_mint = Keypair()
     params = CreateAccountParams(
         from_pubkey=provider.wallet.public_key,
-        new_account_pubkey=fake_create_mint.public_key,
+        to_pubkey=fake_create_mint.pubkey(),
         lamports=await AsyncToken.get_min_balance_rent_for_exempt_for_mint(
             provider.connection
         ),
         space=MINT_LAYOUT.sizeof(),
-        program_id=TOKEN_PROGRAM_ID,
+        owner=TOKEN_PROGRAM_ID,
     )
     create_create_mint_account_ix = create_account(params)
     init_collateral_mint_ix = initialize_mint(
         InitializeMintParams(
             decimals=6,
             program_id=TOKEN_PROGRAM_ID,
-            mint=fake_create_mint.public_key,
+            mint=fake_create_mint.pubkey(),
             mint_authority=provider.wallet.public_key,
             freeze_authority=None,
         )
     )
-    fake_tx = Transaction().add(create_create_mint_account_ix, init_collateral_mint_ix)
-    await provider.send(fake_tx, [fake_create_mint])
+
+    fake_tx = Transaction(
+        instructions=[create_create_mint_account_ix, init_collateral_mint_ix],
+        recent_blockhash=(await provider.connection.get_latest_blockhash()).value.blockhash,
+        fee_payer=provider.wallet.public_key,
+    )
+
+    fake_tx.sign_partial(fake_create_mint)
+    provider.wallet.sign_transaction(fake_tx)
+    await provider.send(fake_tx)
     return fake_create_mint
 
 
 async def _create_user_ata_tx(
-    account: Keypair, provider: Provider, mint: Keypair, owner: PublicKey
+    account: Keypair, provider: Provider, mint: Keypair, owner: Pubkey
 ) -> Transaction:
     fake_tx = Transaction()
 
     create_token_account_ix = create_account(
         CreateAccountParams(
             from_pubkey=provider.wallet.public_key,
-            new_account_pubkey=account.public_key,
+            to_pubkey=account.pubkey(),
             lamports=await AsyncToken.get_min_balance_rent_for_exempt_for_account(
                 provider.connection
             ),
             space=ACCOUNT_LAYOUT.sizeof(),
-            program_id=TOKEN_PROGRAM_ID,
+            owner=TOKEN_PROGRAM_ID,
         )
     )
     fake_tx.add(create_token_account_ix)
@@ -120,8 +125,8 @@ async def _create_user_ata_tx(
     init_token_account_ix = initialize_account(
         InitializeAccountParams(
             program_id=TOKEN_PROGRAM_ID,
-            account=account.public_key,
-            mint=mint.public_key,
+            account=account.pubkey(),
+            mint=mint.pubkey(),
             owner=owner,
         )
     )
@@ -131,10 +136,10 @@ async def _create_user_ata_tx(
 
 
 def mint_ix(
-    usdc_mint: PublicKey,
-    mint_auth: PublicKey,
+    usdc_mint: Pubkey,
+    mint_auth: Pubkey,
     usdc_amount: int,
-    ata_account: PublicKey,
+    ata_account: Pubkey,
 ) -> Transaction:
     mint_to_user_account_tx = mint_to(
         MintToParams(
@@ -153,14 +158,14 @@ def _mint_usdc_tx(
     usdc_mint: Keypair,
     provider: Provider,
     usdc_amount: int,
-    ata_account: PublicKey,
+    ata_account: Pubkey,
 ) -> Transaction:
     fake_usdc_tx = Transaction()
 
     mint_to_user_account_tx = mint_to(
         MintToParams(
             program_id=TOKEN_PROGRAM_ID,
-            mint=usdc_mint.public_key,
+            mint=usdc_mint.pubkey(),
             dest=ata_account,
             mint_authority=provider.wallet.public_key,
             signers=[],
@@ -173,7 +178,7 @@ def _mint_usdc_tx(
 
 
 async def _create_and_mint_user_usdc(
-    usdc_mint: Keypair, provider: Provider, usdc_amount: int, owner: PublicKey
+    usdc_mint: Keypair, provider: Provider, usdc_amount: int, owner: Pubkey
 ) -> Keypair:
     usdc_account = Keypair()
 
@@ -184,20 +189,26 @@ async def _create_and_mint_user_usdc(
         owner,
     )
     mint_tx: Transaction = _mint_usdc_tx(
-        usdc_mint, provider, usdc_amount, usdc_account.public_key
+        usdc_mint, provider, usdc_amount, usdc_account.pubkey()
     )
 
     for ix in mint_tx.instructions:
         ata_tx.add(ix)
 
-    await provider.send(ata_tx, [provider.wallet.payer, usdc_account])
+    ata_tx.recent_blockhash = (await provider.connection.get_latest_blockhash()).value.blockhash
+    ata_tx.fee_payer = provider.wallet.payer.pubkey()
+
+    ata_tx.sign_partial(usdc_account)
+    ata_tx.sign(provider.wallet.payer)
+
+    await provider.send(ata_tx)
 
     return usdc_account
 
 
 async def set_price_feed(
     oracle_program: Program,
-    oracle_public_key: PublicKey,
+    oracle_public_key: Pubkey,
     price: float,
 ):
     data = await get_feed_data(oracle_program, oracle_public_key)
@@ -210,7 +221,7 @@ async def set_price_feed(
 
 async def set_price_feed_detailed(
     oracle_program: Program,
-    oracle_public_key: PublicKey,
+    oracle_public_key: Pubkey,
     price: float,
     conf: float,
     slot: int,
@@ -226,7 +237,7 @@ async def set_price_feed_detailed(
 
 async def get_set_price_feed_detailed_ix(
     oracle_program: Program,
-    oracle_public_key: PublicKey,
+    oracle_public_key: Pubkey,
     price: float,
     conf: float,
     slot: int,
@@ -245,7 +256,7 @@ async def create_price_feed(
     init_price: int,
     confidence: Optional[int] = None,
     expo: int = -4,
-) -> PublicKey:
+) -> Pubkey:
     conf = int((init_price / 10) * 10**-expo) if confidence is None else confidence
     collateral_token_feed = Keypair()
     space = 3312
@@ -254,28 +265,28 @@ async def create_price_feed(
             space
         )
     )
-    lamports = mbre_resp["result"]
+    lamports = mbre_resp.value
     await oracle_program.rpc["initialize"](
         int(init_price * 10**-expo),
         expo,
         conf,
         ctx=Context(
-            accounts={"price": collateral_token_feed.public_key},
+            accounts={"price": collateral_token_feed.pubkey()},
             signers=[collateral_token_feed],
             pre_instructions=[
                 create_account(
                     CreateAccountParams(
                         from_pubkey=oracle_program.provider.wallet.public_key,
-                        new_account_pubkey=collateral_token_feed.public_key,
+                        to_pubkey=collateral_token_feed.pubkey(),
                         space=space,
                         lamports=lamports,
-                        program_id=oracle_program.program_id,
+                        owner=oracle_program.program_id,
                     )
                 ),
             ],
         ),
     )
-    return collateral_token_feed.public_key
+    return collateral_token_feed.pubkey()
 
 
 @dataclass
@@ -291,10 +302,9 @@ def parse_price_data(data: bytes) -> PriceData:
     return PriceData(exponent, price)
 
 
-async def get_feed_data(oracle_program: Program, price_feed: PublicKey) -> PriceData:
+async def get_feed_data(oracle_program: Program, price_feed: Pubkey) -> PriceData:
     info_resp = await oracle_program.provider.connection.get_account_info(price_feed)
-    raw_bytes = b64decode(info_resp["result"]["value"]["data"][0])
-    return parse_price_data(raw_bytes)
+    return parse_price_data(info_resp.value.data)
 
 
 from solana.rpc.async_api import AsyncClient
@@ -302,7 +312,7 @@ from solana.rpc.async_api import AsyncClient
 
 async def get_oracle_data(
     connection: AsyncClient,
-    oracle_addr: PublicKey,
+    oracle_addr: Pubkey,
 ):
     info_resp = await connection.get_account_info(oracle_addr)
     return parse_price_data(b64decode(info_resp["result"]["value"]["data"][0]))
@@ -310,7 +320,7 @@ async def get_oracle_data(
 
 async def mock_oracle(
     pyth_program: Program, price: int = int(50 * 10e7), expo=-7
-) -> PublicKey:
+) -> Pubkey:
     price_feed_address = await create_price_feed(
         oracle_program=pyth_program, init_price=price, expo=expo
     )

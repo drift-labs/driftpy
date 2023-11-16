@@ -2,7 +2,7 @@ from abc import abstractmethod
 from dataclasses import dataclass
 from typing import TypeVar, Generic, Optional
 
-from solana.publickey import PublicKey
+from solders.pubkey import Pubkey
 
 from driftpy.types import PerpMarket, SpotMarket, OracleSource, User, OraclePriceData, State
 
@@ -28,7 +28,7 @@ class DriftClientAccountSubscriber:
         pass
 
     @abstractmethod
-    async def get_oracle_data_and_slot(self, oracle: PublicKey) -> Optional[DataAndSlot[OraclePriceData]]:
+    async def get_oracle_data_and_slot(self, oracle: Pubkey) -> Optional[DataAndSlot[OraclePriceData]]:
         pass
 
 class UserAccountSubscriber:
