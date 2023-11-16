@@ -8,8 +8,8 @@ from driftpy.accounts.oracle import *
 from driftpy.types import OraclePriceData
 
 
-class User:
-    """This class is the main way to retrieve and inspect user account data."""
+class DriftUser:
+    """This class is the main way to retrieve and inspect drift user account data."""
 
     def __init__(
         self,
@@ -60,6 +60,16 @@ class User:
 
     async def get_user(self) -> User:
         return (await self.account_subscriber.get_user_account_and_slot()).data
+
+
+    async def get_open_orders(self, 
+                            #   market_type: MarketType, 
+                            #   market_index: int,
+                            #   position_direction: PositionDirection
+                              ):
+        user: User = await self.get_user()
+        return user.orders
+
 
     async def get_spot_market_liability(
         self,

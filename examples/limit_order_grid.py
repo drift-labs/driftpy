@@ -16,7 +16,7 @@ from driftpy.accounts import get_perp_market_account, get_spot_market_account
 from driftpy.accounts.oracle import get_oracle_price_data_and_slot
 from driftpy.math.spot_market import get_signed_token_amount, get_token_amount
 from driftpy.drift_client import DriftClient
-from driftpy.drift_user import User
+from driftpy.drift_user import DriftUser
 from driftpy.constants.numeric_constants import BASE_PRECISION, PRICE_PRECISION
 from borsh_construct.enum import _rust_enum
 import time

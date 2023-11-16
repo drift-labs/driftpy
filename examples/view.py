@@ -11,7 +11,7 @@ from solana.keypair import Keypair
 from driftpy.math.positions import is_available
 from driftpy.constants.numeric_constants import *
 
-from driftpy.drift_user import User
+from driftpy.drift_user import DriftUser
 
 async def main(
     authority, 
