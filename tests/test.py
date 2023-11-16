@@ -14,7 +14,7 @@ from driftpy.constants.numeric_constants import (
 )
 from math import sqrt
 
-from driftpy.drift_user import DriftUser as DriftUser
+from driftpy.drift_user import DriftUser
 from driftpy.drift_client import DriftClient
 from driftpy.setup.helpers import (
     _create_mint,
@@ -51,7 +51,7 @@ USDC_AMOUNT = int(10 * QUOTE_PRECISION)
 MARKET_INDEX = 0
 
 workspace = workspace_fixture(
-    "protocol-v2", build_cmd="anchor build --skip-lint", scope="session"
+    "protocol-v2", build_cmd="anchor build --skip-build", scope="session"
 )
 
 
@@ -180,8 +180,9 @@ async def test_init_user(
     drift_client: Admin,
 ):
     await drift_client.intialize_user()
+    user_public_key = get_user_account_public_key(drift_client.program.program_id, drift_client.authority, 0)
     user: User = await get_user_account(
-        drift_client.program, drift_client.authority, subaccount_id=0
+        drift_client.program, user_public_key
     )
     assert user.authority == drift_client.authority
 
@@ -197,9 +198,7 @@ async def test_usdc_deposit(
     await drift_client.deposit(
         USDC_AMOUNT, 0, user_usdc_account.public_key, user_initialized=True
     )
-    user_account = await get_user_account(
-        drift_client.program, drift_client.authority
-    )
+    user_account = await drift_client.get_user(0)
     assert (
         user_account.spot_positions[0].scaled_balance
         == USDC_AMOUNT / QUOTE_PRECISION * SPOT_BALANCE_PRECISION
@@ -211,9 +210,7 @@ async def test_open_orders(
 ):
     
     drift_user = DriftUser(drift_client)
-    user_account = await get_user_account(
-        drift_client.program, drift_client.authority
-    )
+    user_account = await drift_client.get_user(0)
 
     assert(len(user_account.orders)==32)
     assert(user_account.orders[0].market_index == 0)
@@ -228,12 +225,14 @@ async def test_open_orders(
     order_params.user_order_id = 169
     ixs = await drift_client.get_place_perp_orders_ix([order_params])
     await drift_client.send_ixs(ixs)
+    await drift_user.account_subscriber.update_cache()
     open_orders_after = await drift_user.get_open_orders()
     assert(open_orders_after[0].base_asset_amount == BASE_PRECISION)
     assert(open_orders_after[0].order_id == 1)
     assert(open_orders_after[0].user_order_id == 169)
 
     await drift_client.cancel_order(1, 0)
+    await drift_user.account_subscriber.update_cache()
     open_orders_after2 = await drift_user.get_open_orders()
     assert(open_orders_after2[0].base_asset_amount == 0)
 
@@ -275,17 +274,13 @@ async def test_add_remove_liquidity(
     assert state.lp_cooldown_time == 0
 
     await drift_client.add_liquidity(n_shares, 0)
-    user_account = await get_user_account(
-        drift_client.program, drift_client.authority
-    )
+    user_account = await drift_client.get_user(0)
     assert user_account.perp_positions[0].lp_shares == n_shares
 
     await drift_client.settle_lp(drift_client.authority, 0)
 
     await drift_client.remove_liquidity(n_shares, 0)
-    user_account = await get_user_account(
-        drift_client.program, drift_client.authority
-    )
+    user_account = await drift_client.get_user(0)
     assert user_account.perp_positions[0].lp_shares == 0
 
 
@@ -331,18 +326,14 @@ async def test_open_close_position(
     drift_client.program.provider.connection._commitment = Processed
     # print(tx)
 
-    user_account = await get_user_account(
-        drift_client.program, drift_client.authority
-    )
+    user_account = await drift_client.get_user(0)
 
     assert user_account.perp_positions[0].base_asset_amount == baa
     assert user_account.perp_positions[0].quote_asset_amount < 0
 
     await drift_client.close_position(0)
 
-    user_account = await get_user_account(
-        drift_client.program, drift_client.authority
-    )
+    user_account = await drift_client.get_user(0)
     assert user_account.perp_positions[0].base_asset_amount == 0
     assert user_account.perp_positions[0].quote_asset_amount < 0
 
@@ -382,9 +373,7 @@ async def test_liq_perp(
     drift_client: Admin, usdc_mint: Keypair, workspace: WorkspaceType
 ):
     market = await get_perp_market_account(drift_client.program, 0)
-    user_account = await get_user_account(
-        drift_client.program, drift_client.authority
-    )
+    user_account = await drift_client.get_user(0)
 
     liq, _ = await _airdrop_user(drift_client.program.provider)
     liq_drift_client = DriftClient(drift_client.program, liq)

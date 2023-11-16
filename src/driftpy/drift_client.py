@@ -24,6 +24,9 @@ from driftpy.constants.config import Config
 from typing import Union, Optional, List, Sequence
 from driftpy.math.positions import is_available, is_spot_position_available
 
+from driftpy.accounts import DriftClientAccountSubscriber
+from driftpy.accounts.cache import CachedDriftClientAccountSubscriber
+
 DEFAULT_USER_NAME = "Main Account"
 
 DEFAULT_PUBKEY = PublicKey("11111111111111111111111111111111")
@@ -33,7 +36,7 @@ class DriftClient:
     depositing, opening new positions, closing positions, placing orders, etc.
     """
 
-    def __init__(self, program: Program, signer: Keypair = None, authority: PublicKey = None):
+    def __init__(self, program: Program, signer: Keypair = None, authority: PublicKey = None, account_subscriber: Optional[DriftClientAccountSubscriber] = None):
         """Initializes the drift client object -- likely want to use the .from_config method instead of this one
 
         Args:
@@ -56,6 +59,11 @@ class DriftClient:
         self.usdc_ata = None
         self.spot_market_atas = {}
         self.subaccounts = [0]
+
+        if account_subscriber is None:
+            account_subscriber = CachedDriftClientAccountSubscriber(self.program)
+
+        self.account_subscriber = account_subscriber
 
     @staticmethod
     def from_config(config: Config, provider: Provider, authority: Keypair = None):
@@ -89,17 +97,34 @@ class DriftClient:
         drift_client.idl = idl
 
         return drift_client
+
     def get_user_account_public_key(self, user_id=0) -> PublicKey:
         return get_user_account_public_key(self.program_id, self.authority, user_id)
 
     async def get_user(self, user_id=0) -> User:
-        return await get_user_account(self.program, self.authority, user_id)
+        return await get_user_account(self.program, self.get_user_account_public_key(user_id))
 
     def get_state_public_key(self):
         return get_state_public_key(self.program_id)
 
     def get_user_stats_public_key(self):
         return get_user_stats_account_public_key(self.program_id, self.authority)
+
+    async def get_state(self) -> Optional[State]:
+        state_and_slot = await self.account_subscriber.get_state_account_and_slot()
+        return getattr(state_and_slot, 'data', None)
+
+    async def get_perp_market(self, market_index: int) -> Optional[PerpMarket]:
+        perp_market_and_slot = await self.account_subscriber.get_perp_market_and_slot(market_index)
+        return getattr(perp_market_and_slot, 'data', None)
+
+    async def get_spot_market(self, market_index: int) -> Optional[SpotMarket]:
+        spot_market_and_slot = await self.account_subscriber.get_spot_market_and_slot(market_index)
+        return getattr(spot_market_and_slot, 'data', None)
+
+    async def get_oracle_price_data(self, oracle: PublicKey) -> Optional[OraclePriceData]:
+        oracle_price_data_and_slot = await self.account_subscriber.get_oracle_data_and_slot(oracle)
+        return getattr(oracle_price_data_and_slot, 'data', None)
 
     async def send_ixs(
         self,
@@ -213,7 +238,8 @@ class DriftClient:
 
         accounts = []
         for pk, id in zip(authority, user_id):
-            user_account = await get_user_account(self.program, pk, id)
+            user_public_key = get_user_account_public_key(self.program.program_id, pk, id)
+            user_account = await get_user_account(self.program, user_public_key)
             accounts.append(user_account)
 
         oracle_map = {}
@@ -221,7 +247,7 @@ class DriftClient:
         market_map = {}
 
         async def track_market(market_index, is_writable):
-            perp_market = await get_perp_market_account(self.program, market_index)
+            perp_market = await self.get_perp_market(market_index)
             market_map[market_index] = AccountMeta(
                 pubkey=perp_market.pubkey,
                 is_signer=False,
@@ -229,8 +255,8 @@ class DriftClient:
             )
 
             if include_oracles:
-                spot_market = await get_spot_market_account(
-                    self.program, perp_market.quote_spot_market_index
+                spot_market = await self.get_spot_market(
+                    perp_market.quote_spot_market_index
                 )
                 if spot_market.oracle != DEFAULT_PUBKEY:
                     oracle_map[str(spot_market.oracle)] = AccountMeta(
@@ -241,7 +267,7 @@ class DriftClient:
                 )
 
         async def track_spot_market(spot_market_index, is_writable):
-            spot_market = await get_spot_market_account(self.program, spot_market_index)
+            spot_market = await self.get_spot_market(spot_market_index)
             spot_market_map[spot_market_index] = AccountMeta(
                 pubkey=spot_market.pubkey,
                 is_signer=False,
@@ -331,7 +357,7 @@ class DriftClient:
         reduce_only: bool = False,
         user_id: int = 0,
     ):
-        spot_market = await get_spot_market_account(self.program, spot_market_index)
+        spot_market = await self.get_spot_market(spot_market_index)
         remaining_accounts = await self.get_remaining_accounts(
             writable_spot_market_index=spot_market_index,
             readable_spot_market_index=QUOTE_ASSET_BANK_INDEX,
@@ -896,7 +922,7 @@ class DriftClient:
         market_index: int,
         subaccount_id: int = 0,
     ) -> Optional[PerpPosition]:
-        user = await get_user_account(self.program, self.authority, subaccount_id)
+        user = await self.get_user(subaccount_id)
 
         found = False
         for position in user.perp_positions:
