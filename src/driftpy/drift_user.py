@@ -18,7 +18,7 @@ def find(l: list, f):
         return valid_values[0]
 
 
-class User:
+class DriftUser:
     """This class is the main way to retrieve and inspect data on Drift Protocol."""
 
     def __init__(
@@ -214,6 +214,16 @@ class User:
             return await get_user_account(
                 self.program, self.authority, self.subaccount_id
             )
+
+
+    async def get_open_orders(self, 
+                            #   market_type: MarketType, 
+                            #   market_index: int,
+                            #   position_direction: PositionDirection
+                              ):
+        user: User = await self.get_user()
+        return user.orders
+
 
     async def get_spot_market_liability(
         self,

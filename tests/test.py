@@ -7,12 +7,14 @@ from driftpy.admin import Admin
 from driftpy.constants.numeric_constants import (
     PRICE_PRECISION,
     AMM_RESERVE_PRECISION,
+    BASE_PRECISION,
     QUOTE_PRECISION,
     SPOT_BALANCE_PRECISION,
     SPOT_WEIGHT_PRECISION,
 )
 from math import sqrt
 
+from driftpy.drift_user import DriftUser as DriftUser
 from driftpy.drift_client import DriftClient
 from driftpy.setup.helpers import (
     _create_mint,
@@ -28,6 +30,8 @@ from driftpy.types import (
     PositionDirection,
     OracleSource,
     PerpMarket,
+    OrderType,
+    OrderParams
     # SwapDirection,
 )
 from driftpy.accounts import (
@@ -200,6 +204,40 @@ async def test_usdc_deposit(
         user_account.spot_positions[0].scaled_balance
         == USDC_AMOUNT / QUOTE_PRECISION * SPOT_BALANCE_PRECISION
     )
+
+@mark.asyncio
+async def test_open_orders(
+    drift_client: Admin,
+):
+    
+    drift_user = DriftUser(drift_client)
+    user_account = await get_user_account(
+        drift_client.program, drift_client.authority
+    )
+
+    assert(len(user_account.orders)==32)
+    assert(user_account.orders[0].market_index == 0)
+
+    open_orders = await drift_user.get_open_orders()
+    assert(len(open_orders)==32)
+    assert(open_orders==user_account.orders)
+
+    order_params: OrderParams = drift_client.default_order_params(
+        OrderType.MARKET(), 0, int(1 * BASE_PRECISION), PositionDirection.LONG()
+        )
+    order_params.user_order_id = 169
+    ixs = await drift_client.get_place_perp_orders_ix([order_params])
+    await drift_client.send_ixs(ixs)
+    open_orders_after = await drift_user.get_open_orders()
+    assert(open_orders_after[0].base_asset_amount == BASE_PRECISION)
+    assert(open_orders_after[0].order_id == 1)
+    assert(open_orders_after[0].user_order_id == 169)
+
+    await drift_client.cancel_order(1, 0)
+    open_orders_after2 = await drift_user.get_open_orders()
+    assert(open_orders_after2[0].base_asset_amount == 0)
+
+
 
 
 @mark.asyncio

@@ -13,7 +13,7 @@ from solana.rpc import commitment
 from driftpy.constants.config import configs
 from driftpy.drift_client import DriftClient
 from driftpy.accounts import *
-from driftpy.drift_user import User
+from driftpy.drift_user import DriftUser
 
 async def view_logs(
     sig: str,
