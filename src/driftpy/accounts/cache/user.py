@@ -17,10 +17,11 @@ class CachedUserAccountSubscriber(UserAccountSubscriber):
         self.user_and_slot = None
 
     async def update_cache(self):
-        user_and_slot = await get_user_account_and_slot(self.program)
+        user_and_slot = await get_user_account_and_slot(self.program, self.user_pubkey)
         self.user_and_slot = user_and_slot
 
     async def get_user_account_and_slot(self) -> Optional[DataAndSlot[User]]:
+        await self.cache_if_needed()
         return self.user_and_slot
 
     async def cache_if_needed(self):
