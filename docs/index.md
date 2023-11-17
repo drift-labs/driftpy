@@ -18,7 +18,7 @@ Note: requires Python >= 3.10.
 ## Key Components
 
 - `DriftClient` / `drift_client.py`: Used to interact with the protocol (deposit, withdraw, trade, lp, etc.)
-- `User` / `drift_user.py`: Used to fetch data from the protocol and view user metrics (leverage, free collateral, etc.)
+- `DriftUser` / `drift_user.py`: Used to fetch data from the protocol and view user metrics (leverage, free collateral, etc.)
 - `accounts.py`: Used to retrieve specific on-chain accounts (State, PerpMarket, SpotMarket, etc.)
 - `addresses.py`: Used to derive on-chain addresses of the accounts (publickey of the sol-market)
 
@@ -48,7 +48,7 @@ connection = AsyncClient(config.default_http)
 provider = Provider(connection, wallet)
 
 drift_client = DriftClient.from_config(config, provider)
-drift_user = User(drift_client)
+drift_user = DriftUser(drift_client)
 
 # open a 10 SOL long position
 sig = await drift_client.open_position(
