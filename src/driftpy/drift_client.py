@@ -730,7 +730,7 @@ class DriftClient:
                 accounts={
                     "state": self.get_state_public_key(),
                     "user": user_account_public_key,
-                    "authority": self.signer.public_key,
+                    "authority": self.signer.pubkey,
                 },
                 remaining_accounts=remaining_accounts,
             ),
@@ -758,7 +758,7 @@ class DriftClient:
                     accounts={
                         "state": self.get_state_public_key(),
                         "user": self.get_user_account_public_key(user_id),
-                        "authority": self.signer.public_key,
+                        "authority": self.signer.pubkey,
                     },
                     remaining_accounts=remaining_accounts,
                 ),
@@ -771,7 +771,7 @@ class DriftClient:
                     accounts={
                         "state": self.get_state_public_key(),
                         "user": user_account_public_key,
-                        "authority": self.signer.public_key,
+                        "authority": self.signer.pubkey,
                     },
                     remaining_accounts=remaining_accounts,
                 ),
@@ -798,7 +798,7 @@ class DriftClient:
         self,
         order_params: OrderParams,
         user_id: int = 0,
-    ) -> TransactionInstruction:
+    ):
         user_account_public_key = self.get_user_account_public_key(user_id)
         remaining_accounts = await self.get_remaining_accounts(
             writable_market_index=order_params.market_index, user_id=user_id
@@ -810,7 +810,7 @@ class DriftClient:
                     accounts={
                         "state": self.get_state_public_key(),
                         "user": user_account_public_key,
-                        "authority": self.signer.public_key,
+                        "authority": self.signer.pubkey,
                     },
                     remaining_accounts=remaining_accounts,
                 ),
@@ -840,7 +840,7 @@ class DriftClient:
                         accounts={
                             "state": self.get_state_public_key(),
                             "user": self.get_user_account_public_key(user_id),
-                            "authority": self.signer.public_key,
+                            "authority": self.signer.pubkey(),
                         },
                         remaining_accounts=remaining_accounts,
                     ),
@@ -852,7 +852,7 @@ class DriftClient:
                     accounts={
                         "state": self.get_state_public_key(),
                         "user": user_account_public_key,
-                        "authority": self.signer.public_key,
+                        "authority": self.signer.pubkey(),
                     },
                     remaining_accounts=remaining_accounts,
                 ),

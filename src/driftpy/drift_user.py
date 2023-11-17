@@ -14,7 +14,7 @@ class DriftUser:
     def __init__(
         self,
         drift_client: DriftClient,
-        authority: Optional[PublicKey] = None,
+        authority: Optional[Pubkey] = None,
         subaccount_id: int = 0,
         account_subscriber: Optional[UserAccountSubscriber] = None,
     ):
@@ -22,7 +22,7 @@ class DriftUser:
 
         Args:
             drift_client(DriftClient): required for program_id, idl, things (keypair doesnt matter)
-            authority (Optional[PublicKey], optional): authority to investigate if None will use drift_client.authority
+            authority (Optional[Pubkey], optional): authority to investigate if None will use drift_client.authority
             subaccount_id (int, optional): subaccount of authority to investigate. Defaults to 0.
         """
         self.drift_client = drift_client
