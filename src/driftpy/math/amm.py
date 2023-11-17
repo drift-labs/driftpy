@@ -169,7 +169,7 @@ def get_swap_direction(
 
 
 def calculate_budgeted_repeg(amm, cost, target_px=None, pay_only=False):
-    if target_px == None:
+    if target_px is None:
         target_px = amm.last_oracle_price  # / 1e10
         assert amm.last_oracle_price != 0
 

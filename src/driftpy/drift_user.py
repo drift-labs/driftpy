@@ -35,18 +35,25 @@ class User:
         self.connection = self.program.provider.connection
         self.subaccount_id = subaccount_id
 
-        self.user_public_key = get_user_account_public_key(self.program.program_id, self.authority, self.subaccount_id)
+        self.user_public_key = get_user_account_public_key(
+            self.program.program_id, self.authority, self.subaccount_id
+        )
 
         if account_subscriber is None:
-            account_subscriber = CachedUserAccountSubscriber(self.user_public_key, self.program)
+            account_subscriber = CachedUserAccountSubscriber(
+                self.user_public_key, self.program
+            )
 
         self.account_subscriber = account_subscriber
 
-
-    async def get_spot_oracle_data(self, spot_market: SpotMarket) -> Optional[OraclePriceData]:
+    async def get_spot_oracle_data(
+        self, spot_market: SpotMarket
+    ) -> Optional[OraclePriceData]:
         return await self.drift_client.get_oracle_price_data(spot_market.oracle)
 
-    async def get_perp_oracle_data(self, perp_market: PerpMarket) -> Optional[OraclePriceData]:
+    async def get_perp_oracle_data(
+        self, perp_market: PerpMarket
+    ) -> Optional[OraclePriceData]:
         return await self.drift_client.get_oracle_price_data(perp_market.amm.oracle)
 
     async def get_state(self) -> State:
@@ -356,11 +363,11 @@ class User:
 
             if not include_open_orders:
                 token_amount = get_token_amount(
-                        position.scaled_balance, spot_market, position.balance_type
-                    )
+                    position.scaled_balance, spot_market, position.balance_type
+                )
                 spot_token_value = get_spot_asset_value(
-                        token_amount, oracle_data, spot_market, margin_category
-                    )           
+                    token_amount, oracle_data, spot_market, margin_category
+                )
                 match str(position.balance_type):
                     case "SpotBalanceType.Deposit()":
                         spot_token_value *= 1

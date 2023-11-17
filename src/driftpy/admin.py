@@ -1,4 +1,3 @@
-
 from solders.pubkey import Pubkey
 from solders.signature import Signature
 from solders.keypair import Keypair
@@ -74,9 +73,7 @@ class Admin(DriftClient):
                     "admin": self.authority,
                     "state": state_public_key,
                     "quote_asset_mint": usdc_mint,
-                    "drift_signer": get_drift_client_signer_public_key(
-                        self.program_id
-                    ),
+                    "drift_signer": get_drift_client_signer_public_key(self.program_id),
                     "rent": RENT,
                     "system_program": ID,
                     "token_program": TOKEN_PROGRAM_ID,
@@ -181,9 +178,7 @@ class Admin(DriftClient):
                     "spot_market": spot_public_key,
                     "spot_market_vault": spot_vault_public_key,
                     "insurance_fund_vault": insurance_vault_public_key,
-                    "drift_signer": get_drift_client_signer_public_key(
-                        self.program_id
-                    ),
+                    "drift_signer": get_drift_client_signer_public_key(self.program_id),
                     "spot_market_mint": mint,
                     "oracle": oracle,
                     "rent": RENT,

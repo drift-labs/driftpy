@@ -1,3 +1,4 @@
+from driftpy.constants.numeric_constants import *
 from driftpy.math.amm import calculate_terminal_price, calculate_budgeted_repeg
 from driftpy.math.positions import calculate_base_asset_value, calculate_position_pnl
 from driftpy.types import PerpPosition
@@ -214,10 +215,6 @@ def calculate_buyout_cost(market, market_index, new_peg, sqrt_k):
     # print('sqrt k:', market.amm.sqrt_k/1e13, '->', marketNewK.amm.sqrt_k/1e13)
 
     return cost / 1e6, marketNewK
-
-
-from driftpy.types import AMM
-from driftpy.constants.numeric_constants import *
 
 
 def calculate_repeg_cost(amm: AMM, new_peg: int) -> int:

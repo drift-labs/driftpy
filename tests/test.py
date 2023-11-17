@@ -132,9 +132,7 @@ async def test_initialized_spot_market_2(
 
 
 @async_fixture(scope="session")
-async def initialized_market(
-    drift_client: Admin, workspace: WorkspaceType
-) -> Pubkey:
+async def initialized_market(drift_client: Admin, workspace: WorkspaceType) -> Pubkey:
     pyth_program = workspace["pyth"]
     sol_usd = await mock_oracle(pyth_program=pyth_program, price=1)
     perp_market_index = 0
@@ -176,10 +174,10 @@ async def test_init_user(
     drift_client: Admin,
 ):
     await drift_client.intialize_user()
-    user_public_key = get_user_account_public_key(drift_client.program.program_id, drift_client.authority, 0)
-    user: User = await get_user_account(
-        drift_client.program, user_public_key
+    user_public_key = get_user_account_public_key(
+        drift_client.program.program_id, drift_client.authority, 0
     )
+    user: User = await get_user_account(drift_client.program, user_public_key)
     assert user.authority == drift_client.authority
 
 
@@ -189,7 +187,7 @@ async def test_usdc_deposit(
     user_usdc_account: Keypair,
 ):
     usdc_spot_market = await get_spot_market_account(drift_client.program, 0)
-    assert(usdc_spot_market.market_index == 0)
+    assert usdc_spot_market.market_index == 0
     drift_client.spot_market_atas[0] = user_usdc_account.pubkey()
     await drift_client.deposit(
         USDC_AMOUNT, 0, user_usdc_account.pubkey(), user_initialized=True
@@ -311,21 +309,23 @@ async def test_stake_if(
     await drift_client.update_update_insurance_fund_unstaking_period(0, 0)
 
     await drift_client.initialize_insurance_fund_stake(0)
-    if_acc = await get_if_stake_account(
-        drift_client.program, drift_client.authority, 0
-    )
+    if_acc = await get_if_stake_account(drift_client.program, drift_client.authority, 0)
     assert if_acc.market_index == 0
 
     await drift_client.add_insurance_fund_stake(0, 1 * QUOTE_PRECISION)
 
-    user_stats = await get_user_stats_account(drift_client.program, drift_client.authority)
+    user_stats = await get_user_stats_account(
+        drift_client.program, drift_client.authority
+    )
     assert user_stats.if_staked_quote_asset_amount == 1 * QUOTE_PRECISION
 
     await drift_client.request_remove_insurance_fund_stake(0, 1 * QUOTE_PRECISION)
 
     await drift_client.remove_insurance_fund_stake(0)
 
-    user_stats = await get_user_stats_account(drift_client.program, drift_client.authority)
+    user_stats = await get_user_stats_account(
+        drift_client.program, drift_client.authority
+    )
     assert user_stats.if_staked_quote_asset_amount == 0
 
 

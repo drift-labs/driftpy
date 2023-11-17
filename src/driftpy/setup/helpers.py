@@ -1,3 +1,4 @@
+from solana.rpc.async_api import AsyncClient
 from base64 import b64decode
 from dataclasses import dataclass
 from typing import Optional
@@ -63,9 +64,7 @@ async def _airdrop_user(
 ) -> tuple[Keypair, Signature]:
     if user is None:
         user = Keypair()
-    resp = await provider.connection.request_airdrop(
-        user.pubkey(), 100_0 * 1000000000
-    )
+    resp = await provider.connection.request_airdrop(user.pubkey(), 100_0 * 1000000000)
     tx_sig = resp.value
     return user, tx_sig
 
@@ -94,7 +93,9 @@ async def _create_mint(provider: Provider) -> Keypair:
 
     fake_tx = Transaction(
         instructions=[create_create_mint_account_ix, init_collateral_mint_ix],
-        recent_blockhash=(await provider.connection.get_latest_blockhash()).value.blockhash,
+        recent_blockhash=(
+            await provider.connection.get_latest_blockhash()
+        ).value.blockhash,
         fee_payer=provider.wallet.public_key,
     )
 
@@ -195,7 +196,9 @@ async def _create_and_mint_user_usdc(
     for ix in mint_tx.instructions:
         ata_tx.add(ix)
 
-    ata_tx.recent_blockhash = (await provider.connection.get_latest_blockhash()).value.blockhash
+    ata_tx.recent_blockhash = (
+        await provider.connection.get_latest_blockhash()
+    ).value.blockhash
     ata_tx.fee_payer = provider.wallet.payer.pubkey()
 
     ata_tx.sign_partial(usdc_account)
@@ -305,9 +308,6 @@ def parse_price_data(data: bytes) -> PriceData:
 async def get_feed_data(oracle_program: Program, price_feed: Pubkey) -> PriceData:
     info_resp = await oracle_program.provider.connection.get_account_info(price_feed)
     return parse_price_data(info_resp.value.data)
-
-
-from solana.rpc.async_api import AsyncClient
 
 
 async def get_oracle_data(

@@ -10,7 +10,12 @@ from driftpy.types import User
 
 
 class CachedUserAccountSubscriber(UserAccountSubscriber):
-    def __init__(self, user_pubkey: Pubkey, program: Program, commitment: Commitment = "confirmed"):
+    def __init__(
+        self,
+        user_pubkey: Pubkey,
+        program: Program,
+        commitment: Commitment = "confirmed",
+    ):
         self.program = program
         self.commitment = commitment
         self.user_pubkey = user_pubkey

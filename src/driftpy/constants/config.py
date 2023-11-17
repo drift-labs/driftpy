@@ -25,7 +25,9 @@ configs = {
         drift_client_program_id=Pubkey.from_string(
             "dRiftyHA39MWEi3m9aunc5MzRF1JYuBsbn6VPcn33UH"
         ),
-        usdc_mint_address=Pubkey.from_string("8zGuJQqwhZafTah7Uc7Z4tXRnguqkn5KLFAP8oV6PHe2"),
+        usdc_mint_address=Pubkey.from_string(
+            "8zGuJQqwhZafTah7Uc7Z4tXRnguqkn5KLFAP8oV6PHe2"
+        ),
         default_http="https://api.devnet.solana.com",
         default_ws="wss://api.devnet.solana.com",
         markets=devnet_markets,
@@ -39,7 +41,9 @@ configs = {
         drift_client_program_id=Pubkey.from_string(
             "dRiftyHA39MWEi3m9aunc5MzRF1JYuBsbn6VPcn33UH"
         ),
-        usdc_mint_address=Pubkey.from_string("EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"),
+        usdc_mint_address=Pubkey.from_string(
+            "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
+        ),
         default_http="https://api.mainnet-beta.solana.com",
         default_ws="wss://api.mainnet-beta.solana.com",
         markets=mainnet_markets,
