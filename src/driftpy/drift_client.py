@@ -100,8 +100,8 @@ class DriftClient:
         file = Path(str(driftpy.__path__[0]) + "/idl/drift.json")
         print(file)
         with file.open() as f:
-            idl_dict = json.load(f)
-        idl = Idl.from_json(idl_dict)
+            raw = file.read_text()
+            idl = Idl.from_json(raw)
 
         # create the program
         program = Program(
@@ -110,8 +110,7 @@ class DriftClient:
             provider,
         )
 
-        drift_client = DriftClient
-        (program, authority)
+        drift_client = DriftClient(program, authority)
         drift_client.config = config
         drift_client.idl = idl
 
