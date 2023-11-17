@@ -90,7 +90,8 @@ def calculate_candidate_amm(market, oracle_price=None):
     base_scale = 1
     quote_scale = 1
 
-    budget_cost = None  # max(0, (market.amm.total_fee_minus_distributions/1e6)/2)
+    # max(0, (market.amm.total_fee_minus_distributions/1e6)/2)
+    budget_cost = None
     fee_pool = (market.amm.total_fee_minus_distributions / QUOTE_PRECISION) - (
         market.amm.total_fee / QUOTE_PRECISION
     ) / 2

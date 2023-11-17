@@ -1,7 +1,7 @@
 from typing import Optional
 
 from anchorpy import Program
-from solana.publickey import PublicKey
+from solders.pubkey import Pubkey
 from solana.rpc.commitment import Commitment
 
 from driftpy.accounts import get_user_account_and_slot
@@ -10,7 +10,12 @@ from driftpy.types import User
 
 
 class CachedUserAccountSubscriber(UserAccountSubscriber):
-    def __init__(self, user_pubkey: PublicKey, program: Program, commitment: Commitment = "confirmed"):
+    def __init__(
+        self,
+        user_pubkey: Pubkey,
+        program: Program,
+        commitment: Commitment = "confirmed",
+    ):
         self.program = program
         self.commitment = commitment
         self.user_pubkey = user_pubkey

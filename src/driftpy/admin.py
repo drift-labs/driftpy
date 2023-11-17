@@ -1,9 +1,8 @@
-
-from solana.publickey import PublicKey
-from solana.transaction import TransactionSignature
-from solana.keypair import Keypair
-from solana.system_program import SYS_PROGRAM_ID
-from solana.sysvar import SYSVAR_RENT_PUBKEY
+from solders.pubkey import Pubkey
+from solders.signature import Signature
+from solders.keypair import Keypair
+from solders.system_program import ID
+from solders.sysvar import RENT
 from spl.token.constants import TOKEN_PROGRAM_ID
 from anchorpy import Program, Provider, Context
 
@@ -55,15 +54,15 @@ class Admin(DriftClient):
 
     async def initialize(
         self,
-        usdc_mint: PublicKey,
+        usdc_mint: Pubkey,
         admin_controls_prices: bool,
-    ) -> tuple[TransactionSignature, TransactionSignature]:
+    ) -> tuple[Signature, Signature]:
         state_account_rpc_response = (
             await self.program.provider.connection.get_account_info(
                 get_state_public_key(self.program_id)
             )
         )
-        if state_account_rpc_response["result"]["value"] is not None:
+        if state_account_rpc_response.value is not None:
             raise RuntimeError("Drift Client already initialized")
 
         state_public_key = get_state_public_key(self.program_id)
@@ -74,11 +73,9 @@ class Admin(DriftClient):
                     "admin": self.authority,
                     "state": state_public_key,
                     "quote_asset_mint": usdc_mint,
-                    "drift_signer": get_drift_client_signer_public_key(
-                        self.program_id
-                    ),
-                    "rent": SYSVAR_RENT_PUBKEY,
-                    "system_program": SYS_PROGRAM_ID,
+                    "drift_signer": get_drift_client_signer_public_key(self.program_id),
+                    "rent": RENT,
+                    "system_program": ID,
                     "token_program": TOKEN_PROGRAM_ID,
                 },
             ),
@@ -89,7 +86,7 @@ class Admin(DriftClient):
     async def initialize_perp_market(
         self,
         market_index: int,
-        price_oracle: PublicKey,
+        price_oracle: Pubkey,
         base_asset_reserve: int,
         quote_asset_reserve: int,
         periodicity: int,
@@ -100,7 +97,7 @@ class Admin(DriftClient):
         liquidation_fee: int = 0,
         active_status: bool = True,
         name: list = [0] * 32,
-    ) -> TransactionSignature:
+    ) -> Signature:
         state_public_key = get_state_public_key(self.program.program_id)
         state = await get_state_account(self.program)
         market_pubkey = get_perp_market_public_key(
@@ -126,19 +123,19 @@ class Admin(DriftClient):
                     "state": state_public_key,
                     "oracle": price_oracle,
                     "perp_market": market_pubkey,
-                    "rent": SYSVAR_RENT_PUBKEY,
-                    "system_program": SYS_PROGRAM_ID,
+                    "rent": RENT,
+                    "system_program": ID,
                 }
             ),
         )
 
     async def initialize_spot_market(
         self,
-        mint: PublicKey,
+        mint: Pubkey,
         optimal_utilization: int = SPOT_RATE_PRECISION // 2,
         optimal_rate: int = SPOT_RATE_PRECISION,
         max_rate: int = SPOT_RATE_PRECISION,
-        oracle: PublicKey = PublicKey([0] * PublicKey.LENGTH),
+        oracle: Pubkey = Pubkey([0] * Pubkey.LENGTH),
         oracle_source: OracleSource = OracleSource.QUOTE_ASSET(),
         initial_asset_weight: int = SPOT_WEIGHT_PRECISION,
         maintenance_asset_weight: int = SPOT_WEIGHT_PRECISION,
@@ -181,13 +178,11 @@ class Admin(DriftClient):
                     "spot_market": spot_public_key,
                     "spot_market_vault": spot_vault_public_key,
                     "insurance_fund_vault": insurance_vault_public_key,
-                    "drift_signer": get_drift_client_signer_public_key(
-                        self.program_id
-                    ),
+                    "drift_signer": get_drift_client_signer_public_key(self.program_id),
                     "spot_market_mint": mint,
                     "oracle": oracle,
-                    "rent": SYSVAR_RENT_PUBKEY,
-                    "system_program": SYS_PROGRAM_ID,
+                    "rent": RENT,
+                    "system_program": ID,
                     "token_program": TOKEN_PROGRAM_ID,
                 }
             ),

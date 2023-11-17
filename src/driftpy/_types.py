@@ -1,3 +1,5 @@
+from driftpy.constants.numeric_constants import SPOT_RATE_PRECISION
+from driftpy.types import OracleSource
 from typing import Optional, Any
 from dataclasses import dataclass
 from sumtypes import constructor  # type: ignore
@@ -287,9 +289,10 @@ class MarketPosition:
     padding3: int
     padding4: int
 
-    ## dw why this doesnt register :(
+    # dw why this doesnt register :(
     # def is_available(self):
-    #     return self.base_asset_amount == 0 and self.open_orders == 0 and self.lp_shares == 0
+    # return self.base_asset_amount == 0 and self.open_orders == 0 and
+    # self.lp_shares == 0
 
 
 @dataclass
@@ -377,14 +380,14 @@ class AMM:
     quote_asset_amount_long: int = 0
     quote_asset_amount_short: int = 0
 
-    ## lp stuff
+    # lp stuff
     cumulative_funding_payment_per_lp: int = 0
     cumulative_fee_per_lp: int = 0
     cumulative_base_asset_amount_with_amm_per_lp: int = 0
     lp_cooldown_time: int = 0
     user_lp_shares: int = 0
 
-    ## funding
+    # funding
     last_funding_rate: int = 0
     last_funding_rate_ts: int = 0
     funding_period: int = 0
@@ -397,11 +400,11 @@ class AMM:
     last_mark_price_twap: int = 0
     last_mark_price_twap_ts: int = 0
 
-    ## trade constraints
+    # trade constraints
     minimum_quote_asset_trade_size: int = 0
     base_asset_amount_step_size: int = 0
 
-    ## market making
+    # market making
     base_spread: int = 0
     long_spread: int = 0
     short_spread: int = 0
@@ -420,7 +423,7 @@ class AMM:
     short_intensity_volume: int = 0
     curve_update_intensity: int = 0
 
-    ## fee tracking
+    # fee tracking
     total_fee: int = 0
     total_mm_fee: int = 0
     total_exchange_fee: int = 0
@@ -460,10 +463,6 @@ class Market:
     padding2: int = 0
     padding3: int = 0
     padding4: int = 0
-
-
-from driftpy.types import OracleSource
-from driftpy.constants.numeric_constants import SPOT_RATE_PRECISION
 
 
 @dataclass
