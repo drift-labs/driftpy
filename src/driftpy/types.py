@@ -200,7 +200,7 @@ class OracleSource:
 
 
 @_rust_enum
-class PostOnlyParam:
+class PostOnlyParams:
     NONE = constructor()
     MUST_POST_ONLY = constructor()
     TRY_POST_ONLY = constructor()
@@ -340,7 +340,7 @@ class OrderParams:
     price: int
     market_index: int
     reduce_only: bool
-    post_only: PostOnlyParam
+    post_only: PostOnlyParams
     immediate_or_cancel: bool
     max_ts: Optional[int]
     trigger_price: Optional[int]
@@ -357,7 +357,7 @@ class ModifyOrderParams:
     base_asset_amount: Optional[int]
     price: Optional[int]
     reduce_only: Optional[bool]
-    post_only: Optional[PostOnlyParam]
+    post_only: Optional[PostOnlyParams]
     immediate_or_cancel: Optional[bool]
     max_ts: Optional[int]
     trigger_price: Optional[int]

@@ -110,8 +110,7 @@ class DriftClient:
             provider,
         )
 
-        drift_client = DriftClient
-        (program, authority)
+        drift_client = DriftClient(program, authority)
         drift_client.config = config
         drift_client.idl = idl
 
@@ -710,7 +709,7 @@ class DriftClient:
         return await self.send_ixs(
             [
                 self.get_increase_compute_ix(),
-                await self.get_place_spot_order_ix(order_params, maker_info, user_id),
+                await self.get_place_spot_order_ix(order_params, user_id),
             ]
         )
 
@@ -788,33 +787,34 @@ class DriftClient:
         user_id: int = 0,
     ):
         return await self.send_ixs(
-            [
+            [   
                 self.get_increase_compute_ix(),
-                await self.get_place_perp_order_ix(order_params, maker_info, user_id),
+                (await self.get_place_perp_order_ix(order_params, user_id))[-1]
             ]
+            
         )
 
     async def get_place_perp_order_ix(
         self,
         order_params: OrderParams,
         user_id: int = 0,
-    ):
+    ) -> TransactionInstruction:
         user_account_public_key = self.get_user_account_public_key(user_id)
         remaining_accounts = await self.get_remaining_accounts(
             writable_market_index=order_params.market_index, user_id=user_id
         )
 
         ix = self.program.instruction["place_perp_order"](
-            order_params,
-            ctx=Context(
-                accounts={
-                    "state": self.get_state_public_key(),
-                    "user": user_account_public_key,
-                    "authority": self.signer.public_key,
-                },
-                remaining_accounts=remaining_accounts,
-            ),
-        )
+                order_params,
+                ctx=Context(
+                    accounts={
+                        "state": self.get_state_public_key(),
+                        "user": user_account_public_key,
+                        "authority": self.signer.public_key,
+                    },
+                    remaining_accounts=remaining_accounts,
+                ),
+            )
 
         return ix
 
@@ -822,28 +822,29 @@ class DriftClient:
         self,
         order_params: List[OrderParams],
         user_id: int = 0,
+        cancel_all=True
     ):
         user_account_public_key = self.get_user_account_public_key(user_id)
         writeable_market_indexes = list(set([x.market_index for x in order_params]))
         remaining_accounts = await self.get_remaining_accounts(
             writable_market_index=writeable_market_indexes, user_id=user_id
         )
-
-        ixs = [
-            self.program.instruction["cancel_orders"](
-                None,
-                None,
-                None,
-                ctx=Context(
-                    accounts={
-                        "state": self.get_state_public_key(),
-                        "user": self.get_user_account_public_key(user_id),
-                        "authority": self.signer.public_key,
-                    },
-                    remaining_accounts=remaining_accounts,
-                ),
-            )
-        ]
+        ixs = []
+        if cancel_all:
+            ixs.append(
+                self.program.instruction["cancel_orders"](
+                    None,
+                    None,
+                    None,
+                    ctx=Context(
+                        accounts={
+                            "state": self.get_state_public_key(),
+                            "user": self.get_user_account_public_key(user_id),
+                            "authority": self.signer.public_key,
+                        },
+                        remaining_accounts=remaining_accounts,
+                    ),
+                ))
         for order_param in order_params:
             ix = self.program.instruction["place_perp_order"](
                 order_param,
@@ -1025,7 +1026,7 @@ class DriftClient:
             price=0,
             market_index=market_index,
             reduce_only=False,
-            post_only=PostOnlyParam.NONE(),
+            post_only=PostOnlyParams.NONE(),
             immediate_or_cancel=False,
             trigger_price=0,
             trigger_condition=OrderTriggerCondition.ABOVE(),

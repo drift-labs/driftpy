@@ -18,7 +18,7 @@ print(
 
 # get usdc spot market info
 usdc_spot_market_index = 0
-usdc_market = await get_spot_market_account(clearing_house.program, usdc_spot_market_index)
+usdc_market = await get_spot_market_account(drift_client.program, usdc_spot_market_index)
 print(
     usdc.market_index,
     usdc.deposit_balance,

@@ -6,8 +6,8 @@ on:
     branches: [master]
 
 env:
-  solana_verion: 1.8.5
-  anchor_version: 0.19.0
+  solana_verion: 1.14.7
+  anchor_version: 0.26.0
 
 jobs:
   tests:
