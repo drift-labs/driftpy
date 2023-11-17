@@ -100,8 +100,8 @@ class DriftClient:
         file = Path(str(driftpy.__path__[0]) + "/idl/drift.json")
         print(file)
         with file.open() as f:
-            idl_dict = json.load(f)
-        idl = Idl.from_json(idl_dict)
+            raw = file.read_text()
+        idl = Idl.from_json(raw)
 
         # create the program
         program = Program(
@@ -730,7 +730,7 @@ class DriftClient:
                 accounts={
                     "state": self.get_state_public_key(),
                     "user": user_account_public_key,
-                    "authority": self.signer.pubkey,
+                    "authority": self.signer.pubkey(),
                 },
                 remaining_accounts=remaining_accounts,
             ),
@@ -758,7 +758,7 @@ class DriftClient:
                     accounts={
                         "state": self.get_state_public_key(),
                         "user": self.get_user_account_public_key(user_id),
-                        "authority": self.signer.pubkey,
+                        "authority": self.signer.pubkey(),
                     },
                     remaining_accounts=remaining_accounts,
                 ),
@@ -771,7 +771,7 @@ class DriftClient:
                     accounts={
                         "state": self.get_state_public_key(),
                         "user": user_account_public_key,
-                        "authority": self.signer.pubkey,
+                        "authority": self.signer.pubkey(),
                     },
                     remaining_accounts=remaining_accounts,
                 ),
@@ -810,7 +810,7 @@ class DriftClient:
                     accounts={
                         "state": self.get_state_public_key(),
                         "user": user_account_public_key,
-                        "authority": self.signer.pubkey,
+                        "authority": self.signer.pubkey(),
                     },
                     remaining_accounts=remaining_accounts,
                 ),

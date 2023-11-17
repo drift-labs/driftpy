@@ -12,12 +12,13 @@ from math import sqrt
 
 from driftpy.constants.config import configs
 from driftpy.constants.numeric_constants import PRICE_PRECISION, AMM_RESERVE_PRECISION
-from driftpy.drift_client import driftClient
+from driftpy.drift_client import DriftClient
 
 from driftpy.addresses import *
 from driftpy.types import *
 from driftpy.accounts import *
-from solana.keypair import Keypair
+from solders.keypair import Keypair
+# from solders.pubkey import Pubkey
 from solana.rpc.async_api import AsyncClient
 
 
@@ -34,10 +35,10 @@ workspace = workspace_fixture(
 
 
 @async_fixture(scope="session")
-async def drift_client() -> driftClient:
+async def drift_client() -> DriftClient:
     with open(os.path.expanduser(os.environ["ANCHOR_WALLET"]), "r") as f:
         secret = json.load(f)
-    kp = Keypair.from_secret_key(bytes(secret))
+    kp = Keypair.from_bytes(bytes(secret))
 
     wallet = Wallet(kp)
     connection = AsyncClient("https://api.devnet.solana.com")
@@ -45,12 +46,12 @@ async def drift_client() -> driftClient:
     provider = Provider(connection, wallet)
     config = configs["devnet"]
 
-    return driftClient.from_config(config, provider)
+    return DriftClient.from_config(config, provider)
 
 
 @mark.asyncio
 async def test_get_perp_market(
-    drift_client: driftClient,
+    drift_client: DriftClient,
 ):
     ix = await drift_client.get_place_perp_order_ix(
         OrderParams(
@@ -62,7 +63,7 @@ async def test_get_perp_market(
             price=10 * PRICE_PRECISION,
             market_index=0,
             reduce_only=False,
-            post_only=PostOnlyParam.NONE(),
+            post_only=PostOnlyParams.NONE(),
             immediate_or_cancel=False,
             max_ts=None,
             trigger_price=None,
@@ -74,9 +75,11 @@ async def test_get_perp_market(
         )
     )
 
+    assert(len(ix.accounts)>5)
+
     assert (
-        str(ix.keys[3].pubkey) == "5SSkXsEKQepHHAewytPVwdej4epN1nxgLVM84L4KXgy7"
+        str(ix.accounts[3].pubkey) == "5SSkXsEKQepHHAewytPVwdej4epN1nxgLVM84L4KXgy7"
     ), "incorrect spot oracle address"
     assert (
-        str(ix.keys[4].pubkey) == "J83w4HKfqxwcq3BEMMkPFSppX3gqekLyLJBexebFVkix"
+        str(ix.accounts[4].pubkey) == "J83w4HKfqxwcq3BEMMkPFSppX3gqekLyLJBexebFVkix"
     ), "incorrect perp oracle address"
