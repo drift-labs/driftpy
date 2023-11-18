@@ -1,5 +1,5 @@
 import base64
-from typing import cast
+from typing import cast, Optional, Callable
 from solders.pubkey import Pubkey
 from anchorpy import Program, ProgramAccount
 from solana.rpc.commitment import Commitment
@@ -10,7 +10,10 @@ from .types import DataAndSlot, T
 
 
 async def get_account_data_and_slot(
-    address: Pubkey, program: Program, commitment: Commitment = "processed"
+    address: Pubkey,
+    program: Program,
+    commitment: Commitment = "processed",
+    decode: Optional[Callable[[bytes], T]] = None,
 ) -> Optional[DataAndSlot[T]]:
     account_info = await program.provider.connection.get_account_info(
         address,
@@ -24,7 +27,9 @@ async def get_account_data_and_slot(
     slot = account_info.context.slot
     data = account_info.value.data
 
-    decoded_data = program.coder.accounts.decode(data)
+    decoded_data = (
+        decode(data) if decode is not None else program.coder.accounts.decode(data)
+    )
 
     return DataAndSlot(slot, decoded_data)
 

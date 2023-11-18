@@ -21,26 +21,12 @@ async def get_oracle_price_data_and_slot(
     if "Pyth" in str(oracle_source):
         rpc_reponse = await connection.get_account_info(address)
         rpc_response_slot = rpc_reponse.context.slot
-        (pyth_price_info, last_slot, twac, twap) = await _parse_pyth_price_info(
-            rpc_reponse
+
+        oracle_price_data = decode_pyth_price_info(
+            rpc_reponse.value.data, oracle_source
         )
 
-        scale = 1
-        if "1K" in str(oracle_source):
-            scale = 1e3
-        elif "1M" in str(oracle_source):
-            scale = 1e6
-
-        oracle_data = OraclePriceData(
-            price=convert_pyth_price(pyth_price_info.price, scale),
-            slot=pyth_price_info.pub_slot,
-            confidence=convert_pyth_price(pyth_price_info.confidence_interval, scale),
-            twap=convert_pyth_price(twap, scale),
-            twap_confidence=convert_pyth_price(twac, scale),
-            has_sufficient_number_of_datapoints=True,
-        )
-
-        return DataAndSlot(data=oracle_data, slot=rpc_response_slot)
+        return DataAndSlot(data=oracle_price_data, slot=rpc_response_slot)
     elif "Quote" in str(oracle_source):
         return DataAndSlot(
             data=OraclePriceData(PRICE_PRECISION, 0, 1, 1, 0, True), slot=0
@@ -49,11 +35,10 @@ async def get_oracle_price_data_and_slot(
         raise NotImplementedError("Unsupported Oracle Source", str(oracle_source))
 
 
-async def _parse_pyth_price_info(
-    resp: GetAccountInfoResp,
-) -> (PythPriceInfo, int, int, int):
-    buffer = resp.value.data
-
+def decode_pyth_price_info(
+    buffer: bytes,
+    oracle_source=OracleSource.PYTH(),
+) -> OraclePriceData:
     offset = _ACCOUNT_HEADER_BYTES
     _, exponent, _ = struct.unpack_from("<IiI", buffer, offset)
 
@@ -73,9 +58,19 @@ async def _parse_pyth_price_info(
 
     offset += 160
 
-    return (
-        PythPriceInfo.deserialise(buffer, offset, exponent=exponent),
-        last_slot,
-        twac,
-        twap,
+    pyth_price_info = PythPriceInfo.deserialise(buffer, offset, exponent=exponent)
+
+    scale = 1
+    if "1K" in str(oracle_source):
+        scale = 1e3
+    elif "1M" in str(oracle_source):
+        scale = 1e6
+
+    return OraclePriceData(
+        price=convert_pyth_price(pyth_price_info.price, scale),
+        slot=pyth_price_info.pub_slot,
+        confidence=convert_pyth_price(pyth_price_info.confidence_interval, scale),
+        twap=convert_pyth_price(twap, scale),
+        twap_confidence=convert_pyth_price(twac, scale),
+        has_sufficient_number_of_datapoints=True,
     )

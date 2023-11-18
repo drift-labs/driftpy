@@ -1,5 +1,5 @@
 from driftpy.accounts import UserAccountSubscriber
-from driftpy.accounts.cache import CachedUserAccountSubscriber
+from driftpy.accounts.cache import WebsocketUserAccountSubscriber
 from driftpy.drift_client import DriftClient
 from driftpy.math.positions import *
 from driftpy.math.margin import *
@@ -40,7 +40,7 @@ class User:
         )
 
         if account_subscriber is None:
-            account_subscriber = CachedUserAccountSubscriber(
+            account_subscriber = WebsocketUserAccountSubscriber(
                 self.user_public_key, self.program
             )
 

@@ -40,7 +40,7 @@ class DriftClientAccountSubscriber:
         pass
 
     @abstractmethod
-    async def get_oracle_data_and_slot(
+    async def get_oracle_price_data_and_slot(
         self, oracle: Pubkey
     ) -> Optional[DataAndSlot[OraclePriceData]]:
         pass

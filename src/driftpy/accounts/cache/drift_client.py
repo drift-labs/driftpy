@@ -83,7 +83,7 @@ class CachedDriftClientAccountSubscriber(DriftClientAccountSubscriber):
         await self.cache_if_needed()
         return self.cache["spot_markets"][market_index]
 
-    async def get_oracle_data_and_slot(
+    async def get_oracle_price_data_and_slot(
         self, oracle: Pubkey
     ) -> Optional[DataAndSlot[OraclePriceData]]:
         await self.cache_if_needed()
