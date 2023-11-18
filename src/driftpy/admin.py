@@ -148,14 +148,14 @@ class Admin(DriftClient):
     ):
         state_public_key = get_state_public_key(self.program_id)
         state = await get_state_account(self.program)
-        spot_index = state.number_of_spot_markets
+        spot_market_index = state.number_of_spot_markets
 
-        spot_public_key = get_spot_market_public_key(self.program_id, spot_index)
+        spot_public_key = get_spot_market_public_key(self.program_id, spot_market_index)
         spot_vault_public_key = get_spot_market_vault_public_key(
-            self.program_id, spot_index
+            self.program_id, spot_market_index
         )
         insurance_vault_public_key = get_insurance_fund_vault_public_key(
-            self.program_id, spot_index
+            self.program_id, spot_market_index
         )
 
         return await self.program.rpc["initialize_spot_market"](

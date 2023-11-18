@@ -20,6 +20,9 @@ class CachedDriftClientAccountSubscriber(DriftClientAccountSubscriber):
         self.commitment = commitment
         self.cache = None
 
+    async def subscribe(self):
+        await self.cache_if_needed()
+
     async def update_cache(self):
         if self.cache is None:
             self.cache = {}
@@ -92,3 +95,6 @@ class CachedDriftClientAccountSubscriber(DriftClientAccountSubscriber):
     async def cache_if_needed(self):
         if self.cache is None:
             await self.update_cache()
+
+    def unsubscribe(self):
+        self.cache = None

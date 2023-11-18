@@ -24,6 +24,14 @@ class DataAndSlot(Generic[T]):
 
 class DriftClientAccountSubscriber:
     @abstractmethod
+    async def subscribe(self):
+        pass
+
+    @abstractmethod
+    def unsubscribe(self):
+        pass
+
+    @abstractmethod
     async def get_state_account_and_slot(self) -> Optional[DataAndSlot[State]]:
         pass
 

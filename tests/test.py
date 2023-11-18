@@ -1,3 +1,5 @@
+import asyncio
+
 from pytest import fixture, mark
 from pytest_asyncio import fixture as async_fixture
 from solders.keypair import Keypair
@@ -12,6 +14,7 @@ from driftpy.constants.numeric_constants import (
     SPOT_BALANCE_PRECISION,
     SPOT_WEIGHT_PRECISION,
 )
+from driftpy.accounts.cache import CachedUserAccountSubscriber, CachedDriftClientAccountSubscriber
 from math import sqrt
 
 from driftpy.drift_user import DriftUser
@@ -83,8 +86,9 @@ def provider(program: Program) -> Provider:
 
 @async_fixture(scope="session")
 async def drift_client(program: Program, usdc_mint: Keypair) -> Admin:
-    admin = Admin(program)
+    admin = Admin(program, account_subscriber=CachedDriftClientAccountSubscriber(program))
     await admin.initialize(usdc_mint.pubkey(), admin_controls_prices=True)
+    await admin.subscribe()
     return admin
 
 
@@ -130,6 +134,8 @@ async def test_initialized_spot_market_2(
         maintenance_liability_weight=main_liab_weight,
     )
 
+    await drift_client.account_subscriber.update_cache()
+
     spot_market = await get_spot_market_account(admin_drift_client.program, 1)
     assert spot_market.market_index == 1
     print(spot_market.market_index)
@@ -147,6 +153,9 @@ async def initialized_market(drift_client: Admin, workspace: WorkspaceType) -> P
         AMM_INITIAL_QUOTE_ASSET_AMOUNT,
         PERIODICITY,
     )
+
+
+    await drift_client.account_subscriber.update_cache()
 
     return sol_usd
 
@@ -207,7 +216,8 @@ async def test_open_orders(
     drift_client: Admin,
 ):
     
-    drift_user = DriftUser(drift_client)
+    drift_user = DriftUser(drift_client, account_subscriber=CachedUserAccountSubscriber(drift_client.get_user_account_public_key(), drift_client.program))
+    await drift_user.subscribe()
     user_account = await drift_client.get_user(0)
 
     assert(len(user_account.orders)==32)
@@ -224,6 +234,7 @@ async def test_open_orders(
     ixs = await drift_client.get_place_perp_orders_ix([order_params])
     await drift_client.send_ixs(ixs)
     await drift_user.account_subscriber.update_cache()
+    await asyncio.sleep(1)
     open_orders_after = await drift_user.get_open_orders()
     assert(open_orders_after[0].base_asset_amount == BASE_PRECISION)
     assert(open_orders_after[0].order_id == 1)
@@ -376,7 +387,7 @@ async def test_liq_perp(
     user_account = await drift_client.get_user(0)
 
     liq, _ = await _airdrop_user(drift_client.program.provider)
-    liq_drift_client = DriftClient(drift_client.program, liq)
+    liq_drift_client = DriftClient(drift_client.program, liq, account_subscriber=CachedDriftClientAccountSubscriber(drift_client.program))
     usdc_acc = await _create_and_mint_user_usdc(
         usdc_mint, drift_client.program.provider, USDC_AMOUNT, liq.pubkey()
     )

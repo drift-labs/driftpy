@@ -46,6 +46,12 @@ class DriftUser:
 
         self.account_subscriber = account_subscriber
 
+    async def subscribe(self):
+        await self.account_subscriber.subscribe()
+
+    def unsubscribe(self):
+        self.account_subscriber.unsubscribe()
+
     async def get_spot_oracle_data(
         self, spot_market: SpotMarket
     ) -> Optional[OraclePriceData]:
@@ -68,15 +74,14 @@ class DriftUser:
     async def get_user(self) -> User:
         return (await self.account_subscriber.get_user_account_and_slot()).data
 
-
-    async def get_open_orders(self, 
-                            #   market_type: MarketType, 
-                            #   market_index: int,
-                            #   position_direction: PositionDirection
-                              ):
+    async def get_open_orders(
+        self,
+        #   market_type: MarketType,
+        #   market_index: int,
+        #   position_direction: PositionDirection
+    ):
         user: User = await self.get_user()
         return user.orders
-
 
     async def get_spot_market_liability(
         self,
