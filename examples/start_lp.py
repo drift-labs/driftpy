@@ -12,7 +12,7 @@ from solana.keypair import Keypair
 
 # todo: airdrop udsc + init account for any kp
 # rn do it through UI 
-from driftpy.drift_user import User
+from driftpy.drift_user import DriftUser
 from driftpy.constants.numeric_constants import AMM_RESERVE_PRECISION
 from solana.rpc import commitment
 import pprint

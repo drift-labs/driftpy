@@ -7,7 +7,6 @@ from driftpy.types import OracleSource, OraclePriceData
 from solders.pubkey import Pubkey
 from pythclient.pythaccounts import PythPriceInfo, _ACCOUNT_HEADER_BYTES, EmaType
 from solana.rpc.async_api import AsyncClient
-import base64
 import struct
 
 

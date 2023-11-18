@@ -1,5 +1,5 @@
 from driftpy.accounts import UserAccountSubscriber
-from driftpy.accounts.cache import WebsocketUserAccountSubscriber
+from driftpy.accounts.ws import WebsocketUserAccountSubscriber
 from driftpy.drift_client import DriftClient
 from driftpy.math.positions import *
 from driftpy.math.margin import *
@@ -8,13 +8,13 @@ from driftpy.accounts.oracle import *
 from driftpy.types import OraclePriceData
 
 
-class User:
-    """This class is the main way to retrieve and inspect user account data."""
+class DriftUser:
+    """This class is the main way to retrieve and inspect drift user account data."""
 
     def __init__(
         self,
         drift_client: DriftClient,
-        authority: Optional[PublicKey] = None,
+        authority: Optional[Pubkey] = None,
         subaccount_id: int = 0,
         account_subscriber: Optional[UserAccountSubscriber] = None,
     ):
@@ -22,7 +22,7 @@ class User:
 
         Args:
             drift_client(DriftClient): required for program_id, idl, things (keypair doesnt matter)
-            authority (Optional[PublicKey], optional): authority to investigate if None will use drift_client.authority
+            authority (Optional[Pubkey], optional): authority to investigate if None will use drift_client.authority
             subaccount_id (int, optional): subaccount of authority to investigate. Defaults to 0.
         """
         self.drift_client = drift_client
@@ -67,6 +67,16 @@ class User:
 
     async def get_user(self) -> User:
         return (await self.account_subscriber.get_user_account_and_slot()).data
+
+
+    async def get_open_orders(self, 
+                            #   market_type: MarketType, 
+                            #   market_index: int,
+                            #   position_direction: PositionDirection
+                              ):
+        user: User = await self.get_user()
+        return user.orders
+
 
     async def get_spot_market_liability(
         self,

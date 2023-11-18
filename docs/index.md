@@ -18,7 +18,7 @@ Note: requires Python >= 3.10.
 ## Key Components
 
 - `DriftClient` / `drift_client.py`: Used to interact with the protocol (deposit, withdraw, trade, lp, etc.)
-- `User` / `drift_user.py`: Used to fetch data from the protocol and view user metrics (leverage, free collateral, etc.)
+- `DriftUser` / `drift_user.py`: Used to fetch data from the protocol and view user metrics (leverage, free collateral, etc.)
 - `accounts.py`: Used to retrieve specific on-chain accounts (State, PerpMarket, SpotMarket, etc.)
 - `addresses.py`: Used to derive on-chain addresses of the accounts (publickey of the sol-market)
 
@@ -47,8 +47,8 @@ wallet = Wallet(kp)
 connection = AsyncClient(config.default_http)
 provider = Provider(connection, wallet)
 
-drfit_client = DriftClient.from_config(config, provider)
-drift_user = User(clearing_house)
+drift_client = DriftClient.from_config(config, provider)
+drift_user = DriftUser(drift_client)
 
 # open a 10 SOL long position
 sig = await drift_client.open_position(
@@ -68,12 +68,12 @@ leverage = await drift_user.get_leverage()
 print('current leverage:', leverage / 10_000)
 
 # you can also inspect other accounts information using the (authority=) flag
-bigz_acc = ser(clearing_house, authority=PublicKey('bigZ'))
+bigz_acc = User(drift_client, authority=PublicKey('bigZ'))
 leverage = await bigz_acc.get_leverage()
 print('bigZs leverage:', leverage / 10_000)
 
 # clearing house user calls can be expensive on the rpc so we can cache them
-drift_user = User(clearing_house, use_cache=True)
+drift_user = User(drift_client, use_cache=True)
 await drift_user.set_cache()
 
 # works without any rpc calls (uses the cached data)
