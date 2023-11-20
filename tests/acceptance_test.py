@@ -18,6 +18,7 @@ from driftpy.addresses import *
 from driftpy.types import *
 from driftpy.accounts import *
 from solders.keypair import Keypair
+
 # from solders.pubkey import Pubkey
 from solana.rpc.async_api import AsyncClient
 
@@ -75,7 +76,7 @@ async def test_get_perp_market(
         )
     )
 
-    assert(len(ix.accounts)>5)
+    assert len(ix.accounts) > 5
 
     assert (
         str(ix.accounts[3].pubkey) == "5SSkXsEKQepHHAewytPVwdej4epN1nxgLVM84L4KXgy7"

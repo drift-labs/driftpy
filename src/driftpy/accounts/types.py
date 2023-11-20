@@ -56,5 +56,13 @@ class DriftClientAccountSubscriber:
 
 class UserAccountSubscriber:
     @abstractmethod
+    async def subscribe(self):
+        pass
+
+    @abstractmethod
+    def unsubscribe(self):
+        pass
+
+    @abstractmethod
     async def get_user_account_and_slot(self) -> Optional[DataAndSlot[User]]:
         pass
