@@ -30,19 +30,22 @@ class PollingDriftClientAccountSubscriber(DriftClientAccountSubscriber):
         self.oracle = {}
 
     async def subscribe(self):
+        if len(self.callbacks) != 0:
+            return
+
         await self.update_accounts_to_poll()
 
-        while self.spot_markets.get(0) is None:
+        while self.accounts_ready() is False:
             await self.bulk_account_loader.load()
 
-    def is_subscribed(self):
+    def accounts_ready(self) -> bool:
         if self.state is None:
             return False
 
-        if self.get_perp_market_and_slot(0) is None:
+        if self.perp_markets.get(0) is None:
             return False
 
-        if self.get_spot_market_and_slot(0) is None:
+        if self.spot_markets.get(0) is None:
             return False
 
         return True
@@ -138,6 +141,7 @@ class PollingDriftClientAccountSubscriber(DriftClientAccountSubscriber):
             self.bulk_account_loader.remove_account(
                 Pubkey.from_string(pubkey_str), callback_id
             )
+        self.callbacks.clear()
 
     async def get_state_account_and_slot(self) -> Optional[DataAndSlot[State]]:
         return self.state
