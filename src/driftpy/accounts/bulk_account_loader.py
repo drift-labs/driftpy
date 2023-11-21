@@ -29,7 +29,7 @@ class BulkAccountLoader:
         self,
         connection: AsyncClient,
         commitment: Commitment = "confirmed",
-        frequency: int = 1,
+        frequency: float = 1,
     ):
         self.connection = connection
         self.commitment = commitment
