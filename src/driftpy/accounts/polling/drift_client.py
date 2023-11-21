@@ -32,8 +32,20 @@ class PollingDriftClientAccountSubscriber(DriftClientAccountSubscriber):
     async def subscribe(self):
         await self.update_accounts_to_poll()
 
-        while self.state is None:
-            await asyncio.sleep(0.5)
+        while self.spot_markets.get(0) is None:
+            await self.bulk_account_loader.load()
+
+    def is_subscribed(self):
+        if self.state is None:
+            return False
+
+        if self.get_perp_market_and_slot(0) is None:
+            return False
+
+        if self.get_spot_market_and_slot(0) is None:
+            return False
+
+        return True
 
     async def update_accounts_to_poll(self):
         state_public_key = get_state_public_key(self.program.program_id)

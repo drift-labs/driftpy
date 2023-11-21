@@ -59,11 +59,7 @@ class PollingUserAccountSubscriber(UserAccountSubscriber):
         self.data_and_slot = DataAndSlot(slot, account)
 
     async def fetch(self):
-        # todo: should this force bulk account loader to load?
-        for i in range(5):
-            await asyncio.sleep(0.5)
-            if self.data_and_slot is not None:
-                break
+        await self.bulk_account_loader.load()
 
     def _update_data(self, new_data: Optional[DataAndSlot[T]]):
         if new_data is None:

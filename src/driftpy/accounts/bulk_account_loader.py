@@ -12,7 +12,7 @@ from solders.pubkey import Pubkey
 @dataclass
 class AccountToLoad:
     pubkey: Pubkey
-    callbacks: Mapping[int, Callable[[bytes, int], None]]
+    callbacks: dict[int, Callable[[bytes, int], None]]
 
 
 @dataclass
@@ -35,9 +35,10 @@ class BulkAccountLoader:
         self.commitment = commitment
         self.frequency = frequency
         self.task = None
+        self.load_task = None
         self.callback_id = 0
-        self.accounts_to_load: Mapping[str, AccountToLoad] = {}
-        self.buffer_and_slot_map: Mapping[str, BufferAndSlot] = {}
+        self.accounts_to_load: dict[str, AccountToLoad] = {}
+        self.buffer_and_slot_map: dict[str, BufferAndSlot] = {}
 
     def add_account(
         self, pubkey: Pubkey, callback: Callable[[bytes, int], None]
@@ -66,7 +67,13 @@ class BulkAccountLoader:
 
     def _start_loading(self):
         if self.task is None:
-            self.task = asyncio.create_task(self.load())
+
+            async def loop():
+                while True:
+                    await self.load()
+                    await asyncio.sleep(self.frequency)
+
+            self.task = asyncio.create_task(loop())
 
     def remove_account(self, pubkey: Pubkey, callback_id: int):
         pubkey_str = str(pubkey)
@@ -88,17 +95,15 @@ class BulkAccountLoader:
         return [array[i : i + size] for i in range(0, len(array), size)]
 
     async def load(self):
-        while True:
-            chunks = self.chunks(
-                self.chunks(
-                    list(self.accounts_to_load.values()),
-                    GET_MULTIPLE_ACCOUNTS_CHUNK_SIZE,
-                ),
-                10,
-            )
+        chunks = self.chunks(
+            self.chunks(
+                list(self.accounts_to_load.values()),
+                GET_MULTIPLE_ACCOUNTS_CHUNK_SIZE,
+            ),
+            10,
+        )
 
-            await asyncio.gather(*[self.load_chunk(chunk) for chunk in chunks])
-            await asyncio.sleep(self.frequency)
+        await asyncio.gather(*[self.load_chunk(chunk) for chunk in chunks])
 
     async def load_chunk(self, chunk: List[List[AccountToLoad]]):
         if len(chunk) == 0:
@@ -133,7 +138,7 @@ class BulkAccountLoader:
 
             slot = rpc_result.result["context"]["slot"]
 
-            for account_to_load in chunk_accounts:
+            for i, account_to_load in enumerate(chunk_accounts):
                 pubkey_str = str(account_to_load.pubkey)
                 old_buffer_and_slot = self.buffer_and_slot_map.get(pubkey_str)
 
@@ -141,13 +146,8 @@ class BulkAccountLoader:
                     continue
 
                 new_buffer = None
-                account = (
-                    rpc_result.result["value"].pop(0)
-                    if rpc_result.result["value"]
-                    else None
-                )
-                if account:
-                    new_buffer = b64decode(account["data"][0])
+                if rpc_result.result["value"][i] is not None:
+                    new_buffer = b64decode(rpc_result.result["value"][i]["data"][0])
 
                 if (
                     old_buffer_and_slot is None
