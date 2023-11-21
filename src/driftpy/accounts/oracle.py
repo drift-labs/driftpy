@@ -73,3 +73,10 @@ def decode_pyth_price_info(
         twap_confidence=convert_pyth_price(twac, scale),
         has_sufficient_number_of_datapoints=True,
     )
+
+
+def get_oracle_decode_fn(oracle_source: OracleSource):
+    if "Pyth" in str(oracle_source):
+        return lambda data: decode_pyth_price_info(data, oracle_source)
+    else:
+        raise Exception("Unknown oracle source")

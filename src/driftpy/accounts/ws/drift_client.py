@@ -12,7 +12,7 @@ from driftpy.addresses import *
 
 from driftpy.types import OracleSource
 
-from driftpy.accounts.oracle import decode_pyth_price_info
+from driftpy.accounts.oracle import decode_pyth_price_info, get_oracle_decode_fn
 
 
 class WebsocketDriftClientAccountSubscriber(DriftClientAccountSubscriber):
@@ -82,16 +82,10 @@ class WebsocketDriftClientAccountSubscriber(DriftClientAccountSubscriber):
             oracle,
             self.program,
             self.commitment,
-            self._get_oracle_decode_fn(oracle_source),
+            get_oracle_decode_fn(oracle_source),
         )
         await oracle_subscriber.subscribe()
         self.oracle_subscribers[str(oracle)] = oracle_subscriber
-
-    def _get_oracle_decode_fn(self, oracle_source: OracleSource):
-        if "Pyth" in str(oracle_source):
-            return lambda data: decode_pyth_price_info(data, oracle_source)
-        else:
-            raise Exception("Unknown oracle source")
 
     async def get_state_account_and_slot(self) -> Optional[DataAndSlot[State]]:
         return self.state_subscriber.data_and_slot

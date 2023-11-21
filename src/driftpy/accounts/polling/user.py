@@ -14,7 +14,7 @@ from driftpy.types import User
 T = TypeVar("T")
 
 
-class PollingUserAccountSubscriber(UserAccountSubscriber, Generic[T]):
+class PollingUserAccountSubscriber(UserAccountSubscriber):
     def __init__(
         self,
         user_account_pubkey: Pubkey,
@@ -25,7 +25,6 @@ class PollingUserAccountSubscriber(UserAccountSubscriber, Generic[T]):
         self.program = program
         self.user_account_pubkey = user_account_pubkey
         self.data_and_slot: Optional[DataAndSlot[User]] = None
-        self.task = None
         self.decode = self.program.coder.accounts.decode
         self.is_subscribed = False
         self.callback_id = None
