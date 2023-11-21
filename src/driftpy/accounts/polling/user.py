@@ -26,19 +26,16 @@ class PollingUserAccountSubscriber(UserAccountSubscriber):
         self.user_account_pubkey = user_account_pubkey
         self.data_and_slot: Optional[DataAndSlot[User]] = None
         self.decode = self.program.coder.accounts.decode
-        self.is_subscribed = False
         self.callback_id = None
 
     async def subscribe(self):
-        if self.is_subscribed is True:
+        if self.callback_id is not None:
             return
 
         self.add_to_account_loader()
 
         if self.data_and_slot is None:
             await self.fetch()
-
-        self.is_subscribed = True
 
     def add_to_account_loader(self):
         if self.callback_id is not None:
@@ -69,7 +66,7 @@ class PollingUserAccountSubscriber(UserAccountSubscriber):
             self.data_and_slot = new_data
 
     def unsubscribe(self):
-        if self.is_subscribed is False:
+        if self.callback_id is None:
             return
 
         self.bulk_account_loader.remove_account(
@@ -77,8 +74,6 @@ class PollingUserAccountSubscriber(UserAccountSubscriber):
         )
 
         self.callback_id = None
-
-        self.is_subscribed = False
 
     async def get_user_account_and_slot(self) -> Optional[DataAndSlot[User]]:
         return self.data_and_slot
