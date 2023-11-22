@@ -5,12 +5,8 @@ from solders.pubkey import Pubkey
 
 from driftpy.accounts import UserAccountSubscriber, DataAndSlot
 
-from typing import TypeVar
-
 from driftpy.accounts.bulk_account_loader import BulkAccountLoader
 from driftpy.types import User
-
-T = TypeVar("T")
 
 
 class PollingUserAccountSubscriber(UserAccountSubscriber):
@@ -57,7 +53,7 @@ class PollingUserAccountSubscriber(UserAccountSubscriber):
     async def fetch(self):
         await self.bulk_account_loader.load()
 
-    def _update_data(self, new_data: Optional[DataAndSlot[T]]):
+    def _update_data(self, new_data: Optional[DataAndSlot[User]]):
         if new_data is None:
             return
 
