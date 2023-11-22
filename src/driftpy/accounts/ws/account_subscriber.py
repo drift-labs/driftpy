@@ -42,18 +42,18 @@ class WebsocketAccountSubscriber(UserAccountSubscriber, Generic[T]):
         return self.task
 
     async def subscribe_ws(self):
-        ws_endpoint = self.program.provider.connection._provider.endpoint_uri.replace(
-            "https", "wss"
-        ).replace("http", "ws")
+        endpoint = self.program.provider.connection._provider.endpoint_uri
+        ws_endpoint = endpoint.replace("https", "wss").replace("http", "ws")
+
         async for ws in connect(ws_endpoint):
             try:
-                await ws.account_subscribe(  # type: ignore
+                await ws.account_subscribe(
                     self.pubkey,
                     commitment=self.commitment,
                     encoding="base64",
                 )
                 first_resp = await ws.recv()
-                subscription_id = cast(int, first_resp[0].result)  # type: ignore
+                subscription_id = cast(int, first_resp[0].result)
 
                 async for msg in ws:
                     try:
@@ -68,7 +68,7 @@ class WebsocketAccountSubscriber(UserAccountSubscriber, Generic[T]):
                     except Exception:
                         print(f"Error processing account data")
                         break
-                await ws.account_unsubscribe(subscription_id)  # type: ignore
+                await ws.account_unsubscribe(subscription_id)
             except websockets.exceptions.ConnectionClosed:
                 print("Websocket closed, reconnecting...")
                 continue
