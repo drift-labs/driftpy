@@ -1,4 +1,3 @@
-import asyncio
 from typing import Optional
 
 from anchorpy import Program
@@ -6,7 +5,7 @@ from solders.pubkey import Pubkey
 
 from driftpy.accounts import UserAccountSubscriber, DataAndSlot
 
-from typing import Generic, TypeVar
+from typing import TypeVar
 
 from driftpy.accounts.bulk_account_loader import BulkAccountLoader
 from driftpy.types import User
