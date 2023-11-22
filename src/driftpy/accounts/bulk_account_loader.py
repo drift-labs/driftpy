@@ -123,11 +123,16 @@ class BulkAccountLoader:
             )
             rpc_requests.append(rpc_request)
 
-        resp = await self.connection._provider.session.post(
-            self.connection._provider.endpoint_uri,
-            json=rpc_requests,
-            headers={"content-encoding": "gzip"},
-        )
+        try:
+            post = self.connection._provider.session.post(
+                self.connection._provider.endpoint_uri,
+                json=rpc_requests,
+                headers={"content-encoding": "gzip"},
+            )
+            resp = await asyncio.wait_for(post, timeout=10)
+        except asyncio.TimeoutError:
+            print("request to rpc timed out")
+            return
 
         parsed_resp = jsonrpcclient.parse(resp.json())
 
