@@ -24,6 +24,14 @@ class DataAndSlot(Generic[T]):
 
 class DriftClientAccountSubscriber:
     @abstractmethod
+    async def subscribe(self):
+        pass
+
+    @abstractmethod
+    def unsubscribe(self):
+        pass
+
+    @abstractmethod
     async def get_state_account_and_slot(self) -> Optional[DataAndSlot[State]]:
         pass
 
@@ -40,13 +48,21 @@ class DriftClientAccountSubscriber:
         pass
 
     @abstractmethod
-    async def get_oracle_data_and_slot(
+    async def get_oracle_price_data_and_slot(
         self, oracle: Pubkey
     ) -> Optional[DataAndSlot[OraclePriceData]]:
         pass
 
 
 class UserAccountSubscriber:
+    @abstractmethod
+    async def subscribe(self):
+        pass
+
+    @abstractmethod
+    def unsubscribe(self):
+        pass
+
     @abstractmethod
     async def get_user_account_and_slot(self) -> Optional[DataAndSlot[User]]:
         pass

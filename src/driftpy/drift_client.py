@@ -29,7 +29,7 @@ from typing import Union, Optional, List, Sequence
 from driftpy.math.positions import is_available, is_spot_position_available
 
 from driftpy.accounts import DriftClientAccountSubscriber
-from driftpy.accounts.cache import CachedDriftClientAccountSubscriber
+from driftpy.accounts.ws import WebsocketDriftClientAccountSubscriber
 
 DEFAULT_USER_NAME = "Main Account"
 
@@ -72,7 +72,7 @@ class DriftClient:
         self.subaccounts = [0]
 
         if account_subscriber is None:
-            account_subscriber = CachedDriftClientAccountSubscriber(self.program)
+            account_subscriber = WebsocketDriftClientAccountSubscriber(self.program)
 
         self.account_subscriber = account_subscriber
 
@@ -115,6 +115,12 @@ class DriftClient:
         drift_client.idl = idl
 
         return drift_client
+
+    async def subscribe(self):
+        await self.account_subscriber.subscribe()
+
+    def unsubscribe(self):
+        self.account_subscriber.unsubscribe()
 
     def get_user_account_public_key(self, user_id=0) -> Pubkey:
         return get_user_account_public_key(self.program_id, self.authority, user_id)
@@ -787,11 +793,10 @@ class DriftClient:
         user_id: int = 0,
     ):
         return await self.send_ixs(
-            [   
+            [
                 self.get_increase_compute_ix(),
-                (await self.get_place_perp_order_ix(order_params, user_id))[-1]
+                (await self.get_place_perp_order_ix(order_params, user_id))[-1],
             ]
-            
         )
 
     async def get_place_perp_order_ix(
@@ -805,24 +810,21 @@ class DriftClient:
         )
 
         ix = self.program.instruction["place_perp_order"](
-                order_params,
-                ctx=Context(
-                    accounts={
-                        "state": self.get_state_public_key(),
-                        "user": user_account_public_key,
-                        "authority": self.signer.pubkey(),
-                    },
-                    remaining_accounts=remaining_accounts,
-                ),
-            )
+            order_params,
+            ctx=Context(
+                accounts={
+                    "state": self.get_state_public_key(),
+                    "user": user_account_public_key,
+                    "authority": self.signer.pubkey(),
+                },
+                remaining_accounts=remaining_accounts,
+            ),
+        )
 
         return ix
 
     async def get_place_perp_orders_ix(
-        self,
-        order_params: List[OrderParams],
-        user_id: int = 0,
-        cancel_all=True
+        self, order_params: List[OrderParams], user_id: int = 0, cancel_all=True
     ):
         user_account_public_key = self.get_user_account_public_key(user_id)
         writeable_market_indexes = list(set([x.market_index for x in order_params]))
@@ -844,7 +846,8 @@ class DriftClient:
                         },
                         remaining_accounts=remaining_accounts,
                     ),
-                ))
+                )
+            )
         for order_param in order_params:
             ix = self.program.instruction["place_perp_order"](
                 order_param,

@@ -1,5 +1,5 @@
 from driftpy.accounts import UserAccountSubscriber
-from driftpy.accounts.cache import CachedUserAccountSubscriber
+from driftpy.accounts.ws import WebsocketUserAccountSubscriber
 from driftpy.drift_client import DriftClient
 from driftpy.math.positions import *
 from driftpy.math.margin import *
@@ -40,11 +40,17 @@ class DriftUser:
         )
 
         if account_subscriber is None:
-            account_subscriber = CachedUserAccountSubscriber(
+            account_subscriber = WebsocketUserAccountSubscriber(
                 self.user_public_key, self.program
             )
 
         self.account_subscriber = account_subscriber
+
+    async def subscribe(self):
+        await self.account_subscriber.subscribe()
+
+    def unsubscribe(self):
+        self.account_subscriber.unsubscribe()
 
     async def get_spot_oracle_data(
         self, spot_market: SpotMarket
@@ -68,15 +74,14 @@ class DriftUser:
     async def get_user(self) -> User:
         return (await self.account_subscriber.get_user_account_and_slot()).data
 
-
-    async def get_open_orders(self, 
-                            #   market_type: MarketType, 
-                            #   market_index: int,
-                            #   position_direction: PositionDirection
-                              ):
+    async def get_open_orders(
+        self,
+        #   market_type: MarketType,
+        #   market_index: int,
+        #   position_direction: PositionDirection
+    ):
         user: User = await self.get_user()
         return user.orders
-
 
     async def get_spot_market_liability(
         self,

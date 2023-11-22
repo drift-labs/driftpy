@@ -21,6 +21,9 @@ class CachedUserAccountSubscriber(UserAccountSubscriber):
         self.user_pubkey = user_pubkey
         self.user_and_slot = None
 
+    async def subscribe(self):
+        await self.cache_if_needed()
+
     async def update_cache(self):
         user_and_slot = await get_user_account_and_slot(self.program, self.user_pubkey)
         self.user_and_slot = user_and_slot
@@ -32,3 +35,6 @@ class CachedUserAccountSubscriber(UserAccountSubscriber):
     async def cache_if_needed(self):
         if self.user_and_slot is None:
             await self.update_cache()
+
+    def unsubscribe(self):
+        self.user_and_slot = None
