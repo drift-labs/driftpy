@@ -1,6 +1,5 @@
 from driftpy.accounts import UserAccountSubscriber
 from driftpy.accounts.ws import WebsocketUserAccountSubscriber
-from driftpy.drift_client import DriftClient
 from driftpy.math.positions import *
 from driftpy.math.margin import *
 from driftpy.math.spot_market import *
@@ -13,9 +12,9 @@ class DriftUser:
 
     def __init__(
         self,
-        drift_client: DriftClient,
+        drift_client,
         authority: Optional[Pubkey] = None,
-        subaccount_id: int = 0,
+        sub_account_id: int = 0,
         account_subscriber: Optional[UserAccountSubscriber] = None,
     ):
         """Initialize the user object
@@ -23,9 +22,11 @@ class DriftUser:
         Args:
             drift_client(DriftClient): required for program_id, idl, things (keypair doesnt matter)
             authority (Optional[Pubkey], optional): authority to investigate if None will use drift_client.authority
-            subaccount_id (int, optional): subaccount of authority to investigate. Defaults to 0.
+            sub_account_id (int, optional): subaccount of authority to investigate. Defaults to 0.
         """
-        self.drift_client = drift_client
+        from driftpy.drift_client import DriftClient
+
+        self.drift_client: DriftClient = drift_client
         self.authority = authority
         if self.authority is None:
             self.authority = drift_client.authority
@@ -33,7 +34,7 @@ class DriftUser:
         self.program = drift_client.program
         self.oracle_program = drift_client
         self.connection = self.program.provider.connection
-        self.subaccount_id = subaccount_id
+        self.subaccount_id = sub_account_id
 
         self.user_public_key = get_user_account_public_key(
             self.program.program_id, self.authority, self.subaccount_id

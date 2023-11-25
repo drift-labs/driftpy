@@ -19,6 +19,7 @@ from pathlib import Path
 import driftpy
 from driftpy.constants.numeric_constants import QUOTE_ASSET_BANK_INDEX
 from driftpy.addresses import *
+from driftpy.drift_user import DriftUser
 from driftpy.sdk_types import *
 from driftpy.types import *
 from driftpy.accounts import *
@@ -47,6 +48,8 @@ class DriftClient:
         account_subscriber: Optional[DriftClientAccountSubscriber] = None,
         tx_params: Optional[TxParams] = None,
         tx_version: Optional[TransactionVersion] = None,
+        active_sub_account_id: Optional[int] = None,
+        sub_account_ids: Optional[list[int]] = None,
     ):
         """Initializes the drift client object -- likely want to use the .from_config method instead of this one
 
@@ -56,7 +59,6 @@ class DriftClient:
         """
         self.program = program
         self.program_id = program.program_id
-        self.user_index = None
 
         if signer is None:
             signer = program.provider.wallet.payer
@@ -69,7 +71,16 @@ class DriftClient:
         self.signers = [self.signer]
         self.usdc_ata = None
         self.spot_market_atas = {}
-        self.subaccounts = [0]
+
+        self.active_sub_account_id = (
+            active_sub_account_id if active_sub_account_id is not None else 0
+        )
+        self.sub_account_ids = (
+            sub_account_ids
+            if sub_account_ids is not None
+            else [self.active_sub_account_id]
+        )
+        self.users = {}
 
         if account_subscriber is None:
             account_subscriber = WebsocketDriftClientAccountSubscriber(self.program)
@@ -118,6 +129,18 @@ class DriftClient:
 
     async def subscribe(self):
         await self.account_subscriber.subscribe()
+        for sub_account_id in self.sub_account_ids:
+            await self.add_user(sub_account_id)
+
+    async def add_user(self, sub_account_id: int):
+        if sub_account_id in self.users:
+            return
+
+        user = DriftUser(
+            drift_client=self, authority=self.authority, sub_account_id=sub_account_id
+        )
+        await user.subscribe()
+        self.users[sub_account_id] = user
 
     def unsubscribe(self):
         self.account_subscriber.unsubscribe()
@@ -125,10 +148,14 @@ class DriftClient:
     def get_user_account_public_key(self, user_id=0) -> Pubkey:
         return get_user_account_public_key(self.program_id, self.authority, user_id)
 
-    async def get_user(self, user_id=0) -> User:
-        return await get_user_account(
-            self.program, self.get_user_account_public_key(user_id)
-        )
+    def get_user(self, sub_account_id=0) -> DriftUser:
+        if sub_account_id not in self.users:
+            raise KeyError(f"No sub account id {sub_account_id} found")
+
+        return self.users[sub_account_id]
+
+    def switch_active_user(self, sub_account_id: int):
+        self.active_sub_account_id = sub_account_id
 
     def get_state_public_key(self):
         return get_state_public_key(self.program_id)
@@ -973,7 +1000,7 @@ class DriftClient:
         market_index: int,
         subaccount_id: int = 0,
     ) -> Optional[PerpPosition]:
-        user = await self.get_user(subaccount_id)
+        user = await self.get_user(subaccount_id).get_user()
 
         found = False
         for position in user.perp_positions:
