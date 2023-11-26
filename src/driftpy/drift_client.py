@@ -9,6 +9,8 @@ from solders.system_program import ID
 from solders.sysvar import RENT
 from solders.address_lookup_table_account import AddressLookupTableAccount
 from solana.rpc.async_api import AsyncClient
+from solana.rpc.types import TxOpts
+from solana.rpc.commitment import Processed
 from solana.transaction import AccountMeta
 from solders.compute_budget import set_compute_unit_limit, set_compute_unit_price
 from spl.token.constants import TOKEN_PROGRAM_ID
@@ -26,12 +28,14 @@ from driftpy.drift_user import DriftUser
 from driftpy.sdk_types import *
 from driftpy.accounts import *
 
-from driftpy.constants.config import Config, DriftEnv, DRIFT_PROGRAM_ID, configs
+from driftpy.constants.config import DriftEnv, DRIFT_PROGRAM_ID, configs
 
-from typing import Union, Optional, List, Sequence
+from typing import Union, Optional, List
 from driftpy.math.positions import is_available, is_spot_position_available
 
 DEFAULT_USER_NAME = "Main Account"
+
+DEFAULT_TX_OPTIONS = TxOpts(skip_confirmation=False, preflight_commitment=Processed)
 
 
 class DriftClient:
@@ -45,6 +49,7 @@ class DriftClient:
         wallet: Union[Keypair, Wallet],
         env: DriftEnv = "mainnet",
         program_id: Optional[Pubkey] = DRIFT_PROGRAM_ID,
+        opts: TxOpts = DEFAULT_TX_OPTIONS,
         authority: Pubkey = None,
         account_subscription: Optional[
             AccountSubscriptionConfig
@@ -68,7 +73,7 @@ class DriftClient:
             raw = file.read_text()
         idl = Idl.from_json(raw)
 
-        provider = Provider(connection, wallet)
+        provider = Provider(connection, wallet, opts)
         self.program_id = program_id
         self.program = Program(
             idl,

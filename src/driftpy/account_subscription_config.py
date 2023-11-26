@@ -1,6 +1,7 @@
 from typing import Literal, Optional
 
 from solders.pubkey import Pubkey
+from solana.rpc.commitment import Commitment
 
 from driftpy.accounts.bulk_account_loader import BulkAccountLoader
 from driftpy.accounts.cache import (
@@ -28,6 +29,7 @@ class AccountSubscriptionConfig:
         self,
         type: Literal["polling", "websocket", "cached"],
         bulk_account_loader: Optional[BulkAccountLoader] = None,
+        commitment: Commitment = None,
     ):
         self.type = type
 
@@ -35,7 +37,14 @@ class AccountSubscriptionConfig:
             if bulk_account_loader is None:
                 raise ValueError("polling subscription requires bulk account loader")
 
+            if commitment is not None and commitment != bulk_account_loader.commitment:
+                raise ValueError(
+                    f"bulk account loader commitment {bulk_account_loader.commitment} != commitment passed {commitment}"
+                )
+
             self.bulk_account_loader = bulk_account_loader
+
+        self.commitment = commitment
 
     def get_drift_client_subscriber(self, program: Program):
         match self.type:
@@ -44,9 +53,9 @@ class AccountSubscriptionConfig:
                     program, self.bulk_account_loader
                 )
             case "websocket":
-                return WebsocketDriftClientAccountSubscriber(program)
+                return WebsocketDriftClientAccountSubscriber(program, self.commitment)
             case "cached":
-                return CachedDriftClientAccountSubscriber(program)
+                return CachedDriftClientAccountSubscriber(program, self.commitment)
 
     def get_user_client_subscriber(self, program: Program, user_pubkey: Pubkey):
         match self.type:
@@ -55,6 +64,10 @@ class AccountSubscriptionConfig:
                     user_pubkey, program, self.bulk_account_loader
                 )
             case "websocket":
-                return WebsocketUserAccountSubscriber(user_pubkey, program)
+                return WebsocketUserAccountSubscriber(
+                    user_pubkey, program, self.commitment
+                )
             case "cached":
-                return CachedUserAccountSubscriber(user_pubkey, program)
+                return CachedUserAccountSubscriber(
+                    user_pubkey, program, self.commitment
+                )
