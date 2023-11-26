@@ -83,10 +83,10 @@ def get_user_stats_account_public_key(
 def get_user_account_public_key(
     program_id: Pubkey,
     authority: Pubkey,
-    user_id=0,
+    sub_account_id=0,
 ) -> Pubkey:
     return Pubkey.find_program_address(
-        [b"user", bytes(authority), int_to_le_bytes(user_id)], program_id
+        [b"user", bytes(authority), int_to_le_bytes(sub_account_id)], program_id
     )[0]
 
 

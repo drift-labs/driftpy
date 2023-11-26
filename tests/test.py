@@ -238,12 +238,12 @@ async def test_open_orders(
     ixs = await drift_client.get_place_perp_orders_ix([order_params])
     await drift_client.send_ixs(ixs)
     await drift_user.account_subscriber.update_cache()
-    await asyncio.sleep(1)
     open_orders_after = await drift_user.get_open_orders()
     assert open_orders_after[0].base_asset_amount == BASE_PRECISION
     assert open_orders_after[0].order_id == 1
     assert open_orders_after[0].user_order_id == 169
 
+    await drift_client.get_user().account_subscriber.update_cache()
     await drift_client.cancel_order(1, 0)
     await drift_user.account_subscriber.update_cache()
     open_orders_after2 = await drift_user.get_open_orders()
