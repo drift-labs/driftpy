@@ -14,6 +14,7 @@ from solana.rpc.commitment import Processed
 from solana.transaction import AccountMeta
 from solders.compute_budget import set_compute_unit_limit, set_compute_unit_price
 from spl.token.constants import TOKEN_PROGRAM_ID
+from spl.token.instructions import get_associated_token_address
 from anchorpy import Program, Context, Idl, Provider, Wallet
 from struct import pack_into
 from pathlib import Path
@@ -89,7 +90,6 @@ class DriftClient:
 
         self.wallet = wallet
         self.authority = authority
-        self.spot_market_atas = {}
 
         self.active_sub_account_id = (
             active_sub_account_id if active_sub_account_id is not None else 0
@@ -141,11 +141,6 @@ class DriftClient:
     def unsubscribe(self):
         self.account_subscriber.unsubscribe()
 
-    def get_user_account_public_key(self, sub_account_id=0) -> Pubkey:
-        return get_user_account_public_key(
-            self.program_id, self.authority, sub_account_id
-        )
-
     def get_user(self, sub_account_id=0) -> DriftUser:
         if sub_account_id not in self.users:
             raise KeyError(f"No sub account id {sub_account_id} found")
@@ -161,8 +156,18 @@ class DriftClient:
     def get_state_public_key(self):
         return get_state_public_key(self.program_id)
 
+    def get_user_account_public_key(self, sub_account_id=0) -> Pubkey:
+        return get_user_account_public_key(
+            self.program_id, self.authority, sub_account_id
+        )
+
     def get_user_stats_public_key(self):
         return get_user_stats_account_public_key(self.program_id, self.authority)
+
+    def get_associated_token_account_public_key(self, market_index: int) -> Pubkey:
+        spot_market = self.get_spot_market_account(market_index)
+        mint = spot_market.mint
+        return get_associated_token_address(self.wallet.public_key, mint)
 
     def get_state_account(self) -> Optional[StateAccount]:
         state_and_slot = self.account_subscriber.get_state_account_and_slot()
@@ -1670,7 +1675,9 @@ class DriftClient:
                         self.program_id, spot_market_index
                     ),
                     "drift_signer": get_drift_client_signer_public_key(self.program_id),
-                    "user_token_account": self.spot_market_atas[spot_market_index],
+                    "user_token_account": self.get_associated_token_account_public_key(
+                        spot_market_index
+                    ),
                     "token_program": TOKEN_PROGRAM_ID,
                 },
                 remaining_accounts=ra,
@@ -1706,7 +1713,9 @@ class DriftClient:
                         self.program_id, spot_market_index
                     ),
                     "drift_signer": get_drift_client_signer_public_key(self.program_id),
-                    "user_token_account": self.spot_market_atas[spot_market_index],
+                    "user_token_account": self.get_associated_token_account_public_key(
+                        spot_market_index
+                    ),
                     "token_program": TOKEN_PROGRAM_ID,
                 },
                 remaining_accounts=ra,
@@ -1726,10 +1735,6 @@ class DriftClient:
         remaining_accounts = self.get_remaining_accounts(
             writable_spot_market_indexes=[spot_market_index],
         )
-
-        assert (
-            self.spot_market_atas[spot_market_index] is not None
-        ), "please set self.spot_market_atas[spot_market_index] as your spot ata pubkey before this ix"
 
         return self.program.instruction["add_insurance_fund_stake"](
             spot_market_index,
@@ -1754,7 +1759,9 @@ class DriftClient:
                         self.program_id, spot_market_index
                     ),
                     "drift_signer": get_drift_client_signer_public_key(self.program_id),
-                    "user_token_account": self.spot_market_atas[spot_market_index],
+                    "user_token_account": self.get_associated_token_account_public_key(
+                        spot_market_index
+                    ),
                     "token_program": TOKEN_PROGRAM_ID,
                 },
                 remaining_accounts=remaining_accounts,
