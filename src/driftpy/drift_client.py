@@ -209,7 +209,7 @@ class DriftClient:
 
         return await self.program.provider.send(tx)
 
-    async def initialize_user(self, sub_account_id: int = 0):
+    async def initialize_user(self, sub_account_id: int = 0, name: str = None):
         """intializes a drift user
 
         Args:
@@ -221,7 +221,13 @@ class DriftClient:
         ixs = []
         if sub_account_id == 0:
             ixs.append(self.get_initialize_user_stats())
-        ix = self.get_initialize_user_instructions(sub_account_id)
+            if name is None:
+                name = DEFAULT_USER_NAME
+
+        if name is None:
+            name = 'Subaccount ' + str(sub_account_id+1)
+
+        ix = self.get_initialize_user_instructions(sub_account_id, name)
         ixs.append(ix)
         return await self.send_ixs(ixs)
 
