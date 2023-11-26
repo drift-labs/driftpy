@@ -10,5 +10,5 @@ from driftpy.accounts.types import UserAccountSubscriber
 class WebsocketUserAccountSubscriber(
     WebsocketAccountSubscriber[UserAccount], UserAccountSubscriber
 ):
-    async def get_user_account_and_slot(self) -> Optional[DataAndSlot[UserAccount]]:
+    def get_user_account_and_slot(self) -> Optional[DataAndSlot[UserAccount]]:
         return self.data_and_slot

@@ -149,20 +149,20 @@ class PollingDriftClientAccountSubscriber(DriftClientAccountSubscriber):
             )
         self.callbacks.clear()
 
-    async def get_state_account_and_slot(self) -> Optional[DataAndSlot[StateAccount]]:
+    def get_state_account_and_slot(self) -> Optional[DataAndSlot[StateAccount]]:
         return self.state
 
-    async def get_perp_market_and_slot(
+    def get_perp_market_and_slot(
         self, market_index: int
     ) -> Optional[DataAndSlot[PerpMarketAccount]]:
         return self.perp_markets.get(market_index)
 
-    async def get_spot_market_and_slot(
+    def get_spot_market_and_slot(
         self, market_index: int
     ) -> Optional[DataAndSlot[SpotMarketAccount]]:
         return self.spot_markets.get(market_index)
 
-    async def get_oracle_price_data_and_slot(
+    def get_oracle_price_data_and_slot(
         self, oracle: Pubkey
     ) -> Optional[DataAndSlot[OraclePriceData]]:
         return self.oracle.get(str(oracle))

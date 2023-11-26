@@ -26,7 +26,7 @@ class CachedDriftClientAccountSubscriber(DriftClientAccountSubscriber):
         self.cache = None
 
     async def subscribe(self):
-        await self.cache_if_needed()
+        await self.update_cache()
 
     async def update_cache(self):
         if self.cache is None:
@@ -75,31 +75,23 @@ class CachedDriftClientAccountSubscriber(DriftClientAccountSubscriber):
 
         self.cache["oracle_price_data"] = oracle_data
 
-    async def get_state_account_and_slot(self) -> Optional[DataAndSlot[StateAccount]]:
-        await self.cache_if_needed()
+    def get_state_account_and_slot(self) -> Optional[DataAndSlot[StateAccount]]:
         return self.cache["state"]
 
-    async def get_perp_market_and_slot(
+    def get_perp_market_and_slot(
         self, market_index: int
     ) -> Optional[DataAndSlot[PerpMarketAccount]]:
-        await self.cache_if_needed()
         return self.cache["perp_markets"][market_index]
 
-    async def get_spot_market_and_slot(
+    def get_spot_market_and_slot(
         self, market_index: int
     ) -> Optional[DataAndSlot[SpotMarketAccount]]:
-        await self.cache_if_needed()
         return self.cache["spot_markets"][market_index]
 
-    async def get_oracle_price_data_and_slot(
+    def get_oracle_price_data_and_slot(
         self, oracle: Pubkey
     ) -> Optional[DataAndSlot[OraclePriceData]]:
-        await self.cache_if_needed()
         return self.cache["oracle_price_data"][str(oracle)]
-
-    async def cache_if_needed(self):
-        if self.cache is None:
-            await self.update_cache()
 
     def unsubscribe(self):
         self.cache = None

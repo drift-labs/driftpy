@@ -92,20 +92,20 @@ class WebsocketDriftClientAccountSubscriber(DriftClientAccountSubscriber):
         await oracle_subscriber.subscribe()
         self.oracle_subscribers[str(oracle)] = oracle_subscriber
 
-    async def get_state_account_and_slot(self) -> Optional[DataAndSlot[StateAccount]]:
+    def get_state_account_and_slot(self) -> Optional[DataAndSlot[StateAccount]]:
         return self.state_subscriber.data_and_slot
 
-    async def get_perp_market_and_slot(
+    def get_perp_market_and_slot(
         self, market_index: int
     ) -> Optional[DataAndSlot[PerpMarketAccount]]:
         return self.perp_market_subscribers[market_index].data_and_slot
 
-    async def get_spot_market_and_slot(
+    def get_spot_market_and_slot(
         self, market_index: int
     ) -> Optional[DataAndSlot[SpotMarketAccount]]:
         return self.spot_market_subscribers[market_index].data_and_slot
 
-    async def get_oracle_price_data_and_slot(
+    def get_oracle_price_data_and_slot(
         self, oracle: Pubkey
     ) -> Optional[DataAndSlot[OraclePriceData]]:
         return self.oracle_subscribers[str(oracle)].data_and_slot

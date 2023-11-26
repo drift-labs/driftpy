@@ -32,23 +32,23 @@ class DriftClientAccountSubscriber:
         pass
 
     @abstractmethod
-    async def get_state_account_and_slot(self) -> Optional[DataAndSlot[StateAccount]]:
+    def get_state_account_and_slot(self) -> Optional[DataAndSlot[StateAccount]]:
         pass
 
     @abstractmethod
-    async def get_perp_market_and_slot(
+    def get_perp_market_and_slot(
         self, market_index: int
     ) -> Optional[DataAndSlot[PerpMarketAccount]]:
         pass
 
     @abstractmethod
-    async def get_spot_market_and_slot(
+    def get_spot_market_and_slot(
         self, market_index: int
     ) -> Optional[DataAndSlot[SpotMarketAccount]]:
         pass
 
     @abstractmethod
-    async def get_oracle_price_data_and_slot(
+    def get_oracle_price_data_and_slot(
         self, oracle: Pubkey
     ) -> Optional[DataAndSlot[OraclePriceData]]:
         pass
@@ -64,5 +64,5 @@ class UserAccountSubscriber:
         pass
 
     @abstractmethod
-    async def get_user_account_and_slot(self) -> Optional[DataAndSlot[UserAccount]]:
+    def get_user_account_and_slot(self) -> Optional[DataAndSlot[UserAccount]]:
         pass
