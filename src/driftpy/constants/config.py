@@ -1,7 +1,15 @@
 from typing import Literal
 
-from driftpy.constants.banks import devnet_banks, mainnet_banks, Bank
-from driftpy.constants.markets import devnet_markets, mainnet_markets, Market
+from driftpy.constants.spot_markets import (
+    devnet_spot_market_configs,
+    mainnet_spot_market_configs,
+    SpotMarketConfig,
+)
+from driftpy.constants.perp_markets import (
+    devnet_perp_market_configs,
+    mainnet_perp_market_configs,
+    PerpMarketConfig,
+)
 from dataclasses import dataclass
 from solders.pubkey import Pubkey
 
@@ -17,8 +25,8 @@ class Config:
     usdc_mint_address: Pubkey
     default_http: str
     default_ws: str
-    markets: list[Market]
-    banks: list[Bank]
+    perp_markets: list[PerpMarketConfig]
+    spot_markets: list[SpotMarketConfig]
     market_lookup_table: Pubkey
 
 
@@ -33,8 +41,8 @@ configs = {
         ),
         default_http="https://api.devnet.solana.com",
         default_ws="wss://api.devnet.solana.com",
-        markets=devnet_markets,
-        banks=devnet_banks,
+        perp_markets=devnet_perp_market_configs,
+        spot_markets=devnet_spot_market_configs,
         market_lookup_table=Pubkey.from_string(
             "FaMS3U4uBojvGn5FSDEPimddcXsCfwkKsFgMVVnDdxGb"
         ),
@@ -49,8 +57,8 @@ configs = {
         ),
         default_http="https://api.mainnet-beta.solana.com",
         default_ws="wss://api.mainnet-beta.solana.com",
-        markets=mainnet_markets,
-        banks=mainnet_banks,
+        perp_markets=mainnet_perp_market_configs,
+        spot_markets=mainnet_spot_market_configs,
         market_lookup_table=Pubkey.from_string(
             "GPZkp76cJtNL2mphCvT6FXkJCVPpouidnacckR6rzKDN"
         ),

@@ -3,75 +3,75 @@ from solders.pubkey import Pubkey
 
 
 @dataclass
-class Market:
+class PerpMarketConfig:
     symbol: str
     base_asset_symbol: str
     market_index: int
     pyth_oracle: Pubkey
 
 
-devnet_markets: list[Market] = [
-    Market(
+devnet_perp_market_configs: list[PerpMarketConfig] = [
+    PerpMarketConfig(
         base_asset_symbol="SOL",
         symbol="SOL-PERP",
         market_index=0,
         pyth_oracle=Pubkey.from_string("J83w4HKfqxwcq3BEMMkPFSppX3gqekLyLJBexebFVkix"),
     ),
-    Market(
+    PerpMarketConfig(
         base_asset_symbol="BTC",
         symbol="BTC-PERP",
         market_index=1,
         pyth_oracle=Pubkey.from_string("HovQMDrbAgAYPCmHVSrezcSmkMtXSSUsLDFANExrZh2J"),
     ),
-    Market(
+    PerpMarketConfig(
         base_asset_symbol="ETH",
         symbol="ETH-PERP",
         market_index=2,
         pyth_oracle=Pubkey.from_string("EdVCmQ9FSPcVe5YySXDPCRmc8aDQLKJ9xvYBMZPie1Vw"),
     ),
-    Market(
+    PerpMarketConfig(
         base_asset_symbol="APT",
         symbol="APT-PERP",
         market_index=3,
         pyth_oracle=Pubkey.from_string("5d2QJ6u2NveZufmJ4noHja5EHs3Bv1DUMPLG5xfasSVs"),
     ),
-    Market(
+    PerpMarketConfig(
         symbol="1MBONK-PERP",
         base_asset_symbol="1MBONK",
         market_index=4,
         pyth_oracle=Pubkey.from_string("6bquU99ktV1VRiHDr8gMhDFt3kMfhCQo5nfNrg2Urvsn"),
     ),
-    Market(
+    PerpMarketConfig(
         symbol="MATIC-PERP",
         base_asset_symbol="MATIC",
         market_index=5,
         pyth_oracle=Pubkey.from_string("FBirwuDFuRAu4iSGc7RGxN5koHB7EJM1wbCmyPuQoGur"),
     ),
-    Market(
+    PerpMarketConfig(
         symbol="ARB-PERP",
         base_asset_symbol="ARB",
         market_index=6,
         pyth_oracle=Pubkey.from_string("4mRGHzjGerQNWKXyQAmr9kWqb9saPPHKqo1xziXGQ5Dh"),
     ),
-    Market(
+    PerpMarketConfig(
         symbol="DOGE-PERP",
         base_asset_symbol="DOGE",
         market_index=7,
         pyth_oracle=Pubkey.from_string("4L6YhY8VvUgmqG5MvJkUJATtzB2rFqdrJwQCmFLv4Jzy"),
     ),
-    Market(
+    PerpMarketConfig(
         symbol="BNB-PERP",
         base_asset_symbol="BNB",
         market_index=8,
         pyth_oracle=Pubkey.from_string("GwzBgrXb4PG59zjce24SF2b9JXbLEjJJTBkmytuEZj1b"),
     ),
-    Market(
+    PerpMarketConfig(
         symbol="SUI-PERP",
         base_asset_symbol="SUI",
         market_index=9,
         pyth_oracle=Pubkey.from_string("6SK9vS8eMSSj3LUX2dPku93CrNv8xLCp9ng39F39h7A5"),
     ),
-    Market(
+    PerpMarketConfig(
         symbol="1MPEPE-PERP",
         base_asset_symbol="1MPEPE",
         market_index=10,
@@ -79,68 +79,68 @@ devnet_markets: list[Market] = [
     ),
 ]
 
-mainnet_markets: list[Market] = [
-    Market(
+mainnet_perp_market_configs: list[PerpMarketConfig] = [
+    PerpMarketConfig(
         symbol="SOL-PERP",
         base_asset_symbol="SOL",
         market_index=0,
         pyth_oracle=Pubkey.from_string("H6ARHf6YXhGYeQfUzQNGk6rDNnLBQKrenN712K4AQJEG"),
     ),
-    Market(
+    PerpMarketConfig(
         symbol="BTC-PERP",
         base_asset_symbol="BTC",
         market_index=1,
         pyth_oracle=Pubkey.from_string("GVXRSBjFk6e6J3NbVPXohDJetcTjaeeuykUpbQF8UoMU"),
     ),
-    Market(
+    PerpMarketConfig(
         symbol="ETH-PERP",
         base_asset_symbol="ETH",
         market_index=2,
         pyth_oracle=Pubkey.from_string("JBu1AL4obBcCMqKBBxhpWCNUt136ijcuMZLFvTP7iWdB"),
     ),
-    Market(
+    PerpMarketConfig(
         symbol="APT-PERP",
         base_asset_symbol="APT",
         market_index=3,
         pyth_oracle=Pubkey.from_string("FNNvb1AFDnDVPkocEri8mWbJ1952HQZtFLuwPiUjSJQ"),
     ),
-    Market(
+    PerpMarketConfig(
         symbol="1MBONK",
         base_asset_symbol="1MBONK",
         market_index=4,
         pyth_oracle=Pubkey.from_string("8ihFLu5FimgTQ1Unh4dVyEHUGodJ5gJQCrQf4KUVB9bN"),
     ),
-    Market(
+    PerpMarketConfig(
         symbol="MATIC-PERP",
         base_asset_symbol="MATIC",
         market_index=5,
         pyth_oracle=Pubkey.from_string("7KVswB9vkCgeM3SHP7aGDijvdRAHK8P5wi9JXViCrtYh"),
     ),
-    Market(
+    PerpMarketConfig(
         symbol="ARB-PERP",
         base_asset_symbol="ARB",
         market_index=6,
         pyth_oracle=Pubkey.from_string("5HRrdmghsnU3i2u5StaKaydS7eq3vnKVKwXMzCNKsc4C"),
     ),
-    Market(
+    PerpMarketConfig(
         symbol="DOGE-PERP",
         base_asset_symbol="DOGE",
         market_index=7,
         pyth_oracle=Pubkey.from_string("FsSM3s38PX9K7Dn6eGzuE29S2Dsk1Sss1baytTQdCaQj"),
     ),
-    Market(
+    PerpMarketConfig(
         symbol="BNB-PERP",
         base_asset_symbol="BNB",
         market_index=8,
         pyth_oracle=Pubkey.from_string("4CkQJBxhU8EZ2UjhigbtdaPbpTe6mqf811fipYBFbSYN"),
     ),
-    Market(
+    PerpMarketConfig(
         symbol="SUI-PERP",
         base_asset_symbol="SUI",
         market_index=9,
         pyth_oracle=Pubkey.from_string("3Qub3HaAJaa2xNY7SUqPKd3vVwTqDfDDkEUMPjXD2c1q"),
     ),
-    Market(
+    PerpMarketConfig(
         symbol="1MPEPE-PERP",
         base_asset_symbol="1MPEPE",
         market_index=10,

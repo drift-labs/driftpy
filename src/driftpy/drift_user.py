@@ -99,7 +99,7 @@ class DriftUser:
 
             spot_market = await self.get_spot_market(position.market_index)
 
-            if position.market_index == QUOTE_ASSET_BANK_INDEX:
+            if position.market_index == QUOTE_SPOT_MARKET_INDEX:
                 if str(position.balance_type) == "SpotBalanceType.Borrow()":
                     token_amount = get_token_amount(
                         position.scaled_balance, spot_market, position.balance_type
@@ -305,7 +305,7 @@ class DriftUser:
         with_weight_margin_category: Optional[MarginCategory] = None,
     ):
         user = await self.get_user()
-        quote_spot_market = await self.get_spot_market(QUOTE_ASSET_BANK_INDEX)
+        quote_spot_market = await self.get_spot_market(QUOTE_SPOT_MARKET_INDEX)
 
         unrealized_pnl = 0
         position: PerpPosition
@@ -355,7 +355,7 @@ class DriftUser:
 
             spot_market = await self.get_spot_market(position.market_index)
 
-            if position.market_index == QUOTE_ASSET_BANK_INDEX:
+            if position.market_index == QUOTE_SPOT_MARKET_INDEX:
                 spot_token_value = get_token_amount(
                     position.scaled_balance, spot_market, position.balance_type
                 )
