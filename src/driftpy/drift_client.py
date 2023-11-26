@@ -249,7 +249,12 @@ class DriftClient:
 
         return await self.program.provider.send(tx)
 
-    async def initialize_user(self, sub_account_id: int = 0, name: str = None):
+    async def initialize_user(
+        self,
+        sub_account_id: int = 0,
+        name: str = None,
+        referrer_info: ReferrerInfo = None,
+    ):
         """intializes a drift user
 
         Args:
@@ -267,7 +272,7 @@ class DriftClient:
         if name is None:
             name = "Subaccount " + str(sub_account_id + 1)
 
-        ix = self.get_initialize_user_instructions(sub_account_id, name)
+        ix = self.get_initialize_user_instructions(sub_account_id, name, referrer_info)
         ixs.append(ix)
         return await self.send_ixs(ixs)
 
@@ -291,7 +296,10 @@ class DriftClient:
         )
 
     def get_initialize_user_instructions(
-        self, sub_account_id: int = 0, name: str = DEFAULT_USER_NAME
+        self,
+        sub_account_id: int = 0,
+        name: str = DEFAULT_USER_NAME,
+        referrer_info: ReferrerInfo = None,
     ) -> Instruction:
         user_public_key = self.get_user_account_public_key(sub_account_id)
         state_public_key = self.get_state_public_key()
@@ -312,6 +320,17 @@ class DriftClient:
         for i in range(0, len(str_name_bytes), 2):
             name_byte_array.append(int(str_name_bytes[i : i + 2], 16))
 
+        remaining_accounts = []
+        if referrer_info is not None:
+            remaining_accounts.append(
+                AccountMeta(referrer_info.referrer, is_writable=True, is_signer=False)
+            )
+            remaining_accounts.append(
+                AccountMeta(
+                    referrer_info.referrer_stats, is_writable=True, is_signer=False
+                )
+            )
+
         initialize_user_account_ix = self.program.instruction["initialize_user"](
             sub_account_id,
             name_byte_array,
@@ -325,6 +344,7 @@ class DriftClient:
                     "rent": RENT,
                     "system_program": ID,
                 },
+                remaining_accounts=remaining_accounts,
             ),
         )
         return initialize_user_account_ix

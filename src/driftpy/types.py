@@ -933,3 +933,9 @@ class AssetType:
 class MakerInfo:
     maker: Pubkey
     order: Order
+
+
+@dataclass
+class ReferrerInfo:
+    referrer: Pubkey
+    referrer_stats: Pubkey
