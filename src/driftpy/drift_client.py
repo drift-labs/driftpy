@@ -153,7 +153,7 @@ class DriftClient:
         return self.users[sub_account_id]
 
     async def get_user_account(self, sub_account_id=0) -> UserAccount:
-        return await self.get_user(sub_account_id).get_user()
+        return await self.get_user(sub_account_id).get_user_account()
 
     def switch_active_user(self, sub_account_id: int):
         self.active_sub_account_id = sub_account_id
@@ -164,17 +164,21 @@ class DriftClient:
     def get_user_stats_public_key(self):
         return get_user_stats_account_public_key(self.program_id, self.authority)
 
-    async def get_state(self) -> Optional[StateAccount]:
+    async def get_state_account(self) -> Optional[StateAccount]:
         state_and_slot = await self.account_subscriber.get_state_account_and_slot()
         return getattr(state_and_slot, "data", None)
 
-    async def get_perp_market(self, market_index: int) -> Optional[PerpMarketAccount]:
+    async def get_perp_market_account(
+        self, market_index: int
+    ) -> Optional[PerpMarketAccount]:
         perp_market_and_slot = await self.account_subscriber.get_perp_market_and_slot(
             market_index
         )
         return getattr(perp_market_and_slot, "data", None)
 
-    async def get_spot_market(self, market_index: int) -> Optional[SpotMarketAccount]:
+    async def get_spot_market_account(
+        self, market_index: int
+    ) -> Optional[SpotMarketAccount]:
         spot_market_and_slot = await self.account_subscriber.get_spot_market_and_slot(
             market_index
         )
@@ -185,6 +189,18 @@ class DriftClient:
             await self.account_subscriber.get_oracle_data_and_slot(oracle)
         )
         return getattr(oracle_price_data_and_slot, "data", None)
+
+    async def get_oracle_price_data_for_perp_market(
+        self, market_index: int
+    ) -> Optional[OraclePriceData]:
+        oracle = (await self.get_perp_market_account(market_index)).amm.oracle
+        return await self.get_oracle_price_data(oracle)
+
+    async def get_oracle_price_data_for_spot_market(
+        self, market_index: int
+    ) -> Optional[OraclePriceData]:
+        oracle = (await self.get_spot_market_account(market_index)).oracle
+        return await self.get_oracle_price_data(oracle)
 
     async def fetch_market_lookup_table(self) -> AddressLookupTableAccount:
         if self.market_lookup_table_account is not None:
@@ -367,7 +383,7 @@ class DriftClient:
         spot_market_account_map: dict[int, AccountMeta],
         perp_market_account_map: dict[int, AccountMeta],
     ) -> None:
-        perp_market_account = await self.get_perp_market(market_index)
+        perp_market_account = await self.get_perp_market_account(market_index)
 
         perp_market_account_map[market_index] = AccountMeta(
             pubkey=perp_market_account.pubkey, is_signer=False, is_writable=writable
@@ -391,7 +407,7 @@ class DriftClient:
         oracle_account_map: dict[str, AccountMeta],
         spot_market_account_map: dict[int, AccountMeta],
     ) -> None:
-        spot_market_account = await self.get_spot_market(market_index)
+        spot_market_account = await self.get_spot_market_account(market_index)
 
         spot_market_account_map[market_index] = AccountMeta(
             pubkey=spot_market_account.pubkey, is_signer=False, is_writable=writable
@@ -473,7 +489,7 @@ class DriftClient:
         reduce_only: bool = False,
         sub_account_id: int = 0,
     ):
-        spot_market = await self.get_spot_market(spot_market_index)
+        spot_market = await self.get_spot_market_account(spot_market_index)
         remaining_accounts = await self.get_remaining_accounts(
             user_accounts=[await self.get_user_account(sub_account_id)],
             writable_spot_market_indexes=[spot_market_index],
@@ -1061,7 +1077,7 @@ class DriftClient:
         market_index: int,
         sub_account_id: int = 0,
     ) -> Optional[PerpPosition]:
-        user = await self.get_user(sub_account_id).get_user()
+        user = await self.get_user(sub_account_id).get_user_account()
 
         found = False
         for position in user.perp_positions:

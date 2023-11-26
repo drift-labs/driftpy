@@ -210,7 +210,7 @@ async def test_usdc_deposit(
         USDC_AMOUNT, 0, user_usdc_account.pubkey(), user_initialized=True
     )
     await drift_client.get_user(0).account_subscriber.update_cache()
-    user_account = await drift_client.get_user(0).get_user()
+    user_account = await drift_client.get_user(0).get_user_account()
     assert (
         user_account.spot_positions[0].scaled_balance
         == USDC_AMOUNT / QUOTE_PRECISION * SPOT_BALANCE_PRECISION
@@ -226,7 +226,7 @@ async def test_open_orders(
         account_subscription=AccountSubscriptionConfig("cached"),
     )
     await drift_user.subscribe()
-    user_account = await drift_client.get_user(0).get_user()
+    user_account = await drift_client.get_user(0).get_user_account()
 
     assert len(user_account.orders) == 32
     assert user_account.orders[0].market_index == 0
@@ -290,14 +290,14 @@ async def test_add_remove_liquidity(
 
     await drift_client.add_liquidity(n_shares, 0)
     await drift_client.get_user(0).account_subscriber.update_cache()
-    user_account = await drift_client.get_user(0).get_user()
+    user_account = await drift_client.get_user(0).get_user_account()
     assert user_account.perp_positions[0].lp_shares == n_shares
 
     await drift_client.settle_lp(drift_client.authority, 0)
 
     await drift_client.remove_liquidity(n_shares, 0)
     await drift_client.get_user(0).account_subscriber.update_cache()
-    user_account = await drift_client.get_user(0).get_user()
+    user_account = await drift_client.get_user(0).get_user_account()
     assert user_account.perp_positions[0].lp_shares == 0
 
 
@@ -344,7 +344,7 @@ async def test_open_close_position(
     # print(tx)
 
     await drift_client.get_user(0).account_subscriber.update_cache()
-    user_account = await drift_client.get_user(0).get_user()
+    user_account = await drift_client.get_user(0).get_user_account()
 
     assert user_account.perp_positions[0].base_asset_amount == baa
     assert user_account.perp_positions[0].quote_asset_amount < 0
@@ -352,7 +352,7 @@ async def test_open_close_position(
     await drift_client.close_position(0)
 
     await drift_client.get_user(0).account_subscriber.update_cache()
-    user_account = await drift_client.get_user(0).get_user()
+    user_account = await drift_client.get_user(0).get_user_account()
     assert user_account.perp_positions[0].base_asset_amount == 0
     assert user_account.perp_positions[0].quote_asset_amount < 0
 
@@ -394,7 +394,7 @@ async def test_liq_perp(
     drift_client: Admin, usdc_mint: Keypair, workspace: WorkspaceType
 ):
     market = await get_perp_market_account(drift_client.program, 0)
-    user_account = await drift_client.get_user(0).get_user()
+    user_account = await drift_client.get_user(0).get_user_account()
 
     liq, _ = await _airdrop_user(drift_client.program.provider)
     liq_drift_client = DriftClient(

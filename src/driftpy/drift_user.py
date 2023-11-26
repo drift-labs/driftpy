@@ -51,26 +51,27 @@ class DriftUser:
     def unsubscribe(self):
         self.account_subscriber.unsubscribe()
 
-    async def get_spot_oracle_data(
-        self, spot_market: SpotMarketAccount
+    async def get_oracle_data_for_spot_market(
+        self, market_index: int
     ) -> Optional[OraclePriceData]:
-        return await self.drift_client.get_oracle_price_data(spot_market.oracle)
+        return await self.drift_client.get_oracle_price_data_for_spot_market(
+            market_index
+        )
 
-    async def get_perp_oracle_data(
-        self, perp_market: PerpMarketAccount
+    async def get_oracle_data_for_perp_market(
+        self, market_index: int
     ) -> Optional[OraclePriceData]:
-        return await self.drift_client.get_oracle_price_data(perp_market.amm.oracle)
+        return await self.drift_client.get_oracle_price_data_for_perp_market(
+            market_index
+        )
 
-    async def get_state(self) -> StateAccount:
-        return await self.drift_client.get_state()
+    async def get_perp_market_account(self, market_index: int) -> PerpMarketAccount:
+        return await self.drift_client.get_perp_market_account(market_index)
 
-    async def get_spot_market(self, market_index: int) -> SpotMarketAccount:
-        return await self.drift_client.get_spot_market(market_index)
+    async def get_spot_market_account(self, market_index: int) -> SpotMarketAccount:
+        return await self.drift_client.get_spot_market_account(market_index)
 
-    async def get_perp_market(self, market_index: int) -> PerpMarketAccount:
-        return await self.drift_client.get_perp_market(market_index)
-
-    async def get_user(self) -> UserAccount:
+    async def get_user_account(self) -> UserAccount:
         return (await self.account_subscriber.get_user_account_and_slot()).data
 
     async def get_open_orders(
@@ -79,7 +80,7 @@ class DriftUser:
         #   market_index: int,
         #   position_direction: PositionDirection
     ):
-        user: UserAccount = await self.get_user()
+        user: UserAccount = await self.get_user_account()
         return user.orders
 
     async def get_spot_market_liability(
@@ -89,7 +90,7 @@ class DriftUser:
         liquidation_buffer=None,
         include_open_orders=None,
     ):
-        user = await self.get_user()
+        user = await self.get_user_account()
         total_liability = 0
         for position in user.spot_positions:
             if is_spot_position_available(position) or (
@@ -97,7 +98,9 @@ class DriftUser:
             ):
                 continue
 
-            spot_market = await self.get_spot_market(position.market_index)
+            spot_market = await self.drift_client.get_spot_market_account(
+                position.market_index
+            )
 
             if position.market_index == QUOTE_SPOT_MARKET_INDEX:
                 if str(position.balance_type) == "SpotBalanceType.Borrow()":
@@ -114,7 +117,9 @@ class DriftUser:
                 else:
                     continue
 
-            oracle_data = await self.get_spot_oracle_data(spot_market)
+            oracle_data = await self.drift_client.get_oracle_price_data(
+                spot_market.oracle
+            )
             if not include_open_orders:
                 if str(position.balance_type) == "SpotBalanceType.Borrow()":
                     token_amount = get_token_amount(
@@ -166,16 +171,20 @@ class DriftUser:
         liquidation_buffer: Optional[int] = 0,
         include_open_orders: bool = False,
     ):
-        user = await self.get_user()
+        user = await self.get_user_account()
 
         unrealized_pnl = 0
         for position in user.perp_positions:
-            market = await self.get_perp_market(position.market_index)
+            market = await self.drift_client.get_perp_market_account(
+                position.market_index
+            )
 
             if position.lp_shares > 0:
                 pass
 
-            price = (await self.get_perp_oracle_data(market)).price
+            price = (
+                await self.drift_client.get_oracle_price_data(market.amm.oracle)
+            ).price
             base_asset_amount = (
                 calculate_worst_case_base_asset_amount(position)
                 if include_open_orders
@@ -206,11 +215,11 @@ class DriftUser:
     async def can_be_liquidated(self) -> bool:
         total_collateral = await self.get_total_collateral()
 
-        user = await self.get_user()
+        user = await self.get_user_account()
         liquidation_buffer = None
         if user.being_liquidated:
             liquidation_buffer = (
-                await self.get_state()
+                await self.drift_client.get_state_account()
             ).liquidation_margin_buffer_ratio
 
         maintenance_req = await self.get_margin_requirement(
@@ -265,7 +274,7 @@ class DriftUser:
         self,
         market_index: int,
     ) -> Optional[SpotPosition]:
-        user = await self.get_user()
+        user = await self.get_user_account()
 
         found = False
         for position in user.spot_positions:
@@ -285,7 +294,7 @@ class DriftUser:
         self,
         market_index: int,
     ) -> Optional[PerpPosition]:
-        user = await self.get_user()
+        user = await self.get_user_account()
 
         found = False
         for position in user.perp_positions:
@@ -304,8 +313,10 @@ class DriftUser:
         market_index: int = None,
         with_weight_margin_category: Optional[MarginCategory] = None,
     ):
-        user = await self.get_user()
-        quote_spot_market = await self.get_spot_market(QUOTE_SPOT_MARKET_INDEX)
+        user = await self.get_user_account()
+        quote_spot_market = await self.drift_client.get_spot_market_account(
+            QUOTE_SPOT_MARKET_INDEX
+        )
 
         unrealized_pnl = 0
         position: PerpPosition
@@ -313,9 +324,13 @@ class DriftUser:
             if market_index is not None and position.market_index != market_index:
                 continue
 
-            market = await self.get_perp_market(position.market_index)
+            market = await self.drift_client.get_perp_market_account(
+                position.market_index
+            )
 
-            oracle_data = await self.get_perp_oracle_data(market)
+            oracle_data = await self.drift_client.get_oracle_price_data(
+                market.amm.oracle
+            )
             position_unrealized_pnl = calculate_position_pnl_with_oracle(
                 market, position, oracle_data, with_funding
             )
@@ -345,7 +360,7 @@ class DriftUser:
         include_open_orders=True,
         market_index: Optional[int] = None,
     ):
-        user = await self.get_user()
+        user = await self.get_user_account()
         total_value = 0
         for position in user.spot_positions:
             if is_spot_position_available(position) or (
@@ -353,7 +368,9 @@ class DriftUser:
             ):
                 continue
 
-            spot_market = await self.get_spot_market(position.market_index)
+            spot_market = await self.drift_client.get_spot_market_account(
+                position.market_index
+            )
 
             if position.market_index == QUOTE_SPOT_MARKET_INDEX:
                 spot_token_value = get_token_amount(
@@ -373,7 +390,9 @@ class DriftUser:
                 total_value += spot_token_value
                 continue
 
-            oracle_data = await self.get_spot_oracle_data(spot_market)
+            oracle_data = await self.drift_client.get_oracle_price_data(
+                spot_market.oracle
+            )
 
             if not include_open_orders:
                 token_amount = get_token_amount(
@@ -435,11 +454,10 @@ class DriftUser:
         margin_req = await self.get_margin_requirement(MarginCategory.MAINTENANCE)
         delta_liq = total_collateral - margin_req
 
-        perp_market = await self.get_perp_market(perp_market_index)
         delta_per_baa = delta_liq / (position.base_asset_amount / AMM_RESERVE_PRECISION)
 
         oracle_price = (
-            await self.get_perp_oracle_data(perp_market)
+            await self.get_oracle_data_for_perp_market(perp_market_index)
         ).price / PRICE_PRECISION
 
         liq_price = oracle_price - (delta_per_baa / QUOTE_PRECISION)
@@ -462,7 +480,7 @@ class DriftUser:
         )
         delta_liq = total_collateral - margin_req
 
-        spot_market = await self.get_spot_market(spot_market_index)
+        spot_market = await self.drift_client.get_spot_market_account(spot_market_index)
         token_amount = get_token_amount(
             position.scaled_balance, spot_market, position.balance_type
         )
@@ -491,7 +509,9 @@ class DriftUser:
             case _:
                 raise Exception(f"Invalid balance type: {position.balance_type}")
 
-        price = (await self.get_spot_oracle_data(spot_market)).price
+        price = (
+            await self.drift_client.get_oracle_price_data(spot_market.oracle)
+        ).price
         liq_price = price + liq_price_delta
         liq_price /= PRICE_PRECISION
 
