@@ -402,6 +402,7 @@ async def test_liq_perp(
         usdc_mint, drift_client.program.provider, USDC_AMOUNT, liq.pubkey()
     )
     await liq_drift_client.intialize_user()
+    await liq_drift_client.add_user(0)
     await liq_drift_client.deposit(
         USDC_AMOUNT,
         0,
@@ -436,5 +437,6 @@ async def test_liq_perp(
     await liq_drift_client.liquidate_perp(drift_client.authority, 0, int(baa) // 10)
 
     # liq takes on position
-    # position = await liq_drift_client.get_user_position(0)
-    # assert position.base_asset_amount != 0
+    await liq_drift_client.get_user(0).account_subscriber.update_cache()
+    position = await liq_drift_client.get_user_position(0)
+    assert position.base_asset_amount != 0
