@@ -26,32 +26,6 @@ from driftpy.accounts import get_perp_market_account
 
 
 class Admin(DriftClient):
-    @staticmethod
-    def from_config(
-        config: Config,
-        provider: Provider,
-        authority: Keypair = None,
-        admin: bool = False,
-    ):
-        # read the idl
-        file = Path(str(driftpy.__path__[0]) + "/idl/drift.json")
-        with file.open() as f:
-            idl_dict = json.load(f)
-        idl = Idl.from_json(idl_dict)
-
-        # create the program
-        program = Program(
-            idl,
-            config.drift_client_program_id,
-            provider,
-        )
-
-        drift_client = Admin(program, authority)
-        drift_client.config = config
-        drift_client.idl = idl
-
-        return drift_client
-
     async def initialize(
         self,
         usdc_mint: Pubkey,

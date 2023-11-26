@@ -87,7 +87,11 @@ def provider(program: Program) -> Provider:
 
 @async_fixture(scope="session")
 async def drift_client(program: Program, usdc_mint: Keypair) -> Admin:
-    admin = Admin(program, account_subscription=AccountSubscriptionConfig("cached"))
+    admin = Admin(
+        program.provider.connection,
+        program.provider.wallet,
+        account_subscription=AccountSubscriptionConfig("cached"),
+    )
     await admin.initialize(usdc_mint.pubkey(), admin_controls_prices=True)
     await admin.subscribe()
     return admin
@@ -394,7 +398,7 @@ async def test_liq_perp(
 
     liq, _ = await _airdrop_user(drift_client.program.provider)
     liq_drift_client = DriftClient(
-        drift_client.program,
+        drift_client.program.provider.connection,
         liq,
         account_subscription=AccountSubscriptionConfig("cached"),
     )
