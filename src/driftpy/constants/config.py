@@ -19,6 +19,7 @@ class Config:
     default_ws: str
     markets: list[Market]
     banks: list[Bank]
+    market_lookup_table: Pubkey
 
 
 configs = {
@@ -34,6 +35,9 @@ configs = {
         default_ws="wss://api.devnet.solana.com",
         markets=devnet_markets,
         banks=devnet_banks,
+        market_lookup_table=Pubkey.from_string(
+            "FaMS3U4uBojvGn5FSDEPimddcXsCfwkKsFgMVVnDdxGb"
+        ),
     ),
     "mainnet": Config(
         env="mainnet",
@@ -47,5 +51,8 @@ configs = {
         default_ws="wss://api.mainnet-beta.solana.com",
         markets=mainnet_markets,
         banks=mainnet_banks,
+        market_lookup_table=Pubkey.from_string(
+            "GPZkp76cJtNL2mphCvT6FXkJCVPpouidnacckR6rzKDN"
+        ),
     ),
 }

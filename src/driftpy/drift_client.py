@@ -7,6 +7,7 @@ from solders.message import MessageV0
 from solders.instruction import Instruction
 from solders.system_program import ID
 from solders.sysvar import RENT
+from solders.address_lookup_table_account import AddressLookupTableAccount
 from solana.rpc.async_api import AsyncClient
 from solana.transaction import AccountMeta
 from solders.compute_budget import set_compute_unit_limit, set_compute_unit_price
@@ -17,6 +18,7 @@ from pathlib import Path
 
 import driftpy
 from driftpy.account_subscription_config import AccountSubscriptionConfig
+from driftpy.address_lookup_table import get_address_lookup_table
 from driftpy.constants.numeric_constants import (
     QUOTE_SPOT_MARKET_INDEX,
 )
@@ -24,7 +26,7 @@ from driftpy.drift_user import DriftUser
 from driftpy.sdk_types import *
 from driftpy.accounts import *
 
-from driftpy.constants.config import Config, DriftEnv, DRIFT_PROGRAM_ID
+from driftpy.constants.config import Config, DriftEnv, DRIFT_PROGRAM_ID, configs
 
 from typing import Union, Optional, List, Sequence
 from driftpy.math.positions import is_available, is_spot_position_available
@@ -51,6 +53,7 @@ class DriftClient:
         tx_version: Optional[TransactionVersion] = None,
         active_sub_account_id: Optional[int] = None,
         sub_account_ids: Optional[list[int]] = None,
+        market_lookup_table: Optional[Pubkey] = None,
     ):
         """Initializes the drift client object -- likely want to use the .from_config method instead of this one
 
@@ -58,6 +61,8 @@ class DriftClient:
             program (Program): Drift anchor program (see from_config on how to initialize it)
             authority (Keypair, optional): Authority of all txs - if None will default to the Anchor Provider.Wallet Keypair.
         """
+        self.connection = connection
+
         file = Path(str(driftpy.__path__[0]) + "/idl/drift.json")
         with file.open() as f:
             raw = file.read_text()
@@ -96,6 +101,13 @@ class DriftClient:
             self.program
         )
         self.account_subscription_config = account_subscription
+
+        self.market_lookup_table = (
+            market_lookup_table
+            if market_lookup_table is not None
+            else configs[env].market_lookup_table
+        )
+        self.market_lookup_table_account: Optional[AddressLookupTableAccount] = None
 
         if tx_params is None:
             tx_params = TxParams(600_000, 0)
@@ -170,10 +182,20 @@ class DriftClient:
         )
         return getattr(oracle_price_data_and_slot, "data", None)
 
+    async def fetch_market_lookup_table(self) -> AddressLookupTableAccount:
+        if self.market_lookup_table_account is not None:
+            return self.market_lookup_table_account
+
+        self.market_lookup_table_account = await get_address_lookup_table(
+            self.connection, self.market_lookup_table
+        )
+        return self.market_lookup_table_account
+
     async def send_ixs(
         self,
         ixs: Union[Instruction, list[Instruction]],
         signers=None,
+        lookup_tables: list[AddressLookupTableAccount] = None,
     ):
         if isinstance(ixs, Instruction):
             ixs = [ixs]
@@ -200,8 +222,10 @@ class DriftClient:
             if signers is not None:
                 [tx.sign_partial(signer) for signer in signers]
         elif self.tx_version == 0:
+            if lookup_tables is None:
+                lookup_tables = [await self.fetch_market_lookup_table()]
             msg = MessageV0.try_compile(
-                self.wallet.public_key, ixs, [], latest_blockhash
+                self.wallet.public_key, ixs, lookup_tables, latest_blockhash
             )
             tx = VersionedTransaction(msg, [self.wallet.payer])
         else:
@@ -225,7 +249,7 @@ class DriftClient:
                 name = DEFAULT_USER_NAME
 
         if name is None:
-            name = 'Subaccount ' + str(sub_account_id+1)
+            name = "Subaccount " + str(sub_account_id + 1)
 
         ix = self.get_initialize_user_instructions(sub_account_id, name)
         ixs.append(ix)
