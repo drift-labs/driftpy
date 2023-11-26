@@ -28,7 +28,7 @@ Note: requires Python >= 3.10.
 
 from solana.keypair import Keypair
 from driftpy.drift_client import DriftClient
-from driftpy.drift_user import User
+from driftpy.drift_user import DriftUser
 from driftpy.constants.numeric_constants import BASE_PRECISION, AMM_RESERVE_PRECISION
 
 from anchorpy import Provider, Wallet
@@ -68,12 +68,12 @@ leverage = await drift_user.get_leverage()
 print('current leverage:', leverage / 10_000)
 
 # you can also inspect other accounts information using the (authority=) flag
-bigz_acc = User(drift_client, authority=PublicKey('bigZ'))
+bigz_acc = DriftUser(drift_client, authority=PublicKey('bigZ'))
 leverage = await bigz_acc.get_leverage()
 print('bigZs leverage:', leverage / 10_000)
 
 # clearing house user calls can be expensive on the rpc so we can cache them
-drift_user = User(drift_client, use_cache=True)
+drift_user = DriftUser(drift_client, use_cache=True)
 await drift_user.set_cache()
 
 # works without any rpc calls (uses the cached data)
