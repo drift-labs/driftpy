@@ -209,7 +209,7 @@ class DriftClient:
 
         return await self.program.provider.send(tx)
 
-    async def intialize_user(self, sub_account_id: int = 0):
+    async def initialize_user(self, sub_account_id: int = 0):
         """intializes a drift user
 
         Args:

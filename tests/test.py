@@ -190,7 +190,7 @@ async def test_market(
 async def test_init_user(
     drift_client: Admin,
 ):
-    await drift_client.intialize_user()
+    await drift_client.initialize_user()
     user_public_key = get_user_account_public_key(
         drift_client.program.program_id, drift_client.authority, 0
     )
@@ -405,7 +405,7 @@ async def test_liq_perp(
     usdc_acc = await _create_and_mint_user_usdc(
         usdc_mint, drift_client.program.provider, USDC_AMOUNT, liq.pubkey()
     )
-    await liq_drift_client.intialize_user()
+    await liq_drift_client.initialize_user()
     await liq_drift_client.add_user(0)
     await liq_drift_client.deposit(
         USDC_AMOUNT,
