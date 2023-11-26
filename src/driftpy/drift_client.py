@@ -89,7 +89,6 @@ class DriftClient:
 
         self.wallet = wallet
         self.authority = authority
-        self.usdc_ata = None
         self.spot_market_atas = {}
 
         self.active_sub_account_id = (
