@@ -17,6 +17,7 @@ from struct import pack_into
 from pathlib import Path
 
 import driftpy
+from driftpy.account_subscription_config import AccountSubscriptionConfig
 from driftpy.constants.numeric_constants import QUOTE_ASSET_BANK_INDEX
 from driftpy.addresses import *
 from driftpy.drift_user import DriftUser
@@ -45,7 +46,9 @@ class DriftClient:
         program: Program,
         signer: Keypair = None,
         authority: Pubkey = None,
-        account_subscriber: Optional[DriftClientAccountSubscriber] = None,
+        account_subscription: Optional[
+            AccountSubscriptionConfig
+        ] = AccountSubscriptionConfig.default(),
         tx_params: Optional[TxParams] = None,
         tx_version: Optional[TransactionVersion] = None,
         active_sub_account_id: Optional[int] = None,
@@ -82,10 +85,10 @@ class DriftClient:
         )
         self.users = {}
 
-        if account_subscriber is None:
-            account_subscriber = WebsocketDriftClientAccountSubscriber(self.program)
-
-        self.account_subscriber = account_subscriber
+        self.account_subscriber = account_subscription.get_drift_client_subscriber(
+            self.program
+        )
+        self.account_subscription_config = account_subscription
 
         if tx_params is None:
             tx_params = TxParams(600_000, 0)
@@ -137,7 +140,10 @@ class DriftClient:
             return
 
         user = DriftUser(
-            drift_client=self, authority=self.authority, sub_account_id=sub_account_id
+            drift_client=self,
+            authority=self.authority,
+            sub_account_id=sub_account_id,
+            account_subscription=self.account_subscription_config,
         )
         await user.subscribe()
         self.users[sub_account_id] = user

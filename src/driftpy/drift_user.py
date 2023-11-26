@@ -1,5 +1,4 @@
-from driftpy.accounts import UserAccountSubscriber
-from driftpy.accounts.ws import WebsocketUserAccountSubscriber
+from driftpy.account_subscription_config import AccountSubscriptionConfig
 from driftpy.math.positions import *
 from driftpy.math.margin import *
 from driftpy.math.spot_market import *
@@ -15,7 +14,9 @@ class DriftUser:
         drift_client,
         authority: Optional[Pubkey] = None,
         sub_account_id: int = 0,
-        account_subscriber: Optional[UserAccountSubscriber] = None,
+        account_subscription: Optional[
+            AccountSubscriptionConfig
+        ] = AccountSubscriptionConfig.default(),
     ):
         """Initialize the user object
 
@@ -40,12 +41,9 @@ class DriftUser:
             self.program.program_id, self.authority, self.subaccount_id
         )
 
-        if account_subscriber is None:
-            account_subscriber = WebsocketUserAccountSubscriber(
-                self.user_public_key, self.program
-            )
-
-        self.account_subscriber = account_subscriber
+        self.account_subscriber = account_subscription.get_user_client_subscriber(
+            self.program, self.user_public_key
+        )
 
     async def subscribe(self):
         await self.account_subscriber.subscribe()
