@@ -1,6 +1,4 @@
 from solders.pubkey import Pubkey
-import json
-from typing import Optional
 from solders.keypair import Keypair
 from solana.transaction import Transaction
 from solders.transaction import VersionedTransaction
@@ -9,10 +7,11 @@ from solders.message import MessageV0
 from solders.instruction import Instruction
 from solders.system_program import ID
 from solders.sysvar import RENT
+from solana.rpc.async_api import AsyncClient
 from solana.transaction import AccountMeta
 from solders.compute_budget import set_compute_unit_limit, set_compute_unit_price
 from spl.token.constants import TOKEN_PROGRAM_ID
-from anchorpy import Program, Context, Idl, Provider
+from anchorpy import Program, Context, Idl, Provider, Wallet
 from struct import pack_into
 from pathlib import Path
 
@@ -21,19 +20,14 @@ from driftpy.account_subscription_config import AccountSubscriptionConfig
 from driftpy.constants.numeric_constants import (
     QUOTE_SPOT_MARKET_INDEX,
 )
-from driftpy.addresses import *
 from driftpy.drift_user import DriftUser
 from driftpy.sdk_types import *
-from driftpy.types import *
 from driftpy.accounts import *
 
-from driftpy.constants.config import Config
+from driftpy.constants.config import Config, DriftEnv, DRIFT_PROGRAM_ID
 
 from typing import Union, Optional, List, Sequence
 from driftpy.math.positions import is_available, is_spot_position_available
-
-from driftpy.accounts import DriftClientAccountSubscriber
-from driftpy.accounts.ws import WebsocketDriftClientAccountSubscriber
 
 DEFAULT_USER_NAME = "Main Account"
 
@@ -45,8 +39,10 @@ class DriftClient:
 
     def __init__(
         self,
-        program: Program,
-        signer: Keypair = None,
+        connection: AsyncClient,
+        wallet: Union[Keypair, Wallet],
+        env: DriftEnv = "mainnet",
+        program_id: Optional[Pubkey] = DRIFT_PROGRAM_ID,
         authority: Pubkey = None,
         account_subscription: Optional[
             AccountSubscriptionConfig
@@ -62,18 +58,27 @@ class DriftClient:
             program (Program): Drift anchor program (see from_config on how to initialize it)
             authority (Keypair, optional): Authority of all txs - if None will default to the Anchor Provider.Wallet Keypair.
         """
-        self.program = program
-        self.program_id = program.program_id
+        file = Path(str(driftpy.__path__[0]) + "/idl/drift.json")
+        with file.open() as f:
+            raw = file.read_text()
+        idl = Idl.from_json(raw)
 
-        if signer is None:
-            signer = program.provider.wallet.payer
+        provider = Provider(connection, wallet)
+        self.program_id = program_id
+        self.program = Program(
+            idl,
+            self.program_id,
+            provider,
+        )
+
+        if isinstance(wallet, Keypair):
+            wallet = Wallet(wallet)
 
         if authority is None:
-            authority = signer.pubkey()
+            authority = wallet.public_key
 
-        self.signer = signer
+        self.wallet = wallet
         self.authority = authority
-        self.signers = [self.signer]
         self.usdc_ata = None
         self.spot_market_atas = {}
 
@@ -98,39 +103,6 @@ class DriftClient:
         self.tx_params = tx_params
 
         self.tx_version = tx_version if tx_version is not None else Legacy
-
-    @staticmethod
-    def from_config(config: Config, provider: Provider, authority: Keypair = None):
-        """Initializes the drift client object from a Config
-
-        Args:
-            config (Config): the config to initialize form
-            provider (Provider): anchor provider
-            authority (Keypair, optional):  _description_. Defaults to None.
-
-        Returns:
-            DriftClient
-        : the drift client object
-        """
-        # read the idl
-        file = Path(str(driftpy.__path__[0]) + "/idl/drift.json")
-        print(file)
-        with file.open() as f:
-            raw = file.read_text()
-        idl = Idl.from_json(raw)
-
-        # create the program
-        program = Program(
-            idl,
-            config.drift_client_program_id,
-            provider,
-        )
-
-        drift_client = DriftClient(program, authority)
-        drift_client.config = config
-        drift_client.idl = idl
-
-        return drift_client
 
     async def subscribe(self):
         await self.account_subscriber.subscribe()
@@ -220,16 +192,18 @@ class DriftClient:
             tx = Transaction(
                 instructions=ixs,
                 recent_blockhash=latest_blockhash,
-                fee_payer=self.signer.pubkey(),
+                fee_payer=self.wallet.public_key,
             )
 
-            tx.sign_partial(self.signer)
+            tx.sign_partial(self.wallet.payer)
 
             if signers is not None:
                 [tx.sign_partial(signer) for signer in signers]
         elif self.tx_version == 0:
-            msg = MessageV0.try_compile(self.signer.pubkey(), ixs, [], latest_blockhash)
-            tx = VersionedTransaction(msg, [self.signer])
+            msg = MessageV0.try_compile(
+                self.wallet.public_key, ixs, [], latest_blockhash
+            )
+            tx = VersionedTransaction(msg, [self.wallet.payer])
         else:
             raise NotImplementedError("unknown tx version", self.tx_version)
 
@@ -804,7 +778,7 @@ class DriftClient:
                 accounts={
                     "state": self.get_state_public_key(),
                     "user": user_account_public_key,
-                    "authority": self.signer.pubkey(),
+                    "authority": self.wallet.public_key,
                 },
                 remaining_accounts=remaining_accounts,
             ),
@@ -836,7 +810,7 @@ class DriftClient:
                     accounts={
                         "state": self.get_state_public_key(),
                         "user": self.get_user_account_public_key(sub_account_id),
-                        "authority": self.signer.pubkey(),
+                        "authority": self.wallet.public_key,
                     },
                     remaining_accounts=remaining_accounts,
                 ),
@@ -849,7 +823,7 @@ class DriftClient:
                     accounts={
                         "state": self.get_state_public_key(),
                         "user": user_account_public_key,
-                        "authority": self.signer.pubkey(),
+                        "authority": self.wallet.public_key,
                     },
                     remaining_accounts=remaining_accounts,
                 ),
@@ -888,7 +862,7 @@ class DriftClient:
                 accounts={
                     "state": self.get_state_public_key(),
                     "user": user_account_public_key,
-                    "authority": self.signer.pubkey(),
+                    "authority": self.wallet.public_key,
                 },
                 remaining_accounts=remaining_accounts,
             ),
@@ -916,7 +890,7 @@ class DriftClient:
                         accounts={
                             "state": self.get_state_public_key(),
                             "user": self.get_user_account_public_key(sub_account_id),
-                            "authority": self.signer.pubkey(),
+                            "authority": self.wallet.public_key,
                         },
                         remaining_accounts=remaining_accounts,
                     ),
@@ -929,7 +903,7 @@ class DriftClient:
                     accounts={
                         "state": self.get_state_public_key(),
                         "user": user_account_public_key,
-                        "authority": self.signer.pubkey(),
+                        "authority": self.wallet.public_key,
                     },
                     remaining_accounts=remaining_accounts,
                 ),
