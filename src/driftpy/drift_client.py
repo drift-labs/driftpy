@@ -31,6 +31,7 @@ from driftpy.constants.config import DriftEnv, DRIFT_PROGRAM_ID, configs
 
 from typing import Union, Optional, List
 from driftpy.math.positions import is_available, is_spot_position_available
+from driftpy.name import encode_name
 
 DEFAULT_USER_NAME = "Main Account"
 
@@ -305,20 +306,7 @@ class DriftClient:
         state_public_key = self.get_state_public_key()
         user_stats_public_key = self.get_user_stats_public_key()
 
-        if len(name) > 32:
-            raise Exception("name too long")
-
-        name_bytes = bytearray(32)
-        pack_into(f"{len(name)}s", name_bytes, 0, name.encode("utf-8"))
-        offset = len(name)
-        for _ in range(32 - len(name)):
-            pack_into("1s", name_bytes, offset, " ".encode("utf-8"))
-            offset += 1
-
-        str_name_bytes = name_bytes.hex()
-        name_byte_array = []
-        for i in range(0, len(str_name_bytes), 2):
-            name_byte_array.append(int(str_name_bytes[i : i + 2], 16))
+        encoded_name = encode_name(name)
 
         remaining_accounts = []
         if referrer_info is not None:
@@ -333,7 +321,7 @@ class DriftClient:
 
         initialize_user_account_ix = self.program.instruction["initialize_user"](
             sub_account_id,
-            name_byte_array,
+            encoded_name,
             ctx=Context(
                 accounts={
                     "user": user_public_key,
