@@ -731,19 +731,6 @@ class DriftClient:
         ix = await self.get_place_and_take_ix(order, sub_account_id=sub_account_id)
         return ix
 
-    def get_increase_compute_ix(self) -> Instruction:
-        program_id = Pubkey("ComputeBudget111111111111111111111111111111")
-
-        name_bytes = bytearray(1 + 4 + 4)
-        pack_into("B", name_bytes, 0, 0)
-        pack_into("I", name_bytes, 1, 500_000)
-        pack_into("I", name_bytes, 5, 0)
-        data = bytes(name_bytes)
-
-        compute_ix = Instruction(program_id, data, [])
-
-        return compute_ix
-
     async def place_spot_order(
         self,
         order_params: OrderParams,
@@ -752,7 +739,6 @@ class DriftClient:
     ):
         return await self.send_ixs(
             [
-                self.get_increase_compute_ix(),
                 await self.get_place_spot_order_ix(order_params, sub_account_id),
             ]
         )
@@ -840,7 +826,6 @@ class DriftClient:
     ):
         return await self.send_ixs(
             [
-                self.get_increase_compute_ix(),
                 (await self.get_place_perp_order_ix(order_params, sub_account_id))[-1],
             ]
         )
@@ -920,7 +905,6 @@ class DriftClient:
     ):
         return await self.send_ixs(
             [
-                self.get_increase_compute_ix(),
                 await self.get_place_and_take_ix(
                     order_params, maker_info, sub_account_id
                 ),
@@ -1326,7 +1310,6 @@ class DriftClient:
         )
 
         return [
-            self.get_increase_compute_ix(),
             self.program.instruction["settle_pnl"](
                 market_index,
                 ctx=Context(
@@ -1490,7 +1473,6 @@ class DriftClient:
     ):
         return await self.send_ixs(
             [
-                self.get_increase_compute_ix(),
                 await self.get_settle_expired_market_ix(
                     market_index,
                 ),
