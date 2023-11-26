@@ -5,8 +5,7 @@ from driftpy.constants.numeric_constants import (
     AMM_TIMES_PEG_TO_QUOTE_PRECISION_RATIO,
     QUOTE_PRECISION,
 )
-from driftpy.sdk_types import AssetType
-from driftpy.types import PositionDirection, SwapDirection, AMM
+from driftpy.types import PositionDirection, SwapDirection, AMM, AssetType
 
 
 def calculate_peg_from_target_price(

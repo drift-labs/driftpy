@@ -288,12 +288,6 @@ class UserStatus:
 
 
 @_rust_enum
-class AssetType:
-    BASE = constructor()
-    QUOTE = constructor()
-
-
-@_rust_enum
 class OrderStatus:
     INIT = constructor()
     OPEN = constructor()
@@ -559,7 +553,7 @@ class Order:
 
 
 @dataclass
-class PhoenixV1FulfillmentConfig:
+class PhoenixV1FulfillmentConfigAccount:
     pubkey: Pubkey
     phoenix_program_id: Pubkey
     phoenix_log_authority: Pubkey
@@ -573,7 +567,7 @@ class PhoenixV1FulfillmentConfig:
 
 
 @dataclass
-class SerumV3FulfillmentConfig:
+class SerumV3FulfillmentConfigAccount:
     pubkey: Pubkey
     serum_program_id: Pubkey
     serum_market: Pubkey
@@ -601,7 +595,7 @@ class InsuranceClaim:
 
 
 @dataclass
-class PerpMarket:
+class PerpMarketAccount:
     pubkey: Pubkey
     amm: AMM
     pnl_pool: PoolBalance
@@ -656,7 +650,7 @@ class InsuranceFund:
 
 
 @dataclass
-class SpotMarket:
+class SpotMarketAccount:
     pubkey: Pubkey
     oracle: Pubkey
     mint: Pubkey
@@ -713,7 +707,7 @@ class SpotMarket:
 
 
 @dataclass
-class State:
+class StateAccount:
     admin: Pubkey
     whitelist_mint: Pubkey
     discount_mint: Pubkey
@@ -759,7 +753,7 @@ class PerpPosition:
 
 
 @dataclass
-class User:
+class UserAccount:
     authority: Pubkey
     delegate: Pubkey
     name: list[int]
@@ -800,7 +794,7 @@ class UserFees:
 
 
 @dataclass
-class UserStats:
+class UserStatsAccount:
     authority: Pubkey
     referrer: Pubkey
     fees: UserFees
@@ -883,7 +877,7 @@ class SpotBankruptcyRecord:
 
 
 @dataclass
-class InsuranceFundStake:
+class InsuranceFundStakeAccount:
     authority: Pubkey
     if_shares: int
     last_withdraw_request_shares: int
@@ -897,7 +891,7 @@ class InsuranceFundStake:
 
 
 @dataclass
-class ProtocolIfSharesTransferConfig:
+class ProtocolIfSharesTransferConfigAccount:
     whitelisted_signers: list[Pubkey]
     max_transfer_per_epoch: int
     current_epoch_transfer: int
@@ -906,7 +900,7 @@ class ProtocolIfSharesTransferConfig:
 
 
 @dataclass
-class ReferrerName:
+class ReferrerNameAccount:
     authority: Pubkey
     user: Pubkey
     user_stats: Pubkey
@@ -927,3 +921,15 @@ class OraclePriceData:
 class TxParams:
     compute_units: Optional[int]
     compute_units_price: Optional[int]
+
+
+@_rust_enum
+class AssetType:
+    QUOTE = constructor()
+    BASE = constructor()
+
+
+@dataclass
+class MakerInfo:
+    maker: Pubkey
+    order: Order

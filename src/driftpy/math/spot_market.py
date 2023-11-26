@@ -13,7 +13,7 @@ def get_signed_token_amount(amount, balance_type):
 
 
 def get_token_amount(
-    balance: int, spot_market: SpotMarket, balance_type: SpotBalanceType
+    balance: int, spot_market: SpotMarketAccount, balance_type: SpotBalanceType
 ) -> int:
     percision_decrease = 10 ** (19 - spot_market.decimals)
 

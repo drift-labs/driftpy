@@ -30,10 +30,10 @@ from driftpy.setup.helpers import (
 
 from driftpy.addresses import *
 from driftpy.types import (
-    User,
+    UserAccount,
     PositionDirection,
     OracleSource,
-    PerpMarket,
+    PerpMarketAccount,
     OrderType,
     OrderParams,
     # SwapDirection,
@@ -181,7 +181,7 @@ async def test_market(
 ):
     program = drift_client.program
     market_oracle_public_key = initialized_market
-    market: PerpMarket = await get_perp_market_account(program, 0)
+    market: PerpMarketAccount = await get_perp_market_account(program, 0)
 
     assert market.amm.oracle == market_oracle_public_key
 
@@ -194,7 +194,7 @@ async def test_init_user(
     user_public_key = get_user_account_public_key(
         drift_client.program.program_id, drift_client.authority, 0
     )
-    user: User = await get_user_account(drift_client.program, user_public_key)
+    user: UserAccount = await get_user_account(drift_client.program, user_public_key)
     assert user.authority == drift_client.authority
 
 

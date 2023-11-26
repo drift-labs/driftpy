@@ -1,5 +1,5 @@
 from driftpy.types import (
-    PerpMarket,
+    PerpMarketAccount,
 )
 
 from driftpy.constants.numeric_constants import (
@@ -14,7 +14,7 @@ from driftpy.constants.numeric_constants import (
 )
 
 
-def calculate_long_short_funding(market: PerpMarket):
+def calculate_long_short_funding(market: PerpMarketAccount):
     sym = calculate_symmetric_funding(market)
     capped = calculate_capped_funding(market)
     if market.base_asset_amount > 0:
@@ -25,7 +25,7 @@ def calculate_long_short_funding(market: PerpMarket):
         return [sym, sym]
 
 
-def calculate_capped_funding(market: PerpMarket):
+def calculate_capped_funding(market: PerpMarketAccount):
     smaller_side = min(
         abs(market.amm.base_asset_amount_short), market.amm.base_asset_amount_long
     )
@@ -52,7 +52,7 @@ def calculate_capped_funding(market: PerpMarket):
     return capped_funding
 
 
-def calculate_symmetric_funding(market: PerpMarket):
+def calculate_symmetric_funding(market: PerpMarketAccount):
     next_funding = calculate_oracle_mark_spread_owed(market)
 
     next_funding /= market.amm.last_oracle_price_twap * 100
@@ -60,11 +60,11 @@ def calculate_symmetric_funding(market: PerpMarket):
     return next_funding
 
 
-def calculate_oracle_mark_spread_owed(market: PerpMarket):
+def calculate_oracle_mark_spread_owed(market: PerpMarketAccount):
     return (market.amm.last_mark_price_twap - market.amm.last_oracle_price_twap) / 24
 
 
-def calculate_funding_fee_pool(market: PerpMarket):
+def calculate_funding_fee_pool(market: PerpMarketAccount):
     fee_pool = (
         market.amm.total_fee_minus_distributions - market.amm.total_fee / 2
     ) / QUOTE_PRECISION

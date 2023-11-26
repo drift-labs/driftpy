@@ -11,7 +11,12 @@ from driftpy.accounts.oracle import get_oracle_price_data_and_slot
 from driftpy.accounts.types import DriftClientAccountSubscriber, DataAndSlot
 from typing import Optional
 
-from driftpy.types import PerpMarket, SpotMarket, OraclePriceData, State
+from driftpy.types import (
+    PerpMarketAccount,
+    SpotMarketAccount,
+    OraclePriceData,
+    StateAccount,
+)
 
 
 class CachedDriftClientAccountSubscriber(DriftClientAccountSubscriber):
@@ -70,19 +75,19 @@ class CachedDriftClientAccountSubscriber(DriftClientAccountSubscriber):
 
         self.cache["oracle_price_data"] = oracle_data
 
-    async def get_state_account_and_slot(self) -> Optional[DataAndSlot[State]]:
+    async def get_state_account_and_slot(self) -> Optional[DataAndSlot[StateAccount]]:
         await self.cache_if_needed()
         return self.cache["state"]
 
     async def get_perp_market_and_slot(
         self, market_index: int
-    ) -> Optional[DataAndSlot[PerpMarket]]:
+    ) -> Optional[DataAndSlot[PerpMarketAccount]]:
         await self.cache_if_needed()
         return self.cache["perp_markets"][market_index]
 
     async def get_spot_market_and_slot(
         self, market_index: int
-    ) -> Optional[DataAndSlot[SpotMarket]]:
+    ) -> Optional[DataAndSlot[SpotMarketAccount]]:
         await self.cache_if_needed()
         return self.cache["spot_markets"][market_index]
 

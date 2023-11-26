@@ -10,7 +10,13 @@ from solders.pubkey import Pubkey
 from driftpy.accounts.bulk_account_loader import BulkAccountLoader
 from driftpy.accounts.oracle import get_oracle_decode_fn
 from driftpy.addresses import get_state_public_key
-from driftpy.types import PerpMarket, SpotMarket, OraclePriceData, State, OracleSource
+from driftpy.types import (
+    PerpMarketAccount,
+    SpotMarketAccount,
+    OraclePriceData,
+    StateAccount,
+    OracleSource,
+)
 
 
 class PollingDriftClientAccountSubscriber(DriftClientAccountSubscriber):
@@ -24,7 +30,7 @@ class PollingDriftClientAccountSubscriber(DriftClientAccountSubscriber):
         self.is_subscribed = False
         self.callbacks: dict[str, int] = {}
 
-        self.state: Optional[DataAndSlot[State]] = None
+        self.state: Optional[DataAndSlot[StateAccount]] = None
         self.perp_markets = {}
         self.spot_markets = {}
         self.oracle = {}
@@ -143,17 +149,17 @@ class PollingDriftClientAccountSubscriber(DriftClientAccountSubscriber):
             )
         self.callbacks.clear()
 
-    async def get_state_account_and_slot(self) -> Optional[DataAndSlot[State]]:
+    async def get_state_account_and_slot(self) -> Optional[DataAndSlot[StateAccount]]:
         return self.state
 
     async def get_perp_market_and_slot(
         self, market_index: int
-    ) -> Optional[DataAndSlot[PerpMarket]]:
+    ) -> Optional[DataAndSlot[PerpMarketAccount]]:
         return self.perp_markets.get(market_index)
 
     async def get_spot_market_and_slot(
         self, market_index: int
-    ) -> Optional[DataAndSlot[SpotMarket]]:
+    ) -> Optional[DataAndSlot[SpotMarketAccount]]:
         return self.spot_markets.get(market_index)
 
     async def get_oracle_price_data_and_slot(

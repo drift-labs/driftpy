@@ -6,7 +6,12 @@ from driftpy.accounts.types import DriftClientAccountSubscriber, DataAndSlot
 from typing import Optional
 
 from driftpy.accounts.ws.account_subscriber import WebsocketAccountSubscriber
-from driftpy.types import PerpMarket, SpotMarket, OraclePriceData, State
+from driftpy.types import (
+    PerpMarketAccount,
+    SpotMarketAccount,
+    OraclePriceData,
+    StateAccount,
+)
 
 from driftpy.addresses import *
 
@@ -26,7 +31,7 @@ class WebsocketDriftClientAccountSubscriber(DriftClientAccountSubscriber):
 
     async def subscribe(self):
         state_public_key = get_state_public_key(self.program.program_id)
-        self.state_subscriber = WebsocketAccountSubscriber[State](
+        self.state_subscriber = WebsocketAccountSubscriber[StateAccount](
             state_public_key, self.program, self.commitment
         )
         await self.state_subscriber.subscribe()
@@ -44,7 +49,7 @@ class WebsocketDriftClientAccountSubscriber(DriftClientAccountSubscriber):
         spot_market_public_key = get_spot_market_public_key(
             self.program.program_id, market_index
         )
-        spot_market_subscriber = WebsocketAccountSubscriber[SpotMarket](
+        spot_market_subscriber = WebsocketAccountSubscriber[SpotMarketAccount](
             spot_market_public_key, self.program, self.commitment
         )
         await spot_market_subscriber.subscribe()
@@ -60,7 +65,7 @@ class WebsocketDriftClientAccountSubscriber(DriftClientAccountSubscriber):
         perp_market_public_key = get_perp_market_public_key(
             self.program.program_id, market_index
         )
-        perp_market_subscriber = WebsocketAccountSubscriber[PerpMarket](
+        perp_market_subscriber = WebsocketAccountSubscriber[PerpMarketAccount](
             perp_market_public_key, self.program, self.commitment
         )
         await perp_market_subscriber.subscribe()
@@ -87,17 +92,17 @@ class WebsocketDriftClientAccountSubscriber(DriftClientAccountSubscriber):
         await oracle_subscriber.subscribe()
         self.oracle_subscribers[str(oracle)] = oracle_subscriber
 
-    async def get_state_account_and_slot(self) -> Optional[DataAndSlot[State]]:
+    async def get_state_account_and_slot(self) -> Optional[DataAndSlot[StateAccount]]:
         return self.state_subscriber.data_and_slot
 
     async def get_perp_market_and_slot(
         self, market_index: int
-    ) -> Optional[DataAndSlot[PerpMarket]]:
+    ) -> Optional[DataAndSlot[PerpMarketAccount]]:
         return self.perp_market_subscribers[market_index].data_and_slot
 
     async def get_spot_market_and_slot(
         self, market_index: int
-    ) -> Optional[DataAndSlot[SpotMarket]]:
+    ) -> Optional[DataAndSlot[SpotMarketAccount]]:
         return self.spot_market_subscribers[market_index].data_and_slot
 
     async def get_oracle_price_data_and_slot(

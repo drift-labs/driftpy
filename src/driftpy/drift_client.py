@@ -25,7 +25,6 @@ from driftpy.constants.numeric_constants import (
     QUOTE_SPOT_MARKET_INDEX,
 )
 from driftpy.drift_user import DriftUser
-from driftpy.sdk_types import *
 from driftpy.accounts import *
 
 from driftpy.constants.config import DriftEnv, DRIFT_PROGRAM_ID, configs
@@ -153,7 +152,7 @@ class DriftClient:
 
         return self.users[sub_account_id]
 
-    async def get_user_account(self, sub_account_id=0) -> User:
+    async def get_user_account(self, sub_account_id=0) -> UserAccount:
         return await self.get_user(sub_account_id).get_user()
 
     def switch_active_user(self, sub_account_id: int):
@@ -165,17 +164,17 @@ class DriftClient:
     def get_user_stats_public_key(self):
         return get_user_stats_account_public_key(self.program_id, self.authority)
 
-    async def get_state(self) -> Optional[State]:
+    async def get_state(self) -> Optional[StateAccount]:
         state_and_slot = await self.account_subscriber.get_state_account_and_slot()
         return getattr(state_and_slot, "data", None)
 
-    async def get_perp_market(self, market_index: int) -> Optional[PerpMarket]:
+    async def get_perp_market(self, market_index: int) -> Optional[PerpMarketAccount]:
         perp_market_and_slot = await self.account_subscriber.get_perp_market_and_slot(
             market_index
         )
         return getattr(perp_market_and_slot, "data", None)
 
-    async def get_spot_market(self, market_index: int) -> Optional[SpotMarket]:
+    async def get_spot_market(self, market_index: int) -> Optional[SpotMarketAccount]:
         spot_market_and_slot = await self.account_subscriber.get_spot_market_and_slot(
             market_index
         )
@@ -320,7 +319,7 @@ class DriftClient:
 
     async def get_remaining_accounts(
         self,
-        user_accounts: list[User] = (),
+        user_accounts: list[UserAccount] = (),
         writable_perp_market_indexes: list[int] = (),
         writable_spot_market_indexes: list[int] = (),
         readable_spot_market_indexes: list[int] = (),
@@ -404,7 +403,7 @@ class DriftClient:
             )
 
     async def get_remaining_accounts_for_users(
-        self, user_accounts: list[User]
+        self, user_accounts: list[UserAccount]
     ) -> (dict[str, AccountMeta], dict[int, AccountMeta], dict[int, AccountMeta]):
         oracle_map = {}
         spot_market_map = {}

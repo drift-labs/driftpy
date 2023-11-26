@@ -6,7 +6,7 @@ from solders.pubkey import Pubkey
 from driftpy.accounts import UserAccountSubscriber, DataAndSlot
 
 from driftpy.accounts.bulk_account_loader import BulkAccountLoader
-from driftpy.types import User
+from driftpy.types import UserAccount
 
 
 class PollingUserAccountSubscriber(UserAccountSubscriber):
@@ -19,7 +19,7 @@ class PollingUserAccountSubscriber(UserAccountSubscriber):
         self.bulk_account_loader = bulk_account_loader
         self.program = program
         self.user_account_pubkey = user_account_pubkey
-        self.data_and_slot: Optional[DataAndSlot[User]] = None
+        self.data_and_slot: Optional[DataAndSlot[UserAccount]] = None
         self.decode = self.program.coder.accounts.decode
         self.callback_id = None
 
@@ -53,7 +53,7 @@ class PollingUserAccountSubscriber(UserAccountSubscriber):
     async def fetch(self):
         await self.bulk_account_loader.load()
 
-    def _update_data(self, new_data: Optional[DataAndSlot[User]]):
+    def _update_data(self, new_data: Optional[DataAndSlot[UserAccount]]):
         if new_data is None:
             return
 
@@ -70,5 +70,5 @@ class PollingUserAccountSubscriber(UserAccountSubscriber):
 
         self.callback_id = None
 
-    async def get_user_account_and_slot(self) -> Optional[DataAndSlot[User]]:
+    async def get_user_account_and_slot(self) -> Optional[DataAndSlot[UserAccount]]:
         return self.data_and_slot

@@ -52,25 +52,25 @@ class DriftUser:
         self.account_subscriber.unsubscribe()
 
     async def get_spot_oracle_data(
-        self, spot_market: SpotMarket
+        self, spot_market: SpotMarketAccount
     ) -> Optional[OraclePriceData]:
         return await self.drift_client.get_oracle_price_data(spot_market.oracle)
 
     async def get_perp_oracle_data(
-        self, perp_market: PerpMarket
+        self, perp_market: PerpMarketAccount
     ) -> Optional[OraclePriceData]:
         return await self.drift_client.get_oracle_price_data(perp_market.amm.oracle)
 
-    async def get_state(self) -> State:
+    async def get_state(self) -> StateAccount:
         return await self.drift_client.get_state()
 
-    async def get_spot_market(self, market_index: int) -> SpotMarket:
+    async def get_spot_market(self, market_index: int) -> SpotMarketAccount:
         return await self.drift_client.get_spot_market(market_index)
 
-    async def get_perp_market(self, market_index: int) -> PerpMarket:
+    async def get_perp_market(self, market_index: int) -> PerpMarketAccount:
         return await self.drift_client.get_perp_market(market_index)
 
-    async def get_user(self) -> User:
+    async def get_user(self) -> UserAccount:
         return (await self.account_subscriber.get_user_account_and_slot()).data
 
     async def get_open_orders(
@@ -79,7 +79,7 @@ class DriftUser:
         #   market_index: int,
         #   position_direction: PositionDirection
     ):
-        user: User = await self.get_user()
+        user: UserAccount = await self.get_user()
         return user.orders
 
     async def get_spot_market_liability(

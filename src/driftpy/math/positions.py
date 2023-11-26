@@ -4,7 +4,7 @@ from driftpy.types import OraclePriceData
 
 def get_worst_case_token_amounts(
     position: SpotPosition,
-    spot_market: SpotMarket,
+    spot_market: SpotMarketAccount,
     oracle_data,
 ):
     token_amount = get_signed_token_amount(
@@ -35,7 +35,9 @@ def calculate_base_asset_value_with_oracle(
     )
 
 
-def calculate_position_funding_pnl(market: PerpMarket, perp_position: PerpPosition):
+def calculate_position_funding_pnl(
+    market: PerpMarketAccount, perp_position: PerpPosition
+):
     if perp_position.base_asset_amount == 0:
         return 0
 
@@ -57,7 +59,7 @@ def calculate_position_funding_pnl(market: PerpMarket, perp_position: PerpPositi
 
 
 def calculate_position_pnl_with_oracle(
-    market: PerpMarket,
+    market: PerpMarketAccount,
     perp_position: PerpPosition,
     oracle_data: OraclePriceData,
     with_funding=False,
@@ -98,7 +100,9 @@ def is_available(position: PerpPosition):
     )
 
 
-def calculate_base_asset_value(market: PerpMarket, user_position: PerpPosition) -> int:
+def calculate_base_asset_value(
+    market: PerpMarketAccount, user_position: PerpPosition
+) -> int:
     if user_position.base_asset_amount == 0:
         return 0
 
@@ -135,7 +139,7 @@ def calculate_base_asset_value(market: PerpMarket, user_position: PerpPosition) 
 
 
 def calculate_position_pnl(
-    market: PerpMarket, market_position: PerpPosition, with_funding=False
+    market: PerpMarketAccount, market_position: PerpPosition, with_funding=False
 ):
     pnl = 0.0
 
@@ -156,7 +160,9 @@ def calculate_position_pnl(
     return pnl
 
 
-def calculate_position_funding_pnl(market: PerpMarket, market_position: PerpPosition):
+def calculate_position_funding_pnl(
+    market: PerpMarketAccount, market_position: PerpPosition
+):
     funding_pnl = 0.0
 
     if market_position.base_asset_amount == 0:

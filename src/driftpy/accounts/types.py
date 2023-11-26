@@ -5,12 +5,12 @@ from typing import TypeVar, Generic, Optional
 from solders.pubkey import Pubkey
 
 from driftpy.types import (
-    PerpMarket,
-    SpotMarket,
+    PerpMarketAccount,
+    SpotMarketAccount,
     OracleSource,
-    User,
+    UserAccount,
     OraclePriceData,
-    State,
+    StateAccount,
 )
 
 T = TypeVar("T")
@@ -32,19 +32,19 @@ class DriftClientAccountSubscriber:
         pass
 
     @abstractmethod
-    async def get_state_account_and_slot(self) -> Optional[DataAndSlot[State]]:
+    async def get_state_account_and_slot(self) -> Optional[DataAndSlot[StateAccount]]:
         pass
 
     @abstractmethod
     async def get_perp_market_and_slot(
         self, market_index: int
-    ) -> Optional[DataAndSlot[PerpMarket]]:
+    ) -> Optional[DataAndSlot[PerpMarketAccount]]:
         pass
 
     @abstractmethod
     async def get_spot_market_and_slot(
         self, market_index: int
-    ) -> Optional[DataAndSlot[SpotMarket]]:
+    ) -> Optional[DataAndSlot[SpotMarketAccount]]:
         pass
 
     @abstractmethod
@@ -64,5 +64,5 @@ class UserAccountSubscriber:
         pass
 
     @abstractmethod
-    async def get_user_account_and_slot(self) -> Optional[DataAndSlot[User]]:
+    async def get_user_account_and_slot(self) -> Optional[DataAndSlot[UserAccount]]:
         pass

@@ -6,7 +6,7 @@ from solana.rpc.commitment import Commitment
 
 from driftpy.accounts import get_user_account_and_slot
 from driftpy.accounts import UserAccountSubscriber, DataAndSlot
-from driftpy.types import User
+from driftpy.types import UserAccount
 
 
 class CachedUserAccountSubscriber(UserAccountSubscriber):
@@ -28,7 +28,7 @@ class CachedUserAccountSubscriber(UserAccountSubscriber):
         user_and_slot = await get_user_account_and_slot(self.program, self.user_pubkey)
         self.user_and_slot = user_and_slot
 
-    async def get_user_account_and_slot(self) -> Optional[DataAndSlot[User]]:
+    async def get_user_account_and_slot(self) -> Optional[DataAndSlot[UserAccount]]:
         await self.cache_if_needed()
         return self.user_and_slot
 
