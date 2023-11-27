@@ -22,6 +22,7 @@ from pathlib import Path
 import driftpy
 from driftpy.account_subscription_config import AccountSubscriptionConfig
 from driftpy.address_lookup_table import get_address_lookup_table
+from driftpy.constants import BASE_PRECISION, PRICE_PRECISION
 from driftpy.constants.numeric_constants import (
     QUOTE_SPOT_MARKET_INDEX,
 )
@@ -32,6 +33,7 @@ from driftpy.constants.config import DriftEnv, DRIFT_PROGRAM_ID, configs
 
 from typing import Union, Optional, List
 from driftpy.math.positions import is_available, is_spot_position_available
+from driftpy.math.spot_market import cast_to_spot_precision
 from driftpy.name import encode_name
 
 DEFAULT_USER_NAME = "Main Account"
@@ -202,6 +204,16 @@ class DriftClient:
     ) -> Optional[OraclePriceData]:
         oracle = self.get_spot_market_account(market_index).oracle
         return self.get_oracle_price_data(oracle)
+
+    def convert_to_spot_precision(self, amount: Union[int, float], market_index) -> int:
+        spot_market = self.get_spot_market_account(market_index)
+        return cast_to_spot_precision(amount, spot_market)
+
+    def convert_to_perp_precision(self, amount: Union[int, float]) -> int:
+        return cast(int, amount * BASE_PRECISION)
+
+    def convert_to_price_precision(self, amount: Union[int, float]) -> int:
+        return cast(int, amount * PRICE_PRECISION)
 
     async def fetch_market_lookup_table(self) -> AddressLookupTableAccount:
         if self.market_lookup_table_account is not None:
@@ -528,7 +540,7 @@ class DriftClient:
         self,
         amount: int,
         spot_market_index: int,
-        user_token_account: Pubkey,
+        user_token_account: Pubkey = None,
         sub_account_id: int = 0,
         reduce_only=False,
         user_initialized=True,
@@ -563,7 +575,7 @@ class DriftClient:
         self,
         amount: int,
         spot_market_index: int,
-        user_token_account: Pubkey,
+        user_token_account: Pubkey = None,
         sub_account_id: int = 0,
         reduce_only=False,
         user_initialized=True,
@@ -575,6 +587,12 @@ class DriftClient:
             )
         else:
             raise Exception("not implemented...")
+
+        user_token_account = (
+            user_token_account
+            if user_token_account is not None
+            else self.get_associated_token_account_public_key(spot_market_index)
+        )
 
         spot_market_pk = get_spot_market_public_key(self.program_id, spot_market_index)
         spot_vault_public_key = get_spot_market_vault_public_key(

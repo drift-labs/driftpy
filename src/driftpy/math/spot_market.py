@@ -1,3 +1,5 @@
+from typing import Union
+
 from driftpy.accounts import *
 from driftpy.types import OraclePriceData
 
@@ -31,3 +33,10 @@ def get_token_amount(
 def get_token_value(amount, spot_decimals, oracle_data: OraclePriceData):
     precision_decrease = 10**spot_decimals
     return amount * oracle_data.price / precision_decrease
+
+
+def cast_to_spot_precision(
+    amount: Union[float, int], spot_market: SpotMarketAccount
+) -> int:
+    precision = 10**spot_market.decimals
+    return cast(int, amount * precision)
