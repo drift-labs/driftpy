@@ -839,6 +839,40 @@ class DriftClient:
             ),
         )
 
+    async def cancel_and_place_orders(
+        self,
+        cancel_params: (
+            Optional[MarketType],
+            Optional[int],
+            Optional[PositionDirection],
+        ),
+        place_order_params: List[OrderParams],
+        sub_account_id: int = 0,
+    ):
+        return await self.send_ixs(
+            self.get_cancel_and_place_orders_ix(
+                cancel_params, place_order_params, sub_account_id
+            ),
+        )
+
+    def get_cancel_and_place_orders_ix(
+        self,
+        cancel_params: (
+            Optional[MarketType],
+            Optional[int],
+            Optional[PositionDirection],
+        ),
+        place_order_params: List[OrderParams],
+        sub_account_id: int = 0,
+    ):
+        market_type, market_index, direction = cancel_params
+
+        cancel_orders_ix = self.get_cancel_orders_ix(
+            market_type, market_index, direction, sub_account_id
+        )
+        place_orders_ix = self.get_place_orders_ix(place_order_params, sub_account_id)
+        return [cancel_orders_ix, place_orders_ix]
+
     async def place_and_take_perp_order(
         self,
         order_params: OrderParams,
