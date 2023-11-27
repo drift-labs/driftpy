@@ -620,6 +620,75 @@ class DriftClient:
             ),
         )
 
+    async def transfer_deposit(
+        self,
+        amount: int,
+        market_index: int,
+        from_sub_account_id: int,
+        to_sub_account_id: int,
+    ):
+        return await self.send_ixs(
+            [
+                await self.get_transfer_deposit_ix(
+                    amount,
+                    market_index,
+                    from_sub_account_id,
+                    to_sub_account_id,
+                )
+            ]
+        )
+
+    async def get_transfer_deposit_ix(
+        self,
+        amount: int,
+        market_index: int,
+        from_sub_account_id: int,
+        to_sub_account_id: int,
+    ):
+        from_user_public_key = self.get_user_account_public_key(from_sub_account_id)
+        to_user_public_key = self.get_user_account_public_key(to_sub_account_id)
+
+        if from_sub_account_id not in self.users:
+            from_user_account = await self.program.account["User"].fetch(
+                from_user_public_key
+            )
+        else:
+            from_user_account = self.get_user_account(from_sub_account_id)
+
+        if to_sub_account_id not in self.users:
+            to_user_account = await self.program.account["User"].fetch(
+                to_user_public_key
+            )
+        else:
+            to_user_account = self.get_user_account(to_sub_account_id)
+
+        remaining_accounts = self.get_remaining_accounts(
+            writable_spot_market_indexes=[
+                market_index,
+            ],
+            user_accounts=[from_user_account, to_user_account],
+        )
+
+        ix = self.program.instruction["transfer_deposit"](
+            market_index,
+            amount,
+            ctx=Context(
+                accounts={
+                    "state": self.get_state_public_key(),
+                    "user_stats": self.get_user_stats_public_key(),
+                    "from_user": from_user_public_key,
+                    "to_user": to_user_public_key,
+                    "authority": self.wallet.public_key,
+                    "spot_market_vault": self.get_spot_market_account(
+                        market_index
+                    ).vault,
+                },
+                remaining_accounts=remaining_accounts,
+            ),
+        )
+
+        return ix
+
     async def place_spot_order(
         self,
         order_params: OrderParams,
