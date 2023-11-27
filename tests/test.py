@@ -230,11 +230,9 @@ async def test_open_orders(
     user_account = drift_client.get_user(0).get_user_account()
 
     assert len(user_account.orders) == 32
-    assert user_account.orders[0].market_index == 0
 
     open_orders = drift_user.get_open_orders()
-    assert len(open_orders) == 32
-    assert open_orders == user_account.orders
+    assert len(open_orders) == 0
 
     order_params = OrderParams(
         market_type=MarketType.PERP(),
@@ -256,7 +254,7 @@ async def test_open_orders(
     await drift_client.cancel_order(1, 0)
     await drift_user.account_subscriber.update_cache()
     open_orders_after2 = drift_user.get_open_orders()
-    assert open_orders_after2[0].base_asset_amount == 0
+    assert len(open_orders_after2) == 0
 
 
 @mark.asyncio

@@ -357,20 +357,20 @@ class OrderParams:
 
 @dataclass
 class ModifyOrderParams:
-    direction: Optional[PositionDirection]
-    base_asset_amount: Optional[int]
-    price: Optional[int]
-    reduce_only: Optional[bool]
-    post_only: Optional[PostOnlyParams]
-    immediate_or_cancel: Optional[bool]
-    max_ts: Optional[int]
-    trigger_price: Optional[int]
-    trigger_condition: Optional[OrderTriggerCondition]
-    oracle_price_offset: Optional[int]
-    auction_duration: Optional[int]
-    auction_start_price: Optional[int]
-    auction_end_price: Optional[int]
-    policy: Optional[ModifyOrderPolicy]
+    direction: Optional[PositionDirection] = None
+    base_asset_amount: Optional[int] = None
+    price: Optional[int] = None
+    reduce_only: Optional[bool] = None
+    post_only: Optional[PostOnlyParams] = None
+    immediate_or_cancel: Optional[bool] = None
+    max_ts: Optional[int] = None
+    trigger_price: Optional[int] = None
+    trigger_condition: Optional[OrderTriggerCondition] = None
+    oracle_price_offset: Optional[int] = None
+    auction_duration: Optional[int] = None
+    auction_start_price: Optional[int] = None
+    auction_end_price: Optional[int] = None
+    policy: Optional[ModifyOrderPolicy] = None
 
 
 @dataclass

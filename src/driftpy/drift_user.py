@@ -76,7 +76,12 @@ class DriftUser:
         #   market_index: int,
         #   position_direction: PositionDirection
     ):
-        return self.get_user_account().orders
+        return list(
+            filter(
+                lambda order: "Open" in str(order.status),
+                self.get_user_account().orders,
+            )
+        )
 
     def get_spot_market_liability(
         self,

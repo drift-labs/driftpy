@@ -790,6 +790,34 @@ class DriftClient:
             ),
         )
 
+    async def cancel_order_by_user_id(
+        self,
+        user_order_id: int,
+        sub_account_id: int = 0,
+    ):
+        return await self.send_ixs(
+            self.get_cancel_order_by_user_id_ix(user_order_id, sub_account_id),
+        )
+
+    def get_cancel_order_by_user_id_ix(
+        self, user_order_id: int, sub_account_id: int = 0
+    ):
+        remaining_accounts = self.get_remaining_accounts(
+            user_accounts=[self.get_user_account(sub_account_id)]
+        )
+
+        return self.program.instruction["cancel_order_by_user_id"](
+            user_order_id,
+            ctx=Context(
+                accounts={
+                    "state": self.get_state_public_key(),
+                    "user": self.get_user_account_public_key(sub_account_id),
+                    "authority": self.authority,
+                },
+                remaining_accounts=remaining_accounts,
+            ),
+        )
+
     async def cancel_orders(
         self,
         market_type: MarketType = None,
@@ -872,6 +900,76 @@ class DriftClient:
         )
         place_orders_ix = self.get_place_orders_ix(place_order_params, sub_account_id)
         return [cancel_orders_ix, place_orders_ix]
+
+    async def modify_order(
+        self,
+        order_id: int,
+        modify_order_params: ModifyOrderParams,
+        sub_account_id: int = 0,
+    ):
+        return await self.send_ixs(
+            [self.get_modify_order_ix(order_id, modify_order_params, sub_account_id)],
+        )
+
+    def get_modify_order_ix(
+        self,
+        order_id: int,
+        modify_order_params: ModifyOrderParams,
+        sub_account_id: int = 0,
+    ):
+        remaining_accounts = self.get_remaining_accounts(
+            user_accounts=[self.get_user_account(sub_account_id)],
+        )
+
+        return self.program.instruction["modify_order"](
+            order_id,
+            modify_order_params,
+            ctx=Context(
+                accounts={
+                    "state": self.get_state_public_key(),
+                    "user": self.get_user_account_public_key(sub_account_id),
+                    "authority": self.authority,
+                },
+                remaining_accounts=remaining_accounts,
+            ),
+        )
+
+    async def modify_order_by_user_id(
+        self,
+        user_order_id: int,
+        modify_order_params: ModifyOrderParams,
+        sub_account_id: int = 0,
+    ):
+        return await self.send_ixs(
+            [
+                self.get_modify_order_by_user_id_ix(
+                    user_order_id, modify_order_params, sub_account_id
+                )
+            ],
+        )
+
+    def get_modify_order_by_user_id_ix(
+        self,
+        user_order_id: int,
+        modify_order_params: ModifyOrderParams,
+        sub_account_id: int = 0,
+    ):
+        remaining_accounts = self.get_remaining_accounts(
+            user_accounts=[self.get_user_account(sub_account_id)],
+        )
+
+        return self.program.instruction["modify_order_by_user_id"](
+            user_order_id,
+            modify_order_params,
+            ctx=Context(
+                accounts={
+                    "state": self.get_state_public_key(),
+                    "user": self.get_user_account_public_key(sub_account_id),
+                    "authority": self.authority,
+                },
+                remaining_accounts=remaining_accounts,
+            ),
+        )
 
     async def place_and_take_perp_order(
         self,
