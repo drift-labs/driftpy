@@ -327,22 +327,32 @@ class MarketIdentifier:
 @dataclass
 class OrderParams:
     order_type: OrderType
-    market_type: MarketType
-    direction: PositionDirection
-    user_order_id: int
     base_asset_amount: int
-    price: int
     market_index: int
-    reduce_only: bool
-    post_only: PostOnlyParams
-    immediate_or_cancel: bool
-    max_ts: Optional[int]
-    trigger_price: Optional[int]
-    trigger_condition: OrderTriggerCondition
-    oracle_price_offset: Optional[int]
-    auction_duration: Optional[int]
-    auction_start_price: Optional[int]
-    auction_end_price: Optional[int]
+    direction: PositionDirection
+    market_type: MarketType = None
+    user_order_id: int = 0
+    price: int = 0
+    reduce_only: bool = False
+    post_only: PostOnlyParams = PostOnlyParams.NONE()
+    immediate_or_cancel: bool = False
+    max_ts: Optional[int] = None
+    trigger_price: Optional[int] = None
+    trigger_condition: OrderTriggerCondition = OrderTriggerCondition.ABOVE()
+    oracle_price_offset: Optional[int] = None
+    auction_duration: Optional[int] = None
+    auction_start_price: Optional[int] = None
+    auction_end_price: Optional[int] = None
+
+    def set_spot(self):
+        self.market_type = MarketType.SPOT()
+
+    def set_perp(self):
+        self.market_type = MarketType.PERP()
+
+    def check_market_type(self):
+        if self.market_type is None:
+            raise ValueError("market type not set on order params")
 
 
 @dataclass

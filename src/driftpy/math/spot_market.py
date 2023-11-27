@@ -39,4 +39,4 @@ def cast_to_spot_precision(
     amount: Union[float, int], spot_market: SpotMarketAccount
 ) -> int:
     precision = 10**spot_market.decimals
-    return cast(int, amount * precision)
+    return int(amount * precision)

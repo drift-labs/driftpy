@@ -210,10 +210,10 @@ class DriftClient:
         return cast_to_spot_precision(amount, spot_market)
 
     def convert_to_perp_precision(self, amount: Union[int, float]) -> int:
-        return cast(int, amount * BASE_PRECISION)
+        return int(amount * BASE_PRECISION)
 
     def convert_to_price_precision(self, amount: Union[int, float]) -> int:
-        return cast(int, amount * PRICE_PRECISION)
+        return int(amount * PRICE_PRECISION)
 
     async def fetch_market_lookup_table(self) -> AddressLookupTableAccount:
         if self.market_lookup_table_account is not None:
@@ -802,6 +802,7 @@ class DriftClient:
         order_params: OrderParams,
         sub_account_id: int = 0,
     ):
+        order_params.set_spot()
         user_account_public_key = self.get_user_account_public_key(sub_account_id)
 
         remaining_accounts = self.get_remaining_accounts(
@@ -888,7 +889,9 @@ class DriftClient:
         order_params: OrderParams,
         sub_account_id: int = 0,
     ):
+        order_params.set_perp()
         user_account_public_key = self.get_user_account_public_key(sub_account_id)
+        user_stats_public_key = self.get_user_stats_public_key()
         remaining_accounts = self.get_remaining_accounts(
             readable_perp_market_indexes=[order_params.market_index],
             user_accounts=[self.get_user_account(sub_account_id)],
@@ -900,6 +903,7 @@ class DriftClient:
                 accounts={
                     "state": self.get_state_public_key(),
                     "user": user_account_public_key,
+                    "userStats": user_stats_public_key,
                     "authority": self.wallet.public_key,
                 },
                 remaining_accounts=remaining_accounts,
