@@ -1172,29 +1172,30 @@ class DriftClient:
 
     async def settle_lp(
         self,
-        settlee_authority: Pubkey,
+        settlee_user_account_public_key: Pubkey,
         market_index: int,
-        sub_account_id: int = 0,
     ):
         return await self.send_ixs(
             [
                 await self.get_settle_lp_ix(
-                    settlee_authority, market_index, sub_account_id
+                    settlee_user_account_public_key, market_index
                 )
             ],
             signers=[],
         )
 
     async def get_settle_lp_ix(
-        self, settlee_authority: Pubkey, market_index: int, sub_account_id: int = 0
+        self,
+        settlee_user_account_public_key: Pubkey,
+        market_index: int,
     ):
-        user_account_pubkey = get_user_account_public_key(
-            self.program_id, settlee_authority, sub_account_id
+        settlee_user_account = await self.program.account["User"].fetch(
+            settlee_user_account_public_key
         )
-        user_account = await self.program.account["User"].fetch(user_account_pubkey)
 
         remaining_accounts = self.get_remaining_accounts(
-            writable_perp_market_indexes=[market_index], user_accounts=[user_account]
+            writable_perp_market_indexes=[market_index],
+            user_accounts=[settlee_user_account],
         )
 
         return self.program.instruction["settle_lp"](
@@ -1202,9 +1203,7 @@ class DriftClient:
             ctx=Context(
                 accounts={
                     "state": self.get_state_public_key(),
-                    "user": get_user_account_public_key(
-                        self.program_id, settlee_authority, sub_account_id
-                    ),
+                    "user": settlee_user_account_public_key,
                 },
                 remaining_accounts=remaining_accounts,
             ),
@@ -1446,24 +1445,26 @@ class DriftClient:
 
     async def settle_pnl(
         self,
-        user_public_key: Pubkey,
-        user_account: UserAccount,
+        settlee_user_account_public_key: Pubkey,
+        settlee_user_account: UserAccount,
         market_index: int,
     ):
         return await self.send_ixs(
-            self.get_settle_pnl_ix(user_public_key, user_account, market_index)
+            self.get_settle_pnl_ix(
+                settlee_user_account_public_key, settlee_user_account, market_index
+            )
         )
 
     def get_settle_pnl_ix(
         self,
-        user_public_key: Pubkey,
-        user_account: UserAccount,
+        settlee_user_public_key: Pubkey,
+        settlee_user_account: UserAccount,
         market_index: int,
     ):
         remaining_accounts = self.get_remaining_accounts(
             writable_perp_market_indexes=[market_index],
             writable_spot_market_indexes=[QUOTE_SPOT_MARKET_INDEX],
-            user_accounts=[user_account],
+            user_accounts=[settlee_user_account],
         )
 
         instruction = self.program.instruction["settle_pnl"](
@@ -1472,7 +1473,7 @@ class DriftClient:
                 accounts={
                     "state": self.get_state_public_key(),
                     "authority": self.authority,
-                    "user": user_public_key,
+                    "user": settlee_user_public_key,
                     "spot_market_vault": get_spot_market_vault_public_key(
                         self.program_id, QUOTE_SPOT_MARKET_INDEX
                     ),
