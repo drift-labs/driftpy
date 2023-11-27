@@ -1,3 +1,4 @@
+from deprecated import deprecated
 from solders.pubkey import Pubkey
 from solders.keypair import Keypair
 from solana.transaction import Transaction
@@ -16,7 +17,6 @@ from solders.compute_budget import set_compute_unit_limit, set_compute_unit_pric
 from spl.token.constants import TOKEN_PROGRAM_ID
 from spl.token.instructions import get_associated_token_address
 from anchorpy import Program, Context, Idl, Provider, Wallet
-from struct import pack_into
 from pathlib import Path
 
 import driftpy
@@ -786,46 +786,6 @@ class DriftClient:
             ),
         )
 
-    async def open_position(
-        self,
-        direction: PositionDirection,
-        amount: int,
-        market_index: int,
-        sub_account_id: int = 0,
-        limit_price: int = 0,
-        ioc: bool = False,
-    ):
-        return await self.send_ixs(
-            await self.get_open_position_ix(
-                direction,
-                amount,
-                market_index,
-                sub_account_id,
-                limit_price,
-                ioc,
-            ),
-        )
-
-    async def get_open_position_ix(
-        self,
-        direction: PositionDirection,
-        amount: int,
-        market_index: int,
-        sub_account_id: int = 0,
-        limit_price: int = 0,
-        ioc: bool = False,
-    ):
-        order = self.default_order_params(
-            order_type=OrderType.MARKET(),
-            direction=direction,
-            market_index=market_index,
-            base_asset_amount=amount,
-        )
-        order.limit_price = limit_price
-
-        ix = await self.get_place_and_take_ix(order, sub_account_id=sub_account_id)
-        return ix
-
     async def place_spot_order(
         self,
         order_params: OrderParams,
@@ -1116,37 +1076,6 @@ class DriftClient:
             return None
 
         return position
-
-    async def close_position(
-        self, market_index: int, limit_price: int = 0, sub_account_id: int = 0
-    ):
-        return await self.send_ixs(
-            await self.get_close_position_ix(
-                market_index, limit_price, sub_account_id=sub_account_id
-            )
-        )
-
-    async def get_close_position_ix(
-        self, market_index: int, limit_price: int = 0, sub_account_id: int = 0
-    ):
-        position = self.get_user_position(market_index, sub_account_id)
-        if position is None or position.base_asset_amount == 0:
-            print("=> user has no position to close...")
-            return
-
-        order = self.default_order_params(
-            order_type=OrderType.MARKET(),
-            market_index=market_index,
-            base_asset_amount=abs(int(position.base_asset_amount)),
-            direction=PositionDirection.LONG()
-            if position.base_asset_amount < 0
-            else PositionDirection.SHORT(),
-        )
-        order.limit_price = limit_price
-        order.reduce_only = True
-
-        ix = await self.get_place_and_take_ix(order, sub_account_id=sub_account_id)
-        return ix
 
     def default_order_params(
         self, order_type, market_index, base_asset_amount, direction
@@ -1829,6 +1758,81 @@ class DriftClient:
                 }
             ),
         )
+
+    @deprecated
+    async def open_position(
+        self,
+        direction: PositionDirection,
+        amount: int,
+        market_index: int,
+        sub_account_id: int = 0,
+        limit_price: int = 0,
+        ioc: bool = False,
+    ):
+        return await self.send_ixs(
+            await self.get_open_position_ix(
+                direction,
+                amount,
+                market_index,
+                sub_account_id,
+                limit_price,
+                ioc,
+            ),
+        )
+
+    @deprecated
+    async def get_open_position_ix(
+        self,
+        direction: PositionDirection,
+        amount: int,
+        market_index: int,
+        sub_account_id: int = 0,
+        limit_price: int = 0,
+        ioc: bool = False,
+    ):
+        order = self.default_order_params(
+            order_type=OrderType.MARKET(),
+            direction=direction,
+            market_index=market_index,
+            base_asset_amount=amount,
+        )
+        order.limit_price = limit_price
+
+        ix = await self.get_place_and_take_ix(order, sub_account_id=sub_account_id)
+        return ix
+
+    @deprecated
+    async def close_position(
+        self, market_index: int, limit_price: int = 0, sub_account_id: int = 0
+    ):
+        return await self.send_ixs(
+            await self.get_close_position_ix(
+                market_index, limit_price, sub_account_id=sub_account_id
+            )
+        )
+
+    @deprecated
+    async def get_close_position_ix(
+        self, market_index: int, limit_price: int = 0, sub_account_id: int = 0
+    ):
+        position = self.get_user_position(market_index, sub_account_id)
+        if position is None or position.base_asset_amount == 0:
+            print("=> user has no position to close...")
+            return
+
+        order = self.default_order_params(
+            order_type=OrderType.MARKET(),
+            market_index=market_index,
+            base_asset_amount=abs(int(position.base_asset_amount)),
+            direction=PositionDirection.LONG()
+            if position.base_asset_amount < 0
+            else PositionDirection.SHORT(),
+        )
+        order.limit_price = limit_price
+        order.reduce_only = True
+
+        ix = await self.get_place_and_take_ix(order, sub_account_id=sub_account_id)
+        return ix
 
     async def update_amm(self, market_indexs: list[int]):
         return await self.send_ixs(await self.get_update_amm_ix(market_indexs))
