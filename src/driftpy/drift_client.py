@@ -1316,7 +1316,7 @@ class DriftClient:
         liq_sub_account_id: int = 0,
     ):
         return await self.send_ixs(
-            self.get_liquidate_perp_pnl_for_deposit_ix(
+            await self.get_liquidate_perp_pnl_for_deposit_ix(
                 user_authority,
                 perp_market_index,
                 spot_market_index,
