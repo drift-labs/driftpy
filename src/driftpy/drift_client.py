@@ -823,7 +823,6 @@ class DriftClient:
     async def place_spot_order(
         self,
         order_params: OrderParams,
-        maker_info: MakerInfo = None,
         sub_account_id: int = 0,
     ):
         return await self.send_ixs(
@@ -911,13 +910,12 @@ class DriftClient:
     async def place_perp_order(
         self,
         order_params: OrderParams,
-        maker_info: MakerInfo = None,
         sub_account_id: int = 0,
     ):
         return await self.send_ixs(
             [
                 self.get_increase_compute_ix(),
-                (await self.get_place_perp_order_ix(order_params, sub_account_id))[-1],
+                await self.get_place_perp_order_ix(order_params, sub_account_id),
             ]
         )
 
