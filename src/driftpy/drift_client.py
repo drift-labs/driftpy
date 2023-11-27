@@ -1377,48 +1377,42 @@ class DriftClient:
 
     async def settle_pnl(
         self,
-        user_authority: Pubkey,
+        user_public_key: Pubkey,
+        user_account: UserAccount,
         market_index: int,
-        sub_account_id: int = 0,
     ):
         return await self.send_ixs(
-            await self.get_settle_pnl_ix(user_authority, market_index, sub_account_id)
+            self.get_settle_pnl_ix(user_public_key, user_account, market_index)
         )
 
-    async def get_settle_pnl_ix(
+    def get_settle_pnl_ix(
         self,
-        user_authority: Pubkey,
+        user_public_key: Pubkey,
+        user_account: UserAccount,
         market_index: int,
-        sub_account_id: int = 0,
     ):
-        user_account_pubkey = get_user_account_public_key(
-            self.program_id, user_authority, sub_account_id
-        )
-        user_account = await self.program.account["User"].fetch(user_account_pubkey)
         remaining_accounts = self.get_remaining_accounts(
             writable_perp_market_indexes=[market_index],
             writable_spot_market_indexes=[QUOTE_SPOT_MARKET_INDEX],
             user_accounts=[user_account],
         )
 
-        return (
-            self.program.instruction["settle_pnl"](
-                market_index,
-                ctx=Context(
-                    accounts={
-                        "state": self.get_state_public_key(),
-                        "authority": self.authority,
-                        "user": get_user_account_public_key(
-                            self.program_id, user_authority, sub_account_id
-                        ),
-                        "spot_market_vault": get_spot_market_vault_public_key(
-                            self.program_id, QUOTE_SPOT_MARKET_INDEX
-                        ),
-                    },
-                    remaining_accounts=remaining_accounts,
-                ),
+        instruction = self.program.instruction["settle_pnl"](
+            market_index,
+            ctx=Context(
+                accounts={
+                    "state": self.get_state_public_key(),
+                    "authority": self.authority,
+                    "user": user_public_key,
+                    "spot_market_vault": get_spot_market_vault_public_key(
+                        self.program_id, QUOTE_SPOT_MARKET_INDEX
+                    ),
+                },
+                remaining_accounts=remaining_accounts,
             ),
         )
+
+        return instruction
 
     async def resolve_spot_bankruptcy(
         self,
