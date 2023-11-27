@@ -36,6 +36,7 @@ from driftpy.types import (
     PerpMarketAccount,
     OrderType,
     OrderParams,
+    MarketType,
     # SwapDirection,
 )
 from driftpy.accounts import (
@@ -236,13 +237,14 @@ async def test_open_orders(
     assert open_orders == user_account.orders
 
     order_params = OrderParams(
+        market_type=MarketType.PERP(),
         order_type=OrderType.MARKET(),
         market_index=0,
         base_asset_amount=int(1 * BASE_PRECISION),
         direction=PositionDirection.LONG(),
         user_order_id=169,
     )
-    ixs = await drift_client.get_place_perp_orders_ix([order_params])
+    ixs = drift_client.get_place_orders_ix([order_params])
     await drift_client.send_ixs(ixs)
     await drift_user.account_subscriber.update_cache()
     open_orders_after = drift_user.get_open_orders()

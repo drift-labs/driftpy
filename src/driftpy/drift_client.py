@@ -700,6 +700,59 @@ class DriftClient:
 
         return ix
 
+    async def place_orders(
+        self,
+        order_params: List[OrderParams],
+        sub_account_id: int = 0,
+    ):
+        return await self.send_ixs(
+            [
+                self.get_place_orders_ix(order_params, sub_account_id),
+            ]
+        )
+
+    def get_place_orders_ix(
+        self,
+        order_params: List[OrderParams],
+        sub_account_id: int = 0,
+    ):
+        user_account_public_key = self.get_user_account_public_key(sub_account_id)
+        user_stats_public_key = self.get_user_stats_public_key()
+
+        readable_perp_market_indexes = []
+        readable_spot_market_indexes = []
+        for order_param in order_params:
+            order_param.check_market_type()
+
+            if "PERP" in str(order_param.market_type):
+                readable_perp_market_indexes.append(order_param.market_index)
+            else:
+                if len(readable_spot_market_indexes) == 0:
+                    readable_spot_market_indexes.append(QUOTE_SPOT_MARKET_INDEX)
+
+                readable_spot_market_indexes.append(order_param.market_index)
+
+        remaining_accounts = self.get_remaining_accounts(
+            readable_perp_market_indexes=readable_perp_market_indexes,
+            readable_spot_market_indexes=readable_spot_market_indexes,
+            user_accounts=[self.get_user_account(sub_account_id)],
+        )
+
+        ix = self.program.instruction["place_orders"](
+            order_params,
+            ctx=Context(
+                accounts={
+                    "state": self.get_state_public_key(),
+                    "user": user_account_public_key,
+                    "userStats": user_stats_public_key,
+                    "authority": self.wallet.public_key,
+                },
+                remaining_accounts=remaining_accounts,
+            ),
+        )
+
+        return ix
+
     async def cancel_order(
         self,
         order_id: Optional[int] = None,
@@ -785,98 +838,6 @@ class DriftClient:
                 remaining_accounts=remaining_accounts,
             ),
         )
-
-    def get_place_spot_orders_ix(
-        self,
-        order_params: List[OrderParams],
-        sub_account_id: int = 0,
-    ):
-        user_account_public_key = self.get_user_account_public_key(sub_account_id)
-
-        remaining_accounts = self.get_remaining_accounts(
-            readable_spot_market_indexes=[
-                QUOTE_SPOT_MARKET_INDEX,
-                order_params.market_index,
-            ],
-            user_accounts=[self.get_user_account(sub_account_id)],
-        )
-
-        ixs = [
-            self.program.instruction["cancel_orders"](
-                None,
-                None,
-                None,
-                ctx=Context(
-                    accounts={
-                        "state": self.get_state_public_key(),
-                        "user": self.get_user_account_public_key(sub_account_id),
-                        "authority": self.wallet.public_key,
-                    },
-                    remaining_accounts=remaining_accounts,
-                ),
-            )
-        ]
-        for order_param in order_params:
-            ix = self.program.instruction["place_spot_order"](
-                order_param,
-                ctx=Context(
-                    accounts={
-                        "state": self.get_state_public_key(),
-                        "user": user_account_public_key,
-                        "authority": self.wallet.public_key,
-                    },
-                    remaining_accounts=remaining_accounts,
-                ),
-            )
-            ixs.append(ix)
-
-        return ixs
-
-    async def get_place_perp_orders_ix(
-        self, order_params: List[OrderParams], sub_account_id: int = 0, cancel_all=True
-    ):
-        [order_param.set_perp() for order_param in order_params]
-
-        user_account_public_key = self.get_user_account_public_key(sub_account_id)
-
-        readable_market_indexes = list(set([x.market_index for x in order_params]))
-        remaining_accounts = self.get_remaining_accounts(
-            readable_perp_market_indexes=readable_market_indexes,
-            user_accounts=[self.get_user_account(sub_account_id)],
-        )
-
-        ixs = []
-        if cancel_all:
-            ixs.append(
-                self.program.instruction["cancel_orders"](
-                    None,
-                    None,
-                    None,
-                    ctx=Context(
-                        accounts={
-                            "state": self.get_state_public_key(),
-                            "user": self.get_user_account_public_key(sub_account_id),
-                            "authority": self.wallet.public_key,
-                        },
-                        remaining_accounts=remaining_accounts,
-                    ),
-                )
-            )
-        for order_param in order_params:
-            ix = self.program.instruction["place_perp_order"](
-                order_param,
-                ctx=Context(
-                    accounts={
-                        "state": self.get_state_public_key(),
-                        "user": user_account_public_key,
-                        "authority": self.wallet.public_key,
-                    },
-                    remaining_accounts=remaining_accounts,
-                ),
-            )
-            ixs.append(ix)
-
-        return ixs
 
     async def place_and_take_perp_order(
         self,

@@ -202,62 +202,36 @@ async def main(
                 len(ask_prices)
             )
 
-    default_order_params = OrderParams(
-        order_type=OrderType.LIMIT(),
-        market_type=market_type,
-        direction=PositionDirection.LONG(),
-        user_order_id=0,
-        base_asset_amount=0,
-        price=0,
-        market_index=market_index,
-        reduce_only=False,
-        post_only=PostOnlyParams.TRY_POST_ONLY()
-        if not taker
-        else PostOnlyParams.NONE(),
-        immediate_or_cancel=False,
-        trigger_price=0,
-        trigger_condition=OrderTriggerCondition.ABOVE(),
-        oracle_price_offset=0,
-        auction_duration=None,
-        max_ts=None,
-        auction_start_price=None,
-        auction_end_price=None,
-    )
     order_params = []
     for x in bid_prices:
-        bid_order_params = copy.deepcopy(default_order_params)
-        bid_order_params.direction = PositionDirection.LONG()
-        bid_order_params.base_asset_amount = int(
-            base_asset_amount_per_bid * BASE_PRECISION
+        bid_order_params = OrderParams(
+            order_type=OrderType.LIMIT(),
+            market_index=market_index,
+            market_type=market_type,
+            direction=PositionDirection.LONG(),
+            base_asset_amount=int(base_asset_amount_per_bid * BASE_PRECISION),
+            price=int(x * PRICE_PRECISION),
         )
-        bid_order_params.price = int(x * PRICE_PRECISION)
         if bid_order_params.base_asset_amount > 0:
             order_params.append(bid_order_params)
 
     for x in ask_prices:
-        ask_order_params = copy.deepcopy(default_order_params)
-        ask_order_params.base_asset_amount = int(
-            base_asset_amount_per_ask * BASE_PRECISION
+        ask_order_params = OrderParams(
+            order_type=OrderType.LIMIT(),
+            market_index=market_index,
+            market_type=market_type,
+            direction=PositionDirection.SHORT(),
+            base_asset_amount=int(base_asset_amount_per_ask * BASE_PRECISION),
+            price=int(x * PRICE_PRECISION),
         )
-        ask_order_params.direction = PositionDirection.SHORT()
-        ask_order_params.price = int(x * PRICE_PRECISION)
         if ask_order_params.base_asset_amount > 0:
             order_params.append(ask_order_params)
     # print(order_params)
     # order_print([bid_order_params, ask_order_params], market_name)
 
-    perp_orders_ix = []
-    spot_orders_ix = []
-    if is_perp:
-        perp_orders_ix = await drift_acct.get_place_perp_orders_ix(
-            order_params, subaccount_id
-        )
-    else:
-        spot_orders_ix = await drift_acct.get_place_spot_orders_ix(
-            order_params, subaccount_id
-        )
+    place_orders_ix = drift_acct.get_place_orders_ix(order_params)
     # perp_orders_ix = [ await drift_acct.get_place_perp_order_ix(order_params[0], subaccount_id)]
-    await drift_acct.send_ixs(perp_orders_ix + spot_orders_ix)
+    await drift_acct.send_ixs([place_orders_ix])
 
 
 if __name__ == "__main__":
