@@ -266,93 +266,6 @@ class DriftClient:
 
         return await self.program.provider.send(tx)
 
-    async def initialize_user(
-        self,
-        sub_account_id: int = 0,
-        name: str = None,
-        referrer_info: ReferrerInfo = None,
-    ):
-        """intializes a drift user
-
-        Args:
-            sub_account_id (int, optional): subaccount id to initialize. Defaults to 0.
-
-        Returns:
-            str: tx signature
-        """
-        ixs = []
-        if sub_account_id == 0:
-            ixs.append(self.get_initialize_user_stats())
-            if name is None:
-                name = DEFAULT_USER_NAME
-
-        if name is None:
-            name = "Subaccount " + str(sub_account_id + 1)
-
-        ix = self.get_initialize_user_instructions(sub_account_id, name, referrer_info)
-        ixs.append(ix)
-        return await self.send_ixs(ixs)
-
-    def get_initialize_user_stats(
-        self,
-    ):
-        state_public_key = self.get_state_public_key()
-        user_stats_public_key = self.get_user_stats_public_key()
-
-        return self.program.instruction["initialize_user_stats"](
-            ctx=Context(
-                accounts={
-                    "user_stats": user_stats_public_key,
-                    "state": state_public_key,
-                    "authority": self.authority,
-                    "payer": self.authority,
-                    "rent": RENT,
-                    "system_program": ID,
-                },
-            ),
-        )
-
-    def get_initialize_user_instructions(
-        self,
-        sub_account_id: int = 0,
-        name: str = DEFAULT_USER_NAME,
-        referrer_info: ReferrerInfo = None,
-    ) -> Instruction:
-        user_public_key = self.get_user_account_public_key(sub_account_id)
-        state_public_key = self.get_state_public_key()
-        user_stats_public_key = self.get_user_stats_public_key()
-
-        encoded_name = encode_name(name)
-
-        remaining_accounts = []
-        if referrer_info is not None:
-            remaining_accounts.append(
-                AccountMeta(referrer_info.referrer, is_writable=True, is_signer=False)
-            )
-            remaining_accounts.append(
-                AccountMeta(
-                    referrer_info.referrer_stats, is_writable=True, is_signer=False
-                )
-            )
-
-        initialize_user_account_ix = self.program.instruction["initialize_user"](
-            sub_account_id,
-            encoded_name,
-            ctx=Context(
-                accounts={
-                    "user": user_public_key,
-                    "user_stats": user_stats_public_key,
-                    "state": state_public_key,
-                    "authority": self.authority,
-                    "payer": self.authority,
-                    "rent": RENT,
-                    "system_program": ID,
-                },
-                remaining_accounts=remaining_accounts,
-            ),
-        )
-        return initialize_user_account_ix
-
     def get_remaining_accounts(
         self,
         user_accounts: list[UserAccount] = (),
@@ -469,72 +382,92 @@ class DriftClient:
 
         return oracle_map, spot_market_map, perp_market_map
 
-    async def withdraw(
+    async def initialize_user(
         self,
-        amount: int,
-        spot_market_index: int,
-        user_token_account: Pubkey,
-        reduce_only: bool = False,
         sub_account_id: int = 0,
+        name: str = None,
+        referrer_info: ReferrerInfo = None,
     ):
-        """withdraws from drift protocol (can also allow borrowing)
+        """intializes a drift user
 
         Args:
-            amount (int): amount to withdraw
-            spot_market_index (int):
-            user_token_account (Pubkey): ata of the account to withdraw to
-            reduce_only (bool, optional): if True will only withdraw existing funds else if False will allow taking out borrows. Defaults to False.
-            sub_account_id (int, optional): subaccount. Defaults to 0.
+            sub_account_id (int, optional): subaccount id to initialize. Defaults to 0.
 
         Returns:
-            str: tx sig
+            str: tx signature
         """
-        return await self.send_ixs(
-            [
-                self.get_withdraw_collateral_ix(
-                    amount,
-                    spot_market_index,
-                    user_token_account,
-                    reduce_only,
-                    sub_account_id,
-                )
-            ]
-        )
+        ixs = []
+        if sub_account_id == 0:
+            ixs.append(self.get_initialize_user_stats())
+            if name is None:
+                name = DEFAULT_USER_NAME
 
-    def get_withdraw_collateral_ix(
+        if name is None:
+            name = "Subaccount " + str(sub_account_id + 1)
+
+        ix = self.get_initialize_user_instructions(sub_account_id, name, referrer_info)
+        ixs.append(ix)
+        return await self.send_ixs(ixs)
+
+    def get_initialize_user_stats(
         self,
-        amount: int,
-        spot_market_index: int,
-        user_token_account: Pubkey,
-        reduce_only: bool = False,
-        sub_account_id: int = 0,
     ):
-        spot_market = self.get_spot_market_account(spot_market_index)
-        remaining_accounts = self.get_remaining_accounts(
-            user_accounts=[self.get_user_account(sub_account_id)],
-            writable_spot_market_indexes=[spot_market_index],
-        )
-        dc_signer = get_drift_client_signer_public_key(self.program_id)
+        state_public_key = self.get_state_public_key()
+        user_stats_public_key = self.get_user_stats_public_key()
 
-        return self.program.instruction["withdraw"](
-            spot_market_index,
-            amount,
-            reduce_only,
+        return self.program.instruction["initialize_user_stats"](
             ctx=Context(
                 accounts={
-                    "state": self.get_state_public_key(),
-                    "spot_market": spot_market.pubkey,
-                    "spot_market_vault": spot_market.vault,
-                    "drift_signer": dc_signer,
-                    "user": self.get_user_account_public_key(sub_account_id),
-                    "user_stats": self.get_user_stats_public_key(),
-                    "user_token_account": user_token_account,
+                    "user_stats": user_stats_public_key,
+                    "state": state_public_key,
                     "authority": self.authority,
-                    "token_program": TOKEN_PROGRAM_ID,
+                    "payer": self.authority,
+                    "rent": RENT,
+                    "system_program": ID,
+                },
+            ),
+        )
+
+    def get_initialize_user_instructions(
+        self,
+        sub_account_id: int = 0,
+        name: str = DEFAULT_USER_NAME,
+        referrer_info: ReferrerInfo = None,
+    ) -> Instruction:
+        user_public_key = self.get_user_account_public_key(sub_account_id)
+        state_public_key = self.get_state_public_key()
+        user_stats_public_key = self.get_user_stats_public_key()
+
+        encoded_name = encode_name(name)
+
+        remaining_accounts = []
+        if referrer_info is not None:
+            remaining_accounts.append(
+                AccountMeta(referrer_info.referrer, is_writable=True, is_signer=False)
+            )
+            remaining_accounts.append(
+                AccountMeta(
+                    referrer_info.referrer_stats, is_writable=True, is_signer=False
+                )
+            )
+
+        initialize_user_account_ix = self.program.instruction["initialize_user"](
+            sub_account_id,
+            encoded_name,
+            ctx=Context(
+                accounts={
+                    "user": user_public_key,
+                    "user_stats": user_stats_public_key,
+                    "state": state_public_key,
+                    "authority": self.authority,
+                    "payer": self.authority,
+                    "rent": RENT,
+                    "system_program": ID,
                 },
                 remaining_accounts=remaining_accounts,
             ),
         )
+        return initialize_user_account_ix
 
     async def deposit(
         self,
@@ -620,85 +553,152 @@ class DriftClient:
             ),
         )
 
-    async def add_liquidity(
-        self, amount: int, market_index: int, sub_account_id: int = 0
+    async def withdraw(
+        self,
+        amount: int,
+        spot_market_index: int,
+        user_token_account: Pubkey,
+        reduce_only: bool = False,
+        sub_account_id: int = 0,
     ):
-        """mint LP tokens and add liquidity to the DAMM
+        """withdraws from drift protocol (can also allow borrowing)
 
         Args:
-            amount (int): amount of lp tokens to mint
-            market_index (int): market you want to lp in
-            sub_account_id (int, optional): subaccount id. Defaults to 0.
+            amount (int): amount to withdraw
+            spot_market_index (int):
+            user_token_account (Pubkey): ata of the account to withdraw to
+            reduce_only (bool, optional): if True will only withdraw existing funds else if False will allow taking out borrows. Defaults to False.
+            sub_account_id (int, optional): subaccount. Defaults to 0.
 
         Returns:
             str: tx sig
         """
         return await self.send_ixs(
-            [self.get_add_liquidity_ix(amount, market_index, sub_account_id)]
+            [
+                self.get_withdraw_collateral_ix(
+                    amount,
+                    spot_market_index,
+                    user_token_account,
+                    reduce_only,
+                    sub_account_id,
+                )
+            ]
         )
 
-    def get_add_liquidity_ix(
-        self, amount: int, market_index: int, sub_account_id: int = 0
+    def get_withdraw_collateral_ix(
+        self,
+        amount: int,
+        spot_market_index: int,
+        user_token_account: Pubkey,
+        reduce_only: bool = False,
+        sub_account_id: int = 0,
     ):
+        spot_market = self.get_spot_market_account(spot_market_index)
         remaining_accounts = self.get_remaining_accounts(
-            writable_perp_market_indexes=[market_index],
+            user_accounts=[self.get_user_account(sub_account_id)],
+            writable_spot_market_indexes=[spot_market_index],
+        )
+        dc_signer = get_drift_client_signer_public_key(self.program_id)
+
+        return self.program.instruction["withdraw"](
+            spot_market_index,
+            amount,
+            reduce_only,
+            ctx=Context(
+                accounts={
+                    "state": self.get_state_public_key(),
+                    "spot_market": spot_market.pubkey,
+                    "spot_market_vault": spot_market.vault,
+                    "drift_signer": dc_signer,
+                    "user": self.get_user_account_public_key(sub_account_id),
+                    "user_stats": self.get_user_stats_public_key(),
+                    "user_token_account": user_token_account,
+                    "authority": self.authority,
+                    "token_program": TOKEN_PROGRAM_ID,
+                },
+                remaining_accounts=remaining_accounts,
+            ),
+        )
+
+    async def place_spot_order(
+        self,
+        order_params: OrderParams,
+        sub_account_id: int = 0,
+    ):
+        return await self.send_ixs(
+            [
+                self.get_place_spot_order_ix(order_params, sub_account_id),
+            ]
+        )
+
+    def get_place_spot_order_ix(
+        self,
+        order_params: OrderParams,
+        sub_account_id: int = 0,
+    ):
+        order_params.set_spot()
+        user_account_public_key = self.get_user_account_public_key(sub_account_id)
+
+        remaining_accounts = self.get_remaining_accounts(
+            readable_spot_market_indexes=[
+                QUOTE_SPOT_MARKET_INDEX,
+                order_params.market_index,
+            ],
             user_accounts=[self.get_user_account(sub_account_id)],
         )
-        user_account_public_key = get_user_account_public_key(
-            self.program_id, self.authority, sub_account_id
-        )
 
-        return self.program.instruction["add_perp_lp_shares"](
-            amount,
-            market_index,
+        ix = self.program.instruction["place_spot_order"](
+            order_params,
             ctx=Context(
                 accounts={
                     "state": self.get_state_public_key(),
                     "user": user_account_public_key,
-                    "authority": self.authority,
+                    "authority": self.wallet.public_key,
                 },
                 remaining_accounts=remaining_accounts,
             ),
         )
 
-    async def remove_liquidity(
-        self, amount: int, market_index: int, sub_account_id: int = 0
+        return ix
+
+    async def place_perp_order(
+        self,
+        order_params: OrderParams,
+        sub_account_id: int = 0,
     ):
-        """burns LP tokens and removes liquidity to the DAMM
-
-        Args:
-            amount (int): amount of lp tokens to burn
-            market_index (int):
-            sub_account_id (int, optional): subaccount id. Defaults to 0.
-
-        Returns:
-            str: tx sig
-        """
         return await self.send_ixs(
-            [self.get_remove_liquidity_ix(amount, market_index, sub_account_id)]
+            [
+                self.get_place_perp_order_ix(order_params, sub_account_id),
+            ]
         )
 
-    def get_remove_liquidity_ix(
-        self, amount: int, market_index: int, sub_account_id: int = 0
+    def get_place_perp_order_ix(
+        self,
+        order_params: OrderParams,
+        sub_account_id: int = 0,
     ):
+        order_params.set_perp()
+        user_account_public_key = self.get_user_account_public_key(sub_account_id)
+        user_stats_public_key = self.get_user_stats_public_key()
         remaining_accounts = self.get_remaining_accounts(
-            writable_perp_market_indexes=[market_index],
+            readable_perp_market_indexes=[order_params.market_index],
             user_accounts=[self.get_user_account(sub_account_id)],
         )
-        user_account_public_key = self.get_user_account_public_key(sub_account_id)
 
-        return self.program.instruction["remove_perp_lp_shares"](
-            amount,
-            market_index,
+        ix = self.program.instruction["place_perp_order"](
+            order_params,
             ctx=Context(
                 accounts={
-                    "state": get_state_public_key(self.program_id),
+                    "state": self.get_state_public_key(),
                     "user": user_account_public_key,
-                    "authority": self.authority,
+                    "userStats": user_stats_public_key,
+                    "authority": self.wallet.public_key,
                 },
                 remaining_accounts=remaining_accounts,
             ),
         )
+
+        return ix
 
     async def cancel_order(
         self,
@@ -786,47 +786,6 @@ class DriftClient:
             ),
         )
 
-    async def place_spot_order(
-        self,
-        order_params: OrderParams,
-        sub_account_id: int = 0,
-    ):
-        return await self.send_ixs(
-            [
-                self.get_place_spot_order_ix(order_params, sub_account_id),
-            ]
-        )
-
-    def get_place_spot_order_ix(
-        self,
-        order_params: OrderParams,
-        sub_account_id: int = 0,
-    ):
-        order_params.set_spot()
-        user_account_public_key = self.get_user_account_public_key(sub_account_id)
-
-        remaining_accounts = self.get_remaining_accounts(
-            readable_spot_market_indexes=[
-                QUOTE_SPOT_MARKET_INDEX,
-                order_params.market_index,
-            ],
-            user_accounts=[self.get_user_account(sub_account_id)],
-        )
-
-        ix = self.program.instruction["place_spot_order"](
-            order_params,
-            ctx=Context(
-                accounts={
-                    "state": self.get_state_public_key(),
-                    "user": user_account_public_key,
-                    "authority": self.wallet.public_key,
-                },
-                remaining_accounts=remaining_accounts,
-            ),
-        )
-
-        return ix
-
     def get_place_spot_orders_ix(
         self,
         order_params: List[OrderParams],
@@ -872,45 +831,6 @@ class DriftClient:
             ixs.append(ix)
 
         return ixs
-
-    async def place_perp_order(
-        self,
-        order_params: OrderParams,
-        sub_account_id: int = 0,
-    ):
-        return await self.send_ixs(
-            [
-                self.get_place_perp_order_ix(order_params, sub_account_id),
-            ]
-        )
-
-    def get_place_perp_order_ix(
-        self,
-        order_params: OrderParams,
-        sub_account_id: int = 0,
-    ):
-        order_params.set_perp()
-        user_account_public_key = self.get_user_account_public_key(sub_account_id)
-        user_stats_public_key = self.get_user_stats_public_key()
-        remaining_accounts = self.get_remaining_accounts(
-            readable_perp_market_indexes=[order_params.market_index],
-            user_accounts=[self.get_user_account(sub_account_id)],
-        )
-
-        ix = self.program.instruction["place_perp_order"](
-            order_params,
-            ctx=Context(
-                accounts={
-                    "state": self.get_state_public_key(),
-                    "user": user_account_public_key,
-                    "userStats": user_stats_public_key,
-                    "authority": self.wallet.public_key,
-                },
-                remaining_accounts=remaining_accounts,
-            ),
-        )
-
-        return ix
 
     async def get_place_perp_orders_ix(
         self, order_params: List[OrderParams], sub_account_id: int = 0, cancel_all=True
@@ -1002,6 +922,86 @@ class DriftClient:
                     "state": self.get_state_public_key(),
                     "user": user_account_public_key,
                     "user_stats": self.get_user_stats_public_key(),
+                    "authority": self.authority,
+                },
+                remaining_accounts=remaining_accounts,
+            ),
+        )
+
+    async def add_liquidity(
+        self, amount: int, market_index: int, sub_account_id: int = 0
+    ):
+        """mint LP tokens and add liquidity to the DAMM
+
+        Args:
+            amount (int): amount of lp tokens to mint
+            market_index (int): market you want to lp in
+            sub_account_id (int, optional): subaccount id. Defaults to 0.
+
+        Returns:
+            str: tx sig
+        """
+        return await self.send_ixs(
+            [self.get_add_liquidity_ix(amount, market_index, sub_account_id)]
+        )
+
+    def get_add_liquidity_ix(
+        self, amount: int, market_index: int, sub_account_id: int = 0
+    ):
+        remaining_accounts = self.get_remaining_accounts(
+            writable_perp_market_indexes=[market_index],
+            user_accounts=[self.get_user_account(sub_account_id)],
+        )
+        user_account_public_key = get_user_account_public_key(
+            self.program_id, self.authority, sub_account_id
+        )
+
+        return self.program.instruction["add_perp_lp_shares"](
+            amount,
+            market_index,
+            ctx=Context(
+                accounts={
+                    "state": self.get_state_public_key(),
+                    "user": user_account_public_key,
+                    "authority": self.authority,
+                },
+                remaining_accounts=remaining_accounts,
+            ),
+        )
+
+    async def remove_liquidity(
+        self, amount: int, market_index: int, sub_account_id: int = 0
+    ):
+        """burns LP tokens and removes liquidity to the DAMM
+
+        Args:
+            amount (int): amount of lp tokens to burn
+            market_index (int):
+            sub_account_id (int, optional): subaccount id. Defaults to 0.
+
+        Returns:
+            str: tx sig
+        """
+        return await self.send_ixs(
+            [self.get_remove_liquidity_ix(amount, market_index, sub_account_id)]
+        )
+
+    def get_remove_liquidity_ix(
+        self, amount: int, market_index: int, sub_account_id: int = 0
+    ):
+        remaining_accounts = self.get_remaining_accounts(
+            writable_perp_market_indexes=[market_index],
+            user_accounts=[self.get_user_account(sub_account_id)],
+        )
+        user_account_public_key = self.get_user_account_public_key(sub_account_id)
+
+        return self.program.instruction["remove_perp_lp_shares"](
+            amount,
+            market_index,
+            ctx=Context(
+                accounts={
+                    "state": get_state_public_key(self.program_id),
+                    "user": user_account_public_key,
                     "authority": self.authority,
                 },
                 remaining_accounts=remaining_accounts,
