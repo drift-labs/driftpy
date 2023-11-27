@@ -313,7 +313,7 @@ async def test_update_amm(drift_client: Admin, workspace):
     #     pyth_program, market.amm.oracle, 1, 0, 1
     # )
 
-    ix2 = await drift_client.get_update_amm_ix([0])
+    ix2 = drift_client.get_update_amm_ix([0])
     ixs = [ix2]
 
     # ixs = [ix1, ix2]
