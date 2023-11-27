@@ -1648,7 +1648,7 @@ class DriftClient:
         )
 
     async def get_cancel_request_remove_insurance_fund_stake_ix(
-        self, spot_market_index: int
+        self, spot_market_index: int, user_token_account: Pubkey = None
     ):
         ra = self.get_remaining_accounts(
             writable_spot_market_indexes=[spot_market_index]
@@ -1672,24 +1672,31 @@ class DriftClient:
                     "insurance_fund_vault": get_insurance_fund_vault_public_key(
                         self.program_id, spot_market_index
                     ),
-                    "drift_signer": get_drift_client_signer_public_key(self.program_id),
-                    "user_token_account": self.get_associated_token_account_public_key(
-                        spot_market_index
-                    ),
-                    "token_program": TOKEN_PROGRAM_ID,
                 },
                 remaining_accounts=ra,
             ),
         )
 
-    async def remove_insurance_fund_stake(self, spot_market_index: int):
+    async def remove_insurance_fund_stake(
+        self, spot_market_index: int, user_token_account: Pubkey = None
+    ):
         return await self.send_ixs(
-            await self.get_remove_insurance_fund_stake_ix(spot_market_index)
+            await self.get_remove_insurance_fund_stake_ix(
+                spot_market_index, user_token_account
+            )
         )
 
-    async def get_remove_insurance_fund_stake_ix(self, spot_market_index: int):
+    async def get_remove_insurance_fund_stake_ix(
+        self, spot_market_index: int, user_token_account: Pubkey = None
+    ):
         ra = self.get_remaining_accounts(
             writable_spot_market_indexes=[spot_market_index],
+        )
+
+        user_token_account = (
+            user_token_account
+            if user_token_account is not None
+            else self.get_associated_token_account_public_key(spot_market_index)
         )
 
         return self.program.instruction["remove_insurance_fund_stake"](
@@ -1711,27 +1718,33 @@ class DriftClient:
                         self.program_id, spot_market_index
                     ),
                     "drift_signer": get_drift_client_signer_public_key(self.program_id),
-                    "user_token_account": self.get_associated_token_account_public_key(
-                        spot_market_index
-                    ),
+                    "user_token_account": user_token_account,
                     "token_program": TOKEN_PROGRAM_ID,
                 },
                 remaining_accounts=ra,
             ),
         )
 
-    async def add_insurance_fund_stake(self, spot_market_index: int, amount: int):
+    async def add_insurance_fund_stake(
+        self, spot_market_index: int, amount: int, user_token_account: Pubkey = None
+    ):
         return await self.send_ixs(
-            await self.get_add_insurance_fund_stake_ix(spot_market_index, amount)
+            await self.get_add_insurance_fund_stake_ix(
+                spot_market_index, amount, user_token_account
+            )
         )
 
     async def get_add_insurance_fund_stake_ix(
-        self,
-        spot_market_index: int,
-        amount: int,
+        self, spot_market_index: int, amount: int, user_token_account: Pubkey = None
     ):
         remaining_accounts = self.get_remaining_accounts(
             writable_spot_market_indexes=[spot_market_index],
+        )
+
+        user_token_account = (
+            user_token_account
+            if user_token_account is not None
+            else self.get_associated_token_account_public_key(spot_market_index)
         )
 
         return self.program.instruction["add_insurance_fund_stake"](
@@ -1757,9 +1770,7 @@ class DriftClient:
                         self.program_id, spot_market_index
                     ),
                     "drift_signer": get_drift_client_signer_public_key(self.program_id),
-                    "user_token_account": self.get_associated_token_account_public_key(
-                        spot_market_index
-                    ),
+                    "user_token_account": user_token_account,
                     "token_program": TOKEN_PROGRAM_ID,
                 },
                 remaining_accounts=remaining_accounts,

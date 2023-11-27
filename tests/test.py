@@ -206,7 +206,6 @@ async def test_usdc_deposit(
 ):
     usdc_spot_market = await get_spot_market_account(drift_client.program, 0)
     assert usdc_spot_market.market_index == 0
-    drift_client.spot_market_atas[0] = user_usdc_account.pubkey()
     await drift_client.deposit(
         USDC_AMOUNT, 0, user_usdc_account.pubkey(), user_initialized=True
     )
@@ -372,7 +371,9 @@ async def test_stake_if(
     if_acc = await get_if_stake_account(drift_client.program, drift_client.authority, 0)
     assert if_acc.market_index == 0
 
-    await drift_client.add_insurance_fund_stake(0, 1 * QUOTE_PRECISION)
+    await drift_client.add_insurance_fund_stake(
+        0, 1 * QUOTE_PRECISION, user_usdc_account.pubkey()
+    )
 
     user_stats = await get_user_stats_account(
         drift_client.program, drift_client.authority
@@ -381,7 +382,7 @@ async def test_stake_if(
 
     await drift_client.request_remove_insurance_fund_stake(0, 1 * QUOTE_PRECISION)
 
-    await drift_client.remove_insurance_fund_stake(0)
+    await drift_client.remove_insurance_fund_stake(0, user_usdc_account.pubkey())
 
     user_stats = await get_user_stats_account(
         drift_client.program, drift_client.authority
