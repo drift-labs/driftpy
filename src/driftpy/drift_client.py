@@ -1038,44 +1038,34 @@ class DriftClient:
             ),
         )
 
-    def get_user_spot_position(
+    def get_spot_position(
         self,
         market_index: int,
         sub_account_id: int = 0,
     ) -> Optional[SpotPosition]:
         user = self.get_user_account(sub_account_id)
 
-        found = False
         for position in user.spot_positions:
             if (
                 position.market_index == market_index
                 and not is_spot_position_available(position)
             ):
-                found = True
-                break
+                return position
 
-        if not found:
-            return None
+        return None
 
-        return position
-
-    def get_user_position(
+    def get_perp_position(
         self,
         market_index: int,
         sub_account_id: int = 0,
     ) -> Optional[PerpPosition]:
         user = self.get_user(sub_account_id).get_user_account()
 
-        found = False
         for position in user.perp_positions:
             if position.market_index == market_index and not is_available(position):
-                found = True
-                break
+                return position
 
-        if not found:
-            return None
-
-        return position
+        return None
 
     def default_order_params(
         self, order_type, market_index, base_asset_amount, direction
@@ -1815,7 +1805,7 @@ class DriftClient:
     async def get_close_position_ix(
         self, market_index: int, limit_price: int = 0, sub_account_id: int = 0
     ):
-        position = self.get_user_position(market_index, sub_account_id)
+        position = self.get_perp_position(market_index, sub_account_id)
         if position is None or position.base_asset_amount == 0:
             print("=> user has no position to close...")
             return

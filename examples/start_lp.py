@@ -106,7 +106,7 @@ async def main(
         print("confirming tx...")
         await connection.confirm_transaction(sig)
 
-    position = dc.get_user_position(market_index)
+    position = dc.get_perp_position(market_index)
     market = await get_perp_market_account(dc.program, market_index)
     percent_provided = (position.lp_shares / market.amm.sqrt_k) * 100
     print(f"lp shares: {position.lp_shares}")

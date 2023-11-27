@@ -140,7 +140,7 @@ async def main(
                 market.amm.historical_oracle_data.last_oracle_price / PRICE_PRECISION
             )
         # current_price = 20.00
-        current_pos_raw = drift_user.get_user_position(market_index)
+        current_pos_raw = drift_user.get_perp_position(market_index)
         if current_pos_raw is not None:
             current_pos = current_pos_raw.base_asset_amount / float(BASE_PRECISION)
         else:
@@ -158,7 +158,7 @@ async def main(
                 market.historical_oracle_data.last_oracle_price / PRICE_PRECISION
             )
 
-        spot_pos = await drift_user.get_user_spot_position(market_index)
+        spot_pos = await drift_user.get_spot_position(market_index)
         tokens = get_token_amount(
             spot_pos.scaled_balance, market, spot_pos.balance_type
         )

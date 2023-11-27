@@ -446,5 +446,5 @@ async def test_liq_perp(
 
     # liq takes on position
     await liq_drift_client.get_user(0).account_subscriber.update_cache()
-    position = liq_drift_client.get_user_position(0)
+    position = liq_drift_client.get_perp_position(0)
     assert position.base_asset_amount != 0
