@@ -1446,17 +1446,17 @@ class DriftClient:
 
     async def settle_pnl(
         self,
-        user_public_key: Pubkey,
+        user_account_public_key: Pubkey,
         user_account: UserAccount,
         market_index: int,
     ):
         return await self.send_ixs(
-            self.get_settle_pnl_ix(user_public_key, user_account, market_index)
+            self.get_settle_pnl_ix(user_account_public_key, user_account, market_index)
         )
 
     def get_settle_pnl_ix(
         self,
-        user_public_key: Pubkey,
+        user_account_public_key: Pubkey,
         user_account: UserAccount,
         market_index: int,
     ):
@@ -1472,7 +1472,7 @@ class DriftClient:
                 accounts={
                     "state": self.get_state_public_key(),
                     "authority": self.authority,
-                    "user": user_public_key,
+                    "user": user_account_public_key,
                     "spot_market_vault": get_spot_market_vault_public_key(
                         self.program_id, QUOTE_SPOT_MARKET_INDEX
                     ),
