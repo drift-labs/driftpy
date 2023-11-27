@@ -235,10 +235,13 @@ async def test_open_orders(
     assert len(open_orders) == 32
     assert open_orders == user_account.orders
 
-    order_params: OrderParams = drift_client.default_order_params(
-        OrderType.MARKET(), 0, int(1 * BASE_PRECISION), PositionDirection.LONG()
+    order_params = OrderParams(
+        order_type=OrderType.MARKET(),
+        market_index=0,
+        base_asset_amount=int(1 * BASE_PRECISION),
+        direction=PositionDirection.LONG(),
+        user_order_id=169,
     )
-    order_params.user_order_id = 169
     ixs = await drift_client.get_place_perp_orders_ix([order_params])
     await drift_client.send_ixs(ixs)
     await drift_user.account_subscriber.update_cache()

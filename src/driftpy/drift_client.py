@@ -915,12 +915,16 @@ class DriftClient:
     async def get_place_perp_orders_ix(
         self, order_params: List[OrderParams], sub_account_id: int = 0, cancel_all=True
     ):
+        [order_param.set_perp() for order_param in order_params]
+
         user_account_public_key = self.get_user_account_public_key(sub_account_id)
+
         readable_market_indexes = list(set([x.market_index for x in order_params]))
         remaining_accounts = self.get_remaining_accounts(
             readable_perp_market_indexes=readable_market_indexes,
             user_accounts=[self.get_user_account(sub_account_id)],
         )
+
         ixs = []
         if cancel_all:
             ixs.append(
@@ -954,7 +958,7 @@ class DriftClient:
 
         return ixs
 
-    async def place_and_take(
+    async def place_and_take_perp_order(
         self,
         order_params: OrderParams,
         maker_info: MakerInfo = None,
@@ -962,16 +966,20 @@ class DriftClient:
     ):
         return await self.send_ixs(
             [
-                self.get_place_and_take_ix(order_params, maker_info, sub_account_id),
+                self.get_place_and_take_perp_order_ix(
+                    order_params, maker_info, sub_account_id
+                ),
             ]
         )
 
-    def get_place_and_take_ix(
+    def get_place_and_take_perp_order_ix(
         self,
         order_params: OrderParams,
         maker_info: MakerInfo = None,
         sub_account_id: int = 0,
     ):
+        order_params.set_perp()
+
         user_account_public_key = self.get_user_account_public_key(sub_account_id)
 
         remaining_accounts = self.get_remaining_accounts(
@@ -1068,29 +1076,6 @@ class DriftClient:
                 return position
 
         return None
-
-    def default_order_params(
-        self, order_type, market_index, base_asset_amount, direction
-    ) -> OrderParams:
-        return OrderParams(
-            order_type,
-            market_type=MarketType.PERP(),
-            direction=direction,
-            user_order_id=0,
-            base_asset_amount=base_asset_amount,
-            price=0,
-            market_index=market_index,
-            reduce_only=False,
-            post_only=PostOnlyParams.NONE(),
-            immediate_or_cancel=False,
-            trigger_price=0,
-            trigger_condition=OrderTriggerCondition.ABOVE(),
-            oracle_price_offset=0,
-            auction_duration=None,
-            max_ts=None,
-            auction_start_price=None,
-            auction_end_price=None,
-        )
 
     async def liquidate_spot(
         self,
@@ -1778,15 +1763,17 @@ class DriftClient:
         limit_price: int = 0,
         ioc: bool = False,
     ):
-        order = self.default_order_params(
+        order_params = OrderParams(
             order_type=OrderType.MARKET(),
             direction=direction,
             market_index=market_index,
             base_asset_amount=amount,
+            price=limit_price,
         )
-        order.limit_price = limit_price
 
-        ix = self.get_place_and_take_ix(order, sub_account_id=sub_account_id)
+        ix = self.get_place_and_take_perp_order_ix(
+            order_params, sub_account_id=sub_account_id
+        )
         return ix
 
     @deprecated
@@ -1808,18 +1795,20 @@ class DriftClient:
             print("=> user has no position to close...")
             return
 
-        order = self.default_order_params(
+        order_params = OrderParams(
             order_type=OrderType.MARKET(),
             market_index=market_index,
             base_asset_amount=abs(int(position.base_asset_amount)),
             direction=PositionDirection.LONG()
             if position.base_asset_amount < 0
             else PositionDirection.SHORT(),
+            price=limit_price,
+            reduce_only=True,
         )
-        order.limit_price = limit_price
-        order.reduce_only = True
 
-        ix = self.get_place_and_take_ix(order, sub_account_id=sub_account_id)
+        ix = self.get_place_and_take_perp_order_ix(
+            order_params, sub_account_id=sub_account_id
+        )
         return ix
 
     async def update_amm(self, market_indexs: list[int]):
