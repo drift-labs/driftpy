@@ -4,6 +4,8 @@ import json
 from pytest import mark
 from pytest_asyncio import fixture as async_fixture
 from anchorpy import workspace_fixture, Wallet, Provider
+
+from driftpy.account_subscription_config import AccountSubscriptionConfig
 from driftpy.constants.numeric_constants import (
     QUOTE_PRECISION,
     BASE_PRECISION,
@@ -44,17 +46,21 @@ async def drift_client() -> DriftClient:
     wallet = Wallet(kp)
     connection = AsyncClient("https://api.devnet.solana.com")
 
-    provider = Provider(connection, wallet)
-    config = configs["devnet"]
-
-    return DriftClient.from_config(config, provider)
+    drift_client = DriftClient(
+        connection,
+        wallet,
+        "devnet",
+        account_subscription=AccountSubscriptionConfig("cached"),
+    )
+    await drift_client.subscribe()
+    return drift_client
 
 
 @mark.asyncio
 async def test_get_perp_market(
     drift_client: DriftClient,
 ):
-    ix = await drift_client.get_place_perp_order_ix(
+    ix = drift_client.get_place_perp_order_ix(
         OrderParams(
             order_type=OrderType.LIMIT(),
             market_type=MarketType.PERP(),
