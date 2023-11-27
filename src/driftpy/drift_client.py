@@ -700,36 +700,6 @@ class DriftClient:
             ),
         )
 
-    async def cancel_orders(self, sub_account_id: int = 0):
-        """cancel all existing orders on the book
-
-        Args:
-            sub_account_id (int, optional): subaccount id. Defaults to 0.
-
-        Returns:
-            str: tx sig
-        """
-        return await self.send_ixs(await self.get_cancel_orders_ix(sub_account_id))
-
-    async def get_cancel_orders_ix(self, sub_account_id: int = 0):
-        remaining_accounts = self.get_remaining_accounts(
-            user_accounts=[self.get_user_account(sub_account_id)]
-        )
-
-        return self.program.instruction["cancel_orders"](
-            None,
-            None,
-            None,
-            ctx=Context(
-                accounts={
-                    "state": self.get_state_public_key(),
-                    "user": self.get_user_account_public_key(sub_account_id),
-                    "authority": self.authority,
-                },
-                remaining_accounts=remaining_accounts,
-            ),
-        )
-
     async def cancel_order(
         self,
         order_id: Optional[int] = None,
@@ -757,6 +727,55 @@ class DriftClient:
 
         return self.program.instruction["cancel_order"](
             order_id,
+            ctx=Context(
+                accounts={
+                    "state": self.get_state_public_key(),
+                    "user": self.get_user_account_public_key(sub_account_id),
+                    "authority": self.authority,
+                },
+                remaining_accounts=remaining_accounts,
+            ),
+        )
+
+    async def cancel_orders(
+        self,
+        market_type: MarketType = None,
+        market_index: int = None,
+        direction: PositionDirection = None,
+        sub_account_id: int = 0,
+    ):
+        """cancel all existing orders on the book
+
+        Args:
+            market_type (MarketType, optional): only cancel orders for single market, used with market_index
+            market_index (int, optional): only cancel orders for single market, used with market_type
+            direction: (PositionDirection, optional): only cancel bids or asks
+            sub_account_id (int, optional): subaccount id. Defaults to 0.
+
+        Returns:
+            str: tx sig
+        """
+        return await self.send_ixs(
+            await self.get_cancel_orders_ix(
+                market_type, market_index, direction, sub_account_id
+            )
+        )
+
+    async def get_cancel_orders_ix(
+        self,
+        market_type: MarketType = None,
+        market_index: int = None,
+        direction: PositionDirection = None,
+        sub_account_id: int = 0,
+    ):
+        remaining_accounts = self.get_remaining_accounts(
+            user_accounts=[self.get_user_account(sub_account_id)]
+        )
+
+        return self.program.instruction["cancel_orders"](
+            market_type,
+            market_index,
+            direction,
             ctx=Context(
                 accounts={
                     "state": self.get_state_public_key(),
