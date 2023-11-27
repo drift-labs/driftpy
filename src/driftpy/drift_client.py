@@ -556,7 +556,7 @@ class DriftClient:
     async def withdraw(
         self,
         amount: int,
-        spot_market_index: int,
+        market_index: int,
         user_token_account: Pubkey,
         reduce_only: bool = False,
         sub_account_id: int = 0,
@@ -565,7 +565,7 @@ class DriftClient:
 
         Args:
             amount (int): amount to withdraw
-            spot_market_index (int):
+            market_index (int):
             user_token_account (Pubkey): ata of the account to withdraw to
             reduce_only (bool, optional): if True will only withdraw existing funds else if False will allow taking out borrows. Defaults to False.
             sub_account_id (int, optional): subaccount. Defaults to 0.
@@ -577,7 +577,7 @@ class DriftClient:
             [
                 self.get_withdraw_collateral_ix(
                     amount,
-                    spot_market_index,
+                    market_index,
                     user_token_account,
                     reduce_only,
                     sub_account_id,
@@ -588,20 +588,20 @@ class DriftClient:
     def get_withdraw_collateral_ix(
         self,
         amount: int,
-        spot_market_index: int,
+        market_index: int,
         user_token_account: Pubkey,
         reduce_only: bool = False,
         sub_account_id: int = 0,
     ):
-        spot_market = self.get_spot_market_account(spot_market_index)
+        spot_market = self.get_spot_market_account(market_index)
         remaining_accounts = self.get_remaining_accounts(
             user_accounts=[self.get_user_account(sub_account_id)],
-            writable_spot_market_indexes=[spot_market_index],
+            writable_spot_market_indexes=[market_index],
         )
         dc_signer = get_drift_client_signer_public_key(self.program_id)
 
         return self.program.instruction["withdraw"](
-            spot_market_index,
+            market_index,
             amount,
             reduce_only,
             ctx=Context(
