@@ -349,7 +349,6 @@ class DriftUser:
         )
 
         unrealized_pnl = 0
-        position: PerpPosition
         for position in user.perp_positions:
             if market_index is not None and position.market_index != market_index:
                 continue
@@ -377,6 +376,25 @@ class DriftUser:
                     )
 
             unrealized_pnl += position_unrealized_pnl
+
+        return unrealized_pnl
+
+    def get_unrealized_funding_pnl(
+        self,
+        market_index: int = None,
+    ):
+        user = self.get_user_account()
+
+        unrealized_pnl = 0
+        for position in user.perp_positions:
+            if market_index is not None and position.market_index != market_index:
+                continue
+
+            perp_market = self.drift_client.get_perp_market_account(
+                position.market_index
+            )
+
+            unrealized_pnl += calculate_position_funding_pnl(perp_market, position)
 
         return unrealized_pnl
 
