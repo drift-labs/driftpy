@@ -70,11 +70,32 @@ class DriftUser:
     def get_user_account(self) -> UserAccount:
         return self.account_subscriber.get_user_account_and_slot().data
 
+    def get_token_amount(self, market_index: int) -> int:
+        spot_position = self.get_spot_position(market_index)
+        if spot_position is None:
+            return 0
+
+        spot_market = self.get_spot_market_account(market_index)
+        return get_token_amount(
+            spot_position.scaled_balance, spot_market, spot_position.balance_type
+        )
+
+    def get_order(self, order_id: int) -> Optional[Order]:
+        for order in self.get_user_account().orders:
+            if order.order_id == order_id:
+                return order
+
+        return None
+
+    def get_order_by_user_order_id(self, user_order_id: int):
+        for order in self.get_user_account().orders:
+            if order.user_order_id == user_order_id:
+                return order
+
+        return None
+
     def get_open_orders(
         self,
-        #   market_type: MarketType,
-        #   market_index: int,
-        #   position_direction: PositionDirection
     ):
         return list(
             filter(
@@ -82,6 +103,23 @@ class DriftUser:
                 self.get_user_account().orders,
             )
         )
+
+    def get_perp_position(self, market_index: int) -> Optional[PerpPosition]:
+        for position in self.get_user_account().perp_positions:
+            if position.market_index == market_index and not is_available(position):
+                return position
+
+        return None
+
+    def get_spot_position(self, market_index: int) -> Optional[SpotPosition]:
+        for position in self.get_user_account().spot_positions:
+            if (
+                position.market_index == market_index
+                and not is_spot_position_available(position)
+            ):
+                return position
+
+        return None
 
     def get_spot_market_liability(
         self,
