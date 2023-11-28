@@ -1214,29 +1214,14 @@ class DriftClient:
         market_index: int,
         sub_account_id: int = 0,
     ) -> Optional[SpotPosition]:
-        user = self.get_user_account(sub_account_id)
-
-        for position in user.spot_positions:
-            if (
-                position.market_index == market_index
-                and not is_spot_position_available(position)
-            ):
-                return position
-
-        return None
+        return self.get_user(sub_account_id).get_spot_position(market_index)
 
     def get_perp_position(
         self,
         market_index: int,
         sub_account_id: int = 0,
     ) -> Optional[PerpPosition]:
-        user = self.get_user(sub_account_id).get_user_account()
-
-        for position in user.perp_positions:
-            if position.market_index == market_index and not is_available(position):
-                return position
-
-        return None
+        return self.get_user(sub_account_id).get_perp_position(market_index)
 
     async def liquidate_spot(
         self,
