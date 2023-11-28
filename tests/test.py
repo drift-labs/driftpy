@@ -296,7 +296,7 @@ async def test_add_remove_liquidity(
     user_account = drift_client.get_user(0).get_user_account()
     assert user_account.perp_positions[0].lp_shares == n_shares
 
-    await drift_client.settle_lp(drift_client.authority, 0)
+    await drift_client.settle_lp(drift_client.get_user_account_public_key(), 0)
 
     await drift_client.remove_liquidity(n_shares, 0)
     await drift_client.get_user(0).account_subscriber.update_cache()
