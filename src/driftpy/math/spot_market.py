@@ -27,12 +27,12 @@ def get_token_amount(
         case _:
             raise Exception(f"Invalid balance type: {balance_type}")
 
-    return balance * cumm_interest / percision_decrease
+    return balance * cumm_interest // percision_decrease
 
 
 def get_token_value(amount, spot_decimals, oracle_data: OraclePriceData):
     precision_decrease = 10**spot_decimals
-    return amount * oracle_data.price / precision_decrease
+    return amount * oracle_data.price // precision_decrease
 
 
 def cast_to_spot_precision(

@@ -5,6 +5,10 @@ from sumtypes import constructor
 from typing import Optional
 
 
+def is_variant(enum, type: str) -> bool:
+    return type in str(enum)
+
+
 @_rust_enum
 class SwapDirection:
     ADD = constructor()

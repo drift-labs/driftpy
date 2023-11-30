@@ -6,7 +6,10 @@ from driftpy.types import (
 from collections.abc import Mapping
 
 from driftpy.math.market import calculate_mark_price
-from driftpy.math.positions import calculate_position_pnl, calculate_base_asset_value
+from driftpy.math.perp_position import (
+    calculate_position_pnl,
+    calculate_base_asset_value,
+)
 from driftpy.constants.numeric_constants import (
     AMM_RESERVE_PRECISION,
 )
