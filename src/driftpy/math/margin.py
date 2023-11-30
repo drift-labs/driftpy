@@ -3,6 +3,7 @@ from driftpy.math.spot_market import *
 from enum import Enum
 
 from driftpy.types import OraclePriceData
+from driftpy.constants.numeric_constants import PRICE_TO_QUOTE_PRECISION_RATIO, BASE_PRECISION, SPOT_IMF_PRECISION, SPOT_WEIGHT_PRECISION, MARGIN_PRECISION, AMM_RESERVE_PRECISION 
 
 
 def calculate_size_discount_asset_weight(
