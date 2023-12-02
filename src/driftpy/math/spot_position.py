@@ -97,7 +97,7 @@ def calculate_weighted_token_value(
 ) -> (int, int):
     if token_value >= 0:
         weight = calculate_asset_weight(
-            token_amount, spot_market_account, margin_category
+            token_amount, oracle_price, spot_market_account, margin_category
         )
     else:
         weight = calculate_liability_weight(

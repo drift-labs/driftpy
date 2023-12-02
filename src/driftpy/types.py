@@ -254,8 +254,8 @@ class AMMLiquiditySplit:
 
 @_rust_enum
 class SpotBalanceType:
-    DEPOSIT = constructor()
-    BORROW = constructor()
+    Deposit = constructor()
+    Borrow = constructor()
 
 
 @_rust_enum

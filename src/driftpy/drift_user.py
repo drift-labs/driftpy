@@ -473,14 +473,16 @@ class DriftUser:
     def get_spot_asset_value(
         self,
         amount: int,
-        oracle_data,
+        oracle_price_data: OraclePriceData,
         spot_market: SpotMarketAccount,
         margin_category: MarginCategory,
     ):
-        asset_value = get_token_value(amount, spot_market.decimals, oracle_data)
+        asset_value = get_token_value(amount, spot_market.decimals, oracle_price_data)
 
         if margin_category is not None:
-            weight = calculate_asset_weight(amount, spot_market, margin_category)
+            weight = calculate_asset_weight(
+                amount, oracle_price_data.price, spot_market, margin_category
+            )
             asset_value = asset_value * weight // SPOT_WEIGHT_PRECISION
 
         return asset_value

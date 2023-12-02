@@ -33,7 +33,8 @@ class MarginCategory(Enum):
 
 
 def calculate_asset_weight(
-    amount,
+    amount: int,
+    oracle_price: int,
     spot_market: SpotMarketAccount,
     margin_category: MarginCategory,
 ):
@@ -49,21 +50,40 @@ def calculate_asset_weight(
             asset_weight = calculate_size_discount_asset_weight(
                 size_in_amm_precision,
                 spot_market.imf_factor,
-                spot_market.initial_asset_weight,
+                calculate_scaled_initial_asset_weight(spot_market, oracle_price),
             )
         case MarginCategory.MAINTENANCE:
-            asset_weight = spot_market.maintenance_asset_weight
-            # calculate_size_discount_asset_weight(
-            #     size_in_amm_precision,
-            #     spot_market.imf_factor,
-            #     spot_market.maintenance_asset_weight,
-            # )
-        case None:
-            asset_weight = spot_market.initial_asset_weight
+            asset_weight = calculate_size_discount_asset_weight(
+                size_in_amm_precision,
+                spot_market.imf_factor,
+                spot_market.maintenance_asset_weight,
+            )
         case _:
             raise Exception(f"Invalid margin category: {margin_category}")
 
     return asset_weight
+
+
+def calculate_scaled_initial_asset_weight(
+    spot_market: SpotMarketAccount, oracle_price: int
+) -> int:
+    if spot_market.scale_initial_asset_weight_start == 0:
+        return spot_market.initial_asset_weight
+
+    deposits = get_token_amount(
+        spot_market.deposit_balance, spot_market, SpotBalanceType.Deposit()
+    )
+
+    deposits_value = get_token_value(deposits, spot_market.decimals, oracle_price)
+
+    if deposits_value < spot_market.scale_initial_asset_weight_start:
+        return spot_market.initial_asset_weight
+    else:
+        return (
+            spot_market.initial_asset_weight
+            * spot_market.scale_initial_asset_weight_start
+            // deposits_value
+        )
 
 
 def calculate_size_premium_liability_weight(

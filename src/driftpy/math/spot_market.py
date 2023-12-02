@@ -30,9 +30,14 @@ def get_token_amount(
     return balance * cumm_interest // percision_decrease
 
 
-def get_token_value(amount, spot_decimals, oracle_data: OraclePriceData):
+def get_token_value(
+    amount, spot_decimals, oracle_price_data: Union[OraclePriceData | int]
+):
     precision_decrease = 10**spot_decimals
-    return amount * oracle_data.price // precision_decrease
+    if isinstance(oracle_price_data, OraclePriceData):
+        return amount * oracle_price_data.price // precision_decrease
+    else:
+        return amount * oracle_price_data // precision_decrease
 
 
 def cast_to_spot_precision(
