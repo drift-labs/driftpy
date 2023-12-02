@@ -187,19 +187,21 @@ class DriftUser:
 
     def get_margin_requirement(
         self,
-        margin_category: MarginCategory,
+        margin_category: MarginCategory = MarginCategory.INITIAL,
         liquidation_buffer: Optional[int] = 0,
-        include_open_orders=True,
         include_spot=True,
     ) -> int:
         perp_liability = self.get_total_perp_liability(
-            margin_category, liquidation_buffer, include_open_orders
+            margin_category, liquidation_buffer, include_open_orders=True
         )
 
         result = perp_liability
         if include_spot:
             spot_liability = self.get_spot_market_liability(
-                None, margin_category, liquidation_buffer, include_open_orders
+                None,
+                margin_category,
+                liquidation_buffer,
+                include_open_orders=True,
             )
             result += spot_liability
 
