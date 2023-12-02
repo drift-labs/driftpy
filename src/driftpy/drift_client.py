@@ -32,7 +32,8 @@ from driftpy.accounts import *
 from driftpy.constants.config import DriftEnv, DRIFT_PROGRAM_ID, configs
 
 from typing import Union, Optional, List
-from driftpy.math.positions import is_available, is_spot_position_available
+from driftpy.math.perp_position import is_available
+from driftpy.math.spot_position import is_spot_position_available
 from driftpy.math.spot_market import cast_to_spot_precision
 from driftpy.name import encode_name
 
@@ -143,7 +144,10 @@ class DriftClient:
     def unsubscribe(self):
         self.account_subscriber.unsubscribe()
 
-    def get_user(self, sub_account_id=0) -> DriftUser:
+    def get_user(self, sub_account_id=None) -> DriftUser:
+        sub_account_id = (
+            sub_account_id if sub_account_id is not None else self.active_sub_account_id
+        )
         if sub_account_id not in self.users:
             raise KeyError(f"No sub account id {sub_account_id} found")
 

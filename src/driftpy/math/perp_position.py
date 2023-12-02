@@ -3,26 +3,6 @@ from driftpy.types import OraclePriceData
 from driftpy.constants.numeric_constants import *
 from driftpy.math.amm import calculate_amm_reserves_after_swap, get_swap_direction
 
-def get_worst_case_token_amounts(
-    position: SpotPosition,
-    spot_market: SpotMarketAccount,
-    oracle_data,
-):
-    token_amount = get_signed_token_amount(
-        get_token_amount(position.scaled_balance, spot_market, position.balance_type),
-        position.balance_type,
-    )
-
-    token_all_bids = token_amount + position.open_bids
-    token_all_asks = token_amount + position.open_asks
-
-    if abs(token_all_asks) > abs(token_all_bids):
-        value = get_token_value(-position.open_asks, spot_market.decimals, oracle_data)
-        return [token_all_asks, value]
-    else:
-        value = get_token_value(-position.open_bids, spot_market.decimals, oracle_data)
-        return [token_all_bids, value]
-
 
 def calculate_base_asset_value_with_oracle(
     perp_position: PerpPosition, oracle_data: OraclePriceData
@@ -86,10 +66,6 @@ def calculate_worst_case_base_asset_amount(perp_position: PerpPosition):
         return all_bids
     else:
         return all_asks
-
-
-def is_spot_position_available(position: SpotPosition):
-    return position.scaled_balance == 0 and position.open_orders == 0
 
 
 def is_available(position: PerpPosition):

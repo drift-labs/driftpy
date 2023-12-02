@@ -3,7 +3,7 @@ from driftpy.math.spot_market import *
 from enum import Enum
 
 from driftpy.types import OraclePriceData
-from driftpy.constants.numeric_constants import PRICE_TO_QUOTE_PRECISION_RATIO, BASE_PRECISION, SPOT_IMF_PRECISION, SPOT_WEIGHT_PRECISION, MARGIN_PRECISION, AMM_RESERVE_PRECISION 
+from driftpy.constants.numeric_constants import *
 
 
 def calculate_size_discount_asset_weight(
@@ -72,7 +72,7 @@ def calculate_size_premium_liability_weight(
     if imf_factor == 0:
         return liability_weight
 
-    size_sqrt = int((size * 10 + 1) ** 0.5)
+    size_sqrt = int((abs(size) * 10 + 1) ** 0.5)
     denom0 = max(1, SPOT_IMF_PRECISION / imf_factor)
     assert denom0 > 0
     liability_weight_numerator = liability_weight - (liability_weight / denom0)
@@ -184,21 +184,6 @@ def calculate_liability_weight(
     return asset_weight
 
 
-def get_spot_asset_value(
-    amount: int,
-    oracle_data,
-    spot_market: SpotMarketAccount,
-    margin_category: MarginCategory,
-):
-    asset_value = get_token_value(amount, spot_market.decimals, oracle_data)
-
-    if margin_category is not None:
-        weight = calculate_asset_weight(amount, spot_market, margin_category)
-        asset_value = asset_value * weight / SPOT_WEIGHT_PRECISION
-
-    return asset_value
-
-
 def calculate_market_margin_ratio(
     market: PerpMarketAccount, size: int, margin_category: MarginCategory
 ) -> int:
@@ -215,28 +200,3 @@ def calculate_market_margin_ratio(
                 MARGIN_PRECISION,
             )
     return margin_ratio
-
-
-def get_spot_liability_value(
-    token_amount: int,
-    oracle_data: OraclePriceData,
-    spot_market: SpotMarketAccount,
-    margin_category: MarginCategory,
-    liquidation_buffer: int = None,
-    max_margin_ratio: int = None,
-) -> int:
-    liability_value = get_token_value(token_amount, spot_market.decimals, oracle_data)
-
-    if margin_category is not None:
-        weight = calculate_liability_weight(token_amount, spot_market, margin_category)
-
-        if margin_category == MarginCategory.INITIAL:
-            if max_margin_ratio:
-                weight = max(weight, max_margin_ratio)
-
-        if liquidation_buffer is not None:
-            weight += liquidation_buffer
-
-        liability_value = liability_value * weight / SPOT_WEIGHT_PRECISION
-
-    return liability_value
