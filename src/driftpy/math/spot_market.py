@@ -5,13 +5,7 @@ from driftpy.types import OraclePriceData
 
 
 def get_signed_token_amount(amount, balance_type):
-    match str(balance_type):
-        case "SpotBalanceType.Deposit()":
-            return amount
-        case "SpotBalanceType.Borrow()":
-            return -abs(amount)
-        case _:
-            raise Exception(f"Invalid balance type: {balance_type}")
+    return amount if is_variant(balance_type, "Deposit") else -abs(amount)
 
 
 def get_token_amount(
@@ -19,13 +13,11 @@ def get_token_amount(
 ) -> int:
     percision_decrease = 10 ** (19 - spot_market.decimals)
 
-    match str(balance_type):
-        case "SpotBalanceType.Deposit()":
-            cumm_interest = spot_market.cumulative_deposit_interest
-        case "SpotBalanceType.Borrow()":
-            cumm_interest = spot_market.cumulative_borrow_interest
-        case _:
-            raise Exception(f"Invalid balance type: {balance_type}")
+    cumm_interest = (
+        spot_market.cumulative_deposit_interest
+        if is_variant(balance_type, "Deposit")
+        else spot_market.cumulative_borrow_interest
+    )
 
     return balance * cumm_interest // percision_decrease
 
