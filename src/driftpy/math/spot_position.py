@@ -73,7 +73,7 @@ def get_worst_case_token_amounts(
     asks_simulation = simulate_order_fill(
         token_amount,
         token_value,
-        spot_position.open_bids,
+        spot_position.open_asks,
         oracle_price_data,
         spot_market_account,
         margin_category,
@@ -118,7 +118,7 @@ def simulate_order_fill(
     margin_category: MarginCategory,
 ):
     orders_value = get_token_value(
-        -token_amount, spot_market.decimals, oracle_price_data
+        -open_orders, spot_market.decimals, oracle_price_data
     )
     token_amount_after_fill = token_amount + open_orders
     token_value_after_fill = token_value - orders_value
