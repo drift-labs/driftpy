@@ -195,12 +195,12 @@ class MarginCalculationMode:
 
 @_rust_enum
 class OracleSource:
-    PYTH = constructor()
-    SWITCHBOARD = constructor()
-    QUOTE_ASSET = constructor()
-    PYTH1_K = constructor()
-    PYTH1_M = constructor()
-    PYTH_STABLE_COIN = constructor()
+    Pyth = constructor()
+    Switchboard = constructor()
+    QuoteAsset = constructor()
+    Pyth1K = constructor()
+    Pyth1M = constructor()
+    PythStableCoin = constructor()
 
 
 @_rust_enum

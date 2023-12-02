@@ -133,7 +133,7 @@ async def test_initialized_spot_market_2(
         optimal_utilization=optimal_util,
         optimal_rate=optimal_weight,
         max_rate=max_rate,
-        oracle_source=OracleSource.PYTH(),
+        oracle_source=OracleSource.Pyth(),
         initial_asset_weight=init_weight,
         maintenance_asset_weight=main_weight,
         initial_liability_weight=init_liab_weight,

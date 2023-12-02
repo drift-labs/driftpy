@@ -2,7 +2,7 @@ from solders.rpc.responses import GetAccountInfoResp
 
 from .types import DataAndSlot
 from driftpy.constants.numeric_constants import *
-from driftpy.types import OracleSource, OraclePriceData
+from driftpy.types import OracleSource, OraclePriceData, is_variant
 
 from solders.pubkey import Pubkey
 from pythclient.pythaccounts import PythPriceInfo, _ACCOUNT_HEADER_BYTES, EmaType
@@ -15,7 +15,7 @@ def convert_pyth_price(price, scale=1):
 
 
 async def get_oracle_price_data_and_slot(
-    connection: AsyncClient, address: Pubkey, oracle_source=OracleSource.PYTH()
+    connection: AsyncClient, address: Pubkey, oracle_source=OracleSource.Pyth()
 ) -> DataAndSlot[OraclePriceData]:
     if "Pyth" in str(oracle_source):
         rpc_reponse = await connection.get_account_info(address)
@@ -26,7 +26,7 @@ async def get_oracle_price_data_and_slot(
         )
 
         return DataAndSlot(data=oracle_price_data, slot=rpc_response_slot)
-    elif "Quote" in str(oracle_source):
+    elif is_variant(oracle_source, "QuoteAsset"):
         return DataAndSlot(
             data=OraclePriceData(PRICE_PRECISION, 0, 1, 1, 0, True), slot=0
         )
@@ -36,7 +36,7 @@ async def get_oracle_price_data_and_slot(
 
 def decode_pyth_price_info(
     buffer: bytes,
-    oracle_source=OracleSource.PYTH(),
+    oracle_source=OracleSource.Pyth(),
 ) -> OraclePriceData:
     offset = _ACCOUNT_HEADER_BYTES
     _, exponent, _ = struct.unpack_from("<IiI", buffer, offset)
