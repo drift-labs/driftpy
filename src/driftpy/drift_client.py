@@ -219,6 +219,11 @@ class DriftClient:
     def convert_to_price_precision(self, amount: Union[int, float]) -> int:
         return int(amount * PRICE_PRECISION)
 
+    def get_sub_account_id_for_ix(self, sub_account_id: int = None):
+        return (
+            sub_account_id if sub_account_id is not None else self.active_sub_account_id
+        )
+
     async def fetch_market_lookup_table(self) -> AddressLookupTableAccount:
         if self.market_lookup_table_account is not None:
             return self.market_lookup_table_account
@@ -478,7 +483,7 @@ class DriftClient:
         amount: int,
         spot_market_index: int,
         user_token_account: Pubkey = None,
-        sub_account_id: int = 0,
+        sub_account_id: int = None,
         reduce_only=False,
         user_initialized=True,
     ):
@@ -513,10 +518,12 @@ class DriftClient:
         amount: int,
         spot_market_index: int,
         user_token_account: Pubkey = None,
-        sub_account_id: int = 0,
+        sub_account_id: int = None,
         reduce_only=False,
         user_initialized=True,
     ) -> Instruction:
+        sub_account_id = self.get_sub_account_id_for_ix(sub_account_id)
+
         if user_initialized:
             remaining_accounts = self.get_remaining_accounts(
                 writable_spot_market_indexes=[spot_market_index],
@@ -563,7 +570,7 @@ class DriftClient:
         market_index: int,
         user_token_account: Pubkey,
         reduce_only: bool = False,
-        sub_account_id: int = 0,
+        sub_account_id: int = None,
     ):
         """withdraws from drift protocol (can also allow borrowing)
 
@@ -595,8 +602,10 @@ class DriftClient:
         market_index: int,
         user_token_account: Pubkey,
         reduce_only: bool = False,
-        sub_account_id: int = 0,
+        sub_account_id: int = None,
     ):
+        sub_account_id = self.get_sub_account_id_for_ix(sub_account_id)
+
         spot_market = self.get_spot_market_account(market_index)
         remaining_accounts = self.get_remaining_accounts(
             user_accounts=[self.get_user_account(sub_account_id)],
@@ -696,7 +705,7 @@ class DriftClient:
     async def place_spot_order(
         self,
         order_params: OrderParams,
-        sub_account_id: int = 0,
+        sub_account_id: int = None,
     ):
         return await self.send_ixs(
             [
@@ -707,8 +716,10 @@ class DriftClient:
     def get_place_spot_order_ix(
         self,
         order_params: OrderParams,
-        sub_account_id: int = 0,
+        sub_account_id: int = None,
     ):
+        sub_account_id = self.get_sub_account_id_for_ix(sub_account_id)
+
         order_params.set_spot()
         user_account_public_key = self.get_user_account_public_key(sub_account_id)
 
@@ -737,7 +748,7 @@ class DriftClient:
     async def place_perp_order(
         self,
         order_params: OrderParams,
-        sub_account_id: int = 0,
+        sub_account_id: int = None,
     ):
         return await self.send_ixs(
             [
@@ -748,8 +759,10 @@ class DriftClient:
     def get_place_perp_order_ix(
         self,
         order_params: OrderParams,
-        sub_account_id: int = 0,
+        sub_account_id: int = None,
     ):
+        sub_account_id = self.get_sub_account_id_for_ix(sub_account_id)
+
         order_params.set_perp()
         user_account_public_key = self.get_user_account_public_key(sub_account_id)
         user_stats_public_key = self.get_user_stats_public_key()
@@ -776,7 +789,7 @@ class DriftClient:
     async def place_orders(
         self,
         order_params: List[OrderParams],
-        sub_account_id: int = 0,
+        sub_account_id: int = None,
     ):
         return await self.send_ixs(
             [
@@ -787,8 +800,10 @@ class DriftClient:
     def get_place_orders_ix(
         self,
         order_params: List[OrderParams],
-        sub_account_id: int = 0,
+        sub_account_id: int = None,
     ):
+        sub_account_id = self.get_sub_account_id_for_ix(sub_account_id)
+
         user_account_public_key = self.get_user_account_public_key(sub_account_id)
         user_stats_public_key = self.get_user_stats_public_key()
 
@@ -829,7 +844,7 @@ class DriftClient:
     async def cancel_order(
         self,
         order_id: Optional[int] = None,
-        sub_account_id: int = 0,
+        sub_account_id: int = None,
     ):
         """cancel specific order (if order_id=None will be most recent order)
 
@@ -845,8 +860,10 @@ class DriftClient:
         )
 
     def get_cancel_order_ix(
-        self, order_id: Optional[int] = None, sub_account_id: int = 0
+        self, order_id: Optional[int] = None, sub_account_id: int = None
     ):
+        sub_account_id = self.get_sub_account_id_for_ix(sub_account_id)
+
         remaining_accounts = self.get_remaining_accounts(
             user_accounts=[self.get_user_account(sub_account_id)]
         )
@@ -866,15 +883,19 @@ class DriftClient:
     async def cancel_order_by_user_id(
         self,
         user_order_id: int,
-        sub_account_id: int = 0,
+        sub_account_id: int = None,
     ):
+        sub_account_id = self.get_sub_account_id_for_ix(sub_account_id)
+
         return await self.send_ixs(
             self.get_cancel_order_by_user_id_ix(user_order_id, sub_account_id),
         )
 
     def get_cancel_order_by_user_id_ix(
-        self, user_order_id: int, sub_account_id: int = 0
+        self, user_order_id: int, sub_account_id: int = None
     ):
+        sub_account_id = self.get_sub_account_id_for_ix(sub_account_id)
+
         remaining_accounts = self.get_remaining_accounts(
             user_accounts=[self.get_user_account(sub_account_id)]
         )
@@ -896,7 +917,7 @@ class DriftClient:
         market_type: MarketType = None,
         market_index: int = None,
         direction: PositionDirection = None,
-        sub_account_id: int = 0,
+        sub_account_id: int = None,
     ):
         """cancel all existing orders on the book
 
@@ -920,8 +941,10 @@ class DriftClient:
         market_type: MarketType = None,
         market_index: int = None,
         direction: PositionDirection = None,
-        sub_account_id: int = 0,
+        sub_account_id: int = None,
     ):
+        sub_account_id = self.get_sub_account_id_for_ix(sub_account_id)
+
         remaining_accounts = self.get_remaining_accounts(
             user_accounts=[self.get_user_account(sub_account_id)]
         )
@@ -948,7 +971,7 @@ class DriftClient:
             Optional[PositionDirection],
         ),
         place_order_params: List[OrderParams],
-        sub_account_id: int = 0,
+        sub_account_id: int = None,
     ):
         return await self.send_ixs(
             self.get_cancel_and_place_orders_ix(
@@ -964,8 +987,10 @@ class DriftClient:
             Optional[PositionDirection],
         ),
         place_order_params: List[OrderParams],
-        sub_account_id: int = 0,
+        sub_account_id: int = None,
     ):
+        sub_account_id = self.get_sub_account_id_for_ix(sub_account_id)
+
         market_type, market_index, direction = cancel_params
 
         cancel_orders_ix = self.get_cancel_orders_ix(
@@ -978,7 +1003,7 @@ class DriftClient:
         self,
         order_id: int,
         modify_order_params: ModifyOrderParams,
-        sub_account_id: int = 0,
+        sub_account_id: int = None,
     ):
         return await self.send_ixs(
             [self.get_modify_order_ix(order_id, modify_order_params, sub_account_id)],
@@ -988,8 +1013,10 @@ class DriftClient:
         self,
         order_id: int,
         modify_order_params: ModifyOrderParams,
-        sub_account_id: int = 0,
+        sub_account_id: int = None,
     ):
+        sub_account_id = self.get_sub_account_id_for_ix(sub_account_id)
+
         remaining_accounts = self.get_remaining_accounts(
             user_accounts=[self.get_user_account(sub_account_id)],
         )
@@ -1011,7 +1038,7 @@ class DriftClient:
         self,
         user_order_id: int,
         modify_order_params: ModifyOrderParams,
-        sub_account_id: int = 0,
+        sub_account_id: int = None,
     ):
         return await self.send_ixs(
             [
@@ -1025,8 +1052,10 @@ class DriftClient:
         self,
         user_order_id: int,
         modify_order_params: ModifyOrderParams,
-        sub_account_id: int = 0,
+        sub_account_id: int = None,
     ):
+        sub_account_id = self.get_sub_account_id_for_ix(sub_account_id)
+
         remaining_accounts = self.get_remaining_accounts(
             user_accounts=[self.get_user_account(sub_account_id)],
         )
@@ -1048,7 +1077,7 @@ class DriftClient:
         self,
         order_params: OrderParams,
         maker_info: MakerInfo = None,
-        sub_account_id: int = 0,
+        sub_account_id: int = None,
     ):
         return await self.send_ixs(
             [
@@ -1062,8 +1091,10 @@ class DriftClient:
         self,
         order_params: OrderParams,
         maker_info: MakerInfo = None,
-        sub_account_id: int = 0,
+        sub_account_id: int = None,
     ):
+        sub_account_id = self.get_sub_account_id_for_ix(sub_account_id)
+
         order_params.set_perp()
 
         user_account_public_key = self.get_user_account_public_key(sub_account_id)
@@ -1095,7 +1126,7 @@ class DriftClient:
         )
 
     async def add_liquidity(
-        self, amount: int, market_index: int, sub_account_id: int = 0
+        self, amount: int, market_index: int, sub_account_id: int = None
     ):
         """mint LP tokens and add liquidity to the DAMM
 
@@ -1112,8 +1143,10 @@ class DriftClient:
         )
 
     def get_add_liquidity_ix(
-        self, amount: int, market_index: int, sub_account_id: int = 0
+        self, amount: int, market_index: int, sub_account_id: int = None
     ):
+        sub_account_id = self.get_sub_account_id_for_ix(sub_account_id)
+
         remaining_accounts = self.get_remaining_accounts(
             writable_perp_market_indexes=[market_index],
             user_accounts=[self.get_user_account(sub_account_id)],
@@ -1136,7 +1169,7 @@ class DriftClient:
         )
 
     async def remove_liquidity(
-        self, amount: int, market_index: int, sub_account_id: int = 0
+        self, amount: int, market_index: int, sub_account_id: int = None
     ):
         """burns LP tokens and removes liquidity to the DAMM
 
@@ -1153,8 +1186,10 @@ class DriftClient:
         )
 
     def get_remove_liquidity_ix(
-        self, amount: int, market_index: int, sub_account_id: int = 0
+        self, amount: int, market_index: int, sub_account_id: int = None
     ):
+        sub_account_id = self.get_sub_account_id_for_ix(sub_account_id)
+
         remaining_accounts = self.get_remaining_accounts(
             writable_perp_market_indexes=[market_index],
             user_accounts=[self.get_user_account(sub_account_id)],
@@ -1216,15 +1251,18 @@ class DriftClient:
     def get_spot_position(
         self,
         market_index: int,
-        sub_account_id: int = 0,
+        sub_account_id: int = None,
     ) -> Optional[SpotPosition]:
+        sub_account_id = self.get_sub_account_id_for_ix(sub_account_id)
+
         return self.get_user(sub_account_id).get_spot_position(market_index)
 
     def get_perp_position(
         self,
         market_index: int,
-        sub_account_id: int = 0,
+        sub_account_id: int = None,
     ) -> Optional[PerpPosition]:
+        sub_account_id = self.get_sub_account_id_for_ix(sub_account_id)
         return self.get_user(sub_account_id).get_perp_position(market_index)
 
     async def liquidate_spot(
@@ -1234,7 +1272,7 @@ class DriftClient:
         liability_market_index: int,
         max_liability_transfer: int,
         user_sub_account_id: int = 0,
-        liq_sub_account_id: int = 0,
+        liq_sub_account_id: int = None,
     ):
         return await self.send_ixs(
             [
@@ -1257,7 +1295,7 @@ class DriftClient:
         max_liability_transfer: int,
         limit_price: int = None,
         user_sub_account_id: int = 0,
-        liq_sub_account_id: int = 0,
+        liq_sub_account_id: int = None,
     ):
         user_pk = get_user_account_public_key(
             self.program_id, user_authority, sub_account_id=user_sub_account_id
@@ -1267,6 +1305,7 @@ class DriftClient:
             user_authority,
         )
 
+        liq_sub_account_id = self.get_sub_account_id_for_ix(liq_sub_account_id)
         liq_pk = self.get_user_account_public_key(liq_sub_account_id)
         liq_stats_pk = self.get_user_stats_public_key()
 
@@ -1303,7 +1342,7 @@ class DriftClient:
         max_base_asset_amount: int,
         limit_price: Optional[int] = None,
         user_sub_account_id: int = 0,
-        liq_sub_account_id: int = 0,
+        liq_sub_account_id: int = None,
     ):
         return await self.send_ixs(
             [
@@ -1325,7 +1364,7 @@ class DriftClient:
         max_base_asset_amount: int,
         limit_price: Optional[int] = None,
         user_sub_account_id: int = 0,
-        liq_sub_account_id: int = 0,
+        liq_sub_account_id: int = None,
     ):
         user_pk = get_user_account_public_key(
             self.program_id, user_authority, user_sub_account_id
@@ -1335,6 +1374,7 @@ class DriftClient:
             user_authority,
         )
 
+        liq_sub_account_id = self.get_sub_account_id_for_ix(liq_sub_account_id)
         liq_pk = self.get_user_account_public_key(liq_sub_account_id)
         liq_stats_pk = self.get_user_stats_public_key()
 
@@ -1370,7 +1410,7 @@ class DriftClient:
         spot_market_index: int,
         max_pnl_transfer: int,
         user_sub_account_id: int = 0,
-        liq_sub_account_id: int = 0,
+        liq_sub_account_id: int = None,
     ):
         return await self.send_ixs(
             await self.get_liquidate_perp_pnl_for_deposit_ix(
@@ -1391,7 +1431,7 @@ class DriftClient:
         max_pnl_transfer: int,
         limit_price: int = None,
         user_sub_account_id: int = 0,
-        liq_sub_account_id: int = 0,
+        liq_sub_account_id: int = None,
     ):
         user_pk = get_user_account_public_key(
             self.program_id, user_authority, user_sub_account_id
@@ -1401,6 +1441,7 @@ class DriftClient:
             user_authority,
         )
 
+        liq_sub_account_id = self.get_sub_account_id_for_ix(liq_sub_account_id)
         liq_pk = self.get_user_account_public_key(liq_sub_account_id)
         liq_stats_pk = self.get_user_stats_public_key()
 
@@ -1478,7 +1519,7 @@ class DriftClient:
         user_authority: Pubkey,
         spot_market_index: int,
         user_sub_account_id: int = 0,
-        liq_sub_account_id: int = 0,
+        liq_sub_account_id: int = None,
     ):
         return await self.send_ixs(
             [
@@ -1496,7 +1537,7 @@ class DriftClient:
         user_authority: Pubkey,
         spot_market_index: int,
         user_sub_account_id: int = 0,
-        liq_sub_account_id: int = 0,
+        liq_sub_account_id: int = None,
     ):
         user_pk = get_user_account_public_key(
             self.program_id, user_authority, user_sub_account_id
@@ -1506,6 +1547,7 @@ class DriftClient:
             user_authority,
         )
 
+        liq_sub_account_id = self.get_sub_account_id_for_ix(liq_sub_account_id)
         liq_pk = self.get_user_account_public_key(liq_sub_account_id)
         liq_stats_pk = self.get_user_stats_public_key()
 
@@ -1549,7 +1591,7 @@ class DriftClient:
         user_authority: Pubkey,
         market_index: int,
         user_sub_account_id: int = 0,
-        liq_sub_account_id: int = 0,
+        liq_sub_account_id: int = None,
     ):
         return await self.send_ixs(
             [
@@ -1567,7 +1609,7 @@ class DriftClient:
         user_authority: Pubkey,
         market_index: int,
         user_sub_account_id: int = 0,
-        liq_sub_account_id: int = 0,
+        liq_sub_account_id: int = None,
     ):
         user_pk = get_user_account_public_key(
             self.program_id, user_authority, user_sub_account_id
@@ -1577,6 +1619,7 @@ class DriftClient:
             user_authority,
         )
 
+        liq_sub_account_id = self.get_sub_account_id_for_ix(liq_sub_account_id)
         liq_pk = self.get_user_account_public_key(liq_sub_account_id)
         liq_stats_pk = self.get_user_stats_public_key()
 
@@ -1884,7 +1927,7 @@ class DriftClient:
         direction: PositionDirection,
         amount: int,
         market_index: int,
-        sub_account_id: int = 0,
+        sub_account_id: int = None,
         limit_price: int = 0,
         ioc: bool = False,
     ):
@@ -1905,10 +1948,12 @@ class DriftClient:
         direction: PositionDirection,
         amount: int,
         market_index: int,
-        sub_account_id: int = 0,
+        sub_account_id: int = None,
         limit_price: int = 0,
         ioc: bool = False,
     ):
+        sub_account_id = self.get_sub_account_id_for_ix(sub_account_id)
+
         order_params = OrderParams(
             order_type=OrderType.MARKET(),
             direction=direction,
@@ -1924,7 +1969,7 @@ class DriftClient:
 
     @deprecated
     async def close_position(
-        self, market_index: int, limit_price: int = 0, sub_account_id: int = 0
+        self, market_index: int, limit_price: int = 0, sub_account_id: int = None
     ):
         return await self.send_ixs(
             self.get_close_position_ix(
@@ -1934,8 +1979,10 @@ class DriftClient:
 
     @deprecated
     def get_close_position_ix(
-        self, market_index: int, limit_price: int = 0, sub_account_id: int = 0
+        self, market_index: int, limit_price: int = 0, sub_account_id: int = None
     ):
+        sub_account_id = self.get_sub_account_id_for_ix(sub_account_id)
+
         position = self.get_perp_position(market_index, sub_account_id)
         if position is None or position.base_asset_amount == 0:
             print("=> user has no position to close...")
