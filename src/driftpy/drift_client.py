@@ -192,8 +192,8 @@ class DriftClient:
         return getattr(spot_market_and_slot, "data", None)
 
     def get_oracle_price_data(self, oracle: Pubkey) -> Optional[OraclePriceData]:
-        oracle_price_data_and_slot = self.account_subscriber.get_oracle_price_data_and_slot(
-            oracle
+        oracle_price_data_and_slot = (
+            self.account_subscriber.get_oracle_price_data_and_slot(oracle)
         )
         return getattr(oracle_price_data_and_slot, "data", None)
 

@@ -537,16 +537,28 @@ class DriftUser:
         )
         return liability_value
 
-    def get_leverage(self, margin_category: Optional[MarginCategory] = None) -> int:
-        total_liability = self.get_margin_requirement(margin_category, None)
-        total_asset_value = self.get_total_collateral(margin_category)
+    def get_leverage(self, include_open_orders: bool = True) -> int:
+        perp_liability = self.get_total_perp_liability(
+            include_open_orders=include_open_orders
+        )
+        perp_pnl = self.get_unrealized_pnl(True)
 
-        if total_asset_value == 0 or total_liability == 0:
+        (
+            spot_asset_value,
+            spot_liability_value,
+        ) = self.get_spot_market_asset_and_liability_value(
+            include_open_orders=include_open_orders
+        )
+
+        total_asset_value = spot_asset_value + perp_pnl
+        total_liability_value = spot_liability_value + perp_liability
+
+        net_asset_value = total_asset_value - total_liability_value
+
+        if net_asset_value == 0:
             return 0
 
-        leverage = total_liability * 10_000 / total_asset_value
-
-        return leverage
+        return total_liability_value * 10_000 // net_asset_value
 
     def get_perp_liq_price(
         self,
