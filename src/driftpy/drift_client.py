@@ -812,7 +812,7 @@ class DriftClient:
         for order_param in order_params:
             order_param.check_market_type()
 
-            if "PERP" in str(order_param.market_type):
+            if is_variant(order_param.market_type, "Perp"):
                 readable_perp_market_indexes.append(order_param.market_index)
             else:
                 if len(readable_spot_market_indexes) == 0:
