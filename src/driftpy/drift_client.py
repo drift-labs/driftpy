@@ -1955,7 +1955,7 @@ class DriftClient:
         sub_account_id = self.get_sub_account_id_for_ix(sub_account_id)
 
         order_params = OrderParams(
-            order_type=OrderType.MARKET(),
+            order_type=OrderType.Market(),
             direction=direction,
             market_index=market_index,
             base_asset_amount=amount,
@@ -1989,12 +1989,12 @@ class DriftClient:
             return
 
         order_params = OrderParams(
-            order_type=OrderType.MARKET(),
+            order_type=OrderType.Market(),
             market_index=market_index,
             base_asset_amount=abs(int(position.base_asset_amount)),
-            direction=PositionDirection.LONG()
+            direction=PositionDirection.Long()
             if position.base_asset_amount < 0
-            else PositionDirection.SHORT(),
+            else PositionDirection.Short(),
             price=limit_price,
             reduce_only=True,
         )

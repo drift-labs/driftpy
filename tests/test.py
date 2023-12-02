@@ -235,11 +235,11 @@ async def test_open_orders(
     assert len(open_orders) == 0
 
     order_params = OrderParams(
-        market_type=MarketType.PERP(),
-        order_type=OrderType.MARKET(),
+        market_type=MarketType.Perp(),
+        order_type=OrderType.Market(),
         market_index=0,
         base_asset_amount=int(1 * BASE_PRECISION),
-        direction=PositionDirection.LONG(),
+        direction=PositionDirection.Long(),
         user_order_id=169,
     )
     ixs = drift_client.get_place_orders_ix([order_params])
@@ -334,7 +334,7 @@ async def test_open_close_position(
 
     baa = 10 * AMM_RESERVE_PRECISION
     sig = await drift_client.open_position(
-        PositionDirection.LONG(),
+        PositionDirection.Long(),
         baa,
         0,
     )
@@ -436,7 +436,7 @@ async def test_liq_perp(
         * 3
     )
     await drift_client.open_position(
-        PositionDirection.SHORT(),
+        PositionDirection.Short(),
         int(baa),
         0,
     )

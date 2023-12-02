@@ -84,9 +84,9 @@ def calculate_base_asset_value(
         return 0
 
     direction_to_close = (
-        PositionDirection.SHORT
+        PositionDirection.Short
         if user_position.base_asset_amount > 0
-        else PositionDirection.LONG
+        else PositionDirection.Long
     )
 
     new_quote_asset_reserve, _ = calculate_amm_reserves_after_swap(
@@ -97,7 +97,7 @@ def calculate_base_asset_value(
     )
 
     result = None
-    if direction_to_close == PositionDirection.SHORT:
+    if direction_to_close == PositionDirection.Short:
         result = (
             (market.amm.quote_asset_reserve - new_quote_asset_reserve)
             * market.amm.peg_multiplier

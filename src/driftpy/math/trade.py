@@ -78,7 +78,7 @@ def calculate_trade_slippage(
 ):
     old_price = None
     if use_spread:
-        if direction == PositionDirection.LONG:
+        if direction == PositionDirection.Long:
             old_price = calculate_ask_price(market)
         else:
             old_price = calculate_bid_price(market)
@@ -118,7 +118,7 @@ def calculate_trade_slippage(
     )
 
     # print(old_price, '->', new_price)
-    if direction == PositionDirection.SHORT:
+    if direction == PositionDirection.Short:
         assert new_price < old_price
     else:
         # print(new_price, old_price)
@@ -147,9 +147,9 @@ def calculate_target_price_trade(
     if target_price > mark_price_before:
         #     price_gap = target_price - mark_price_before
         #     target_price = mark_price_before + price_gap
-        direction = PositionDirection.LONG
+        direction = PositionDirection.Long
     else:
-        direction = PositionDirection.SHORT
+        direction = PositionDirection.Short
     #     price_gap = mark_price_before - target_price
     #     target_price = mark_price_before - price_gap
 
@@ -182,9 +182,9 @@ def calculate_target_price_trade(
         and target_price > bid_price_before
     ):
         if mark_price_before > target_price:
-            direction = PositionDirection.SHORT
+            direction = PositionDirection.Short
         else:
-            direction = PositionDirection.LONG
+            direction = PositionDirection.Long
         tradeSize = 0
         print("canot trade:", bid_price_before, target_price, ask_price_before)
         return [direction, tradeSize, target_price, target_price]
@@ -195,7 +195,7 @@ def calculate_target_price_trade(
         )
         quote_asset_reserve_after = (k / PRICE_PRECISION) / base_asset_reserve_after
 
-        direction = PositionDirection.SHORT
+        direction = PositionDirection.Short
         trade_size = (
             (quote_asset_reserve_before - quote_asset_reserve_after)
             * (float(peg) / PEG_PRECISION)
@@ -210,7 +210,7 @@ def calculate_target_price_trade(
         )
         quote_asset_reserve_after = (k / PRICE_PRECISION) / base_asset_reserve_after
 
-        direction = PositionDirection.LONG
+        direction = PositionDirection.Long
         print("long", quote_asset_reserve_after, quote_asset_reserve_before, peg)
         trade_size = (
             (quote_asset_reserve_after - quote_asset_reserve_before)
@@ -221,7 +221,7 @@ def calculate_target_price_trade(
     else:
         # no trade, market is at target
         print("NO TRADE")
-        direction = PositionDirection.LONG
+        direction = PositionDirection.Long
         trade_size = 0
         return [direction, trade_size, target_price, target_price]
 
@@ -234,7 +234,7 @@ def calculate_target_price_trade(
         #  '->', quote_asset_reserve_before/base_asset_reserve_before*peg/1e3)
 
         # print(peg, market.amm.peg_multiplier, direction)
-        if direction == PositionDirection.SHORT:
+        if direction == PositionDirection.Short:
             #     print(base_asset_reserve_before)
             #     print((
             #     math.sqrt((k / target_price) * (float(peg) / PEG_PRECISION) - bias_modifier) - 1

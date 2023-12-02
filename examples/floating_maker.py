@@ -67,7 +67,7 @@ async def main(
     drift_acct = DriftClient.from_config(config, provider)
 
     is_perp = "PERP" in market_name.upper()
-    market_type = MarketType.PERP() if is_perp else MarketType.SPOT()
+    market_type = MarketType.Perp() if is_perp else MarketType.Spot()
 
     market_index = -1
     for perp_market_config in config.markets:
@@ -78,15 +78,15 @@ async def main(
             market_index = spot_market_config.bank_index
 
     default_order_params = OrderParams(
-        order_type=OrderType.LIMIT(),
+        order_type=OrderType.Limit(),
         market_type=market_type,
-        direction=PositionDirection.LONG(),
+        direction=PositionDirection.Long(),
         user_order_id=0,
         base_asset_amount=int(base_asset_amount * BASE_PRECISION),
         price=0,
         market_index=market_index,
         reduce_only=False,
-        post_only=PostOnlyParams.TRY_POST_ONLY(),
+        post_only=PostOnlyParams.TryPostOnly(),
         immediate_or_cancel=False,
         trigger_price=0,
         trigger_condition=OrderTriggerCondition.ABOVE(),
@@ -98,11 +98,11 @@ async def main(
     )
 
     bid_order_params = copy.deepcopy(default_order_params)
-    bid_order_params.direction = PositionDirection.LONG()
+    bid_order_params.direction = PositionDirection.Long()
     bid_order_params.oracle_price_offset = int((offset - spread / 2) * PRICE_PRECISION)
 
     ask_order_params = copy.deepcopy(default_order_params)
-    ask_order_params.direction = PositionDirection.SHORT()
+    ask_order_params.direction = PositionDirection.Short()
     ask_order_params.oracle_price_offset = int((offset + spread / 2) * PRICE_PRECISION)
 
     order_print([bid_order_params, ask_order_params], market_name)

@@ -62,9 +62,9 @@ async def test_get_perp_market(
 ):
     ix = drift_client.get_place_perp_order_ix(
         OrderParams(
-            order_type=OrderType.LIMIT(),
-            market_type=MarketType.PERP(),
-            direction=PositionDirection.LONG(),
+            order_type=OrderType.Limit(),
+            market_type=MarketType.Perp(),
+            direction=PositionDirection.Long(),
             user_order_id=0,
             base_asset_amount=BASE_PRECISION,
             price=10 * PRICE_PRECISION,

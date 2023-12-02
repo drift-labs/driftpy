@@ -114,7 +114,7 @@ async def main(
     )
     drift_user = User(drift_acct)
     is_perp = "PERP" in market_name.upper()
-    market_type = MarketType.PERP() if is_perp else MarketType.SPOT()
+    market_type = MarketType.Perp() if is_perp else MarketType.Spot()
 
     market_index = -1
     for perp_market_config in config.markets:
@@ -205,10 +205,10 @@ async def main(
     order_params = []
     for x in bid_prices:
         bid_order_params = OrderParams(
-            order_type=OrderType.LIMIT(),
+            order_type=OrderType.Limit(),
             market_index=market_index,
             market_type=market_type,
-            direction=PositionDirection.LONG(),
+            direction=PositionDirection.Long(),
             base_asset_amount=int(base_asset_amount_per_bid * BASE_PRECISION),
             price=int(x * PRICE_PRECISION),
         )
@@ -217,10 +217,10 @@ async def main(
 
     for x in ask_prices:
         ask_order_params = OrderParams(
-            order_type=OrderType.LIMIT(),
+            order_type=OrderType.Limit(),
             market_index=market_index,
             market_type=market_type,
-            direction=PositionDirection.SHORT(),
+            direction=PositionDirection.Short(),
             base_asset_amount=int(base_asset_amount_per_ask * BASE_PRECISION),
             price=int(x * PRICE_PRECISION),
         )

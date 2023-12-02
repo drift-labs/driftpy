@@ -41,9 +41,9 @@ async def adjust_oracle_pretrade(
         market.amm.peg_multiplier,
     )
     swap_direction = (
-        SwapDirection.ADD
-        if position_direction == PositionDirection.SHORT()
-        else SwapDirection.REMOVE
+        SwapDirection.Add
+        if position_direction == PositionDirection.Short()
+        else SwapDirection.Remove
     )
     new_qar, new_bar = calculate_amm_reserves_after_swap(
         market.amm,

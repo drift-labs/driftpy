@@ -128,11 +128,11 @@ def calculate_long_short_reserves_and_peg(market, oracle_price=None):
     candidate_amm = calculate_candidate_amm(market, oracle_price)
 
     base_asset_reserves_short, quote_asset_reserves_short = calculate_spread_reserves(
-        candidate_amm, PositionDirection.SHORT, oracle_price=oracle_price
+        candidate_amm, PositionDirection.Short, oracle_price=oracle_price
     )
 
     base_asset_reserves_long, quote_asset_reserves_long = calculate_spread_reserves(
-        candidate_amm, PositionDirection.LONG, oracle_price=oracle_price
+        candidate_amm, PositionDirection.Long, oracle_price=oracle_price
     )
 
     return [
@@ -181,7 +181,7 @@ def calculate_bid_price(market, oracle_price=None):
     candidate_amm = calculate_candidate_amm(market, oracle_price)
 
     base_asset_reserves_short, quote_asset_reserves_short = calculate_spread_reserves(
-        candidate_amm, PositionDirection.SHORT, oracle_price=oracle_price
+        candidate_amm, PositionDirection.Short, oracle_price=oracle_price
     )
 
     return calculate_price(
@@ -195,7 +195,7 @@ def calculate_ask_price(market, oracle_price=None):
     candidate_amm = calculate_candidate_amm(market, oracle_price)
 
     base_asset_reserves_long, quote_asset_reserves_long = calculate_spread_reserves(
-        candidate_amm, PositionDirection.LONG, oracle_price=oracle_price
+        candidate_amm, PositionDirection.Long, oracle_price=oracle_price
     )
 
     return calculate_price(

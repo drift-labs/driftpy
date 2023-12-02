@@ -46,7 +46,7 @@ def calculate_mark_price_amm(amm, oracle_price=None):
 
 def calculate_bid_price_amm(amm: AMM, oracle_price=None):
     base_asset_reserves, quote_asset_reserves = calculate_spread_reserves(
-        amm, PositionDirection.SHORT, oracle_price=oracle_price
+        amm, PositionDirection.Short, oracle_price=oracle_price
     )
     return calculate_price(
         base_asset_reserves, quote_asset_reserves, amm.peg_multiplier
@@ -55,7 +55,7 @@ def calculate_bid_price_amm(amm: AMM, oracle_price=None):
 
 def calculate_ask_price_amm(amm: AMM, oracle_price=None):
     base_asset_reserves, quote_asset_reserves = calculate_spread_reserves(
-        amm, PositionDirection.LONG, oracle_price=oracle_price
+        amm, PositionDirection.Long, oracle_price=oracle_price
     )
     return calculate_price(
         base_asset_reserves, quote_asset_reserves, amm.peg_multiplier
@@ -71,7 +71,7 @@ def calculate_price(base_asset_amount, quote_asset_amount, peg_multiplier):
 
 def calculate_terminal_price(market):
     swap_direction = (
-        SwapDirection.ADD if market.base_asset_amount > 0 else SwapDirection.REMOVE
+        SwapDirection.Add if market.base_asset_amount > 0 else SwapDirection.Remove
     )
 
     new_quote_asset_amount, new_base_asset_amount = calculate_swap_output(
@@ -96,11 +96,11 @@ def calculate_swap_output(
 ):
     invariant = invariant_sqrt * invariant_sqrt
     assert swap_direction in [
-        SwapDirection.ADD,
-        SwapDirection.REMOVE,
+        SwapDirection.Add,
+        SwapDirection.Remove,
     ], "invalid swap direction parameter"
     assert swap_amount >= 0
-    if swap_direction == SwapDirection.ADD:
+    if swap_direction == SwapDirection.Add:
         new_input_asset_reserve = input_asset_reserve + swap_amount
     else:
         assert input_asset_reserve > swap_amount, "%i > %i" % (
@@ -149,22 +149,22 @@ def get_swap_direction(
         AssetType.QUOTE,
     ], "invalid input_asset_type: " + str(input_asset_type)
     assert position_direction in [
-        PositionDirection.LONG,
-        PositionDirection.SHORT,
+        PositionDirection.Long,
+        PositionDirection.Short,
     ], "invalid position_direction: " + str(position_direction)
     if (
-        position_direction == PositionDirection.LONG
+        position_direction == PositionDirection.Long
         and input_asset_type == AssetType.BASE
     ):
-        return SwapDirection.REMOVE
+        return SwapDirection.Remove
 
     if (
-        position_direction == PositionDirection.SHORT
+        position_direction == PositionDirection.Short
         and input_asset_type == AssetType.QUOTE
     ):
-        return SwapDirection.REMOVE
+        return SwapDirection.Remove
 
-    return SwapDirection.ADD
+    return SwapDirection.Add
 
 
 def calculate_budgeted_repeg(amm, cost, target_px=None, pay_only=False):
@@ -274,8 +274,8 @@ def calculate_spread_reserves(
             oracle_price = amm.last_oracle_price
         pct_delta = float(oracle_price - mark_price) / mark_price
         # print(amm.last_oracle_price, mark_price, pct_delta, spread)
-        if (pct_delta > 0 and position_direction == PositionDirection.LONG) or (
-            pct_delta < 0 and position_direction == PositionDirection.SHORT
+        if (pct_delta > 0 and position_direction == PositionDirection.Long) or (
+            pct_delta < 0 and position_direction == PositionDirection.Short
         ):
             oracle_spread = abs(pct_delta) * QUOTE_PRECISION * 2
             if oracle_spread > spread:
@@ -315,7 +315,7 @@ def calculate_spread_reserves(
                 amm.total_fee_minus_distributions / QUOTE_PRECISION
             )
             print("effective_leverage:", effective_leverage)
-            if position_direction == PositionDirection.LONG:
+            if position_direction == PositionDirection.Long:
                 # print((1 + (effective_position/(amm.sqrt_k/10000))))
                 spread *= min(max_scale, max(1, (1 + effective_leverage)))
             else:
@@ -332,7 +332,7 @@ def calculate_spread_reserves(
         )
     # print(quote_asset_reserve_delta)
 
-    if position_direction == PositionDirection.LONG:
+    if position_direction == PositionDirection.Long:
         quote_asset_reserve = amm.quote_asset_reserve + quote_asset_reserve_delta
     else:
         quote_asset_reserve = amm.quote_asset_reserve - quote_asset_reserve_delta

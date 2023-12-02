@@ -11,20 +11,14 @@ def is_variant(enum, type: str) -> bool:
 
 @_rust_enum
 class SwapDirection:
-    ADD = constructor()
-    REMOVE = constructor()
-
-
-@_rust_enum
-class ModifyOrderId:
-    USER_ORDER_ID = constructor()
-    ORDER_ID = constructor()
+    Add = constructor()
+    Remove = constructor()
 
 
 @_rust_enum
 class PositionDirection:
-    LONG = constructor()
-    SHORT = constructor()
+    Long = constructor()
+    Short = constructor()
 
 
 @_rust_enum
@@ -206,9 +200,9 @@ class OracleSource:
 @_rust_enum
 class PostOnlyParams:
     NONE = constructor()
-    MUST_POST_ONLY = constructor()
-    TRY_POST_ONLY = constructor()
-    SLIDE = constructor()
+    MustPostOnly = constructor()
+    TryPostOnly = constructor()
+    Slide = constructor()
 
 
 @_rust_enum
@@ -293,19 +287,19 @@ class UserStatus:
 
 @_rust_enum
 class OrderStatus:
-    INIT = constructor()
-    OPEN = constructor()
-    FILLED = constructor()
-    CANCELED = constructor()
+    Init = constructor()
+    Open = constructor()
+    Filled = constructor()
+    Canceled = constructor()
 
 
 @_rust_enum
 class OrderType:
-    MARKET = constructor()
-    LIMIT = constructor()
-    TRIGGER_MARKET = constructor()
-    TRIGGER_LIMIT = constructor()
-    ORACLE = constructor()
+    Market = constructor()
+    Limit = constructor()
+    TriggerMarket = constructor()
+    TriggerLimit = constructor()
+    Oracle = constructor()
 
 
 @_rust_enum
@@ -318,8 +312,8 @@ class OrderTriggerCondition:
 
 @_rust_enum
 class MarketType:
-    SPOT = constructor()
-    PERP = constructor()
+    Spot = constructor()
+    Perp = constructor()
 
 
 @dataclass
@@ -349,10 +343,10 @@ class OrderParams:
     auction_end_price: Optional[int] = None
 
     def set_spot(self):
-        self.market_type = MarketType.SPOT()
+        self.market_type = MarketType.Spot()
 
     def set_perp(self):
-        self.market_type = MarketType.PERP()
+        self.market_type = MarketType.Perp()
 
     def check_market_type(self):
         if self.market_type is None:
