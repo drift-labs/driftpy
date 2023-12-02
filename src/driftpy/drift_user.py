@@ -218,11 +218,11 @@ class DriftUser:
         total_collateral = asset_value + pnl
         return total_collateral
 
-    def get_free_collateral(self):
-        total_collateral = self.get_total_collateral()
-        init_margin_req = self.get_margin_requirement(
-            MarginCategory.INITIAL,
-        )
+    def get_free_collateral(
+        self, margin_category: MarginCategory = MarginCategory.INITIAL
+    ):
+        total_collateral = self.get_total_collateral(margin_category)
+        init_margin_req = self.get_margin_requirement(margin_category)
         free_collateral = total_collateral - init_margin_req
         free_collateral = max(0, free_collateral)
         return free_collateral
