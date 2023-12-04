@@ -19,11 +19,14 @@ async def fetch_logs(
     limit: int = None,
     batch_size: int = None,
 ) -> list[(Signature, int, list[str])]:
-    signatures = (
-        await connection.get_signatures_for_address(
-            address, before_tx, until_tx, limit, commitment
-        )
-    ).value
+    response = await connection.get_signatures_for_address(
+        address, before_tx, until_tx, limit, commitment
+    )
+
+    if response.value is None:
+        raise Exception("Error with get_signature_for_address")
+
+    signatures = response.value
 
     sorted_signatures = sorted(signatures, key=lambda x: x.slot)
 

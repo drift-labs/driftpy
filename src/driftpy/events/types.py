@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from abc import abstractmethod
 from solana.transaction import Signature
-from solana.rpc.commitment import Commitment
+from solana.rpc.commitment import Commitment, Confirmed
 from solana.rpc.async_api import AsyncClient
 
 from typing import Callable, Literal, Union
@@ -152,6 +152,14 @@ class EventSubscriptionOptions:
 
             return WebsocketLogProvider(connection, self.address, self.commitment)
         else:
+            if (
+                str(self.commitment) != "confirmed"
+                and str(self.commitment) != "finalized"
+            ):
+                raise ValueError(
+                    f"PollingLogProvider does not support commitment {self.commitment}"
+                )
+
             from driftpy.events.polling_log_provider import PollingLogProvider
 
             return PollingLogProvider(
