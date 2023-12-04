@@ -20,6 +20,8 @@ from math import sqrt
 
 from driftpy.drift_user import DriftUser
 from driftpy.drift_client import DriftClient
+from driftpy.events.event_subscriber import EventSubscriber
+from driftpy.events.types import EventSubscriptionOptions, PollingLogProviderConfig
 from driftpy.setup.helpers import (
     _create_mint,
     _create_and_mint_user_usdc,
@@ -37,6 +39,7 @@ from driftpy.types import (
     OrderType,
     OrderParams,
     MarketType,
+    is_variant,
     # SwapDirection,
 )
 from driftpy.accounts import (
@@ -96,6 +99,17 @@ async def drift_client(program: Program, usdc_mint: Keypair) -> Admin:
     await admin.initialize(usdc_mint.pubkey(), admin_controls_prices=True)
     await admin.subscribe()
     return admin
+
+
+@async_fixture(scope="session")
+async def event_subscriber(program: Program) -> EventSubscriber:
+    event_subscriber = EventSubscriber(
+        program.provider.connection,
+        program,
+        EventSubscriptionOptions(log_provider_config=PollingLogProviderConfig()),
+    )
+    event_subscriber.subscribe()
+    return event_subscriber
 
 
 @async_fixture(scope="session")
@@ -328,7 +342,7 @@ async def test_update_amm(drift_client: Admin, workspace):
 
 @mark.asyncio
 async def test_open_close_position(
-    drift_client: Admin,
+    drift_client: Admin, event_subscriber: EventSubscriber
 ):
     await drift_client.update_perp_auction_duration(0)
 
@@ -338,6 +352,20 @@ async def test_open_close_position(
         baa,
         0,
     )
+
+    while True:
+        events = event_subscriber.get_events_by_tx(str(sig))
+        if events is not None:
+            assert events[0].event_type == "OrderActionRecord"
+            assert events[0].data.base_asset_amount_filled is None
+            assert is_variant(events[0].data.action, "Place")
+            assert events[1].event_type == "OrderRecord"
+            assert events[1].data.order.base_asset_amount == baa
+            assert events[2].event_type == "OrderActionRecord"
+            assert events[2].data.base_asset_amount_filled == baa
+            assert is_variant(events[2].data.action, "Fill")
+            break
+        await asyncio.sleep(1)
 
     from solana.rpc.commitment import Confirmed, Processed
 

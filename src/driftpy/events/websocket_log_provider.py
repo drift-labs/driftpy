@@ -29,7 +29,6 @@ class WebsocketLogProvider(LogProvider):
     async def subscribe_ws(self, callback: LogProviderCallback):
         endpoint = self.connection._provider.endpoint_uri
         ws_endpoint = endpoint.replace("https", "wss").replace("http", "ws")
-
         async for ws in connect(ws_endpoint):
             try:
                 await ws.logs_subscribe(
