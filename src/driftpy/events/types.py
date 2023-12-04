@@ -138,7 +138,7 @@ class EventSubscriptionOptions:
     order_by: EventSubscriptionOrderBy = "blockchain"
     order_dir: EventSubscriptionOrderDirection = "asc"
     commitment: Commitment = "confirmed"
-    max_tx = int = 4096
+    max_tx: int = 4096
     log_provider_config: LogProviderConfig = WebsocketLogProviderConfig()
     until_tx: Signature = None
 

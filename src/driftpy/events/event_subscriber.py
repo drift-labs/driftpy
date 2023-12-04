@@ -75,7 +75,7 @@ class EventSubscriber:
                     tx_sig=tx_sig,
                     slot=slot,
                     tx_sig_index=index,
-                    data=event,
+                    data=event.data,
                 )
                 wrapped_events.append(wrapped_event)
 
@@ -88,5 +88,5 @@ class EventSubscriber:
         event_list = self.event_list_map.get(event_type)
         return None if event_list is None else event_list.to_array()
 
-    def get_events_by_tx(self, tx_sig: Signature) -> Optional[list[WrappedEvent]]:
-        return self.tx_event_cache.get(str(tx_sig))
+    def get_events_by_tx(self, tx_sig: str) -> Optional[list[WrappedEvent]]:
+        return self.tx_event_cache.get(tx_sig)
