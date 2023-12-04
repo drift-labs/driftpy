@@ -1,4 +1,4 @@
-from solders.rpc.responses import GetAccountInfoResp
+from dataclasses import dataclass
 
 from .types import DataAndSlot
 from driftpy.constants.numeric_constants import *

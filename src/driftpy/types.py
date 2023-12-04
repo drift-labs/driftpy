@@ -950,6 +950,12 @@ class ReferrerInfo:
 
 
 @dataclass
+class OracleInfo:
+    pubkey: Pubkey
+    source: OracleSource
+
+
+@dataclass
 class NewUserRecord:
     ts: int
     user_authority: Pubkey

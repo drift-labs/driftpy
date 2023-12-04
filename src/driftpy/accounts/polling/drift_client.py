@@ -1,6 +1,4 @@
-import asyncio
-from dataclasses import dataclass
-from typing import Mapping, Callable, Optional, TypeVar
+from typing import Optional, Sequence
 
 from driftpy.accounts import DriftClientAccountSubscriber, DataAndSlot
 
@@ -9,13 +7,19 @@ from solders.pubkey import Pubkey
 
 from driftpy.accounts.bulk_account_loader import BulkAccountLoader
 from driftpy.accounts.oracle import get_oracle_decode_fn
-from driftpy.addresses import get_state_public_key
+from driftpy.addresses import (
+    get_state_public_key,
+    get_perp_market_public_key,
+    get_spot_market_public_key,
+)
+from driftpy.constants.config import find_all_market_and_oracles
 from driftpy.types import (
     PerpMarketAccount,
     SpotMarketAccount,
     OraclePriceData,
     StateAccount,
     OracleSource,
+    OracleInfo,
 )
 
 
@@ -24,11 +28,20 @@ class PollingDriftClientAccountSubscriber(DriftClientAccountSubscriber):
         self,
         program: Program,
         bulk_account_loader: BulkAccountLoader,
+        perp_market_indexes: Sequence[int],
+        spot_market_indexes: Sequence[int],
+        oracle_infos: Sequence[OracleInfo],
+        should_find_all_markets_and_oracles: bool,
     ):
         self.bulk_account_loader = bulk_account_loader
         self.program = program
         self.is_subscribed = False
         self.callbacks: dict[str, int] = {}
+
+        self.perp_market_indexes = perp_market_indexes
+        self.spot_market_indexes = spot_market_indexes
+        self.oracle_infos = oracle_infos
+        self.should_find_all_markets_and_oracles = should_find_all_markets_and_oracles
 
         self.state: Optional[DataAndSlot[StateAccount]] = None
         self.perp_markets = {}
@@ -39,22 +52,23 @@ class PollingDriftClientAccountSubscriber(DriftClientAccountSubscriber):
         if len(self.callbacks) != 0:
             return
 
+        if self.should_find_all_markets_and_oracles:
+            (
+                perp_market_indexes,
+                spot_market_indexes,
+                oracle_infos,
+            ) = await find_all_market_and_oracles(self.program)
+            self.perp_market_indexes = perp_market_indexes
+            self.spot_market_indexes = spot_market_indexes
+            self.oracle_infos = oracle_infos
+
         await self.update_accounts_to_poll()
 
         while self.accounts_ready() is False:
             await self.bulk_account_loader.load()
 
     def accounts_ready(self) -> bool:
-        if self.state is None:
-            return False
-
-        if self.perp_markets.get(0) is None:
-            return False
-
-        if self.spot_markets.get(0) is None:
-            return False
-
-        return True
+        return self.state is not None
 
     async def update_accounts_to_poll(self):
         state_public_key = get_state_public_key(self.program.program_id)
@@ -63,29 +77,26 @@ class PollingDriftClientAccountSubscriber(DriftClientAccountSubscriber):
         )
         self.callbacks[str(state_public_key)] = state_callback_id
 
-        perp_markets = await self.program.account["PerpMarket"].all()
-        for perp_market in perp_markets:
-            pubkey = perp_market.public_key
-            market_index = perp_market.account.market_index
+        for perp_market_index in self.perp_market_indexes:
+            pubkey = get_perp_market_public_key(
+                self.program.program_id, perp_market_index
+            )
             callback_id = self.bulk_account_loader.add_account(
-                pubkey, self._get_perp_market_callback(market_index)
+                pubkey, self._get_perp_market_callback(perp_market_index)
             )
             self.callbacks[str(pubkey)] = callback_id
-            self.add_oracle(
-                perp_market.account.amm.oracle, perp_market.account.amm.oracle_source
-            )
 
-        spot_markets = await self.program.account["SpotMarket"].all()
-        for spot_market in spot_markets:
-            pubkey = spot_market.public_key
-            market_index = spot_market.account.market_index
+        for spot_market_index in self.spot_market_indexes:
+            pubkey = get_spot_market_public_key(
+                self.program.program_id, spot_market_index
+            )
             callback_id = self.bulk_account_loader.add_account(
-                pubkey, self._get_spot_market_callback(market_index)
+                pubkey, self._get_spot_market_callback(spot_market_index)
             )
             self.callbacks[str(pubkey)] = callback_id
-            self.add_oracle(
-                spot_market.account.oracle, spot_market.account.oracle_source
-            )
+
+        for oracle_info in self.oracle_infos:
+            self.add_oracle(oracle_info.pubkey, oracle_info.source)
 
     def _get_state_callback(self):
         def cb(buffer: bytes, slot: int):

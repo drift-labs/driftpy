@@ -18,6 +18,7 @@ from driftpy.accounts.ws import (
     WebsocketDriftClientAccountSubscriber,
     WebsocketUserAccountSubscriber,
 )
+from driftpy.types import OracleInfo
 
 
 class AccountSubscriptionConfig:
@@ -46,14 +47,41 @@ class AccountSubscriptionConfig:
 
         self.commitment = commitment
 
-    def get_drift_client_subscriber(self, program: Program):
+    def get_drift_client_subscriber(
+        self,
+        program: Program,
+        perp_market_indexes: list[int] = None,
+        spot_market_indexes: list[int] = None,
+        oracle_infos: list[OracleInfo] = None,
+    ):
+        should_find_all_markets_and_oracles = (
+            perp_market_indexes is None
+            and spot_market_indexes is None
+            and oracle_infos is None
+        )
+        perp_market_indexes = [] if perp_market_indexes is None else perp_market_indexes
+        spot_market_indexes = [] if spot_market_indexes is None else spot_market_indexes
+        oracle_infos = [] if oracle_infos is None else oracle_infos
+
         match self.type:
             case "polling":
                 return PollingDriftClientAccountSubscriber(
-                    program, self.bulk_account_loader
+                    program,
+                    self.bulk_account_loader,
+                    perp_market_indexes,
+                    spot_market_indexes,
+                    oracle_infos,
+                    should_find_all_markets_and_oracles,
                 )
             case "websocket":
-                return WebsocketDriftClientAccountSubscriber(program, self.commitment)
+                return WebsocketDriftClientAccountSubscriber(
+                    program,
+                    perp_market_indexes,
+                    spot_market_indexes,
+                    oracle_infos,
+                    should_find_all_markets_and_oracles,
+                    self.commitment,
+                )
             case "cached":
                 return CachedDriftClientAccountSubscriber(program, self.commitment)
 
