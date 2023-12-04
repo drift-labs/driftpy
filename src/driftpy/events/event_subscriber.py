@@ -36,8 +36,10 @@ class EventSubscriber:
         self.event_emitter = EventEmitter(("new_event",))
 
     def subscribe(self):
-        if self.log_provider.task is None:
-            self.log_provider.subscribe(self.handle_tx_logs)
+        self.log_provider.subscribe(self.handle_tx_logs)
+
+    def unsubscribe(self):
+        self.log_provider.unsubscribe()
 
     def handle_tx_logs(
         self,
