@@ -162,7 +162,8 @@ class DriftClient:
     def get_state_public_key(self):
         return get_state_public_key(self.program_id)
 
-    def get_user_account_public_key(self, sub_account_id=0) -> Pubkey:
+    def get_user_account_public_key(self, sub_account_id=None) -> Pubkey:
+        sub_account_id = self.get_sub_account_id_for_ix(sub_account_id)
         return get_user_account_public_key(
             self.program_id, self.authority, sub_account_id
         )

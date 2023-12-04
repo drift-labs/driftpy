@@ -89,13 +89,13 @@ class PositionUpdateType:
 @_rust_enum
 class DepositExplanation:
     NONE = constructor()
-    TRANSFER = constructor()
+    Transfer = constructor()
 
 
 @_rust_enum
 class DepositDirection:
-    DEPOSIT = constructor()
-    WITHDRAW = constructor()
+    Deposit = constructor()
+    Withdraw = constructor()
 
 
 @_rust_enum
@@ -110,56 +110,56 @@ class OrderAction:
 @_rust_enum
 class OrderActionExplanation:
     NONE = constructor()
-    INSUFFICIENT_FREE_COLLATERAL = constructor()
-    ORACLE_PRICE_BREACHED_LIMIT_PRICE = constructor()
-    MARKET_ORDER_FILLED_TO_LIMIT_PRICE = constructor()
-    ORDER_EXPIRED = constructor()
-    LIQUIDATION = constructor()
-    ORDER_FILLED_WITH_A_M_M = constructor()
-    ORDER_FILLED_WITH_A_M_M_JIT = constructor()
-    ORDER_FILLED_WITH_MATCH = constructor()
-    ORDER_FILLED_WITH_MATCH_JIT = constructor()
-    MARKET_EXPIRED = constructor()
-    RISKING_INCREASING_ORDER = constructor()
-    REDUCE_ONLY_ORDER_INCREASED_POSITION = constructor()
-    ORDER_FILL_WITH_SERUM = constructor()
-    NO_BORROW_LIQUIDITY = constructor()
-    ORDER_FILL_WITH_PHOENIX = constructor()
-    ORDER_FILLED_WITH_A_M_M_JIT_L_P_SPLIT = constructor()
-    ORDER_FILLED_WITH_L_P_JIT = constructor()
+    InsufficientFreeCollateral = constructor()
+    OraclePriceBreachedLimitPrice = constructor()
+    MarketOrderFilledToLimitPrice = constructor()
+    OrderExpired = constructor()
+    Liquidation = constructor()
+    OrderFilledWithAmm = constructor()
+    OrderFilledWithAmmJit = constructor()
+    OrderFilledWithMatch = constructor()
+    OrderFilledWithMatchJit = constructor()
+    MarketExpired = constructor()
+    RiskIncreasingOrder = constructor()
+    ReduceOnlyOrderIncreasePosition = constructor()
+    OrderFillWithSerum = constructor()
+    NoBorrowLiquidity = constructor()
+    OrderFillWithPhoenix = constructor()
+    OrderFilledWithAmmJitLpSplit = constructor()
+    OrderFilledWithLpJit = constructor()
 
 
 @_rust_enum
 class LPAction:
-    ADD_LIQUIDITY = constructor()
-    REMOVE_LIQUIDITY = constructor()
-    SETTLE_LIQUIDITY = constructor()
+    AddLiquidity = constructor()
+    RemoveLiquidity = constructor()
+    SettleLiquidity = constructor()
 
 
 @_rust_enum
 class LiquidationType:
-    LIQUIDATE_PERP = constructor()
-    LIQUIDATE_SPOT = constructor()
-    LIQUIDATE_BORROW_FOR_PERP_PNL = constructor()
-    LIQUIDATE_PERP_PNL_FOR_DEPOSIT = constructor()
-    PERP_BANKRUPTCY = constructor()
-    SPOT_BANKRUPTCY = constructor()
+    LiquidatePerp = constructor()
+    LiquidateSpot = constructor()
+    LiquidateBorrowForPerpPnl = constructor()
+    LiquidatePerpPnlForDeposit = constructor()
+    PerpBankruptcy = constructor()
+    SpotBankruptcy = constructor()
 
 
 @_rust_enum
 class SettlePnlExplanation:
     NONE = constructor()
-    EXPIRED_POSITION = constructor()
+    Expired = constructor()
 
 
 @_rust_enum
 class StakeAction:
-    STAKE = constructor()
-    UNSTAKE_REQUEST = constructor()
-    UNSTAKE_CANCEL_REQUEST = constructor()
-    UNSTAKE = constructor()
-    UNSTAKE_TRANSFER = constructor()
-    STAKE_TRANSFER = constructor()
+    Stake = constructor()
+    UnstakeRequest = constructor()
+    UnstakeCancelRequest = constructor()
+    Unstake = constructor()
+    UnstakeTransfer = constructor()
+    StakeTransfer = constructor()
 
 
 @_rust_enum
@@ -947,3 +947,290 @@ class MakerInfo:
 class ReferrerInfo:
     referrer: Pubkey
     referrer_stats: Pubkey
+
+
+@dataclass
+class NewUserRecord:
+    ts: int
+    user_authority: Pubkey
+    user: Pubkey
+    sub_account_id: int
+    name: list[int]
+    referrer: Pubkey
+
+
+@dataclass
+class DepositRecord:
+    ts: int
+    user_authority: Pubkey
+    user: Pubkey
+    direction: DepositDirection
+    market_index: int
+    amount: int
+    oracle_price: int
+    market_deposit_balance: int
+    market_withdraw_balance: int
+    market_cumulative_deposit_interest: int
+    market_cumulative_borrow_interest: int
+    total_deposits_after: int
+    total_withdraws_after: int
+    deposit_record_id: int
+    explanation: DepositExplanation
+    transfer_user: Optional[Pubkey]
+
+
+@dataclass
+class SpotInterestRecord:
+    ts: int
+    market_index: int
+    deposit_balance: int
+    cumulative_deposit_interest: int
+    borrow_balance: int
+    cumulative_borrow_interest: int
+    optimal_utilization: int
+    optimal_borrow_rate: int
+    max_borrow_rate: int
+
+
+@dataclass
+class CurveRecord:
+    ts: int
+    record_id: int
+    market_index: int
+    peg_multiplier_before: int
+    base_asset_reserve_before: int
+    quote_asset_reserve_before: int
+    sqrt_k_before: int
+    peg_multiplier_after: int
+    base_asset_reserve_after: int
+    quote_asset_reserve_after: int
+    sqrt_k_after: int
+    base_asset_amount_long: int
+    base_asset_amount_short: int
+    base_asset_amount_with_amm: int
+    total_fee: int
+    total_fee_minus_distributions: int
+    adjustment_cost: int
+    number_of_users: int
+    oracle_price: int
+    fill_record: int
+
+
+@dataclass
+class InsuranceFundRecord:
+    ts: int
+    spot_market_index: int
+    perp_market_index: int
+    user_if_factor: int
+    total_if_factor: int
+    vault_amount_before: int
+    insurance_vault_amount_before: int
+    total_if_shares_before: int
+    total_if_shares_after: int
+    amount: int
+
+
+@dataclass
+class InsuranceFundStakeRecord:
+    ts: int
+    user_authority: Pubkey
+    action: StakeAction
+    amount: int
+    market_index: int
+    insurance_vault_amount_before: int
+    if_shares_before: int
+    user_if_shares_before: int
+    total_if_shares_before: int
+    if_shares_after: int
+    user_if_shares_after: int
+    total_if_shares_after: int
+
+
+@dataclass
+class LPRecord:
+    ts: int
+    user: Pubkey
+    action: LPAction
+    n_shares: int
+    market_index: int
+    delta_base_asset_amount: int
+    delta_quote_asset_amount: int
+    pnl: int
+
+
+@dataclass
+class FundingRateRecord:
+    ts: int
+    record_id: int
+    market_index: int
+    funding_rate: int
+    funding_rate_long: int
+    funding_rate_short: int
+    cumulative_funding_rate_long: int
+    cumulative_funding_rate_short: int
+    oracle_price_twap: int
+    mark_price_twap: int
+    period_revenue: int
+    base_asset_amount_with_amm: int
+    base_asset_amount_with_unsettled_lp: int
+
+
+@dataclass
+class FundingPaymentRecord:
+    ts: int
+    user_authority: Pubkey
+    user: Pubkey
+    market_index: int
+    funding_payment: int
+    base_asset_amount: int
+    user_last_cumulative_funding: int
+    amm_cumulative_funding_long: int
+    amm_cumulative_funding_short: int
+
+
+@dataclass
+class LiquidatePerpRecord:
+    market_index: int
+    oracle_price: int
+    base_asset_amount: int
+    quote_asset_amount: int
+    lp_shares: int
+    user_order_id: int
+    liquidator_order_id: int
+    fill_record_id: int
+    liquidator_fee: int
+    if_fee: int
+
+
+@dataclass
+class LiquidateSpotRecord:
+    asset_market_index: int
+    asset_price: int
+    asset_transfer: int
+    liability_market_index: int
+    liability_price: int
+    liability_transfer: int
+    if_fee: int
+
+
+@dataclass
+class LiquidateBorrowForPerpPnlRecord:
+    perp_market_index: int
+    market_oracle_price: int
+    pnl_transfer: int
+    liability_market_index: int
+    liability_price: int
+    liability_transfer: int
+
+
+@dataclass
+class LiquidatePerpPnlForDepositRecord:
+    perp_market_index: int
+    market_oracle_price: int
+    pnl_transfer: int
+    asset_market_index: int
+    asset_price: int
+    asset_transfer: int
+
+
+@dataclass
+class PerpBankruptcyRecord:
+    market_index: int
+    pnl: int
+    if_payment: int
+    clawback_user: Pubkey
+    clawback_user_payment: int
+    cumulative_funding_rate_delta: int
+
+
+@dataclass
+class SpotBankruptcyRecord:
+    market_index: int
+    borrow_amount: int
+    cumulative_deposit_interest_delta: int
+    if_payment: int
+
+
+@dataclass
+class LiquidationRecord:
+    ts: int
+    user: Pubkey
+    liquidator: Pubkey
+    liquidation_type: LiquidationType
+    margin_requirement: int
+    total_collateral: int
+    margin_freed: int
+    liquidation_id: int
+    bankrupt: bool
+    canceled_order_ids: list[int]
+    liquidate_perp: LiquidatePerpRecord
+    liquidate_spot: LiquidateSpotRecord
+    liquidate_borrow_for_perp_pnl: LiquidateBorrowForPerpPnlRecord
+    liquidate_perp_pnl_for_deposit: LiquidatePerpPnlForDepositRecord
+    perp_bankruptcy: PerpBankruptcyRecord
+    spot_bankruptcy: SpotBankruptcyRecord
+
+
+@dataclass
+class SettlePnlRecord:
+    ts: int
+    user: Pubkey
+    market_index: int
+    pnl: int
+    base_asset_amount: int
+    quote_asset_amount_after: int
+    quote_entry_amount: int
+    settle_price: int
+    explanation: SettlePnlExplanation
+
+
+@dataclass
+class OrderRecord:
+    ts: int
+    user: Pubkey
+    order: Order
+
+
+@dataclass
+class OrderActionRecord:
+    ts: int
+    action: OrderAction
+    action_explanation: OrderActionExplanation
+    market_index: int
+    market_type: MarketType
+    filler: Optional[Pubkey]
+    filler_reward: Optional[int]
+    fill_record_id: Optional[int]
+    base_asset_amount_filled: Optional[int]
+    quote_asset_amount_filled: Optional[int]
+    taker_fee: Optional[int]
+    maker_fee: Optional[int]
+    referrer_reward: Optional[int]
+    quote_asset_amount_surplus: Optional[int]
+    spot_fulfillment_method_fee: Optional[int]
+    taker: Optional[Pubkey]
+    taker_order_id: Optional[int]
+    taker_order_direction: Optional[PositionDirection]
+    taker_order_base_asset_amount: Optional[int]
+    taker_order_cumulative_base_asset_amount_filled: Optional[int]
+    taker_order_cumulative_quote_asset_amount_filled: Optional[int]
+    maker: Optional[Pubkey]
+    maker_order_id: Optional[int]
+    maker_order_direction: Optional[PositionDirection]
+    maker_order_base_asset_amount: Optional[int]
+    maker_order_cumulative_base_asset_amount_filled: Optional[int]
+    maker_order_cumulative_quote_asset_amount_filled: Optional[int]
+    oracle_price: int
+
+
+@dataclass
+class SwapRecord:
+    ts: int
+    user: Pubkey
+    amount_out: int
+    amount_in: int
+    out_market_index: int
+    in_market_index: int
+    out_oracle_price: int
+    in_oracle_price: int
+    fee: int
