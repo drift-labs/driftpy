@@ -1,13 +1,11 @@
-import asyncio
 from solana.rpc.async_api import AsyncClient
-from solana.rpc.commitment import Commitment
 from solana.transaction import Signature
 
 from events import Events as EventEmitter
 
 from anchorpy import Program, EventParser
 
-from typing import cast, Optional
+from typing import Optional
 
 from driftpy.events.event_list import EventList
 from driftpy.events.sort import get_sort_fn

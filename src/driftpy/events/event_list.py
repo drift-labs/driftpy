@@ -1,4 +1,4 @@
-from typing import Optional, Dict, List, Callable
+from typing import Optional
 from dataclasses import dataclass
 
 from driftpy.events.types import WrappedEvent, EventSubscriptionOrderDirection, SortFn
