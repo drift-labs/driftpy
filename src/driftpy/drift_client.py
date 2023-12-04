@@ -58,6 +58,9 @@ class DriftClient:
         account_subscription: Optional[
             AccountSubscriptionConfig
         ] = AccountSubscriptionConfig.default(),
+        perp_market_indexes: list[int] = None,
+        spot_market_indexes: list[int] = None,
+        oracle_infos: list[OracleInfo] = None,
         tx_params: Optional[TxParams] = None,
         tx_version: Optional[TransactionVersion] = None,
         active_sub_account_id: Optional[int] = None,
@@ -105,7 +108,7 @@ class DriftClient:
         self.users = {}
 
         self.account_subscriber = account_subscription.get_drift_client_subscriber(
-            self.program
+            self.program, perp_market_indexes, spot_market_indexes, oracle_infos
         )
         self.account_subscription_config = account_subscription
 

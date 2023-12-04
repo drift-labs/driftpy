@@ -41,6 +41,9 @@ class WebsocketAccountSubscriber(UserAccountSubscriber, Generic[T]):
         self.task = asyncio.create_task(self.subscribe_ws())
         return self.task
 
+    def is_subscribed(self):
+        return self.task is not None
+
     async def subscribe_ws(self):
         endpoint = self.program.provider.connection._provider.endpoint_uri
         ws_endpoint = endpoint.replace("https", "wss").replace("http", "ws")
