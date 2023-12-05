@@ -3,7 +3,11 @@ from typing import Optional
 from anchorpy import Program
 from solders.pubkey import Pubkey
 
-from driftpy.accounts import UserAccountSubscriber, DataAndSlot
+from driftpy.accounts import (
+    UserAccountSubscriber,
+    DataAndSlot,
+    get_user_account_and_slot,
+)
 
 from driftpy.accounts.bulk_account_loader import BulkAccountLoader
 from driftpy.types import UserAccount
@@ -51,13 +55,16 @@ class PollingUserAccountSubscriber(UserAccountSubscriber):
         self.data_and_slot = DataAndSlot(slot, account)
 
     async def fetch(self):
-        await self.bulk_account_loader.load()
+        data_and_slot = await get_user_account_and_slot(
+            self.program, self.user_account_pubkey
+        )
+        self._update_data(data_and_slot)
 
     def _update_data(self, new_data: Optional[DataAndSlot[UserAccount]]):
         if new_data is None:
             return
 
-        if self.data_and_slot is None or new_data.slot > self.data_and_slot.slot:
+        if self.data_and_slot is None or new_data.slot >= self.data_and_slot.slot:
             self.data_and_slot = new_data
 
     def unsubscribe(self):

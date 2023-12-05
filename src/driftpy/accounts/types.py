@@ -32,6 +32,10 @@ class DriftClientAccountSubscriber:
         pass
 
     @abstractmethod
+    async def fetch(self):
+        pass
+
+    @abstractmethod
     def get_state_account_and_slot(self) -> Optional[DataAndSlot[StateAccount]]:
         pass
 
@@ -61,6 +65,10 @@ class UserAccountSubscriber:
 
     @abstractmethod
     def unsubscribe(self):
+        pass
+
+    @abstractmethod
+    async def fetch(self):
         pass
 
     @abstractmethod

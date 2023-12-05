@@ -28,6 +28,9 @@ class CachedUserAccountSubscriber(UserAccountSubscriber):
         user_and_slot = await get_user_account_and_slot(self.program, self.user_pubkey)
         self.user_and_slot = user_and_slot
 
+    async def fetch(self):
+        await self.update_cache()
+
     def get_user_account_and_slot(self) -> Optional[DataAndSlot[UserAccount]]:
         return self.user_and_slot
 

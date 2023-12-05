@@ -1,3 +1,5 @@
+import asyncio
+
 from anchorpy import Program
 from solana.rpc.commitment import Commitment
 
@@ -119,6 +121,23 @@ class WebsocketDriftClientAccountSubscriber(DriftClientAccountSubscriber):
         return (
             self.state_subscriber is not None and self.state_subscriber.is_subscribed()
         )
+
+    async def fetch(self):
+        if not self.is_subscribed():
+            return
+
+        tasks = [self.state_subscriber.fetch()]
+
+        for perp_market_subscriber in self.perp_market_subscribers.values():
+            tasks.append(perp_market_subscriber.fetch())
+
+        for spot_market_subscriber in self.spot_market_subscribers.values():
+            tasks.append(spot_market_subscriber.fetch())
+
+        for oracle_subscriber in self.oracle_subscribers.values():
+            tasks.append(oracle_subscriber.fetch())
+
+        await asyncio.gather(*tasks)
 
     def get_state_account_and_slot(self) -> Optional[DataAndSlot[StateAccount]]:
         return self.state_subscriber.data_and_slot

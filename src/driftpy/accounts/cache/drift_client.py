@@ -75,6 +75,9 @@ class CachedDriftClientAccountSubscriber(DriftClientAccountSubscriber):
 
         self.cache["oracle_price_data"] = oracle_data
 
+    async def fetch(self):
+        await self.update_cache()
+
     def get_state_account_and_slot(self) -> Optional[DataAndSlot[StateAccount]]:
         return self.cache["state"]
 

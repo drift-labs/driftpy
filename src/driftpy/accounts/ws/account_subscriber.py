@@ -80,7 +80,6 @@ class WebsocketAccountSubscriber(UserAccountSubscriber, Generic[T]):
         new_data = await get_account_data_and_slot(
             self.pubkey, self.program, self.commitment, self.decode
         )
-
         self._update_data(new_data)
 
     def _update_data(self, new_data: Optional[DataAndSlot[T]]):

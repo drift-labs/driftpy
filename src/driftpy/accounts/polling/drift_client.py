@@ -67,6 +67,9 @@ class PollingDriftClientAccountSubscriber(DriftClientAccountSubscriber):
         while self.accounts_ready() is False:
             await self.bulk_account_loader.load()
 
+    async def fetch(self):
+        await self.bulk_account_loader.load()
+
     def accounts_ready(self) -> bool:
         return self.state is not None
 
