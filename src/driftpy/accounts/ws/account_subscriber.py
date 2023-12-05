@@ -86,7 +86,7 @@ class WebsocketAccountSubscriber(UserAccountSubscriber, Generic[T]):
         if new_data is None:
             return
 
-        if self.data_and_slot is None or new_data.slot > self.data_and_slot.slot:
+        if self.data_and_slot is None or new_data.slot >= self.data_and_slot.slot:
             self.data_and_slot = new_data
 
     def unsubscribe(self):

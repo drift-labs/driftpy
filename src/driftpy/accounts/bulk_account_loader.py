@@ -147,7 +147,7 @@ class BulkAccountLoader:
                 pubkey_str = str(account_to_load.pubkey)
                 old_buffer_and_slot = self.buffer_and_slot_map.get(pubkey_str)
 
-                if old_buffer_and_slot is not None and slot <= old_buffer_and_slot.slot:
+                if old_buffer_and_slot is not None and slot < old_buffer_and_slot.slot:
                     continue
 
                 new_buffer = None
