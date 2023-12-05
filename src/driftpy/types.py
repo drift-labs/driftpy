@@ -738,6 +738,7 @@ class StateAccount:
     exchange_status: int
     liquidation_duration: int
     initial_pct_to_liquidate: int
+    max_number_of_sub_accounts: int
     padding: list[int]
 
 
