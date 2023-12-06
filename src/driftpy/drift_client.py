@@ -1,10 +1,7 @@
 from deprecated import deprecated
 from solders.pubkey import Pubkey
 from solders.keypair import Keypair
-from solana.transaction import Transaction
-from solders.transaction import VersionedTransaction
 from solders.transaction import TransactionVersion, Legacy
-from solders.message import MessageV0
 from solders.instruction import Instruction
 from solders.system_program import ID
 from solders.sysvar import RENT
@@ -259,32 +256,14 @@ class DriftClient:
         if self.tx_params.compute_units_price is not None:
             ixs.insert(1, set_compute_unit_price(self.tx_params.compute_units_price))
 
-        latest_blockhash = await self.tx_sender.get_blockhash()
-
         if self.tx_version == Legacy:
-            tx = Transaction(
-                instructions=ixs,
-                recent_blockhash=latest_blockhash,
-                fee_payer=self.wallet.public_key,
-            )
-
-            tx.sign_partial(self.wallet.payer)
-
-            if signers is not None:
-                [tx.sign_partial(signer) for signer in signers]
+            tx = await self.tx_sender.get_legacy_tx(ixs, self.wallet.payer, signers)
         elif self.tx_version == 0:
             if lookup_tables is None:
                 lookup_tables = [await self.fetch_market_lookup_table()]
-            msg = MessageV0.try_compile(
-                self.wallet.public_key, ixs, lookup_tables, latest_blockhash
+            tx = await self.tx_sender.get_versioned_tx(
+                ixs, self.wallet.payer, lookup_tables, signers
             )
-
-            signers = (
-                [self.wallet.payer]
-                if signers is None
-                else [self.wallet.payer] + signers
-            )
-            tx = VersionedTransaction(msg, signers)
         else:
             raise NotImplementedError("unknown tx version", self.tx_version)
 

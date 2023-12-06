@@ -1,9 +1,11 @@
 from abc import abstractmethod
 from dataclasses import dataclass
-from typing import Union, Sequence
+from typing import Union, Sequence, Optional
 
-from solders.hash import Hash
+from solders.address_lookup_table_account import AddressLookupTableAccount
+from solders.keypair import Keypair
 from solders.signature import Signature
+from solders.instruction import Instruction
 from solana.transaction import Transaction
 from solders.transaction import VersionedTransaction
 
@@ -16,7 +18,22 @@ class TxSigAndSlot:
 
 class TxSender:
     @abstractmethod
-    async def get_blockhash(self) -> Hash:
+    async def get_legacy_tx(
+        self,
+        ixs: Sequence[Instruction],
+        payer: Keypair,
+        additional_signers: Optional[Sequence[Keypair]],
+    ) -> Transaction:
+        pass
+
+    @abstractmethod
+    async def get_versioned_tx(
+        self,
+        ixs: Sequence[Instruction],
+        payer: Keypair,
+        lookup_tables: Sequence[AddressLookupTableAccount],
+        additional_signers: Optional[Sequence[Keypair]],
+    ) -> VersionedTransaction:
         pass
 
     @abstractmethod
