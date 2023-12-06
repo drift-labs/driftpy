@@ -36,6 +36,8 @@ from driftpy.math.perp_position import is_available
 from driftpy.math.spot_position import is_spot_position_available
 from driftpy.math.spot_market import cast_to_spot_precision
 from driftpy.name import encode_name
+from driftpy.tx.standard_tx_sender import StandardTxSender
+from driftpy.tx.types import TxSender
 
 DEFAULT_USER_NAME = "Main Account"
 
@@ -63,6 +65,7 @@ class DriftClient:
         oracle_infos: list[OracleInfo] = None,
         tx_params: Optional[TxParams] = None,
         tx_version: Optional[TransactionVersion] = None,
+        tx_sender: TxSender = None,
         active_sub_account_id: Optional[int] = None,
         sub_account_ids: Optional[list[int]] = None,
         market_lookup_table: Optional[Pubkey] = None,
@@ -125,6 +128,10 @@ class DriftClient:
         self.tx_params = tx_params
 
         self.tx_version = tx_version if tx_version is not None else Legacy
+
+        self.tx_sender = (
+            StandardTxSender(self.connection, opts) if tx_sender is None else tx_sender
+        )
 
     async def subscribe(self):
         await self.account_subscriber.subscribe()
@@ -252,9 +259,7 @@ class DriftClient:
         if self.tx_params.compute_units_price is not None:
             ixs.insert(1, set_compute_unit_price(self.tx_params.compute_units_price))
 
-        latest_blockhash = (
-            await self.program.provider.connection.get_latest_blockhash()
-        ).value.blockhash
+        latest_blockhash = await self.tx_sender.get_blockhash()
 
         if self.tx_version == Legacy:
             tx = Transaction(
@@ -273,11 +278,17 @@ class DriftClient:
             msg = MessageV0.try_compile(
                 self.wallet.public_key, ixs, lookup_tables, latest_blockhash
             )
-            tx = VersionedTransaction(msg, [self.wallet.payer])
+
+            signers = (
+                [self.wallet.payer]
+                if signers is None
+                else [self.wallet.payer] + signers
+            )
+            tx = VersionedTransaction(msg, signers)
         else:
             raise NotImplementedError("unknown tx version", self.tx_version)
 
-        return await self.program.provider.send(tx)
+        return (await self.tx_sender.send(tx)).tx_sig
 
     def get_remaining_accounts(
         self,
