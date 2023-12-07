@@ -71,6 +71,9 @@ class DriftUser:
     def get_spot_market_account(self, market_index: int) -> SpotMarketAccount:
         return self.drift_client.get_spot_market_account(market_index)
 
+    def get_user_account_and_slot(self) -> DataAndSlot[UserAccount]:
+        return self.account_subscriber.get_user_account_and_slot()
+
     def get_user_account(self) -> UserAccount:
         return self.account_subscriber.get_user_account_and_slot().data
 

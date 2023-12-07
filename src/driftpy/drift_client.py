@@ -34,7 +34,7 @@ from driftpy.math.spot_position import is_spot_position_available
 from driftpy.math.spot_market import cast_to_spot_precision
 from driftpy.name import encode_name
 from driftpy.tx.standard_tx_sender import StandardTxSender
-from driftpy.tx.types import TxSender
+from driftpy.tx.types import TxSender, TxSigAndSlot
 
 DEFAULT_USER_NAME = "Main Account"
 
@@ -106,6 +106,9 @@ class DriftClient:
             else [self.active_sub_account_id]
         )
         self.users = {}
+
+        self.last_perp_market_seen_cache = {}
+        self.last_spot_market_seen_cache = {}
 
         self.account_subscriber = account_subscription.get_drift_client_subscriber(
             self.program, perp_market_indexes, spot_market_indexes, oracle_infos
@@ -246,7 +249,7 @@ class DriftClient:
         ixs: Union[Instruction, list[Instruction]],
         signers=None,
         lookup_tables: list[AddressLookupTableAccount] = None,
-    ):
+    ) -> TxSigAndSlot:
         if isinstance(ixs, Instruction):
             ixs = [ixs]
 
@@ -267,7 +270,7 @@ class DriftClient:
         else:
             raise NotImplementedError("unknown tx version", self.tx_version)
 
-        return (await self.tx_sender.send(tx)).tx_sig
+        return await self.tx_sender.send(tx)
 
     def get_remaining_accounts(
         self,
@@ -282,6 +285,23 @@ class DriftClient:
             spot_market_map,
             perp_market_map,
         ) = self.get_remaining_accounts_for_users(user_accounts)
+
+        last_user_slot = self.get_user().get_user_account_and_slot().slot
+        for perp_market_index, slot in self.last_perp_market_seen_cache.items():
+            if slot > last_user_slot:
+                self.add_perp_market_to_remaining_account_maps(
+                    perp_market_index,
+                    False,
+                    oracle_map,
+                    spot_market_map,
+                    perp_market_map,
+                )
+
+        for spot_market_index, slot in self.last_spot_market_seen_cache.items():
+            if slot > last_user_slot:
+                self.add_spot_market_to_remaining_account_maps(
+                    spot_market_index, False, oracle_map, spot_market_map
+                )
 
         for perp_market_index in readable_perp_market_indexes:
             self.add_perp_market_to_remaining_account_maps(
@@ -494,7 +514,7 @@ class DriftClient:
         Returns:
             str: sig
         """
-        return await self.send_ixs(
+        tx_sig_and_slot = await self.send_ixs(
             [
                 self.get_deposit_collateral_ix(
                     amount,
@@ -506,6 +526,8 @@ class DriftClient:
                 )
             ]
         )
+        self.last_spot_market_seen_cache[spot_market_index] = tx_sig_and_slot.slot
+        return tx_sig_and_slot
 
     def get_deposit_collateral_ix(
         self,
@@ -578,7 +600,7 @@ class DriftClient:
         Returns:
             str: tx sig
         """
-        return await self.send_ixs(
+        tx_sig_and_slot = await self.send_ixs(
             [
                 self.get_withdraw_collateral_ix(
                     amount,
@@ -589,6 +611,8 @@ class DriftClient:
                 )
             ]
         )
+        self.last_spot_market_seen_cache[market_index] = tx_sig_and_slot.slot
+        return tx_sig_and_slot
 
     def get_withdraw_collateral_ix(
         self,
@@ -634,7 +658,7 @@ class DriftClient:
         from_sub_account_id: int,
         to_sub_account_id: int,
     ):
-        return await self.send_ixs(
+        tx_sig_and_slot = await self.send_ixs(
             [
                 await self.get_transfer_deposit_ix(
                     amount,
@@ -644,6 +668,8 @@ class DriftClient:
                 )
             ]
         )
+        self.last_spot_market_seen_cache[market_index] = tx_sig_and_slot.slot
+        return tx_sig_and_slot
 
     async def get_transfer_deposit_ix(
         self,
@@ -701,11 +727,16 @@ class DriftClient:
         order_params: OrderParams,
         sub_account_id: int = None,
     ):
-        return await self.send_ixs(
+        tx_sig_and_slot = await self.send_ixs(
             [
                 self.get_place_spot_order_ix(order_params, sub_account_id),
             ]
         )
+        self.last_spot_market_seen_cache[
+            order_params.market_index
+        ] = tx_sig_and_slot.slot
+        self.last_spot_market_seen_cache[QUOTE_SPOT_MARKET_INDEX] = tx_sig_and_slot.slot
+        return tx_sig_and_slot
 
     def get_place_spot_order_ix(
         self,
@@ -744,11 +775,15 @@ class DriftClient:
         order_params: OrderParams,
         sub_account_id: int = None,
     ):
-        return await self.send_ixs(
+        tx_sig_and_slot = await self.send_ixs(
             [
                 self.get_place_perp_order_ix(order_params, sub_account_id),
             ]
         )
+        self.last_perp_market_seen_cache[
+            order_params.market_index
+        ] = tx_sig_and_slot.slot
+        return tx_sig_and_slot
 
     def get_place_perp_order_ix(
         self,
@@ -785,11 +820,23 @@ class DriftClient:
         order_params: List[OrderParams],
         sub_account_id: int = None,
     ):
-        return await self.send_ixs(
+        tx_sig_and_slot = await self.send_ixs(
             [
                 self.get_place_orders_ix(order_params, sub_account_id),
             ]
         )
+
+        for order_param in order_params:
+            if is_variant(order_param.market_type, "Perp"):
+                self.last_perp_market_seen_cache[
+                    order_param.market_index
+                ] = tx_sig_and_slot.slot
+            else:
+                self.last_spot_market_seen_cache[
+                    order_param.market_index
+                ] = tx_sig_and_slot.slot
+
+        return tx_sig_and_slot
 
     def get_place_orders_ix(
         self,
@@ -967,11 +1014,23 @@ class DriftClient:
         place_order_params: List[OrderParams],
         sub_account_id: int = None,
     ):
-        return await self.send_ixs(
+        tx_sig_and_slot = await self.send_ixs(
             self.get_cancel_and_place_orders_ix(
                 cancel_params, place_order_params, sub_account_id
             ),
         )
+
+        for order_param in place_order_params:
+            if is_variant(order_param.market_type, "Perp"):
+                self.last_perp_market_seen_cache[
+                    order_param.market_index
+                ] = tx_sig_and_slot.slot
+            else:
+                self.last_spot_market_seen_cache[
+                    order_param.market_index
+                ] = tx_sig_and_slot.slot
+
+        return tx_sig_and_slot
 
     def get_cancel_and_place_orders_ix(
         self,
@@ -1073,13 +1132,17 @@ class DriftClient:
         maker_info: MakerInfo = None,
         sub_account_id: int = None,
     ):
-        return await self.send_ixs(
+        tx_sig_and_slot = await self.send_ixs(
             [
                 self.get_place_and_take_perp_order_ix(
                     order_params, maker_info, sub_account_id
                 ),
             ]
         )
+        self.last_perp_market_seen_cache[
+            order_params.market_index
+        ] = tx_sig_and_slot.slot
+        return tx_sig_and_slot
 
     def get_place_and_take_perp_order_ix(
         self,
@@ -1132,9 +1195,13 @@ class DriftClient:
         Returns:
             str: tx sig
         """
-        return await self.send_ixs(
+        tx_sig_and_slot = await self.send_ixs(
             [self.get_add_liquidity_ix(amount, market_index, sub_account_id)]
         )
+
+        self.last_perp_market_seen_cache[market_index] = tx_sig_and_slot.slot
+
+        return tx_sig_and_slot
 
     def get_add_liquidity_ix(
         self, amount: int, market_index: int, sub_account_id: int = None
@@ -1175,7 +1242,7 @@ class DriftClient:
         Returns:
             str: tx sig
         """
-        return await self.send_ixs(
+        await self.send_ixs(
             [self.get_remove_liquidity_ix(amount, market_index, sub_account_id)]
         )
 
@@ -1268,7 +1335,7 @@ class DriftClient:
         user_sub_account_id: int = 0,
         liq_sub_account_id: int = None,
     ):
-        return await self.send_ixs(
+        tx_sig_and_slot = await self.send_ixs(
             [
                 await self.get_liquidate_spot_ix(
                     user_authority,
@@ -1280,6 +1347,9 @@ class DriftClient:
                 )
             ]
         )
+        self.last_spot_market_seen_cache[asset_market_index] = tx_sig_and_slot.slot
+        self.last_spot_market_seen_cache[liability_market_index] = tx_sig_and_slot.slot
+        return tx_sig_and_slot
 
     async def get_liquidate_spot_ix(
         self,
@@ -1338,7 +1408,7 @@ class DriftClient:
         user_sub_account_id: int = 0,
         liq_sub_account_id: int = None,
     ):
-        return await self.send_ixs(
+        tx_sig_and_slot = await self.send_ixs(
             [
                 await self.get_liquidate_perp_ix(
                     user_authority,
@@ -1350,6 +1420,8 @@ class DriftClient:
                 )
             ]
         )
+        self.last_perp_market_seen_cache[market_index] = tx_sig_and_slot.slot
+        return tx_sig_and_slot
 
     async def get_liquidate_perp_ix(
         self,
@@ -1406,7 +1478,7 @@ class DriftClient:
         user_sub_account_id: int = 0,
         liq_sub_account_id: int = None,
     ):
-        return await self.send_ixs(
+        tx_sig_and_slot = await self.send_ixs(
             await self.get_liquidate_perp_pnl_for_deposit_ix(
                 user_authority,
                 perp_market_index,
@@ -1416,6 +1488,9 @@ class DriftClient:
                 liq_sub_account_id,
             )
         )
+        self.last_spot_market_seen_cache[spot_market_index] = tx_sig_and_slot.slot
+        self.last_perp_market_seen_cache[perp_market_index] = tx_sig_and_slot.slot
+        return tx_sig_and_slot
 
     async def get_liquidate_perp_pnl_for_deposit_ix(
         self,
@@ -1925,16 +2000,18 @@ class DriftClient:
         limit_price: int = 0,
         ioc: bool = False,
     ):
-        return await self.send_ixs(
-            self.get_open_position_ix(
-                direction,
-                amount,
-                market_index,
-                sub_account_id,
-                limit_price,
-                ioc,
-            ),
-        )
+        return (
+            await self.send_ixs(
+                self.get_open_position_ix(
+                    direction,
+                    amount,
+                    market_index,
+                    sub_account_id,
+                    limit_price,
+                    ioc,
+                ),
+            )
+        ).tx_sig
 
     @deprecated
     def get_open_position_ix(
@@ -1965,11 +2042,13 @@ class DriftClient:
     async def close_position(
         self, market_index: int, limit_price: int = 0, sub_account_id: int = None
     ):
-        return await self.send_ixs(
-            self.get_close_position_ix(
-                market_index, limit_price, sub_account_id=sub_account_id
+        return (
+            await self.send_ixs(
+                self.get_close_position_ix(
+                    market_index, limit_price, sub_account_id=sub_account_id
+                )
             )
-        )
+        ).tx_sig
 
     @deprecated
     def get_close_position_ix(
