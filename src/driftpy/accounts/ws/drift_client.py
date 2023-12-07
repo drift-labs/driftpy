@@ -67,7 +67,7 @@ class WebsocketDriftClientAccountSubscriber(DriftClientAccountSubscriber):
             self.oracle_infos = oracle_infos
 
         for perp_market_index in self.perp_market_indexes:
-            await self.subscribe_to_spot_market(perp_market_index)
+            await self.subscribe_to_perp_market(perp_market_index)
 
         for spot_market_index in self.spot_market_indexes:
             await self.subscribe_to_spot_market(spot_market_index)
