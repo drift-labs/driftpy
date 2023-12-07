@@ -430,7 +430,7 @@ class DriftClient:
 
         ix = self.get_initialize_user_instructions(sub_account_id, name, referrer_info)
         ixs.append(ix)
-        return await self.send_ixs(ixs)
+        return (await self.send_ixs(ixs)).tx_sig
 
     def get_initialize_user_stats(
         self,
@@ -669,7 +669,7 @@ class DriftClient:
             ]
         )
         self.last_spot_market_seen_cache[market_index] = tx_sig_and_slot.slot
-        return tx_sig_and_slot
+        return tx_sig_and_slot.tx_sig
 
     async def get_transfer_deposit_ix(
         self,
@@ -736,7 +736,7 @@ class DriftClient:
             order_params.market_index
         ] = tx_sig_and_slot.slot
         self.last_spot_market_seen_cache[QUOTE_SPOT_MARKET_INDEX] = tx_sig_and_slot.slot
-        return tx_sig_and_slot
+        return tx_sig_and_slot.tx_sig
 
     def get_place_spot_order_ix(
         self,
@@ -783,7 +783,7 @@ class DriftClient:
         self.last_perp_market_seen_cache[
             order_params.market_index
         ] = tx_sig_and_slot.slot
-        return tx_sig_and_slot
+        return tx_sig_and_slot.tx_sig
 
     def get_place_perp_order_ix(
         self,
@@ -836,7 +836,7 @@ class DriftClient:
                     order_param.market_index
                 ] = tx_sig_and_slot.slot
 
-        return tx_sig_and_slot
+        return tx_sig_and_slot.tx_sig
 
     def get_place_orders_ix(
         self,
@@ -896,9 +896,11 @@ class DriftClient:
         Returns:
             str: tx sig
         """
-        return await self.send_ixs(
-            self.get_cancel_order_ix(order_id, sub_account_id),
-        )
+        return (
+            await self.send_ixs(
+                self.get_cancel_order_ix(order_id, sub_account_id),
+            )
+        ).tx_sig
 
     def get_cancel_order_ix(
         self, order_id: Optional[int] = None, sub_account_id: int = None
@@ -928,9 +930,11 @@ class DriftClient:
     ):
         sub_account_id = self.get_sub_account_id_for_ix(sub_account_id)
 
-        return await self.send_ixs(
-            self.get_cancel_order_by_user_id_ix(user_order_id, sub_account_id),
-        )
+        return (
+            await self.send_ixs(
+                self.get_cancel_order_by_user_id_ix(user_order_id, sub_account_id),
+            )
+        ).tx_sig
 
     def get_cancel_order_by_user_id_ix(
         self, user_order_id: int, sub_account_id: int = None
@@ -971,11 +975,13 @@ class DriftClient:
         Returns:
             str: tx sig
         """
-        return await self.send_ixs(
-            self.get_cancel_orders_ix(
-                market_type, market_index, direction, sub_account_id
+        return (
+            await self.send_ixs(
+                self.get_cancel_orders_ix(
+                    market_type, market_index, direction, sub_account_id
+                )
             )
-        )
+        ).tx_sig
 
     def get_cancel_orders_ix(
         self,
@@ -1030,7 +1036,7 @@ class DriftClient:
                     order_param.market_index
                 ] = tx_sig_and_slot.slot
 
-        return tx_sig_and_slot
+        return tx_sig_and_slot.tx_sig
 
     def get_cancel_and_place_orders_ix(
         self,
@@ -1058,9 +1064,15 @@ class DriftClient:
         modify_order_params: ModifyOrderParams,
         sub_account_id: int = None,
     ):
-        return await self.send_ixs(
-            [self.get_modify_order_ix(order_id, modify_order_params, sub_account_id)],
-        )
+        return (
+            await self.send_ixs(
+                [
+                    self.get_modify_order_ix(
+                        order_id, modify_order_params, sub_account_id
+                    )
+                ],
+            )
+        ).tx_sig
 
     def get_modify_order_ix(
         self,
@@ -1093,13 +1105,15 @@ class DriftClient:
         modify_order_params: ModifyOrderParams,
         sub_account_id: int = None,
     ):
-        return await self.send_ixs(
-            [
-                self.get_modify_order_by_user_id_ix(
-                    user_order_id, modify_order_params, sub_account_id
-                )
-            ],
-        )
+        return (
+            await self.send_ixs(
+                [
+                    self.get_modify_order_by_user_id_ix(
+                        user_order_id, modify_order_params, sub_account_id
+                    )
+                ],
+            )
+        ).tx_sig
 
     def get_modify_order_by_user_id_ix(
         self,
@@ -1142,7 +1156,7 @@ class DriftClient:
         self.last_perp_market_seen_cache[
             order_params.market_index
         ] = tx_sig_and_slot.slot
-        return tx_sig_and_slot
+        return tx_sig_and_slot.tx_sig
 
     def get_place_and_take_perp_order_ix(
         self,
@@ -1201,7 +1215,7 @@ class DriftClient:
 
         self.last_perp_market_seen_cache[market_index] = tx_sig_and_slot.slot
 
-        return tx_sig_and_slot
+        return tx_sig_and_slot.tx_sig
 
     def get_add_liquidity_ix(
         self, amount: int, market_index: int, sub_account_id: int = None
@@ -1242,9 +1256,11 @@ class DriftClient:
         Returns:
             str: tx sig
         """
-        await self.send_ixs(
-            [self.get_remove_liquidity_ix(amount, market_index, sub_account_id)]
-        )
+        return (
+            await self.send_ixs(
+                [self.get_remove_liquidity_ix(amount, market_index, sub_account_id)]
+            )
+        ).tx_sig
 
     def get_remove_liquidity_ix(
         self, amount: int, market_index: int, sub_account_id: int = None
@@ -1275,14 +1291,16 @@ class DriftClient:
         settlee_user_account_public_key: Pubkey,
         market_index: int,
     ):
-        return await self.send_ixs(
-            [
-                await self.get_settle_lp_ix(
-                    settlee_user_account_public_key, market_index
-                )
-            ],
-            signers=[],
-        )
+        return (
+            await self.send_ixs(
+                [
+                    await self.get_settle_lp_ix(
+                        settlee_user_account_public_key, market_index
+                    )
+                ],
+                signers=[],
+            )
+        ).tx_sig
 
     async def get_settle_lp_ix(
         self,
@@ -1349,7 +1367,7 @@ class DriftClient:
         )
         self.last_spot_market_seen_cache[asset_market_index] = tx_sig_and_slot.slot
         self.last_spot_market_seen_cache[liability_market_index] = tx_sig_and_slot.slot
-        return tx_sig_and_slot
+        return tx_sig_and_slot.tx_sig
 
     async def get_liquidate_spot_ix(
         self,
@@ -1421,7 +1439,7 @@ class DriftClient:
             ]
         )
         self.last_perp_market_seen_cache[market_index] = tx_sig_and_slot.slot
-        return tx_sig_and_slot
+        return tx_sig_and_slot.tx_sig
 
     async def get_liquidate_perp_ix(
         self,
@@ -1490,7 +1508,7 @@ class DriftClient:
         )
         self.last_spot_market_seen_cache[spot_market_index] = tx_sig_and_slot.slot
         self.last_perp_market_seen_cache[perp_market_index] = tx_sig_and_slot.slot
-        return tx_sig_and_slot
+        return tx_sig_and_slot.tx_sig
 
     async def get_liquidate_perp_pnl_for_deposit_ix(
         self,
@@ -1548,11 +1566,13 @@ class DriftClient:
         settlee_user_account: UserAccount,
         market_index: int,
     ):
-        return await self.send_ixs(
-            self.get_settle_pnl_ix(
-                settlee_user_account_public_key, settlee_user_account, market_index
+        return (
+            await self.send_ixs(
+                self.get_settle_pnl_ix(
+                    settlee_user_account_public_key, settlee_user_account, market_index
+                )
             )
-        )
+        ).tx_sig
 
     def get_settle_pnl_ix(
         self,
@@ -1590,16 +1610,18 @@ class DriftClient:
         user_sub_account_id: int = 0,
         liq_sub_account_id: int = None,
     ):
-        return await self.send_ixs(
-            [
-                await self.get_resolve_spot_bankruptcy_ix(
-                    user_authority,
-                    spot_market_index,
-                    user_sub_account_id,
-                    liq_sub_account_id,
-                )
-            ]
-        )
+        return (
+            await self.send_ixs(
+                [
+                    await self.get_resolve_spot_bankruptcy_ix(
+                        user_authority,
+                        spot_market_index,
+                        user_sub_account_id,
+                        liq_sub_account_id,
+                    )
+                ]
+            )
+        ).tx_sig
 
     async def get_resolve_spot_bankruptcy_ix(
         self,
@@ -1662,16 +1684,18 @@ class DriftClient:
         user_sub_account_id: int = 0,
         liq_sub_account_id: int = None,
     ):
-        return await self.send_ixs(
-            [
-                await self.get_resolve_perp_bankruptcy_ix(
-                    user_authority,
-                    market_index,
-                    user_sub_account_id,
-                    liq_sub_account_id,
-                )
-            ]
-        )
+        return (
+            await self.send_ixs(
+                [
+                    await self.get_resolve_perp_bankruptcy_ix(
+                        user_authority,
+                        market_index,
+                        user_sub_account_id,
+                        liq_sub_account_id,
+                    )
+                ]
+            )
+        ).tx_sig
 
     async def get_resolve_perp_bankruptcy_ix(
         self,
@@ -1728,13 +1752,15 @@ class DriftClient:
         self,
         market_index: int,
     ):
-        return await self.send_ixs(
-            [
-                await self.get_settle_expired_market_ix(
-                    market_index,
-                ),
-            ]
-        )
+        return (
+            await self.send_ixs(
+                [
+                    await self.get_settle_expired_market_ix(
+                        market_index,
+                    ),
+                ]
+            )
+        ).tx_sig
 
     async def get_settle_expired_market_ix(
         self,
@@ -1785,9 +1811,13 @@ class DriftClient:
     async def request_remove_insurance_fund_stake(
         self, spot_market_index: int, amount: int
     ):
-        return await self.send_ixs(
-            self.get_request_remove_insurance_fund_stake_ix(spot_market_index, amount)
-        )
+        return (
+            await self.send_ixs(
+                self.get_request_remove_insurance_fund_stake_ix(
+                    spot_market_index, amount
+                )
+            )
+        ).tx_sig
 
     def get_request_remove_insurance_fund_stake_ix(
         self,
@@ -1822,9 +1852,13 @@ class DriftClient:
         )
 
     async def cancel_request_remove_insurance_fund_stake(self, spot_market_index: int):
-        return await self.send_ixs(
-            self.get_cancel_request_remove_insurance_fund_stake_ix(spot_market_index)
-        )
+        return (
+            await self.send_ixs(
+                self.get_cancel_request_remove_insurance_fund_stake_ix(
+                    spot_market_index
+                )
+            )
+        ).tx_sig
 
     def get_cancel_request_remove_insurance_fund_stake_ix(
         self, spot_market_index: int, user_token_account: Pubkey = None
@@ -1859,11 +1893,13 @@ class DriftClient:
     async def remove_insurance_fund_stake(
         self, spot_market_index: int, user_token_account: Pubkey = None
     ):
-        return await self.send_ixs(
-            self.get_remove_insurance_fund_stake_ix(
-                spot_market_index, user_token_account
+        return (
+            await self.send_ixs(
+                self.get_remove_insurance_fund_stake_ix(
+                    spot_market_index, user_token_account
+                )
             )
-        )
+        ).tx_sig
 
     def get_remove_insurance_fund_stake_ix(
         self, spot_market_index: int, user_token_account: Pubkey = None
@@ -1907,11 +1943,13 @@ class DriftClient:
     async def add_insurance_fund_stake(
         self, spot_market_index: int, amount: int, user_token_account: Pubkey = None
     ):
-        return await self.send_ixs(
-            self.get_add_insurance_fund_stake_ix(
-                spot_market_index, amount, user_token_account
+        return (
+            await self.send_ixs(
+                self.get_add_insurance_fund_stake_ix(
+                    spot_market_index, amount, user_token_account
+                )
             )
-        )
+        ).tx_sig
 
     def get_add_insurance_fund_stake_ix(
         self, spot_market_index: int, amount: int, user_token_account: Pubkey = None
@@ -1960,9 +1998,11 @@ class DriftClient:
         self,
         spot_market_index: int,
     ):
-        return await self.send_ixs(
-            self.get_initialize_insurance_fund_stake_ix(spot_market_index)
-        )
+        return (
+            await self.send_ixs(
+                self.get_initialize_insurance_fund_stake_ix(spot_market_index)
+            )
+        ).tx_sig
 
     def get_initialize_insurance_fund_stake_ix(
         self,
@@ -2078,7 +2118,7 @@ class DriftClient:
         return ix
 
     async def update_amm(self, market_indexs: list[int]):
-        return await self.send_ixs(self.get_update_amm_ix(market_indexs))
+        return (await self.send_ixs(self.get_update_amm_ix(market_indexs))).tx_sig
 
     def get_update_amm_ix(
         self,
