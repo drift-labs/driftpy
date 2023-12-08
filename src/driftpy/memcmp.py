@@ -1,4 +1,3 @@
-from typing import Dict
 import base58
 from anchorpy.coder.accounts import _account_discriminator
 from solana.rpc.types import MemcmpOpts

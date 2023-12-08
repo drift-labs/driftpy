@@ -109,15 +109,15 @@ class UserMap(UserMapInterface):
     async def add_pubkey(
             self, 
             user_account_public_key: Pubkey, 
-            subscription_type: str,
         ):
-        if subscription_type == 'polling':
+
+        if isinstance(self.subscription, PollingSubscription):
             bulk_account_loader = BulkAccountLoader(self.drift_client.connection)
-            config = AccountSubscriptionConfig(subscription_type, bulk_account_loader, self.commitment)
-        elif subscription_type == 'cached':
-            config = AccountSubscriptionConfig(subscription_type, commitment = self.commitment)
+            config = AccountSubscriptionConfig('polling', bulk_account_loader, self.commitment)
+        elif isinstance(self.subscription, WebsocketSubscription):
+            config = AccountSubscriptionConfig('websocket', commitment = self.commitment)
         else:
-            config = AccountSubscriptionConfig(subscription_type, commitment = self.commitment)
+            config = AccountSubscriptionConfig('cached')
         user = DriftUser(
             self.drift_client, 
             authority = user_account_public_key,
@@ -154,7 +154,7 @@ class UserMap(UserMapInterface):
                 if key not in self.user_map:
                     data = program_account_buffer_map.get(key)
                     user_account = self.drift_client.program.coder.accounts.decode(data)
-                    await self.add_pubkey(Pubkey.from_string(key), "polling")
+                    await self.add_pubkey(Pubkey.from_string(key))
                 await asyncio.sleep(0)
 
             for key, user in self.user_map.items():
@@ -168,6 +168,7 @@ class UserMap(UserMapInterface):
 
         except Exception as e:
             print(f"Error in UserMap.sync(): {e}")
+
         finally:
             if self.sync_promise_resolver:
                 self.sync_promise_resolver()
