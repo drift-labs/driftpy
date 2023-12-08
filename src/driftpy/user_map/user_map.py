@@ -1,51 +1,24 @@
-from abc import ABC, abstractmethod
 import asyncio
-from typing import Iterable, Literal, Optional, Union, Dict
+from typing import Optional, Dict
 from asyncio import Future
+
 from solders.pubkey import Pubkey
+
+from solana.rpc.commitment import Commitment
+
 from driftpy.accounts.bulk_account_loader import BulkAccountLoader
 from driftpy.drift_user import DriftUser
 from driftpy.account_subscription_config import AccountSubscriptionConfig
-from driftpy.types import StateAccount, UserAccount
+
+from driftpy.types import StateAccount
 from driftpy.accounts.types import DataAndSlot
+
 from driftpy.user_map.user_map_config import UserMapConfig, PollingConfig, WebsocketConfig
-from solana.rpc.commitment import Commitment
-from solana.rpc.types import MemcmpOpts
 from driftpy.user_map.websocket_sub import WebsocketSubscription
 from driftpy.user_map.polling_sub import PollingSubscription
+from driftpy.user_map.types import UserMapInterface
+
 from driftpy.memcmp import get_user_filter, get_non_idle_user_filter
-import base64
-
-class UserMapInterface(ABC):
-
-    @abstractmethod
-    async def subscribe(self) -> None:
-        pass
-
-    @abstractmethod
-    async def unsubscribe(self) -> None:
-        pass
-
-    @abstractmethod
-    async def add_pubkey(self, user_account_public_key: Pubkey) -> None:
-        pass
-
-    @abstractmethod
-    def has(self, key: str) -> bool:
-        pass
-
-    @abstractmethod
-    def get(self, key: str) -> Optional[DriftUser]:
-        pass
-
-    @abstractmethod
-    def must_get(self, key: str) -> DriftUser:
-        pass
-
-    @abstractmethod
-    def get_user_authority(self, key: str) -> Optional[Pubkey]:
-        pass
-
 
 class UserMap(UserMapInterface):
     def __init__(self, config: UserMapConfig):
@@ -109,6 +82,9 @@ class UserMap(UserMapInterface):
     def size(self):
         return len(self.user_map)
         
+    def values(self):
+        return iter(self.user_map.values())
+    
     def get_user_authority(self, key: str) -> Optional[Pubkey]:
         ch_user = self.user_map.get(key)
         if not ch_user:
