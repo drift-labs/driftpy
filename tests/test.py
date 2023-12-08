@@ -42,6 +42,7 @@ from driftpy.types import (
     is_variant,
     # SwapDirection,
 )
+from driftpy.tx.types import TxSigAndSlot
 from driftpy.accounts import (
     get_user_account,
     get_user_stats_account,
@@ -479,3 +480,8 @@ async def test_liq_perp(
     await liq_drift_client.get_user(0).account_subscriber.update_cache()
     position = liq_drift_client.get_perp_position(0)
     assert position.base_asset_amount != 0
+
+    result: TxSigAndSlot = await liq_drift_client.withdraw(1, 0,  usdc_acc.pubkey(), reduce_only=True)
+    assert(result.slot > 0)
+    assert(len(str(result.tx_sig)) > 1)
+
