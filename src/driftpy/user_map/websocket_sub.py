@@ -27,8 +27,10 @@ class WebsocketSubscription:
             filters = (get_user_filter(),)
             if not self.include_idle:
                 filters += (get_non_idle_user_filter(),)
-            # self.subscriber = WebsocketUserAccountSubscriber(test, self.user_map.drift_client.program, self.commitment)
 
+        if not self.skip_initial_load:
+            await self.user_map.sync()
+        
     async def unsubscribe(self):
         if not self.subscriber:
             return
