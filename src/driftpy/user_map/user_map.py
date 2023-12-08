@@ -39,6 +39,10 @@ class UserMapInterface(ABC):
         pass
 
     @abstractmethod
+    def must_get(self, key: str) -> DriftUser:
+        pass
+
+    @abstractmethod
     def get_user_authority(self, key: str) -> Optional[Pubkey]:
         pass
 
@@ -96,6 +100,11 @@ class UserMap(UserMapInterface):
     
     def get(self, key: str) -> Optional[DriftUser]:
         return self.user_map.get(key)
+    
+    def must_get(self, key: str) -> DriftUser:
+        if not self.has(key):
+            self.add_pubkey(Pubkey.from_string(key))
+        return self.get(key)
 
     def size(self):
         return len(self.user_map)
