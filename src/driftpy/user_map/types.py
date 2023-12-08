@@ -26,7 +26,7 @@ class UserMapInterface(ABC):
         pass
 
     @abstractmethod
-    def must_get(self, key: str) -> DriftUser:
+    async def must_get(self, key: str) -> DriftUser:
         pass
 
     @abstractmethod

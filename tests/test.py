@@ -21,8 +21,7 @@ from math import sqrt
 from driftpy.drift_user import DriftUser
 from driftpy.drift_client import DriftClient
 from driftpy.user_map.user_map import UserMap
-from driftpy.user_map.polling_sub import PollingSubscription
-from driftpy.user_map.user_map_config import UserMapConfig, PollingConfig
+from driftpy.user_map.user_map_config import UserMapConfig, PollingConfig, WebsocketConfig
 from driftpy.events.event_subscriber import EventSubscriber
 from driftpy.events.types import EventSubscriptionOptions, PollingLogProviderConfig
 from driftpy.setup.helpers import (
@@ -233,6 +232,31 @@ async def test_usdc_deposit(
         == USDC_AMOUNT / QUOTE_PRECISION * SPOT_BALANCE_PRECISION
     )
 
+@mark.asyncio
+async def test_user_map_polling(drift_client: Admin, workspace):
+    polling_config = PollingConfig('polling', 0.5)
+    user_map_config = UserMapConfig(drift_client, polling_config)
+    user_map = UserMap(user_map_config)
+    await user_map.subscribe()
+
+    assert user_map.is_subscribed == True
+
+    user_account = drift_client.get_user(0)
+
+    assert user_map.has(str(user_account.user_public_key))
+
+    assert user_map.size() == 1
+
+    throwaway = Pubkey.new_unique()
+    
+    await user_map.must_get(str(throwaway))
+    
+    assert user_map.size() == 2
+    assert user_map.has(str(throwaway))
+
+    await user_map.unsubscribe()
+
+    assert user_map.is_subscribed == False
 
 @mark.asyncio
 async def test_open_orders(
@@ -421,20 +445,6 @@ async def test_stake_if(
         drift_client.program, drift_client.authority
     )
     assert user_stats.if_staked_quote_asset_amount == 0
-
-@mark.asyncio
-async def test_user_map(drift_client: Admin, workspace):
-    polling_config = PollingConfig('polling', 1)
-    user_map_config = UserMapConfig(drift_client, polling_config)
-    user_map = UserMap(user_map_config)
-    await user_map.subscribe()
-
-    assert user_map.is_subscribed == True
-
-    await user_map.unsubscribe()
-
-    assert user_map.is_subscribed == False
-
 
 # note this goes at end bc the main clearing house loses all collateral ...
 @mark.asyncio

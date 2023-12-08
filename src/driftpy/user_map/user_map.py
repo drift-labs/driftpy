@@ -54,7 +54,7 @@ class UserMap(UserMapInterface):
         await self.subscription.subscribe()
         self.is_subscribed = True
 
-    async def unsubscribe(self):
+    async def unsubscribe(self) -> None:
         await self.subscription.unsubscribe()
 
         for key in list(self.user_map.keys()):
@@ -69,17 +69,12 @@ class UserMap(UserMapInterface):
         self.is_subscribed = False
         
     def has(self, key: str) -> bool:
-        return self.user_map.has(key)
+        return key in self.user_map
     
     def get(self, key: str) -> Optional[DriftUser]:
         return self.user_map.get(key)
-    
-    def must_get(self, key: str) -> DriftUser:
-        if not self.has(key):
-            self.add_pubkey(Pubkey.from_string(key))
-        return self.get(key)
 
-    def size(self):
+    def size(self) -> int:
         return len(self.user_map)
         
     def values(self):
@@ -91,11 +86,16 @@ class UserMap(UserMapInterface):
             return None
         return ch_user.get_user_account().authority
     
+    async def must_get(self, key: str) -> DriftUser:
+        if not self.has(key):
+            pubkey = Pubkey.from_string(key)
+            await self.add_pubkey(pubkey)
+        return self.get(key)
+    
     async def add_pubkey(
             self, 
             user_account_public_key: Pubkey, 
-        ):
-
+        ) -> None:
         if isinstance(self.subscription, PollingSubscription):
             bulk_account_loader = BulkAccountLoader(self.drift_client.connection)
             config = AccountSubscriptionConfig('polling', bulk_account_loader, self.commitment)
@@ -150,7 +150,7 @@ class UserMap(UserMapInterface):
                     user_account = self.drift_client.program.coder.accounts.decode(program_account_buffer_map.get(key))
                     user.account_subscriber._update_data(DataAndSlot(slot, user_account))
                 await asyncio.sleep(0)
-
+            
         except Exception as e:
             print(f"Error in UserMap.sync(): {e}")
 

@@ -16,7 +16,7 @@ class PollingSubscription:
 
         if not self.skip_initial_load:
             await self.user_map.sync()
-
+        
     def _start_polling(self):
         if self.interval_id.is_set():
             return
