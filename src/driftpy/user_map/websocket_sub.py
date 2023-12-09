@@ -1,13 +1,15 @@
 import asyncio
 import websockets
+from driftpy.accounts.ws.multi_account_subscriber import WebSocketMultiAccountSubscriber
 from driftpy.memcmp import get_user_filter, get_non_idle_user_filter
-from driftpy.accounts.ws import WebsocketUserAccountSubscriber
+from driftpy.accounts.types import WebsocketOptions
 
 class WebsocketSubscription:
     def __init__(
             self, 
             user_map, 
             commitment, 
+            on_update,
             skip_initial_load: bool = False,
             resub_timeout_ms: int = None,
             include_idle: bool = False,
@@ -17,6 +19,7 @@ class WebsocketSubscription:
 
         self.user_map: UserMap = user_map
         self.commitment = commitment
+        self.on_update = on_update
         self.skip_initial_load = skip_initial_load
         self.resub_timeout_ms = resub_timeout_ms
         self.include_idle = include_idle
@@ -27,6 +30,10 @@ class WebsocketSubscription:
             filters = (get_user_filter(),)
             if not self.include_idle:
                 filters += (get_non_idle_user_filter(),)
+            options = WebsocketOptions(filters, self.commitment)
+            self.subscriber = WebSocketMultiAccountSubscriber(self.user_map.drift_client.program, options, self.on_update)
+        
+        await self.subscriber.subscribe()
 
         if not self.skip_initial_load:
             await self.user_map.sync()
@@ -34,5 +41,5 @@ class WebsocketSubscription:
     async def unsubscribe(self):
         if not self.subscriber:
             return
-        await self.subscriber.unsubscribe()
+        self.subscriber.unsubscribe()
         self.subscriber = None

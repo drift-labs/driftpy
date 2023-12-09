@@ -1,7 +1,8 @@
 from abc import abstractmethod
 from dataclasses import dataclass
-from typing import TypeVar, Generic, Optional
-
+from typing import TypeVar, Generic, Optional, Sequence
+from solana.rpc.types import MemcmpOpts
+from solana.rpc.commitment import Commitment
 from solders.pubkey import Pubkey
 
 from driftpy.types import (
@@ -21,6 +22,15 @@ class DataAndSlot(Generic[T]):
     slot: int
     data: T
 
+@dataclass
+class BufferAndSlot:
+    slot: int
+    buffer: bytes
+
+@dataclass
+class WebsocketOptions:
+    filters: Sequence[MemcmpOpts]
+    commitment: Commitment
 
 class DriftClientAccountSubscriber:
     @abstractmethod

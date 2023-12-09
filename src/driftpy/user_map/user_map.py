@@ -10,7 +10,7 @@ from driftpy.accounts.bulk_account_loader import BulkAccountLoader
 from driftpy.drift_user import DriftUser
 from driftpy.account_subscription_config import AccountSubscriptionConfig
 
-from driftpy.types import StateAccount
+from driftpy.types import StateAccount, UserAccount
 from driftpy.accounts.types import DataAndSlot
 
 from driftpy.user_map.user_map_config import UserMapConfig, PollingConfig, WebsocketConfig
@@ -37,7 +37,7 @@ class UserMap(UserMapInterface):
         if isinstance(config.subscription_config, PollingConfig):
             self.subscription = PollingSubscription(self, config.subscription_config.frequency, config.skip_initial_load)
         else: 
-            self.subscription = WebsocketSubscription(self, self.commitment, config.subscription_config.resub_timeout_ms, config.skip_initial_load)
+            self.subscription = WebsocketSubscription(self, self.commitment, self.update_user_account, config.subscription_config.resub_timeout_ms, config.skip_initial_load)
 
     async def state_account_update_callback(self, state: StateAccount):
         if state.max_number_of_sub_accounts != self.last_number_of_sub_accounts:
@@ -123,7 +123,6 @@ class UserMap(UserMapInterface):
             if not self.include_idle:
                 filters += (get_non_idle_user_filter(),)
 
-
             rpc_json_response = await self.connection.get_program_accounts(self.drift_client.program_id, self.commitment, 'base64', filters=filters)
             rpc_response_and_context = rpc_json_response.value
 
@@ -150,7 +149,7 @@ class UserMap(UserMapInterface):
                     user_account = self.drift_client.program.coder.accounts.decode(program_account_buffer_map.get(key))
                     user.account_subscriber._update_data(DataAndSlot(slot, user_account))
                 await asyncio.sleep(0)
-            
+
         except Exception as e:
             print(f"Error in UserMap.sync(): {e}")
 
@@ -158,3 +157,7 @@ class UserMap(UserMapInterface):
             if self.sync_promise_resolver:
                 self.sync_promise_resolver()
             self.sync_promise = None
+
+    async def update_user_account(self, key: str, data: DataAndSlot[UserAccount]):
+        user: DriftUser = await self.must_get(key)
+        user.account_subscriber._update_data(data)

@@ -253,7 +253,7 @@ async def test_user_map_polling(drift_client: Admin, workspace):
     
     assert user_map.size() == 2
     assert user_map.has(str(throwaway))
-
+    
     await user_map.unsubscribe()
 
     assert user_map.is_subscribed == False
@@ -276,7 +276,6 @@ async def test_user_map_ws(drift_client: Admin, workspace):
     throwaway = Pubkey.new_unique()
     
     await user_map.must_get(str(throwaway))
-    asyncio.sleep(1)
     
     assert user_map.size() == 2
     assert user_map.has(str(throwaway))
