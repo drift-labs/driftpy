@@ -32,7 +32,6 @@ class WebSocketMultiAccountSubscriber:
     async def subscribe_ws(self):
         endpoint = self.program.provider.connection._provider.endpoint_uri
         ws_endpoint = endpoint.replace("https", "wss").replace("http", "ws")
-        print(ws_endpoint)
         async with connect(ws_endpoint) as ws:
             ws: SolanaWsClientProtocol
             try:
