@@ -38,6 +38,11 @@ class UserMapInterface(ABC):
     def values(self):
         pass
 
+class Subscription(ABC):
+    @abstractmethod
+    def get_subscription_config(self):
+        pass
+
 class ConfigType(Enum):
     CACHED = "cached"
     WEBSOCKET = "websocket"

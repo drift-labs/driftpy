@@ -50,6 +50,7 @@ class WebsocketAccountSubscriber(UserAccountSubscriber, Generic[T]):
 
         async for ws in connect(ws_endpoint):
             try:
+                self.ws = ws
                 await ws.account_subscribe(
                     self.pubkey,
                     commitment=self.commitment,
@@ -90,5 +91,9 @@ class WebsocketAccountSubscriber(UserAccountSubscriber, Generic[T]):
             self.data_and_slot = new_data
 
     def unsubscribe(self):
-        self.task.cancel()
-        self.task = None
+        if self.task:
+            self.task.cancel()
+            self.task = None
+        if self.ws:
+            self.ws.close()
+            self.ws = None

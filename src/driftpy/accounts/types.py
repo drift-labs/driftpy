@@ -28,7 +28,7 @@ class BufferAndSlot:
     buffer: bytes
 
 @dataclass
-class WebsocketOptions:
+class WebsocketProgramAccountOptions:
     filters: Sequence[MemcmpOpts]
     commitment: Commitment
     encoding: str

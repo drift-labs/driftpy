@@ -1,6 +1,8 @@
-from driftpy.accounts.ws.multi_account_subscriber import WebSocketMultiAccountSubscriber
+from driftpy.account_subscription_config import AccountSubscriptionConfig
+from driftpy.accounts.ws.multi_account_subscriber import WebSocketProgramAccountSubscriber
 from driftpy.memcmp import get_user_filter, get_non_idle_user_filter
-from driftpy.accounts.types import UpdateCallback, WebsocketOptions
+from driftpy.accounts.types import UpdateCallback, WebsocketProgramAccountOptions
+from driftpy.user_map.types import ConfigType
 
 class WebsocketSubscription:
     def __init__(
@@ -28,8 +30,8 @@ class WebsocketSubscription:
             filters = (get_user_filter(),)
             if not self.include_idle:
                 filters += (get_non_idle_user_filter(),)
-            options = WebsocketOptions(filters, self.commitment, "base64")
-            self.subscriber = WebSocketMultiAccountSubscriber(self.user_map.drift_client.program, options, self.on_update)
+            options = WebsocketProgramAccountOptions(filters, self.commitment, "base64")
+            self.subscriber = WebSocketProgramAccountSubscriber(self.user_map.drift_client.program, options, self.on_update)
         
         await self.subscriber.subscribe()
 
@@ -41,3 +43,6 @@ class WebsocketSubscription:
             return
         self.subscriber.unsubscribe()
         self.subscriber = None
+
+    def get_subscription_config(self):
+        return AccountSubscriptionConfig(ConfigType.WEBSOCKET.value, commitment = self.commitment)

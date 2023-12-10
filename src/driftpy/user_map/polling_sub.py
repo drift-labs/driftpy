@@ -1,6 +1,9 @@
 import asyncio
+from driftpy.account_subscription_config import AccountSubscriptionConfig
+from driftpy.accounts.bulk_account_loader import BulkAccountLoader
+from driftpy.user_map.types import ConfigType, Subscription
 
-class PollingSubscription:
+class PollingSubscription(Subscription):
     def __init__(self, user_map, frequency: float, skip_initial_load: bool = False):
         from driftpy.user_map.user_map import UserMap
 
@@ -27,3 +30,7 @@ class PollingSubscription:
         if self.timer_task is not None:
             self.timer_task.cancel()
             self.timer_task = None
+
+    def get_subscription_config(self):
+        bulk_account_loader = BulkAccountLoader(self.user_map.drift_client.connection)
+        return AccountSubscriptionConfig(ConfigType.POLLING.value, bulk_account_loader, self.commitment)

@@ -1,6 +1,6 @@
 import asyncio
 import traceback
-from typing import Optional, Dict
+from typing import Any, Container, Optional, Dict
 
 from solders.pubkey import Pubkey
 
@@ -52,7 +52,8 @@ class UserMap(UserMapInterface):
         
         await self.drift_client.subscribe()
         self.last_number_of_sub_accounts = self.drift_client.get_state_account().max_number_of_sub_accounts
-        # There is no event emitter yet
+        # there is no event emitter yet
+        # if there was, we'd subscribe to it here as well
         await self.subscription.subscribe()
         self.is_subscribed = True
 
@@ -65,7 +66,7 @@ class UserMap(UserMapInterface):
             del self.user_map[key]
         
         if self.last_number_of_sub_accounts:
-            # Again, no event emitter
+            # again, no event emitter
             self.last_number_of_sub_accounts = None
 
         self.is_subscribed = False
@@ -82,11 +83,11 @@ class UserMap(UserMapInterface):
     def values(self):
         return iter(self.user_map.values())
     
-    def get_user_authority(self, key: str) -> Optional[Pubkey]:
-        ch_user = self.user_map.get(key)
-        if not ch_user:
+    def get_user_authority(self, user_account_public_key: str) -> Optional[Pubkey]:
+        user = self.user_map.get(user_account_public_key)
+        if not user:
             return None
-        return ch_user.get_user_account().authority
+        return user.get_user_account().authority
     
     async def must_get(self, key: str) -> DriftUser:
         if not self.has(key):
@@ -98,13 +99,7 @@ class UserMap(UserMapInterface):
             self, 
             user_account_public_key: Pubkey, 
         ) -> None:
-        if isinstance(self.subscription, PollingSubscription):
-            bulk_account_loader = BulkAccountLoader(self.drift_client.connection)
-            config = AccountSubscriptionConfig(ConfigType.POLLING.value, bulk_account_loader, self.commitment)
-        elif isinstance(self.subscription, WebsocketSubscription):
-            config = AccountSubscriptionConfig(ConfigType.WEBSOCKET.value, commitment = self.commitment)
-        else:
-            config = AccountSubscriptionConfig(ConfigType.CACHED.value)
+        config = self.subscription.get_subscription_config()
         user = DriftUser(
             self.drift_client, 
             authority = user_account_public_key,
@@ -113,7 +108,7 @@ class UserMap(UserMapInterface):
         await user.subscribe()
         self.user_map[str(user_account_public_key)] = user
 
-    async def sync(self):
+    async def sync(self) -> None:
         async with self.sync_lock:
             try:
                 filters = (get_user_filter(),)
@@ -124,33 +119,37 @@ class UserMap(UserMapInterface):
                 rpc_response_and_context = rpc_json_response.value
 
                 slot = (await self.drift_client.program.provider.connection.get_slot()).value
-                program_account_buffer_map = {}
+                program_account_buffer_map: Dict[str, Container[Any]] = {}
 
+                # parse the gPA data before inserting
                 for program_account in rpc_response_and_context:
                     pubkey = program_account.pubkey
                     data = self.drift_client.program.coder.accounts.decode(program_account.account.data)
                     program_account_buffer_map[str(pubkey)] = data
 
+                # "idempotent" insert into usermap
                 for key in program_account_buffer_map.keys():
                     if key not in self.user_map:
                         data = program_account_buffer_map.get(key)
                         user_account = self.drift_client.program.coder.accounts.decode(data)
                         await self.add_pubkey(Pubkey.from_string(key))
+                        self.user_map.get(key).account_subscriber._update_data(DataAndSlot(slot, user_account))
+                    # let the loop breathe
                     await asyncio.sleep(0)
 
+                # remove any stale data from the usermap or update the data to the latest gPA data
                 for key, user in self.user_map.items():
                     if key not in program_account_buffer_map:
                         user.unsubscribe()
                         del self.user_map[key]
-                    else:
-                        user_account = self.drift_client.program.coder.accounts.decode(program_account_buffer_map.get(key))
-                        user.account_subscriber._update_data(DataAndSlot(slot, user_account))
+                    # let the loop breathe
                     await asyncio.sleep(0)
 
             except Exception as e:
                 print(f"Error in UserMap.sync(): {e}")
                 traceback.print_exc()
 
+    # this is used as a callback for ws subscriptions to update data as its streamed
     async def update_user_account(self, key: str, data: DataAndSlot[UserAccount]):
         user: DriftUser = await self.must_get(key)
         user.account_subscriber._update_data(data)
