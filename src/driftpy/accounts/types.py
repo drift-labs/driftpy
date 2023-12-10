@@ -1,6 +1,6 @@
 from abc import abstractmethod
 from dataclasses import dataclass
-from typing import TypeVar, Generic, Optional, Sequence
+from typing import Awaitable, Callable, TypeVar, Generic, Optional, Sequence
 from solana.rpc.types import MemcmpOpts
 from solana.rpc.commitment import Commitment
 from solders.pubkey import Pubkey
@@ -31,6 +31,9 @@ class BufferAndSlot:
 class WebsocketOptions:
     filters: Sequence[MemcmpOpts]
     commitment: Commitment
+    encoding: str
+
+UpdateCallback = Callable[[str, DataAndSlot[UserAccount]], Awaitable[None]]
 
 class DriftClientAccountSubscriber:
     @abstractmethod

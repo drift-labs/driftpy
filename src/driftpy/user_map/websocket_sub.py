@@ -1,15 +1,13 @@
-import asyncio
-import websockets
 from driftpy.accounts.ws.multi_account_subscriber import WebSocketMultiAccountSubscriber
 from driftpy.memcmp import get_user_filter, get_non_idle_user_filter
-from driftpy.accounts.types import WebsocketOptions
+from driftpy.accounts.types import UpdateCallback, WebsocketOptions
 
 class WebsocketSubscription:
     def __init__(
             self, 
             user_map, 
             commitment, 
-            on_update,
+            on_update: UpdateCallback,
             skip_initial_load: bool = False,
             resub_timeout_ms: int = None,
             include_idle: bool = False,
@@ -30,7 +28,7 @@ class WebsocketSubscription:
             filters = (get_user_filter(),)
             if not self.include_idle:
                 filters += (get_non_idle_user_filter(),)
-            options = WebsocketOptions(filters, self.commitment)
+            options = WebsocketOptions(filters, self.commitment, "base64")
             self.subscriber = WebSocketMultiAccountSubscriber(self.user_map.drift_client.program, options, self.on_update)
         
         await self.subscriber.subscribe()

@@ -1,4 +1,5 @@
 import asyncio
+import traceback
 from typing import Optional, Dict
 from asyncio import Future
 
@@ -13,7 +14,7 @@ from driftpy.account_subscription_config import AccountSubscriptionConfig
 from driftpy.types import StateAccount, UserAccount
 from driftpy.accounts.types import DataAndSlot
 
-from driftpy.user_map.user_map_config import UserMapConfig, PollingConfig, WebsocketConfig
+from driftpy.user_map.user_map_config import UserMapConfig, PollingConfig
 from driftpy.user_map.websocket_sub import WebsocketSubscription
 from driftpy.user_map.polling_sub import PollingSubscription
 from driftpy.user_map.types import UserMapInterface
@@ -106,7 +107,6 @@ class UserMap(UserMapInterface):
         user = DriftUser(
             self.drift_client, 
             authority = user_account_public_key,
-            # only polling for now because i haven't done websocket yet
             account_subscription = config
             )
         await user.subscribe()
@@ -152,6 +152,7 @@ class UserMap(UserMapInterface):
 
         except Exception as e:
             print(f"Error in UserMap.sync(): {e}")
+            traceback.print_exc()
 
         finally:
             if self.sync_promise_resolver:
