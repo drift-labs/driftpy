@@ -1,13 +1,13 @@
 import asyncio
 import traceback
 from typing import Optional, Dict
-from asyncio import Future
 
 from solders.pubkey import Pubkey
 
 from solana.rpc.commitment import Confirmed
 
 from driftpy.accounts.bulk_account_loader import BulkAccountLoader
+from driftpy.drift_client import DriftClient
 from driftpy.drift_user import DriftUser
 from driftpy.account_subscription_config import AccountSubscriptionConfig
 
@@ -28,7 +28,7 @@ class UserMap(UserMapInterface):
         self.last_number_of_sub_accounts = None
         self.sync_lock = asyncio.Lock()  
         self.sync_promise_resolver = None
-        self.drift_client = config.drift_client
+        self.drift_client: DriftClient = config.drift_client
         self.is_subscribed = False
         if config.connection:
             self.connection = config.connection
@@ -128,10 +128,10 @@ class UserMap(UserMapInterface):
 
                 for program_account in rpc_response_and_context:
                     pubkey = program_account.pubkey
-                    data = program_account.account.data
+                    data = self.drift_client.program.coder.accounts.decode(program_account.account.data)
                     program_account_buffer_map[str(pubkey)] = data
 
-                for key, buffer in program_account_buffer_map.items():
+                for key in program_account_buffer_map.keys():
                     if key not in self.user_map:
                         data = program_account_buffer_map.get(key)
                         user_account = self.drift_client.program.coder.accounts.decode(data)
