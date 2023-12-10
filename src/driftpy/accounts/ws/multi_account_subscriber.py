@@ -5,13 +5,14 @@ from driftpy.accounts.types import DataAndSlot, UpdateCallback, WebsocketOptions
 from solana.rpc.websocket_api import connect, SolanaWsClientProtocol
 from solders.pubkey import Pubkey
 
-
 T = TypeVar("T")
 
 class WebSocketMultiAccountSubscriber:
     def __init__(
             self,
             program: Program,
+            # options has the filters / commitment / encoding for `program_subscribe()`
+            # think having them all in one type is cleaner
             options: WebsocketOptions,
             on_update: UpdateCallback,
             decode: Optional[Callable[[bytes], T]] = None,
@@ -44,7 +45,9 @@ class WebSocketMultiAccountSubscriber:
                 )
                 # Start streaming account data to be processed 
                 await ws.recv()
+                counter = 0
                 async for msg in ws:
+                    counter += 1
                     try:
                         for item in msg:
                             res = item.result
@@ -53,6 +56,7 @@ class WebSocketMultiAccountSubscriber:
                             new_data = DataAndSlot(slot, data)
                             pubkey = res.value.pubkey
                             await self.on_update(str(pubkey), new_data)
+                            print("Processed Account " + str(counter))
                     except Exception as e:
                         print(f"Error processing acount data: {e}")
 

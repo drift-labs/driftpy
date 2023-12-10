@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 from driftpy.drift_user import DriftUser
 from solders.pubkey import Pubkey
 from typing import Optional
+from enum import Enum
 
 class UserMapInterface(ABC):
 
@@ -36,3 +37,8 @@ class UserMapInterface(ABC):
     @abstractmethod
     def values(self):
         pass
+
+class ConfigType(Enum):
+    CACHED = "cached"
+    WEBSOCKET = "websocket"
+    POLLING = "polling"

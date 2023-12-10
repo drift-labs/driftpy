@@ -5,21 +5,22 @@ from asyncio import Future
 
 from solders.pubkey import Pubkey
 
-from solana.rpc.commitment import Commitment
+from solana.rpc.commitment import Confirmed
 
 from driftpy.accounts.bulk_account_loader import BulkAccountLoader
 from driftpy.drift_user import DriftUser
 from driftpy.account_subscription_config import AccountSubscriptionConfig
 
 from driftpy.types import StateAccount, UserAccount
-from driftpy.accounts.types import DataAndSlot
 
 from driftpy.user_map.user_map_config import UserMapConfig, PollingConfig
 from driftpy.user_map.websocket_sub import WebsocketSubscription
 from driftpy.user_map.polling_sub import PollingSubscription
-from driftpy.user_map.types import UserMapInterface
 
 from driftpy.memcmp import get_user_filter, get_non_idle_user_filter
+
+from driftpy.user_map.types import UserMapInterface, ConfigType
+from driftpy.accounts.types import DataAndSlot
 
 class UserMap(UserMapInterface):
     def __init__(self, config: UserMapConfig):
@@ -33,7 +34,7 @@ class UserMap(UserMapInterface):
             self.connection = config.connection
         else:
             self.connection = self.drift_client.connection
-        self.commitment = config.subscription_config.commitment or Commitment("confirmed")
+        self.commitment = config.subscription_config.commitment or Confirmed
         self.include_idle = config.include_idle or False
         if isinstance(config.subscription_config, PollingConfig):
             self.subscription = PollingSubscription(self, config.subscription_config.frequency, config.skip_initial_load)
@@ -99,11 +100,11 @@ class UserMap(UserMapInterface):
         ) -> None:
         if isinstance(self.subscription, PollingSubscription):
             bulk_account_loader = BulkAccountLoader(self.drift_client.connection)
-            config = AccountSubscriptionConfig('polling', bulk_account_loader, self.commitment)
+            config = AccountSubscriptionConfig(ConfigType.POLLING.value, bulk_account_loader, self.commitment)
         elif isinstance(self.subscription, WebsocketSubscription):
-            config = AccountSubscriptionConfig('websocket', commitment = self.commitment)
+            config = AccountSubscriptionConfig(ConfigType.WEBSOCKET.value, commitment = self.commitment)
         else:
-            config = AccountSubscriptionConfig('cached')
+            config = AccountSubscriptionConfig(ConfigType.CACHED.value)
         user = DriftUser(
             self.drift_client, 
             authority = user_account_public_key,
