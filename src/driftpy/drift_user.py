@@ -30,12 +30,10 @@ class DriftUser:
             sub_account_id (int, optional): subaccount of authority to investigate. Defaults to 0.
         """
         from driftpy.drift_client import DriftClient
-
         self.drift_client: DriftClient = drift_client
         self.authority = authority
         if self.authority is None:
             self.authority = drift_client.authority
-
         self.program = drift_client.program
         self.oracle_program = drift_client
         self.connection = self.program.provider.connection
