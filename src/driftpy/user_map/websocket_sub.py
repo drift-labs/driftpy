@@ -1,8 +1,11 @@
+from typing import Callable, Optional, TypeVar
 from driftpy.account_subscription_config import AccountSubscriptionConfig
 from driftpy.accounts.ws.multi_account_subscriber import WebSocketProgramAccountSubscriber
 from driftpy.memcmp import get_user_filter, get_non_idle_user_filter
 from driftpy.accounts.types import UpdateCallback, WebsocketProgramAccountOptions
 from driftpy.user_map.types import ConfigType
+
+T = TypeVar("T")
 
 class WebsocketSubscription:
     def __init__(
@@ -13,6 +16,7 @@ class WebsocketSubscription:
             skip_initial_load: bool = False,
             resub_timeout_ms: int = None,
             include_idle: bool = False,
+            decode: Optional[Callable[[bytes], T]] = None,
         ):
 
         from driftpy.user_map.user_map import UserMap
@@ -24,6 +28,7 @@ class WebsocketSubscription:
         self.resub_timeout_ms = resub_timeout_ms
         self.include_idle = include_idle
         self.subscriber = None
+        self.decode = decode
 
     async def subscribe(self):
         if not self.subscriber:
@@ -31,7 +36,7 @@ class WebsocketSubscription:
             if not self.include_idle:
                 filters += (get_non_idle_user_filter(),)
             options = WebsocketProgramAccountOptions(filters, self.commitment, "base64")
-            self.subscriber = WebSocketProgramAccountSubscriber(self.user_map.drift_client.program, options, self.on_update)
+            self.subscriber = WebSocketProgramAccountSubscriber(self.user_map.drift_client.program, options, self.on_update, self.decode)
         
         await self.subscriber.subscribe()
 
