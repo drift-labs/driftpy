@@ -89,7 +89,7 @@ async def main(
         post_only=PostOnlyParams.TryPostOnly(),
         immediate_or_cancel=False,
         trigger_price=0,
-        trigger_condition=OrderTriggerCondition.ABOVE(),
+        trigger_condition=OrderTriggerCondition.Above(),
         oracle_price_offset=0,
         auction_duration=None,
         max_ts=None,

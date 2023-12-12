@@ -1,3 +1,4 @@
+import json
 from anchorpy import Program, Provider, WorkspaceType, workspace_fixture
 from pytest import fixture, mark
 from driftpy.decode.user import decode_user
@@ -8,7 +9,7 @@ import time
 import base64
 from driftpy.math.perp_position import is_available
 from driftpy.math.spot_position import is_spot_position_available
-from driftpy.types import Order, PerpPosition, SpotPosition, UserAccount, is_variant
+from driftpy.types import Order, PerpPosition, SpotBalanceType, SpotPosition, UserAccount, is_variant
 
 workspace = workspace_fixture(
     "protocol-v2", build_cmd="anchor build", scope="session"
@@ -111,6 +112,9 @@ def get_orders(orders):
             yield order
             
 def cmp_orders(anchor: Order, custom: Order):
+    assert enums_eq(anchor.status, custom.status)
+    assert enums_eq(anchor.order_type, custom.order_type)
+    assert enums_eq(anchor.market_type, custom.market_type)
     assert anchor.slot == custom.slot
     assert anchor.order_id == custom.order_id
     assert anchor.user_order_id == custom.user_order_id
@@ -119,8 +123,11 @@ def cmp_orders(anchor: Order, custom: Order):
     assert anchor.base_asset_amount == custom.base_asset_amount
     assert anchor.base_asset_amount_filled == custom.base_asset_amount_filled
     assert anchor.quote_asset_amount_filled == custom.quote_asset_amount_filled
+    assert enums_eq(anchor.direction, custom.direction)
     assert anchor.reduce_only == custom.reduce_only
     assert anchor.trigger_price == custom.trigger_price
+    assert enums_eq(anchor.trigger_condition, custom.trigger_condition)
+    assert enums_eq(anchor.existing_position_direction, custom.existing_position_direction)
     assert anchor.post_only == custom.post_only
     assert anchor.immediate_or_cancel == custom.immediate_or_cancel
     assert anchor.oracle_price_offset == custom.oracle_price_offset
@@ -156,6 +163,7 @@ def get_spot_positions(spot_positions):
 
 def cmp_spot(anchor: SpotPosition, custom: SpotPosition):
     assert anchor.market_index == custom.market_index
+    assert enums_eq(anchor.balance_type, custom.balance_type)
     assert anchor.open_orders == custom.open_orders
     assert anchor.scaled_balance == custom.scaled_balance
     assert anchor.open_bids == custom.open_bids
@@ -172,7 +180,9 @@ def arrays_are_equal(arr1, arr2):
 
     return True
 
-    
+def enums_eq(e1, e2):
+    return str(e1) == str(e2)
+
 def zip_generator(gen1, gen2):
     try:
         while True:

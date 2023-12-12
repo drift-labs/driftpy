@@ -1,4 +1,5 @@
 from typing import List, Literal
+
 from driftpy.types import MarketType, Order, OrderStatus, OrderTriggerCondition, OrderType, PerpPosition, PositionDirection, SpotBalanceType, SpotPosition, UserAccount
 from solders.pubkey import Pubkey
 
@@ -46,7 +47,7 @@ def decode_user(buffer: bytes) -> UserAccount:
         market_index = read_uint16_le(buffer, offset)
         offset += 2
         balance_type_num = read_uint8(buffer, offset)
-        balance_type = SpotBalanceType.Deposit if balance_type_num == 0 else SpotBalanceType.Borrow
+        balance_type = SpotBalanceType.Deposit() if balance_type_num == 0 else SpotBalanceType.Borrow()
         offset += 6
         spot_positions.append(SpotPosition(scaled_balance, 
                                            open_bids, 
@@ -151,37 +152,37 @@ def decode_user(buffer: bytes) -> UserAccount:
         offset += 2
         
         order_status_num = read_uint8(buffer, offset)
-        status: OrderStatus = OrderStatus.Init if order_status_num == 0 else OrderStatus.Open
+        status: OrderStatus = OrderStatus.Init() if order_status_num == 0 else OrderStatus.Open()
         offset += 1
 
         order_type_num = read_uint8(buffer, offset)
         order_type: OrderType
         if order_type_num == 0:
-            order_type = OrderType.Market
+            order_type = OrderType.Market()
         elif order_type_num == 1:
-            order_type = OrderType.Limit
+            order_type = OrderType.Limit()
         elif order_type_num == 2:
-            order_type = OrderType.TriggerMarket
+            order_type = OrderType.TriggerMarket()
         elif order_type_num == 3:
-            order_type = OrderType.TriggerLimit
+            order_type = OrderType.TriggerLimit()
         elif order_type_num == 4:
-            order_type = OrderType.Oracle
+            order_type = OrderType.Oracle()
         
         offset += 1
 
         market_type_num = read_uint8(buffer, offset)
-        market_type: MarketType = MarketType.Spot if market_type_num == 0 else MarketType.Perp
+        market_type: MarketType = MarketType.Spot() if market_type_num == 0 else MarketType.Perp()
         offset += 1
 
         user_order_id = read_uint8(buffer, offset)
         offset += 1
 
         existing_position_direction_num = read_uint8(buffer, offset)
-        existing_position_direction: PositionDirection = PositionDirection.Long if existing_position_direction_num == 0 else PositionDirection.Short
+        existing_position_direction: PositionDirection = PositionDirection.Long() if existing_position_direction_num == 0 else PositionDirection.Short()
         offset += 1
 
         position_direction_num = read_uint8(buffer, offset)
-        direction: PositionDirection = PositionDirection.Long if position_direction_num == 0 else PositionDirection.Short
+        direction: PositionDirection = PositionDirection.Long() if position_direction_num == 0 else PositionDirection.Short()
         offset += 1
 
         reduce_only = read_uint8(buffer, offset) == 1
@@ -196,13 +197,13 @@ def decode_user(buffer: bytes) -> UserAccount:
         trigger_condition_num = read_uint8(buffer, offset)
         trigger_condition: OrderTriggerCondition
         if trigger_condition_num == 0:
-            trigger_condition = OrderTriggerCondition.ABOVE
+            trigger_condition = OrderTriggerCondition.Above()
         elif trigger_condition_num == 1:
-            trigger_condition = OrderTriggerCondition.BELOW
+            trigger_condition = OrderTriggerCondition.Below()
         elif trigger_condition_num == 2:
-            trigger_condition = OrderTriggerCondition.TRIGGERED_ABOVE
+            trigger_condition = OrderTriggerCondition.TriggeredAbove()
         elif trigger_condition_num == 3:
-            trigger_condition = OrderTriggerCondition.TRIGGERED_BELOW
+            trigger_condition = OrderTriggerCondition.TriggeredBelow()
         offset += 1
 
         auction_duration = read_uint8(buffer, offset)
