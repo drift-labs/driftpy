@@ -233,6 +233,59 @@ async def test_usdc_deposit(
     )
 
 @mark.asyncio
+
+async def test_user_map_polling(drift_client: Admin, workspace):
+    polling_config = PollingConfig('polling', 0.5)
+    user_map_config = UserMapConfig(drift_client, polling_config)
+    user_map = UserMap(user_map_config)
+    await user_map.subscribe()
+
+    assert user_map.is_subscribed == True
+
+    user_account = drift_client.get_user(0)
+
+    assert user_map.has(str(user_account.user_public_key))
+
+    assert user_map.size() == 1
+
+    throwaway = Pubkey.new_unique()
+    
+    await user_map.must_get(str(throwaway))
+    
+    assert user_map.size() == 2
+    assert user_map.has(str(throwaway))
+    
+    await user_map.unsubscribe()
+
+    assert user_map.is_subscribed == False
+
+@mark.asyncio
+async def test_user_map_ws(drift_client: Admin, workspace):
+    ws_config = WebsocketConfig('websocket')
+    user_map_config = UserMapConfig(drift_client, ws_config)
+    user_map = UserMap(user_map_config)
+    await user_map.subscribe()
+
+    assert user_map.is_subscribed == True
+
+    user_account = drift_client.get_user(0)
+
+    assert user_map.has(str(user_account.user_public_key))
+
+    assert user_map.size() == 1
+
+    throwaway = Pubkey.new_unique()
+    
+    await user_map.must_get(str(throwaway))
+    
+    assert user_map.size() == 2
+    assert user_map.has(str(throwaway))
+
+    await user_map.unsubscribe()
+
+    assert user_map.is_subscribed == False
+
+@mark.asyncio
 async def test_open_orders(
     drift_client: Admin,
 ):

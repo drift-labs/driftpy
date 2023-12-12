@@ -33,4 +33,4 @@ class PollingSubscription(Subscription):
 
     def get_subscription_config(self):
         bulk_account_loader = BulkAccountLoader(self.user_map.drift_client.connection)
-        return AccountSubscriptionConfig(ConfigType.POLLING.value, bulk_account_loader, self.commitment)
+        return AccountSubscriptionConfig(ConfigType.POLLING.value, bulk_account_loader)

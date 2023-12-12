@@ -25,6 +25,7 @@ class WebSocketProgramAccountSubscriber:
             decode if decode is not None else self.program.coder.accounts.decode
         )
         self.subscribed_accounts: Dict[Pubkey, DataAndSlot[T]] = {}
+        self.ws = None
         
     async def subscribe(self): 
         self.task = asyncio.create_task(self.subscribe_ws())
