@@ -40,9 +40,6 @@ class DemoDriftClientAccountSubscriber(DriftClientAccountSubscriber):
         spot_markets: list[DataAndSlot[SpotMarketAccount]] = []
         perp_markets: list[DataAndSlot[PerpMarketAccount]] = []
 
-        # print(self.spot_market_indexes)
-        # print(self.perp_market_indexes)
-
         for index in self.spot_market_indexes:
             spot_market_and_slot = await get_spot_market_account_and_slot(self.program, index)
             spot_markets.append(spot_market_and_slot)

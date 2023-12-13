@@ -92,6 +92,8 @@ class AccountSubscriptionConfig:
                     self.commitment
                 )
             case "demo":
+                if perp_market_indexes is None or spot_market_indexes is None:
+                    raise ValueError("spot_market_indexes and perp_market_indexes must be provided with demo config")
                 return DemoDriftClientAccountSubscriber(
                     program, 
                     perp_market_indexes,

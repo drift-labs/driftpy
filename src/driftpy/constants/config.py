@@ -1,4 +1,4 @@
-from typing import Literal, Optional
+from typing import Literal, Optional, Sequence, Union
 
 from driftpy.constants.spot_markets import (
     devnet_spot_market_configs,
@@ -69,7 +69,6 @@ configs = {
     ),
 }
 
-
 async def find_all_market_and_oracles(
     program: Program,
 ) -> (list[int], list[int], list[OracleInfo]):
@@ -93,31 +92,40 @@ async def find_all_market_and_oracles(
 
     return perp_market_indexes, spot_market_indexes, oracle_infos.values()
 
-async def get_markets_and_oracles(
-    drift_client,
-    market_indexes: list[int],
-    # if this is true it means the provided `market_indexes` are for perp markets
-    # so we want to get the corresponding spot market indexes & oracles
-    is_perp: bool = True
-) -> (list[int], list[OracleInfo]):
-    perp_market_indexes, spot_market_indexes, oracle_infos_dict = await find_all_market_and_oracles(drift_client.program)
-    oracle_infos = list(oracle_infos_dict)
-    filtered_market_indexes = []
-    filtered_oracle_infos = []
+def find_market_config_by_index(
+    market_configs: list[Union[SpotMarketConfig, PerpMarketConfig]], 
+    market_index: int
+) -> Optional[Union[SpotMarketConfig, PerpMarketConfig]]:
+    for config in market_configs:
+        if hasattr(config, 'market_index') and config.market_index == market_index:
+            return config
+    return None
 
-    if is_perp:
-        for index in market_indexes:
-            spot_market: SpotMarketAccount = drift_client.get_spot_market_account(index)
-            oracle_pubkey = str(spot_market.oracle)
-            oracle_info = next((info for info in oracle_infos if str(info.pubkey) == oracle_pubkey), None)
-            filtered_market_indexes.append(index)
-            filtered_oracle_infos.append(oracle_info)
-    else:
-        for index in market_indexes:
-            perp_market = drift_client.get_perp_market_account(index)
-            oracle_pubkey = str(perp_market.oracle)
-            oracle_info = next((info for info in oracle_infos if str(info.pubkey) == oracle_pubkey), None)
-            filtered_market_indexes.append(index)
-            filtered_oracle_infos.append(oracle_info)
 
-    return filtered_market_indexes, filtered_oracle_infos
+def get_markets_and_oracles(
+        env: DriftEnv = "mainnet",
+        perp_markets: Optional[Sequence[int]] = None,
+        spot_markets: Optional[Sequence[int]] = None,
+):
+    config = configs[env]
+    oracle_pubkeys = []
+    market_indexes = []
+    
+    if perp_markets is None and spot_markets is not None:
+        for spot_market_index in spot_markets:
+            market_config = find_market_config_by_index(config.spot_markets, spot_market_index)
+            oracle_pubkeys.append(market_config.oracle)
+
+    if perp_markets is not None and spot_markets is None:
+        market_indexes.append(0)
+        for perp_market_index in perp_markets:
+            market_config = find_market_config_by_index(config.perp_markets, perp_market_index)
+            oracle_pubkeys.append(market_config.pyth_oracle)
+    
+    if perp_markets is None and spot_markets is None:
+        raise ValueError("no indexes provided")
+    
+    if perp_markets is not None and spot_markets is not None:
+        raise ValueError("cannot provide both spot_markets and perp_markets")
+    
+    return oracle_pubkeys, market_indexes
