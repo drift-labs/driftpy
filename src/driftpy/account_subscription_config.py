@@ -83,7 +83,12 @@ class AccountSubscriptionConfig:
                     self.commitment,
                 )
             case "cached":
-                return CachedDriftClientAccountSubscriber(program, self.commitment)
+                return CachedDriftClientAccountSubscriber(
+                    program, 
+                    perp_market_indexes,
+                    spot_market_indexes,
+                    self.commitment
+                )
 
     def get_user_client_subscriber(self, program: Program, user_pubkey: Pubkey):
         match self.type:

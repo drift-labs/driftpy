@@ -16,6 +16,29 @@ pip install driftpy
 
 Note: requires Python >= 3.10.
 
+## ⚠️ IMPORTANT ⚠️
+
+If you are using a free RPC URL that is *not* Helius, this pertains to you:
+
+When setting up the Drift Client, you *must* specify which `spot_market_indexes` and `perp_market_indexes` you intend to subscribe to.
+In order to avoid a 413 Request Too Large or 429 Too Many Requests, non-Helius free RPCs are limited to listening to up to four of each type of market.
+
+Example setup:
+
+```
+    drift_client = DriftClient(
+        connection,
+        wallet, 
+        "mainnet",             
+        perp_market_indexes = [0, 1, 2, 3, 4],
+        spot_market_indexes = [0, 1, 2, 3, 4],
+        account_subscription = AccountSubscriptionConfig("cached"),
+    )
+```
+
+If you don't specify any `market_indexes`, you won't have data from any markets.
+If you specify more than four `market_indexes` *per market type*, your requests will fail with 413 Request Too Large
+
 ## SDK Examples
 
 - `examples/` folder includes more examples of how to use the SDK including how to provide liquidity/become an lp, stake in the insurance fund, etc.

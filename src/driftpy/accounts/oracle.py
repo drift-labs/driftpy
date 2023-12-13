@@ -5,6 +5,7 @@ from driftpy.constants.numeric_constants import *
 from driftpy.types import OracleSource, OraclePriceData, is_variant
 
 from solders.pubkey import Pubkey
+from solders.account import Account
 from pythclient.pythaccounts import PythPriceInfo, _ACCOUNT_HEADER_BYTES, EmaType
 from solana.rpc.async_api import AsyncClient
 import struct
@@ -33,6 +34,17 @@ async def get_oracle_price_data_and_slot(
     else:
         raise NotImplementedError("Unsupported Oracle Source", str(oracle_source))
 
+def oracle_ai_to_oracle_price_data(oracle_ai: Account, oracle_source=OracleSource.Pyth()) -> DataAndSlot[OraclePriceData]:
+    if "Pyth" in str(oracle_source):
+        oracle_price_data = decode_pyth_price_info(oracle_ai.data, oracle_source)
+
+        return DataAndSlot(oracle_price_data.slot, oracle_price_data)
+    elif is_variant(oracle_source, "QuoteAsset"):
+        return DataAndSlot(
+            data=OraclePriceData(PRICE_PRECISION, 0, 1, 1, 0, True), slot=0
+        )
+    else:
+        raise NotImplementedError("Unsupported Oracle Source", str(oracle_source))
 
 def decode_pyth_price_info(
     buffer: bytes,
