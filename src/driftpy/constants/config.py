@@ -1,4 +1,4 @@
-from typing import Literal
+from typing import Literal, Optional
 
 from driftpy.constants.spot_markets import (
     devnet_spot_market_configs,
@@ -15,7 +15,7 @@ from solders.pubkey import Pubkey
 
 from anchorpy import Program
 
-from driftpy.types import OracleInfo
+from driftpy.types import OracleInfo, SpotMarketAccount
 
 DriftEnv = Literal["devnet", "mainnet"]
 
@@ -92,3 +92,30 @@ async def find_all_market_and_oracles(
         oracle_infos[str(oracle)] = OracleInfo(oracle, oracle_source)
 
     return perp_market_indexes, spot_market_indexes, oracle_infos.values()
+
+async def get_markets_and_oracles(
+    drift_client,
+    market_indexes: list[int],
+    is_perp: bool = True
+) -> (list[int], list[OracleInfo]):
+    perp_market_indexes, spot_market_indexes, oracle_infos_dict = await find_all_market_and_oracles(drift_client.program)
+    oracle_infos = list(oracle_infos_dict)
+    filtered_market_indexes = []
+    filtered_oracle_infos = []
+
+    if is_perp:
+        for index in market_indexes:
+            spot_market: SpotMarketAccount = drift_client.get_spot_market_account(index)
+            oracle_pubkey = str(spot_market.oracle)
+            oracle_info = next((info for info in oracle_infos if str(info.pubkey) == oracle_pubkey), None)
+            filtered_market_indexes.append(index)
+            filtered_oracle_infos.append(oracle_info)
+    else:
+        for index in market_indexes:
+            perp_market = drift_client.get_perp_market_account(index)
+            oracle_pubkey = str(perp_market.oracle)
+            oracle_info = next((info for info in oracle_infos if str(info.pubkey) == oracle_pubkey), None)
+            filtered_market_indexes.append(index)
+            filtered_oracle_infos.append(oracle_info)
+
+    return filtered_market_indexes, filtered_oracle_infos
