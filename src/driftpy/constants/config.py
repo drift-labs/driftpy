@@ -96,6 +96,8 @@ async def find_all_market_and_oracles(
 async def get_markets_and_oracles(
     drift_client,
     market_indexes: list[int],
+    # if this is true it means the provided `market_indexes` are for perp markets
+    # so we want to get the corresponding spot market indexes & oracles
     is_perp: bool = True
 ) -> (list[int], list[OracleInfo]):
     perp_market_indexes, spot_market_indexes, oracle_infos_dict = await find_all_market_and_oracles(drift_client.program)
