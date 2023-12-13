@@ -126,7 +126,7 @@ mainnet_perp_market_configs: list[PerpMarketConfig] = [
         base_asset_symbol="1MBONK",
         market_index=4,
         oracle=Pubkey.from_string("8ihFLu5FimgTQ1Unh4dVyEHUGodJ5gJQCrQf4KUVB9bN"),
-        oracle_source=OracleSource.Pyth()
+        oracle_source=OracleSource.Pyth1M()
     ),
     PerpMarketConfig(
         symbol="MATIC-PERP",
@@ -168,6 +168,76 @@ mainnet_perp_market_configs: list[PerpMarketConfig] = [
         base_asset_symbol="1MPEPE",
         market_index=10,
         oracle=Pubkey.from_string("FSfxunDmjjbDV2QxpyxFCAPKmYJHSLnLuvQXDLkMzLBm"),
+        oracle_source=OracleSource.Pyth1M()
+    ),
+    PerpMarketConfig(
+        symbol="OP-PERP",
+        base_asset_symbol="OP",
+        market_index=11,
+        oracle=Pubkey.from_string("4o4CUwzFwLqCvmA5x1G4VzoZkAhAcbiuiYyjWX1CVbY2"),
+        oracle_source=OracleSource.Pyth()
+    ),
+    PerpMarketConfig(
+        symbol="RNDR-PERP",
+        base_asset_symbol="RNDR",
+        market_index=12,
+        oracle=Pubkey.from_string("CYGfrBJB9HgLf9iZyN4aH5HvUAi2htQ4MjPxeXMf4Egn"),
+        oracle_source=OracleSource.Pyth()
+    ),
+    PerpMarketConfig(
+        symbol="XRP-PERP",
+        base_asset_symbol="XRP",
+        market_index=13,
+        oracle=Pubkey.from_string("Guffb8DAAxNH6kdoawYjPXTbwUhjmveh8R4LM6uEqRV1"),
+        oracle_source=OracleSource.Pyth()
+    ),
+    PerpMarketConfig(
+        symbol="HNT-PERP",
+        base_asset_symbol="HNT",
+        market_index=14,
+        oracle=Pubkey.from_string("7moA1i5vQUpfDwSpK6Pw9s56ahB7WFGidtbL2ujWrVvm"),
+        oracle_source=OracleSource.Pyth()
+    ),
+    PerpMarketConfig(
+        symbol="INJ-PERP",
+        base_asset_symbol="INJ",
+        market_index=15,
+        oracle=Pubkey.from_string("9EdtbaivHQYA4Nh3XzGR6DwRaoorqXYnmpfsnFhvwuVj"),
+        oracle_source=OracleSource.Pyth()
+    ),
+    PerpMarketConfig(
+        symbol="LINK-PERP",
+        base_asset_symbol="LINK",
+        market_index=16,
+        oracle=Pubkey.from_string("ALdkqQDMfHNg77oCNskfX751kHys4KE7SFuZzuKaN536"),
+        oracle_source=OracleSource.Pyth()
+    ),
+    PerpMarketConfig(
+        symbol="RLB-PERP",
+        base_asset_symbol="RLB",
+        market_index=17,
+        oracle=Pubkey.from_string("4BA3RcS4zE32WWgp49vvvre2t6nXY1W1kMyKZxeeuUey"),
+        oracle_source=OracleSource.Pyth()
+    ),
+    PerpMarketConfig(
+        symbol="PYTH-PERP",
+        base_asset_symbol="PYTH",
+        market_index=18,
+        oracle=Pubkey.from_string("nrYkQQQur7z8rYTST3G9GqATviK5SxTDkrqd21MW6Ue"),
+        oracle_source=OracleSource.Pyth()
+    ),
+    PerpMarketConfig(
+        symbol="TIA-PERP",
+        base_asset_symbol="TIA",
+        market_index=19,
+        oracle=Pubkey.from_string("funeUsHgi2QKkLdUPASRLuYkaK8JaazCEz3HikbkhVt"),
+        oracle_source=OracleSource.Pyth()
+    ),
+    PerpMarketConfig(
+        symbol="JTO-PERP",
+        base_asset_symbol="JTO",
+        market_index=20,
+        oracle=Pubkey.from_string("D8UUgr8a3aR3yUeHLu7v8FWK7E8Y5sSU7qrYBXUJXBQ5"),
         oracle_source=OracleSource.Pyth()
     ),
 ]
