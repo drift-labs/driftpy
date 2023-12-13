@@ -46,10 +46,9 @@ Example setup for `AccountSubscriptionConfig("demo")`:
     )
     await drift_client.subscribe()
 ```
+If you intend to use `AccountSubscriptionConfig("demo)`, you *must* call `get_markets_and_oracles` to get the information you need.
 
-If you don't specify any `market_indexes`, you won't have data from any markets.
-
-**ANYONE** who uses `AccountSubscriptionConfig("demo")` must specify the `market_indexes` that they intend to subscribe to.
+`get_markets_and_oracles` will return all the necessary `OracleInfo`s and `market_indexes` in order to use the SDK.
 
 ## SDK Examples
 
