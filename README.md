@@ -21,6 +21,7 @@ Note: requires Python >= 3.10.
 If you are using a free RPC URL that is *not* Helius, this pertains to you:
 
 When setting up the Drift Client, you *must* specify which `spot_market_indexes` and `perp_market_indexes` you intend to subscribe to.
+You also *must* use `AccountSubscriptionConfig("cached")`
 In order to avoid a 413 Request Too Large or 429 Too Many Requests, non-Helius free RPCs are limited to listening to up to four of each type of market.
 
 Example setup:
@@ -37,7 +38,9 @@ Example setup:
 ```
 
 If you don't specify any `market_indexes`, you won't have data from any markets.
-If you specify more than four `market_indexes` *per market type*, your requests will fail with 413 Request Too Large
+If you specify more than four `market_indexes` *per market type*, your requests will fail with 413 Request Too Large.
+
+**ANYONE** who uses `AccountSubscriptionConfig("cached")` must specify the `market_indexes` that they intend to subscribe to.
 
 ## SDK Examples
 
