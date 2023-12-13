@@ -24,7 +24,6 @@ from driftpy.accounts.demo import (
 )
 from driftpy.types import OracleInfo
 
-
 class AccountSubscriptionConfig:
     @staticmethod
     def default():
@@ -92,12 +91,13 @@ class AccountSubscriptionConfig:
                     self.commitment
                 )
             case "demo":
-                if perp_market_indexes is None or spot_market_indexes is None:
-                    raise ValueError("spot_market_indexes and perp_market_indexes must be provided with demo config")
+                if perp_market_indexes == [] or spot_market_indexes == [] or oracle_infos == []:
+                    raise ValueError("spot_market_indexes / perp_market_indexes / oracle_infos all must be provided with demo config")
                 return DemoDriftClientAccountSubscriber(
                     program, 
                     perp_market_indexes,
                     spot_market_indexes,
+                    oracle_infos,
                     self.commitment
                 )
 
