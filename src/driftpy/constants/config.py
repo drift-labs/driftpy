@@ -15,7 +15,7 @@ from solders.pubkey import Pubkey
 
 from anchorpy import Program
 
-from driftpy.types import OracleInfo, SpotMarketAccount
+from driftpy.types import OracleInfo, OracleSource, SpotMarketAccount
 
 DriftEnv = Literal["devnet", "mainnet"]
 
@@ -108,24 +108,23 @@ def get_markets_and_oracles(
         spot_markets: Optional[Sequence[int]] = None,
 ):
     config = configs[env]
-    oracle_pubkeys = []
-    market_indexes = []
-    
-    if perp_markets is None and spot_markets is not None:
-        for spot_market_index in spot_markets:
-            market_config = find_market_config_by_index(config.spot_markets, spot_market_index)
-            oracle_pubkeys.append(market_config.oracle)
+    spot_market_oracle_infos = []
+    perp_market_oracle_infos = []
+    spot_market_indexes = []
 
-    if perp_markets is not None and spot_markets is None:
-        market_indexes.append(0)
-        for perp_market_index in perp_markets:
-            market_config = find_market_config_by_index(config.perp_markets, perp_market_index)
-            oracle_pubkeys.append(market_config.pyth_oracle)
-    
     if perp_markets is None and spot_markets is None:
         raise ValueError("no indexes provided")
     
-    if perp_markets is not None and spot_markets is not None:
-        raise ValueError("cannot provide both spot_markets and perp_markets")
+    if spot_markets is not None:
+        for spot_market_index in spot_markets:
+            market_config = find_market_config_by_index(config.spot_markets, spot_market_index)
+            spot_market_oracle_infos.append(OracleInfo(market_config.oracle, market_config.oracle_source))
+
+    if perp_markets is not None:
+        spot_market_indexes.append(0)
+        spot_market_oracle_infos.append(OracleInfo(config.spot_markets[0].oracle, config.spot_markets[0].oracle_source))
+        for perp_market_index in perp_markets:
+            market_config = find_market_config_by_index(config.perp_markets, perp_market_index)
+            perp_market_oracle_infos.append(OracleInfo(market_config.oracle, market_config.oracle_source))
     
-    return oracle_pubkeys, market_indexes
+    return spot_market_oracle_infos, perp_market_oracle_infos, spot_market_indexes
