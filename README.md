@@ -20,7 +20,7 @@ Note: requires Python >= 3.10.
 
 **PLEASE**, do not use QuickNode free RPCs to subscribe to the Drift Client.
 
-If you are using QuickNode, you *must* use `AccountSubscriptionConfig("demo")`.
+If you are using QuickNode, you *must* use `AccountSubscriptionConfig("demo")`, and you can only subscribe to 1 perp market and 1 spot market at a time.
 
 Non-QuickNode free RPCs (including the public mainnet-beta url) can use `cached` as well.
 
