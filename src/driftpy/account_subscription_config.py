@@ -18,6 +18,10 @@ from driftpy.accounts.ws import (
     WebsocketDriftClientAccountSubscriber,
     WebsocketUserAccountSubscriber,
 )
+from driftpy.accounts.demo import (
+    DemoDriftClientAccountSubscriber,
+    DemoUserAccountSubscriber
+)
 from driftpy.types import OracleInfo
 
 
@@ -28,7 +32,7 @@ class AccountSubscriptionConfig:
 
     def __init__(
         self,
-        type: Literal["polling", "websocket", "cached"],
+        type: Literal["polling", "websocket", "cached", "demo"],
         bulk_account_loader: Optional[BulkAccountLoader] = None,
         commitment: Commitment = None,
     ):
@@ -85,6 +89,11 @@ class AccountSubscriptionConfig:
             case "cached":
                 return CachedDriftClientAccountSubscriber(
                     program, 
+                    self.commitment
+                )
+            case "demo":
+                return DemoDriftClientAccountSubscriber(
+                    program, 
                     perp_market_indexes,
                     spot_market_indexes,
                     self.commitment
@@ -102,5 +111,9 @@ class AccountSubscriptionConfig:
                 )
             case "cached":
                 return CachedUserAccountSubscriber(
+                    user_pubkey, program, self.commitment
+                )
+            case "demo":
+                return DemoUserAccountSubscriber(
                     user_pubkey, program, self.commitment
                 )

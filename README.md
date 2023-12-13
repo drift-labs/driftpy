@@ -18,29 +18,28 @@ Note: requires Python >= 3.10.
 
 ## ⚠️ IMPORTANT ⚠️
 
-If you are using a free RPC URL that is *not* Helius, this pertains to you:
+**PLEASE**, do not use QuickNode free RPCs to subscribe to the Drift Client.
 
-When setting up the Drift Client, you *must* specify which `spot_market_indexes` and `perp_market_indexes` you intend to subscribe to.
-You also *must* use `AccountSubscriptionConfig("cached")`
-In order to avoid a 413 Request Too Large or 429 Too Many Requests, non-Helius free RPCs are limited to listening to up to four of each type of market.
+If you are using QuickNode, you *must* use `AccountSubscriptionConfig("demo")`.
 
-Example setup:
+Non-QuickNode free RPCs (including the public mainnet-beta url) can use `cached` as well.
+
+Example setup for `AccountSubscriptionConfig("demo")`:
 
 ```
     drift_client = DriftClient(
         connection,
         wallet, 
         "mainnet",             
-        perp_market_indexes = [0, 1, 2, 3, 4],
-        spot_market_indexes = [0, 1, 2, 3, 4],
-        account_subscription = AccountSubscriptionConfig("cached"),
+        perp_market_indexes = [0, 1, 2, 3, 4], # indexes of perp markets to listen to
+        spot_market_indexes = [0, 1, 2, 3, 4], # indexes of spot markets to listen to
+        account_subscription = AccountSubscriptionConfig("demo"),
     )
 ```
 
 If you don't specify any `market_indexes`, you won't have data from any markets.
-If you specify more than four `market_indexes` *per market type*, your requests will fail with 413 Request Too Large.
 
-**ANYONE** who uses `AccountSubscriptionConfig("cached")` must specify the `market_indexes` that they intend to subscribe to.
+**ANYONE** who uses `AccountSubscriptionConfig("demo")` must specify the `market_indexes` that they intend to subscribe to.
 
 ## SDK Examples
 
