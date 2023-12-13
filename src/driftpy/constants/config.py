@@ -1,4 +1,4 @@
-from typing import Literal
+from typing import Literal, Optional, Sequence, Union
 
 from driftpy.constants.spot_markets import (
     devnet_spot_market_configs,
@@ -15,7 +15,7 @@ from solders.pubkey import Pubkey
 
 from anchorpy import Program
 
-from driftpy.types import OracleInfo
+from driftpy.types import OracleInfo, OracleSource, SpotMarketAccount
 
 DriftEnv = Literal["devnet", "mainnet"]
 
@@ -69,7 +69,6 @@ configs = {
     ),
 }
 
-
 async def find_all_market_and_oracles(
     program: Program,
 ) -> (list[int], list[int], list[OracleInfo]):
@@ -92,3 +91,40 @@ async def find_all_market_and_oracles(
         oracle_infos[str(oracle)] = OracleInfo(oracle, oracle_source)
 
     return perp_market_indexes, spot_market_indexes, oracle_infos.values()
+
+def find_market_config_by_index(
+    market_configs: list[Union[SpotMarketConfig, PerpMarketConfig]], 
+    market_index: int
+) -> Optional[Union[SpotMarketConfig, PerpMarketConfig]]:
+    for config in market_configs:
+        if hasattr(config, 'market_index') and config.market_index == market_index:
+            return config
+    return None
+
+
+def get_markets_and_oracles(
+        env: DriftEnv = "mainnet",
+        perp_markets: Optional[Sequence[int]] = None,
+        spot_markets: Optional[Sequence[int]] = None,
+):
+    config = configs[env]
+    spot_market_oracle_infos = []
+    perp_market_oracle_infos = []
+    spot_market_indexes = []
+
+    if perp_markets is None and spot_markets is None:
+        raise ValueError("no indexes provided")
+    
+    if spot_markets is not None:
+        for spot_market_index in spot_markets:
+            market_config = find_market_config_by_index(config.spot_markets, spot_market_index)
+            spot_market_oracle_infos.append(OracleInfo(market_config.oracle, market_config.oracle_source))
+
+    if perp_markets is not None:
+        spot_market_indexes.append(0)
+        spot_market_oracle_infos.append(OracleInfo(config.spot_markets[0].oracle, config.spot_markets[0].oracle_source))
+        for perp_market_index in perp_markets:
+            market_config = find_market_config_by_index(config.perp_markets, perp_market_index)
+            perp_market_oracle_infos.append(OracleInfo(market_config.oracle, market_config.oracle_source))
+    
+    return spot_market_oracle_infos, perp_market_oracle_infos, spot_market_indexes

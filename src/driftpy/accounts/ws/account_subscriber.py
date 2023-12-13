@@ -33,6 +33,7 @@ class WebsocketAccountSubscriber(UserAccountSubscriber, Generic[T]):
         self.decode = (
             decode if decode is not None else self.program.coder.accounts.decode
         )
+        self.ws = None
 
     async def subscribe(self):
         if self.data_and_slot is None:

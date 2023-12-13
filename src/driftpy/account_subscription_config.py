@@ -18,8 +18,11 @@ from driftpy.accounts.ws import (
     WebsocketDriftClientAccountSubscriber,
     WebsocketUserAccountSubscriber,
 )
+from driftpy.accounts.demo import (
+    DemoDriftClientAccountSubscriber,
+    DemoUserAccountSubscriber
+)
 from driftpy.types import OracleInfo
-
 
 class AccountSubscriptionConfig:
     @staticmethod
@@ -28,7 +31,7 @@ class AccountSubscriptionConfig:
 
     def __init__(
         self,
-        type: Literal["polling", "websocket", "cached"],
+        type: Literal["polling", "websocket", "cached", "demo"],
         bulk_account_loader: Optional[BulkAccountLoader] = None,
         commitment: Commitment = None,
     ):
@@ -83,7 +86,20 @@ class AccountSubscriptionConfig:
                     self.commitment,
                 )
             case "cached":
-                return CachedDriftClientAccountSubscriber(program, self.commitment)
+                return CachedDriftClientAccountSubscriber(
+                    program, 
+                    self.commitment
+                )
+            case "demo":
+                if perp_market_indexes == [] or spot_market_indexes == [] or oracle_infos == []:
+                    raise ValueError("spot_market_indexes / perp_market_indexes / oracle_infos all must be provided with demo config")
+                return DemoDriftClientAccountSubscriber(
+                    program, 
+                    perp_market_indexes,
+                    spot_market_indexes,
+                    oracle_infos,
+                    self.commitment
+                )
 
     def get_user_client_subscriber(self, program: Program, user_pubkey: Pubkey):
         match self.type:
@@ -97,5 +113,9 @@ class AccountSubscriptionConfig:
                 )
             case "cached":
                 return CachedUserAccountSubscriber(
+                    user_pubkey, program, self.commitment
+                )
+            case "demo":
+                return DemoUserAccountSubscriber(
                     user_pubkey, program, self.commitment
                 )

@@ -22,6 +22,8 @@ from driftpy.memcmp import get_user_filter, get_non_idle_user_filter
 from driftpy.user_map.types import UserMapInterface, ConfigType
 from driftpy.accounts.types import DataAndSlot
 
+from driftpy.decode.user import decode_user
+
 class UserMap(UserMapInterface):
     def __init__(self, config: UserMapConfig):
         self.user_map: Dict[str, DriftUser] = {}
@@ -39,7 +41,7 @@ class UserMap(UserMapInterface):
         if isinstance(config.subscription_config, PollingConfig):
             self.subscription = PollingSubscription(self, config.subscription_config.frequency, config.skip_initial_load)
         else: 
-            self.subscription = WebsocketSubscription(self, self.commitment, self.update_user_account, config.subscription_config.resub_timeout_ms, config.skip_initial_load)
+            self.subscription = WebsocketSubscription(self, self.commitment, self.update_user_account, config.subscription_config.resub_timeout_ms, config.skip_initial_load, decode = decode_user)
 
     async def state_account_update_callback(self, state: StateAccount):
         if state.max_number_of_sub_accounts != self.last_number_of_sub_accounts:
@@ -124,14 +126,14 @@ class UserMap(UserMapInterface):
                 # parse the gPA data before inserting
                 for program_account in rpc_response_and_context:
                     pubkey = program_account.pubkey
-                    data = self.drift_client.program.coder.accounts.decode(program_account.account.data)
+                    data = decode_user(program_account.account.data)
                     program_account_buffer_map[str(pubkey)] = data
 
                 # "idempotent" insert into usermap
                 for key in program_account_buffer_map.keys():
                     if key not in self.user_map:
                         data = program_account_buffer_map.get(key)
-                        user_account = self.drift_client.program.coder.accounts.decode(data)
+                        user_account = data
                         await self.add_pubkey(Pubkey.from_string(key))
                         self.user_map.get(key).account_subscriber._update_data(DataAndSlot(slot, user_account))
                     # let the loop breathe

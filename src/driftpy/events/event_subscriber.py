@@ -23,6 +23,7 @@ class EventSubscriber:
         self.connection = connection
         self.program = program
         self.options = options
+        self.subscribed = False
         self.event_list_map: dict[EventType:EventList] = {}
         for event_type in self.options.event_types:
             self.event_list_map[event_type] = EventList(
@@ -37,9 +38,11 @@ class EventSubscriber:
 
     def subscribe(self):
         self.log_provider.subscribe(self.handle_tx_logs)
+        self.subscribed = True
 
     def unsubscribe(self):
         self.log_provider.unsubscribe()
+        self.subscribed = False
 
     def handle_tx_logs(
         self,

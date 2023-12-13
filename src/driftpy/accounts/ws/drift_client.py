@@ -22,7 +22,6 @@ from driftpy.types import OracleSource
 
 from driftpy.accounts.oracle import get_oracle_decode_fn
 
-
 class WebsocketDriftClientAccountSubscriber(DriftClientAccountSubscriber):
     def __init__(
         self,

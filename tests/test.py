@@ -96,6 +96,8 @@ async def drift_client(program: Program, usdc_mint: Keypair) -> Admin:
         program.provider.connection,
         program.provider.wallet,
         account_subscription=AccountSubscriptionConfig("cached"),
+        spot_market_indexes = [0, 1],
+        perp_market_indexes = [0]
     )
     await admin.initialize(usdc_mint.pubkey(), admin_controls_prices=True)
     await admin.subscribe()
@@ -159,7 +161,6 @@ async def test_initialized_spot_market_2(
 
     spot_market = await get_spot_market_account(admin_drift_client.program, 1)
     assert spot_market.market_index == 1
-    print(spot_market.market_index)
 
 
 @async_fixture(scope="session")
@@ -233,6 +234,7 @@ async def test_usdc_deposit(
     )
 
 @mark.asyncio
+
 async def test_user_map_polling(drift_client: Admin, workspace):
     polling_config = PollingConfig('polling', 0.5)
     user_map_config = UserMapConfig(drift_client, polling_config)
@@ -485,6 +487,8 @@ async def test_liq_perp(
         drift_client.program.provider.connection,
         liq,
         account_subscription=AccountSubscriptionConfig("cached"),
+        spot_market_indexes = [0, 1],
+        perp_market_indexes = [0]
     )
     await liq_drift_client.subscribe()
     usdc_acc = await _create_and_mint_user_usdc(

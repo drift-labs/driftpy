@@ -304,10 +304,10 @@ class OrderType:
 
 @_rust_enum
 class OrderTriggerCondition:
-    ABOVE = constructor()
-    BELOW = constructor()
-    TRIGGERED_ABOVE = constructor()
-    TRIGGERED_BELOW = constructor()
+    Above = constructor()
+    Below = constructor()
+    TriggeredAbove = constructor()
+    TriggeredBelow = constructor()
 
 
 @_rust_enum
@@ -336,7 +336,7 @@ class OrderParams:
     immediate_or_cancel: bool = False
     max_ts: Optional[int] = None
     trigger_price: Optional[int] = None
-    trigger_condition: OrderTriggerCondition = OrderTriggerCondition.ABOVE()
+    trigger_condition: OrderTriggerCondition = OrderTriggerCondition.Above()
     oracle_price_offset: Optional[int] = None
     auction_duration: Optional[int] = None
     auction_start_price: Optional[int] = None
