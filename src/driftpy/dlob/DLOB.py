@@ -236,6 +236,27 @@ class DLOB:
         if on_delete is not None and callable(on_delete):
             on_delete()
 
+    def clear(self):
+        for market_type in self.open_orders.keys():
+            self.open_orders.get(market_type).clear()
+
+        self.open_orders.clear()
+
+        for market_type in self.order_lists.keys():
+            for market_index in self.order_lists.get(market_type).keys():
+                node_lists: MarketNodeLists = self.order_lists.get(market_type).get(market_index)
+
+                for side in vars(node_lists).keys():
+                    for order_type in getattr(node_lists, side, {}).keys():
+                        getattr(node_lists, side)[order_type].clear()
+        
+        self.order_lists.clear()
+
+        self.max_slot_for_resting_limit_orders = 0
+
+        self.init()
+
+
 
 
 
