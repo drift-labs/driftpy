@@ -6,7 +6,7 @@ from driftpy.constants.numeric_constants import BASE_PRECISION, QUOTE_PRECISION
 from driftpy.dlob.DLOB_node import DLOBNode
 from driftpy.math.amm import calculate_amm_reserves_after_swap, calculate_market_open_bid_ask, calculate_quote_asset_amount_swapped, calculate_spread_reserves_dlob, calculate_updated_amm
 from driftpy.math.orders import standardize_price
-from driftpy.types import AssetType, OraclePriceData, PerpMarketAccount, PositionDirection, SwapDirection
+from driftpy.types import AMM, AssetType, OraclePriceData, PerpMarketAccount, PositionDirection, SwapDirection
 
 LiquiditySource = ['serum', 'vamm', 'dlob', 'phoenix']
 
@@ -76,7 +76,7 @@ def get_vamm_l2_generator(
         oracle_price_data: OraclePriceData, 
         num_orders: int, now: Optional[int] = None, 
         top_of_book_quote_amounts: Optional[List[int]] = None
-) -> Generator[L2Level, None, None]:
+):
     num_base_orders = num_orders
     if top_of_book_quote_amounts:
         num_base_orders = num_orders - len(top_of_book_quote_amounts)
@@ -104,12 +104,12 @@ def get_vamm_l2_generator(
     num_bids = 0
     top_of_book_bid_size = 0
     bid_size = open_bids // num_base_orders
-    bid_amm = {
-        'base_asset_reserve': bid_reserves.base_asset_reserve,
-        'quote_asset_reserve': bid_reserves.quote_asset_reserve,
-        'sqrt_k': updated_amm.sqrt_k,
-        'peg_multiplier': updated_amm.peg_multiplier,
-    }
+    bid_amm = AMM(
+            bid_reserves.base_asset_reserve,
+            bid_reserves.quote_asset_reserve,
+            sqrt_k=updated_amm.sqrt_k,
+            peg_multiplier=updated_amm.peg_multiplier,
+    )
 
     def get_l2_bids():
         nonlocal num_bids, top_of_book_bid_size, bid_size, bid_amm
@@ -121,12 +121,12 @@ def get_vamm_l2_generator(
                 remaining_base_liquidity = open_bids - top_of_book_bid_size
                 quote_swapped = top_of_book_quote_amounts[num_bids]
                 after_swap_quote_reserves, after_swap_base_reserves = calculate_amm_reserves_after_swap(bid_amm, AssetType.QUOTE, quote_swapped, SwapDirection.Remove)
-                base_swapped = abs(bid_amm['base_asset_reserve'] - after_swap_base_reserves)
+                base_swapped = abs(bid_amm.base_asset_reserve - after_swap_base_reserves)
 
                 if remaining_base_liquidity < base_swapped:
                     base_swapped = remaining_base_liquidity
                     after_swap_quote_reserves, after_swap_base_reserves = calculate_amm_reserves_after_swap(bid_amm, AssetType.BASE, base_swapped, SwapDirection.Add)
-                    quote_swapped = calculate_quote_asset_amount_swapped(abs(bid_amm['quote_asset_reserve'] - after_swap_quote_reserves), bid_amm['peg_multiplier'], SwapDirection.Add)
+                    quote_swapped = calculate_quote_asset_amount_swapped(abs(bid_amm.quote_asset_reserve - after_swap_quote_reserves), bid_amm.peg_multiplier, SwapDirection.Add)
 
                 top_of_book_bid_size += base_swapped
                 bid_size = (open_bids - top_of_book_bid_size) // num_base_orders
@@ -134,11 +134,11 @@ def get_vamm_l2_generator(
             else:
                 base_swapped = bid_size
                 after_swap_quote_reserves, after_swap_base_reserves = calculate_amm_reserves_after_swap(bid_amm, AssetType.BASE, base_swapped, SwapDirection.Add)
-                quote_swapped = calculate_quote_asset_amount_swapped(abs(bid_amm['quote_asset_reserve'] - after_swap_quote_reserves), bid_amm['peg_multiplier'], SwapDirection.Add)
+                quote_swapped = calculate_quote_asset_amount_swapped(abs(bid_amm.quote_asset_reserve - after_swap_quote_reserves), bid_amm.peg_multiplier, SwapDirection.Add)
 
             price = (quote_swapped * BASE_PRECISION) // base_swapped
-            bid_amm['base_asset_reserve'] = after_swap_base_reserves
-            bid_amm['quote_asset_reserve'] = after_swap_quote_reserves
+            bid_amm.base_asset_reserve = after_swap_base_reserves
+            bid_amm.quote_asset_reserve = after_swap_quote_reserves
 
             yield L2Level(price=price, size=base_swapped, sources={'vamm': base_swapped})
             num_bids += 1
@@ -146,12 +146,12 @@ def get_vamm_l2_generator(
     num_asks = 0
     top_of_book_ask_size = 0
     ask_size = abs(open_asks) // num_base_orders
-    ask_amm = {
-        'base_asset_reserve': ask_reserves.base_asset_reserve,
-        'quote_asset_reserve': ask_reserves.quote_asset_reserve,
-        'sqrt_k': updated_amm.sqrt_k,
-        'peg_multiplier': updated_amm.peg_multiplier,
-    }
+    ask_amm = AMM(
+            ask_reserves.base_asset_reserve,
+            ask_reserves.quote_asset_reserve,
+            sqrt_k=updated_amm.sqrt_k,
+            peg_multiplier=updated_amm.peg_multiplier,
+    )
 
     def get_l2_asks():
         nonlocal num_asks, top_of_book_ask_size, ask_size, ask_amm
@@ -163,12 +163,12 @@ def get_vamm_l2_generator(
                 remaining_base_liquidity = abs(open_asks) - top_of_book_ask_size
                 quote_swapped = top_of_book_quote_amounts[num_asks]
                 after_swap_quote_reserves, after_swap_base_reserves = calculate_amm_reserves_after_swap(ask_amm, AssetType.QUOTE, quote_swapped, SwapDirection.Add)
-                base_swapped = abs(ask_amm['base_asset_reserve'] - after_swap_base_reserves)
+                base_swapped = abs(ask_amm.base_asset_reserve - after_swap_base_reserves)
 
                 if remaining_base_liquidity < base_swapped:
                     base_swapped = remaining_base_liquidity
                     after_swap_quote_reserves, after_swap_base_reserves = calculate_amm_reserves_after_swap(ask_amm, AssetType.BASE, base_swapped, SwapDirection.Remove)
-                    quote_swapped = calculate_quote_asset_amount_swapped(abs(ask_amm['quote_asset_reserve'] - after_swap_quote_reserves), ask_amm['peg_multiplier'], SwapDirection.Remove)
+                    quote_swapped = calculate_quote_asset_amount_swapped(abs(ask_amm.quote_asset_reserve - after_swap_quote_reserves), ask_amm.peg_multiplier, SwapDirection.Remove)
 
                 top_of_book_ask_size += base_swapped
                 ask_size = (abs(open_asks) - top_of_book_ask_size) // num_base_orders
@@ -176,19 +176,16 @@ def get_vamm_l2_generator(
             else:
                 base_swapped = ask_size
                 after_swap_quote_reserves, after_swap_base_reserves = calculate_amm_reserves_after_swap(ask_amm, AssetType.BASE, base_swapped, SwapDirection.Remove)
-                quote_swapped = calculate_quote_asset_amount_swapped(abs(ask_amm['quote_asset_reserve'] - after_swap_quote_reserves), ask_amm['peg_multiplier'], SwapDirection.Remove)
+                quote_swapped = calculate_quote_asset_amount_swapped(abs(ask_amm.quote_asset_reserve - after_swap_quote_reserves), ask_amm.peg_multiplier, SwapDirection.Remove)
 
             price = (quote_swapped * BASE_PRECISION) // base_swapped
-            ask_amm['base_asset_reserve'] = after_swap_base_reserves
-            ask_amm['quote_asset_reserve'] = after_swap_quote_reserves
+            ask_amm.base_asset_reserve = after_swap_base_reserves
+            ask_amm.quote_asset_reserve = after_swap_quote_reserves
 
             yield L2Level(price=price, size=base_swapped, sources={'vamm': base_swapped})
             num_asks += 1
 
-    return {
-        'getL2Bids': get_l2_bids,
-        'getL2Asks': get_l2_asks
-    }
+    return get_l2_bids, get_l2_asks
 
 def group_l2_levels(levels: List[L2Level], grouping: int, direction: PositionDirection, depth: int) -> List[L2Level]:
     grouped_levels = []
