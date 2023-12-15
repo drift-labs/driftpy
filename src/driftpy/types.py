@@ -271,6 +271,7 @@ class AssetTier:
 
 @_rust_enum
 class ExchangeStatus:
+    ACTIVE = constructor()
     DEPOSIT_PAUSED = constructor()
     WITHDRAW_PAUSED = constructor()
     AMM_PAUSED = constructor()
