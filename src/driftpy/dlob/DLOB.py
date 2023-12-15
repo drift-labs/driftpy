@@ -209,6 +209,33 @@ class DLOB:
         if on_update is not None and callable(on_update):
             on_update()
     
+    def delete(
+        self,
+        order: Order,
+        user_account: Pubkey,
+        slot: int,
+        on_delete = Optional[OrderBookCallback]
+    ):
+        if is_variant(order.status, 'Init'):
+            return
+        
+        self.update_resting_limit_orders(slot)
+
+        type, subtype = get_list_identifiers(order, slot)
+
+        market_type = market_type_to_string(order.market_type)
+
+        node_list = self.order_lists.get(market_type, {}).get(order.market_index, None)
+
+        target_list = getattr(node_list, type, {}).get(subtype, None)
+
+        if target_list is not None:
+            target_list: NodeList
+            target_list.remove(order, user_account)
+
+        if on_delete is not None and callable(on_delete):
+            on_delete()
+
 
 
 
