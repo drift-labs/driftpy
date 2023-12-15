@@ -15,7 +15,7 @@ from anchorpy import Wallet
 from solana.rpc.async_api import AsyncClient
 from driftpy.drift_client import DriftClient
 from driftpy.accounts import get_user_account,get_perp_market_account
-from solana.publickey import PublicKey
+from solders.pubkey import Pubkey
 from dataclasses import asdict
 from solana.keypair import Keypair
 import asyncio
@@ -35,7 +35,7 @@ async def main():
     provider = Provider(connection, wallet)
     dc = DriftClient.from_config(config, provider)
 
-    settle_pk = PublicKey("CkZLqWuzgE985Y9RC6pt7LYvCUjN4HVXuJESt8yG7wW4")
+    settle_pk = Pubkey("CkZLqWuzgE985Y9RC6pt7LYvCUjN4HVXuJESt8yG7wW4")
 
     while True: 
         print('settling...')
@@ -85,7 +85,7 @@ finally:
 #%%
 #%%
 # # %%
-# pk = PublicKey("2zJhfetddV3J89zRrQ6o9W4KW2JbD6QYHjB7uT2VsgnG")
+# pk = Pubkey("2zJhfetddV3J89zRrQ6o9W4KW2JbD6QYHjB7uT2VsgnG")
 # drift_user = User(
 #     dc, 
 #     pk

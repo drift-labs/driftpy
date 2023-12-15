@@ -8,6 +8,8 @@ from typing import Optional
 def is_variant(enum, type: str) -> bool:
     return type in str(enum)
 
+def is_one_of_variant(enum, types):
+    return any(type in str(enum) for type in types)
 
 @_rust_enum
 class SwapDirection:
