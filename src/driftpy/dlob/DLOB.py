@@ -1,3 +1,4 @@
+import copy
 from typing import Callable, Dict, List, Optional
 from solders.pubkey import Pubkey
 from driftpy.dlob.DLOB_generators import get_node_lists
@@ -110,11 +111,15 @@ class DLOB:
         if is_variant(order.status, "Open"):
             self.open_orders.get(market_type).add(get_order_signature(order.order_id, user_account))
 
-        order_list = get_list_for_order(order, slot)
+        type, subtype = get_list_for_order(order, slot)
 
-        if order_list is not None:
-            order_list: NodeList
-            order_list.insert(order, market_type, user_account)
+        node_list = self.order_lists.get(market_type, {}).get(order.market_index, None)
+
+        target_list = getattr(node_list, type, {}).get(subtype, None)
+
+        if target_list is not None:
+            target_list: NodeList
+            target_list.insert(order, market_type, user_account)
 
         if on_insert is not None and callable(on_insert):
             on_insert()
@@ -127,6 +132,7 @@ class DLOB:
                 return node.order
             
         return None
+    
 
     
 

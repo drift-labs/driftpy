@@ -33,7 +33,7 @@ def add_order_list(market_type: str, market_index: int, order_lists):
     return order_lists
 
 
-def get_list_for_order(order: Order, slot: int, order_lists):
+def get_list_identifiers(order: Order, slot: int, order_lists):
     from driftpy.dlob.DLOB_node import NodeType, MarketNodeLists
     order_lists: Dict[str, Dict[int, MarketNodeLists]]
 
@@ -61,9 +61,4 @@ def get_list_for_order(order: Order, slot: int, order_lists):
     if not market_type in order_lists:
         return None
     
-    node_list = order_lists.get(market_type, {}).get(order.market_index, None)
-
-    if node_list:
-        return getattr(node_list, type, {}).get(subtype, None)
-    else: 
-        return None
+    return type, subtype
