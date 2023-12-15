@@ -619,10 +619,7 @@ def calculate_spread_reserves(
 def calculate_spread_reserves_dlob(amm: AMM, oracle_price_data: OraclePriceData, now = None):
     def calculate_spread_reserve(spread: int, direction: PositionDirection, amm: AMM):
         if spread == 0:
-            return {
-                'base_asset_reserve': amm.base_asset_reserve,
-                'quote_asset_reserve': amm.quote_asset_reserve
-            }
+            return amm.base_asset_reserve, amm.quote_asset_reserve
         
         spread_fraction = max(spread // 2, 1)
         quote_asset_reserve_delta = amm.quote_asset_reserve // (BID_ASK_SPREAD_PRECISION // spread_fraction)
