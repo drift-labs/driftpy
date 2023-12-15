@@ -2,7 +2,7 @@ import copy
 from typing import Callable, Dict, List, Optional
 from solders.pubkey import Pubkey
 from driftpy.dlob.DLOB_generators import get_node_lists
-from driftpy.dlob.DLOB_helpers import add_order_list, get_list_for_order
+from driftpy.dlob.DLOB_helpers import add_order_list, get_list_identifiers
 from driftpy.dlob.node_list import get_order_signature, get_vamm_node_generator, NodeList
 from driftpy.dlob.orderbook_levels import (
     create_l2_levels,
@@ -111,7 +111,7 @@ class DLOB:
         if is_variant(order.status, "Open"):
             self.open_orders.get(market_type).add(get_order_signature(order.order_id, user_account))
 
-        type, subtype = get_list_for_order(order, slot)
+        type, subtype = get_list_identifiers(order, slot)
 
         node_list = self.order_lists.get(market_type, {}).get(order.market_index, None)
 
@@ -133,9 +133,6 @@ class DLOB:
             
         return None
     
-
-    
-
 
 
 
