@@ -1,12 +1,12 @@
 import json
 from construct import GreedyRange
 from solders.pubkey import Pubkey
-# from driftpy.types import Order
+from driftpy.types import Order
 from anchorpy_core.idl import IdlField, IdlTypeDefined, Idl
 from anchorpy.coder.idl import _field_layout
 
 class DLOBOrder:
-    def __init__(self, user: Pubkey, order):
+    def __init__(self, user: Pubkey, order: Order):
         self.pubkey = user
         self.order = order
 
@@ -15,7 +15,8 @@ class DLOBOrders:
         self.orders = orders
 
 with open('dlob.json') as f:
-    dlob_idl: Idl = json.load(f)
+    dlob_idl_json = json.load(f)
+    dlob_idl = Idl.from_json(dlob_idl_json)
 
 # This REALLY might not work
 # I'm getting super nasty circular import problems trying to test it naively in here
