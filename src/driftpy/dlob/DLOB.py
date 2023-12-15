@@ -25,7 +25,7 @@ from driftpy.dlob.DLOB_node import (
     TriggerOrderNode
 )
 from driftpy.math.orders import is_resting_limit_order, is_triggered
-from driftpy.types import Order, is_variant, is_one_of_variant, market_type_to_string
+from driftpy.types import Order, OrderActionRecord, OrderRecord, is_variant, is_one_of_variant, market_type_to_string
 
 class MarketNodeLists:
     def __init__(self):
@@ -289,6 +289,45 @@ class DLOB:
 
         if on_trigger is not None and callable(on_trigger):
             on_trigger()
+
+    def handle_order_record(self, record: OrderRecord, slot: int):
+        self.insert_order(record.order, record.user, slot)
+
+    def handle_order_action_record(self, record: OrderActionRecord, slot: int):
+        if is_one_of_variant(record.action, ['PLACE', 'EXPIRE']):
+            return
+        
+        if is_variant(record.action, 'TRIGGER'):
+            if record.taker is not None:
+                taker_order = self.get_order(record.taker_order_id, record.taker)
+                if taker_order is not None:
+                    self.trigger(taker_order, record.taker, slot)
+
+            if record.maker is not None:
+                maker_order = self.get_order(record.maker_order_id, record.maker)
+                if maker_order is not None:
+                    self.trigger(maker_order, record.maker, slot)
+        elif is_variant(record.action, 'FILL'):
+            if record.taker is not None:
+                taker_order = self.get_order(record.taker_order_id, record.taker)
+                if taker_order is not None:
+                    self.update_order(taker_order, record.taker, slot, record.taker_order_cumulative_base_asset_amount_filled)
+
+            if record.maker is not None:
+                maker_order = self.get_order(record.maker_order_id, record.maker)
+                if maker_order is not None:
+                    self.update_order(maker_order, record.maker, slot, record.maker_order_cumulative_base_asset_amount_filled)
+        elif is_variant(record.action, 'CANCEL'):
+            if record.taker is not None:
+                taker_order = self.get_order(record.taker_order_id, record.taker)
+                if taker_order is not None:
+                    self.delete(taker_order, record.taker, slot)
+
+            if record.maker is not None:
+                maker_order = self.get_order(record.maker_order_id, record.maker)
+                if maker_order is not None:
+                    self.delete(maker_order, record.maker, slot)
+    
 
 
 
