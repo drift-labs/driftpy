@@ -10,7 +10,7 @@ def is_variant(enum, type: str) -> bool:
 
 def is_one_of_variant(enum, types):
     return any(type in str(enum) for type in types)
-
+    
 @_rust_enum
 class SwapDirection:
     Add = constructor()
@@ -317,6 +317,14 @@ class MarketType:
     Spot = constructor()
     Perp = constructor()
 
+def market_type_to_string(market_type: MarketType):
+    type_str = str(type(market_type))
+    if 'Perp' in type_str:
+        return 'perp'
+    elif 'Spot' in type_str:
+        return 'spot'
+    else:
+        return 'unknown'
 
 @dataclass
 class MarketIdentifier:

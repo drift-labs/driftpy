@@ -1,4 +1,7 @@
-from typing import Callable, List
+from typing import Callable, Dict, List, Optional
+from solders.pubkey import Pubkey
+from driftpy.dlob.DLOB_generators import get_node_lists
+from driftpy.dlob.DLOB_helpers import add_order_list, get_list_for_order
 from driftpy.dlob.node_list import get_order_signature, get_vamm_node_generator, NodeList
 from driftpy.dlob.orderbook_levels import (
     create_l2_levels,
@@ -20,6 +23,7 @@ from driftpy.dlob.DLOB_node import (
     MarketOrderNode,
     TriggerOrderNode
 )
+from driftpy.types import Order, is_variant, is_one_of_variant, market_type_to_string
 
 class MarketNodeLists:
     def __init__(self):
@@ -69,3 +73,65 @@ SUPPORTED_ORDER_TYPES = [
     'triggerLimit',
     'oracle',
 ]
+
+class DLOB:
+
+    def __init__(self):
+        self.open_orders: Dict[str, set] = {}
+        self.order_lists: Dict[str, Dict[int, MarketNodeLists]] = {}
+        self.max_slot_for_resting_limit_orders = 0
+        self.initialized = False
+        self.init()
+
+    def init(self):
+        self.open_orders['perp'] = set()
+        self.open_orders['spot'] = set()
+        self.order_lists['perp'] = {}
+        self.order_lists['spot'] = {}
+
+    def insert_order(
+        self,
+        order: Order, 
+        user_account: Pubkey, 
+        slot: int, 
+        on_insert: Optional[OrderBookCallback] = None
+    ):
+        if is_variant(order.status, "Init"):
+            return
+        
+        if not is_one_of_variant(order.order_type, SUPPORTED_ORDER_TYPES):
+            return
+        
+        market_type = market_type_to_string(order.market_type)
+
+        if not order.market_index in self.order_lists.get(market_type):
+            self.order_lists = add_order_list(market_type, order.market_index, self.order_lists)
+
+        if is_variant(order.status, "Open"):
+            self.open_orders.get(market_type).add(get_order_signature(order.order_id, user_account))
+
+        order_list = get_list_for_order(order, slot)
+
+        if order_list is not None:
+            order_list: NodeList
+            order_list.insert(order, market_type, user_account)
+
+        if on_insert is not None and callable(on_insert):
+            on_insert()
+
+    def get_order(self, order_id: int, user_account: Pubkey) -> Optional[Order]:
+        order_signature = get_order_signature(order_id, user_account)
+        for node_list in get_node_lists(self.order_lists):
+            node = node_list.get(order_signature)
+            if node:
+                return node.order
+            
+        return None
+
+    
+
+
+
+
+
+
