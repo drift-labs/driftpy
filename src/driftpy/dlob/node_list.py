@@ -9,7 +9,6 @@ T = TypeVar('T', bound = DLOBNode)
 def get_order_signature(order_id: int, user_account: Pubkey) -> str:
     return f"{str(user_account)}-{str(order_id)}"
 
-
 class NodeList(Generic[T]):
     def __init__(self, node_type: NodeType, sort_direction):
         self.head = None

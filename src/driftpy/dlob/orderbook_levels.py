@@ -1,3 +1,4 @@
+from abc import ABC, abstractmethod
 from datetime import datetime
 from typing import Dict, Generator, List, Optional
 from solders.pubkey import Pubkey
@@ -35,6 +36,15 @@ class L3OrderBook:
         self.bids = bids
         self.slot = slot
 
+class L2OrderBookGenerator(ABC):
+    @abstractmethod
+    def get_l2_asks(self) -> Generator[L2Level, None, None]:
+        pass
+
+    @abstractmethod
+    def get_l2_bids(self) -> Generator[L2Level, None, None]:
+        pass
+
 DEFAULT_TOP_OF_BOOK_QUOTE_AMOUNTS = [
     500 * QUOTE_PRECISION,
     1000 * QUOTE_PRECISION,
@@ -70,6 +80,26 @@ def merge_l2_level_generators(
 
         yield next_gen['next']
         next_gen['next'] = next(next_gen['generator'], None)
+
+def create_l2_levels(generator: Generator[L2Level], depth: int) -> List[L2Level]:
+    levels: List[L2Level] = []
+    for level in generator:
+        price = level.price
+        size = level.size
+        if levels and levels[-1].price == price:
+            current_level = levels[-1]
+            current_level.size += size
+            for source, size in level.sources.items():
+                if source in current_level.sources:
+                    current_level.sources[source] += size
+                else:
+                    current_level.sources[source] = size
+        elif len(levels) == depth: 
+            break
+        else:
+            levels.append(level)
+
+    return levels 
 
 def get_vamm_l2_generator(
         market_account: PerpMarketAccount, 

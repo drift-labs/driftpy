@@ -97,7 +97,7 @@ class TriggerOrderNode(OrderNode):
 
 NodeType = Literal['restingLimit', 'takingLimit', 'floatingLimit', 'market', 'trigger']
 
-node_type_map = {
+node_type_map: dict[NodeType, type] = {
     'restingLimit': RestingLimitOrderNode,
     'takingLimit': TakingLimitOrderNode,
     'floatingLimit': FloatingLimitOrderNode,
