@@ -24,7 +24,7 @@ from driftpy.dlob.DLOB_node import (
     MarketOrderNode,
     TriggerOrderNode
 )
-from driftpy.math.orders import is_resting_limit_order
+from driftpy.math.orders import is_resting_limit_order, is_triggered
 from driftpy.types import Order, is_variant, is_one_of_variant, market_type_to_string
 
 class MarketNodeLists:
@@ -256,6 +256,39 @@ class DLOB:
 
         self.init()
 
+    def trigger(
+        self,
+        order: Order,
+        user_account: Pubkey,
+        slot: int,
+        on_trigger = Optional[OrderBookCallback]
+    ):
+        if is_variant(order, 'Init'):
+            return
+        
+        self.update_resting_limit_orders(slot)
+
+        if is_triggered(order):
+            return
+        
+        market_type = market_type_to_string(order.market_type)
+
+        trigger_list = self.order_lists.get(market_type).get(order.market_index) \
+            .trigger['above' if is_variant(order.trigger_condition, 'above') else 'below']
+        trigger_list.remove(order, user_account)
+
+        type, subtype = get_list_identifiers(order, slot)
+
+        node_list = self.order_lists.get(market_type, {}).get(order.market_index, None)
+
+        target_list = getattr(node_list, type, {}).get(subtype, None)
+
+        if target_list is not None:
+            target_list: NodeList
+            target_list.insert(order, market_type, user_account)
+
+        if on_trigger is not None and callable(on_trigger):
+            on_trigger()
 
 
 
