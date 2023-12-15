@@ -9,8 +9,8 @@ def add_order_list(market_type: str, market_index: int, order_lists):
 
     order_lists[market_type][market_index] = {
         'restingLimit': {
-        'ask': NodeList('restingLimit', 'asc'),
-        'bid': NodeList('restingLimit', 'desc'),
+            'ask': NodeList('restingLimit', 'asc'),
+            'bid': NodeList('restingLimit', 'desc'),
         },
         'floatingLimit': {
             'ask': NodeList('floatingLimit', 'asc'),

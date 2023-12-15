@@ -24,6 +24,7 @@ from driftpy.dlob.DLOB_node import (
     MarketOrderNode,
     TriggerOrderNode
 )
+from driftpy.math.orders import is_resting_limit_order
 from driftpy.types import Order, is_variant, is_one_of_variant, market_type_to_string
 
 class MarketNodeLists:
@@ -133,6 +134,82 @@ class DLOB:
             
         return None
     
+    def _update_resting_limit_orders_for_market_type(self, slot: int, market_type_str: str):
+
+        if market_type_str not in self.order_lists:
+            return
+        
+        for _, node_lists in self.order_lists[market_type_str].items():
+            nodes_to_update = []
+
+            for node in node_lists.taking_limit['ask'].get_generator():
+                if not is_resting_limit_order(node.order, slot):
+                    continue
+                nodes_to_update.append({
+                    'side': 'ask',
+                    'node': node
+                })
+
+            for node in node_lists.taking_limit['bid'].get_generator():
+                if not is_resting_limit_order(node.order, slot):
+                    continue
+                nodes_to_update.append({
+                    'side': 'bid',
+                    'node': node
+                })
+
+            for node_to_update in nodes_to_update:
+                side = node_to_update['side']
+                node = node_to_update['node']
+                node_lists.taking_limit[side].remove(node.order, node.user_account)
+                node_lists.resting_limit[side].insert(node.order, market_type_str, node.user_account)
+
+    def update_resting_limit_orders(self, slot: int):
+        if slot < self.max_slot_for_resting_limit_orders:
+            return
+        
+        self.max_slot_for_resting_limit_orders = slot
+
+        self.update_resting_limit_orders_for_market_type(slot, 'perp')
+        self.update_resting_limit_orders_for_market_type(slot, 'spot')
+    
+    def update_order(
+        self,
+        order: Order,
+        user_account: Pubkey,
+        slot: int,
+        cumulative_base_asset_amount_filled: int,
+        on_update: Optional[OrderBookCallback]
+    ):
+        self.update_resting_limit_orders(slot)
+
+        if order.base_asset_amount == cumulative_base_asset_amount_filled:
+            self.delete(order, user_account, slot)
+            return
+        
+        if order.base_asset_amount_filled == cumulative_base_asset_amount_filled:
+            return
+        
+        new_order = copy.deepcopy(order)
+
+        new_order.base_asset_amount_filled = cumulative_base_asset_amount_filled
+
+        type, subtype = get_list_identifiers(order, slot)
+
+        market_type = market_type_to_string(order.market_type)
+
+        node_list = self.order_lists.get(market_type, {}).get(order.market_index, None)
+
+        target_list = getattr(node_list, type, {}).get(subtype, None)
+
+        if target_list is not None:
+            target_list: NodeList
+            target_list.update(order, user_account)
+
+        if on_update is not None and callable(on_update):
+            on_update()
+    
+
 
 
 
