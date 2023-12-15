@@ -99,7 +99,6 @@ def get_vamm_l2_generator(
         open_asks = 0
 
     now = now or int(datetime.now().timestamp())
-    # FIX THIS FIX THIS FIX THIS FIX THIS
     bid_reserves, ask_reserves = calculate_spread_reserves_dlob(updated_amm, oracle_price_data, now)
 
     num_bids = 0

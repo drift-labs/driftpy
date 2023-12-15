@@ -634,10 +634,7 @@ def calculate_spread_reserves_dlob(amm: AMM, oracle_price_data: OraclePriceData,
 
         base_asset_reserve = (amm.sqrt_k * amm.sqrt_k) // quote_asset_reserve
 
-        return {
-            'base_asset_reserve': base_asset_reserve,
-            'quote_asset_reserve': quote_asset_reserve,
-        }
+        return base_asset_reserve, quote_asset_reserve
     
     long_spread, short_spread = calculate_spread(amm, oracle_price_data, now)
     ask_reserves = calculate_spread_reserve(long_spread, PositionDirection.Long, amm)
