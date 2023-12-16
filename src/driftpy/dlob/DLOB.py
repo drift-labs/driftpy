@@ -632,6 +632,21 @@ class DLOB:
         
         return nodes_to_fill
     
+    def find_jit_auction_nodes_to_fill(
+        self,
+        market_index: int,
+        slot: int,
+        oracle_price_data: OraclePriceData,
+        market_type: MarketType
+    ) -> List[NodeToFill]:
+        nodes_to_fill: List[NodeToFill] =[]
+
+        for market_bid in self.get_taking_bids(market_index, market_type, slot, oracle_price_data):
+            nodes_to_fill.append(NodeToFill(market_bid, []))
+
+        for market_ask in self.get_taking_asks(market_index, market_type, slot, oracle_price_data):
+            nodes_to_fill.append(NodeToFill(market_ask, []))
+    
     def find_taking_nodes_to_fill(
         self,
         market_index: int,
@@ -882,7 +897,80 @@ class DLOB:
             taking_order_nodes_to_fill
         ) + expired_nodes_to_fill
     
+    def get_l2(
+        self,
+        market_index: int,
+        market_type: MarketType,
+        slot: int,
+        oracle_price_data: OraclePriceData,
+        depth: int,
+        fallback_l2_generators: List[L2OrderBookGenerator] = []
+    ) -> L2OrderBook:
+        '''
+            get an l2 view of the orderbook for a given market
+        '''
+        
+        maker_ask_l2_level_generator = get_l2_generator_from_dlob_nodes(
+            self.get_resting_limit_asks(market_index, slot, market_type, oracle_price_data),
+            oracle_price_data,
+            slot
+        )
 
+        fallback_ask_generators = [fallback_l2_generator.get_l2_asks() for fallback_l2_generator in fallback_l2_generators]
 
+        ask_l2_level_generator = merge_l2_level_generators(
+            [maker_ask_l2_level_generator] + fallback_ask_generators,
+            lambda a, b: a.price < b.price
+        )
 
+        asks = create_l2_levels(ask_l2_level_generator, depth)
 
+        maker_bid_l2_level_generator = get_l2_generator_from_dlob_nodes(
+            self.get_resting_limit_bids(market_index, slot, market_type, oracle_price_data),
+            oracle_price_data,
+            slot
+        )
+
+        fallback_bid_generators = [fallback_l2_generator.get_l2_bids() for fallback_l2_generator in fallback_l2_generators]
+
+        bid_l2_level_generator = merge_l2_level_generators(
+            [maker_bid_l2_level_generator] + fallback_bid_generators,
+            lambda a, b: a.price > b.price
+        )
+
+        bids = create_l2_levels(bid_l2_level_generator, depth)
+
+        return L2OrderBook(asks, bids, slot)
+    
+
+    def get_l3(
+        self,
+        market_index: int,
+        market_type: MarketType,
+        slot: int,
+        oracle_price_data: OraclePriceData
+    ) -> L3OrderBook:
+        bids: List[L3Level] = []
+        asks: List[L3Level] = []
+
+        resting_asks = self.get_resting_limit_asks(market_index, slot, market_type, oracle_price_data)
+
+        for ask in resting_asks:
+            asks.append(L3Level(
+                price = ask.get_price(oracle_price_data, slot),
+                size = ask.order.base_asset_amount - ask.order.base_asset_amount_filled,
+                maker = ask.user_account,
+                order_id = ask.order.order_id
+            ))
+
+        resting_bids = self.get_resting_limit_bids(market_index, slot, market_type, oracle_price_data)
+
+        for bid in resting_bids:
+            bids.append(L3Level(
+                price = bid.get_price(oracle_price_data, slot),
+                size = bid.order.base_asset_amount - bid.order.base_asset_amount_filled,
+                maker = bid.user_account,
+                order_id = bid.order.order_id
+            ))
+
+        return L3OrderBook(asks, bids, slot)
