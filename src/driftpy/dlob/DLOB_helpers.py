@@ -34,7 +34,7 @@ def add_order_list(market_type: str, market_index: int, order_lists):
 
 
 def get_list_identifiers(order: Order, slot: int, order_lists):
-    from driftpy.dlob.DLOB_node import NodeType, MarketNodeLists
+    from driftpy.dlob.dlob_node import NodeType, MarketNodeLists
     order_lists: Dict[str, Dict[int, MarketNodeLists]]
 
     is_inactive_trigger_order = must_be_triggered(order) and not is_triggered(order)

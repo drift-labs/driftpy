@@ -1,8 +1,8 @@
 import copy
 from typing import Callable, Dict, Generator, List, Optional, Union
 from solders.pubkey import Pubkey
-from driftpy.dlob.DLOB_generators import get_node_lists
-from driftpy.dlob.DLOB_helpers import add_order_list, get_list_identifiers, get_maker_rebate
+from driftpy.dlob.dlob_generators import get_node_lists
+from driftpy.dlob.dlob_helpers import add_order_list, get_list_identifiers, get_maker_rebate
 from driftpy.dlob.node_list import get_order_signature, get_vamm_node_generator, NodeList
 from driftpy.dlob.orderbook_levels import (
     create_l2_levels,
@@ -14,8 +14,8 @@ from driftpy.dlob.orderbook_levels import (
     L3Level,
     L3OrderBook
 )
-from driftpy.dlob.DLOB_orders import DLOBOrders
-from driftpy.dlob.DLOB_node import (
+from driftpy.dlob.dlob_orders import DLOBOrders
+from driftpy.dlob.dlob_node import (
     NodeType,
     DLOBNode, 
     RestingLimitOrderNode,
@@ -425,6 +425,35 @@ class DLOB:
             lambda best_node, current_node, slot, oracle_price_data: best_node.get_price(oracle_price_data, slot) > current_node.get_price(oracle_price_data, slot),
             filter_fcn
         )
+
+    def get_best_ask(
+        self,
+        market_index: int,
+        slot: int,
+        market_type: MarketType,
+        oracle_price_data: OraclePriceData
+    ) -> int:
+        return next(self.get_resting_limit_asks(
+            market_index, 
+            slot, 
+            market_type, 
+            oracle_price_data
+        )).get_price(oracle_price_data, slot)
+    
+    def get_best_bid(
+        self,
+        market_index: int,
+        slot: int,
+        market_type: MarketType,
+        oracle_price_data: OraclePriceData
+    ) -> int:
+        return next(self.get_resting_limit_bids(
+            market_index,
+            slot,
+            market_type,
+            oracle_price_data
+        )).get_price(oracle_price_data, slot)
+
 
     def get_taking_bids(
         self,

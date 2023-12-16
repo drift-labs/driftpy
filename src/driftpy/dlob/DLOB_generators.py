@@ -1,7 +1,7 @@
 from typing import Dict
 
 def get_node_lists(order_lists):
-    from driftpy.dlob.DLOB_node import MarketNodeLists
+    from driftpy.dlob.dlob_node import MarketNodeLists
     order_lists: Dict[str, Dict[int, MarketNodeLists]]
 
     for _, node_lists in order_lists.get('perp', {}).items():

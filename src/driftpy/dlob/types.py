@@ -1,4 +1,4 @@
-from driftpy.dlob.DLOB import DLOB
+from driftpy.dlob.dlob import DLOB
 from driftpy.drift_client import DriftClient
 from abc import ABC, abstractmethod
 

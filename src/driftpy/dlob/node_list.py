@@ -1,6 +1,6 @@
 from typing import Generic, TypeVar
 from solders.pubkey import Pubkey
-from driftpy.dlob.DLOB_node import DLOBNode, NodeType, create_node
+from driftpy.dlob.dlob_node import DLOBNode, NodeType, create_node
 
 from driftpy.types import Order, is_variant
 
