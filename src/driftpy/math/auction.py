@@ -59,3 +59,9 @@ def get_auction_price_for_oracle_offset_auction(order: Order, slot: int, oracle_
         price_offset = order.auction_start_price - price_offset_delta
 
     return oracle_price + price_offset
+
+def is_fallback_available_liquidity_source(order: Order, min_auction_duration: int, slot: int) -> bool:
+    if min_auction_duration == 0:
+        return True
+    
+    return slot - order.slot > min_auction_duration

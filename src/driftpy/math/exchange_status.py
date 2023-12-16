@@ -6,7 +6,7 @@ def exchange_paused(state: StateAccount) -> bool:
     return state.exchange_status != ExchangeStatus.ACTIVE
 
 def fill_paused(state: StateAccount, market: Union[PerpMarketAccount, SpotMarketAccount]) -> bool:
-        return (
+    return (
         (state.exchange_status & ExchangeStatus.FILL_PAUSED) == ExchangeStatus.FILL_PAUSED or
         is_one_of_variant(market.status, ['PAUSED', 'FILL_PAUSED'])
     )

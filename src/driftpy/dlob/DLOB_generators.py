@@ -1,6 +1,5 @@
 from typing import Dict
 
-
 def get_node_lists(order_lists):
     from driftpy.dlob.DLOB_node import MarketNodeLists
     order_lists: Dict[str, Dict[int, MarketNodeLists]]
@@ -28,3 +27,5 @@ def get_node_lists(order_lists):
         yield node_lists.floating_limit['ask']
         yield node_lists.trigger['above']
         yield node_lists.trigger['below']
+
+

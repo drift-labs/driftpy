@@ -55,3 +55,14 @@ def is_resting_limit_order(order: Order, slot: int) -> bool:
         return is_auction_complete(order, slot)
     
     return order.post_only or is_auction_complete(order, slot)
+
+def is_order_expired(order: Order, ts: int, enforce_buffer: bool = False) -> bool:
+    if must_be_triggered(order) or not is_variant(order.status, 'Open') or order.max_ts == 0:
+        return False
+    
+    if enforce_buffer and is_limit_order(order):
+        max_ts = order.max_ts + 15
+    else:
+        max_ts = order.max_ts
+
+    return ts > max_ts

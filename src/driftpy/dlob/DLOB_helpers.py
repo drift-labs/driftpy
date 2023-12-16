@@ -1,7 +1,7 @@
+from typing import Dict, Union
 
-from typing import Dict
 from driftpy.math.orders import is_resting_limit_order, is_triggered, must_be_triggered
-from driftpy.types import Order, is_one_of_variant, is_variant, market_type_to_string
+from driftpy.types import MarketType, Order, PerpMarketAccount, SpotMarketAccount, StateAccount, is_one_of_variant, is_variant, market_type_to_string
 
 def add_order_list(market_type: str, market_index: int, order_lists):
     from driftpy.dlob.node_list import NodeList, MarketNodeLists
@@ -62,3 +62,21 @@ def get_list_identifiers(order: Order, slot: int, order_lists):
         return None
     
     return type, subtype
+
+def get_maker_rebate(market_type: MarketType, state_account: StateAccount, market_account: Union[PerpMarketAccount, SpotMarketAccount]):
+    if is_variant(market_type, 'Perp'):
+        maker_rebate_numerator = \
+            state_account.perp_fee_structure.fee_tiers[0].maker_rebate_numerator
+        maker_rebate_denominator = \
+            state_account.perp_fee_structure.fee_tiers[0].maker_rebate_denominator
+    else:
+        maker_rebate_numerator = \
+            state_account.spot_fee_structure.fee_tiers[0].maker_rebate_numerator
+        maker_rebate_denominator = \
+            state_account.spot_fee_structure.fee_tiers[0].maker_rebate_denominator
+
+    fee_adjustment = market_account.fee_adjustment if market_account.fee_adjustment is not None else 0
+    if fee_adjustment != 0:
+        maker_rebate_numerator += (maker_rebate_numerator * fee_adjustment) // 100
+
+    return maker_rebate_numerator, maker_rebate_denominator
