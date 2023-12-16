@@ -1,6 +1,7 @@
 import copy
 from typing import Callable, Dict, Generator, List, Optional, Union
 from solders.pubkey import Pubkey
+from driftpy.constants.numeric_constants import BASE_PRECISION, PRICE_PRECISION, QUOTE_PRECISION
 from driftpy.dlob.dlob_generators import get_node_lists
 from driftpy.dlob.dlob_helpers import add_order_list, get_list_identifiers, get_maker_rebate
 from driftpy.dlob.node_list import get_order_signature, get_vamm_node_generator, NodeList
@@ -361,6 +362,30 @@ class DLOB:
                 best_generator['next'] = next(best_generator['generator'])
             else:
                 side_exhausted = True
+
+    def _estimate_fill_exact_base_amount_in_for_side(
+        self,
+        base_amount_in: int,
+        oracle_price_data: OraclePriceData,
+        slot: int,
+        dlob_side: Generator[DLOBNode, None, None]
+    ) -> int:
+        running_sum_quote = 0
+        running_sum_base = 0
+        for side in dlob_side:
+            price = side.get_price(oracle_price_data, slot)
+            base_amount_remaining = side.order.base_asset_amount - side.order.base_asset_amount_filled
+
+            if running_sum_base + base_amount_remaining > base_amount_in:
+                remaining_base = base_amount_in - running_sum_base
+                running_sum_base += remaining_base
+                running_sum_quote += (remaining_base * price)
+                break
+            else:
+                running_sum_base += base_amount_remaining
+                running_sum_quote += (base_amount_remaining * price)
+
+        return running_sum_quote * QUOTE_PRECISION // (BASE_PRECISION * PRICE_PRECISION)
 
     def get_resting_limit_asks(
         self,
