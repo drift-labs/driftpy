@@ -422,7 +422,7 @@ class DLOB:
             generator_list,
             oracle_price_data,
             slot,
-            lambda best_node, current_node, slot, oracle_price_data: best_node.get_price(oracle_price_data, slot) < current_node.get_price(oracle_price_data, slot),
+            lambda best_node, current_node, slot, oracle_price_data: best_node.get_price(oracle_price_data, slot) > current_node.get_price(oracle_price_data, slot),
             filter_fcn
         )
 
