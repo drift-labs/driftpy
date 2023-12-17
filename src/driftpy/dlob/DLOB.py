@@ -2,8 +2,7 @@ import copy
 from typing import Callable, Dict, Generator, List, Optional, Union
 from solders.pubkey import Pubkey
 from driftpy.constants.numeric_constants import BASE_PRECISION, PRICE_PRECISION, QUOTE_PRECISION
-from driftpy.dlob.dlob_generators import get_node_lists
-from driftpy.dlob.dlob_helpers import add_order_list, get_list_identifiers, get_maker_rebate
+from driftpy.dlob.dlob_helpers import get_maker_rebate, get_node_lists
 from driftpy.dlob.node_list import get_vamm_node_generator, NodeList
 from driftpy.dlob.orderbook_levels import (
     create_l2_levels,
@@ -26,30 +25,31 @@ from driftpy.dlob.dlob_node import (
 )
 from driftpy.math.auction import is_fallback_available_liquidity_source
 from driftpy.math.exchange_status import fill_paused, amm_paused
-from driftpy.math.orders import get_limit_price, is_order_expired, is_resting_limit_order, is_triggered
+from driftpy.math.orders import get_limit_price, is_order_expired, is_resting_limit_order, is_taking_order, is_triggered, must_be_triggered
 from driftpy.types import MarketType, OraclePriceData, Order, OrderActionRecord, OrderRecord, PerpMarketAccount, SpotMarketAccount, StateAccount, is_variant, is_one_of_variant, market_type_to_string
+import inspect
 
 class MarketNodeLists:
     def __init__(self):
         self.resting_limit = {
-            "ask": NodeList[RestingLimitOrderNode](),
-            "bid": NodeList[RestingLimitOrderNode](),
+            "ask": NodeList[RestingLimitOrderNode]('restingLimit', 'asc'),
+            "bid": NodeList[RestingLimitOrderNode]('restingLimit', 'desc'),
         }
         self.floating_limit = {
-            "ask": NodeList[FloatingLimitOrderNode](),
-            "bid": NodeList[FloatingLimitOrderNode](),
+            "ask": NodeList[FloatingLimitOrderNode]('floatingLimit', 'asc'),
+            "bid": NodeList[FloatingLimitOrderNode]('floatingLimit', 'desc'),
         }
         self.taking_limit = {
-            "ask": NodeList[TakingLimitOrderNode](),
-            "bid": NodeList[TakingLimitOrderNode](),
+            "ask": NodeList[TakingLimitOrderNode]('takingLimit', 'asc'),
+            "bid": NodeList[TakingLimitOrderNode]('takingLimit', 'asc'), # always sort ascending for market orders
         }
         self.market = {
-            "ask": NodeList[MarketOrderNode](),
-            "bid": NodeList[MarketOrderNode](),
+            "ask": NodeList[MarketOrderNode]('market', 'asc'),
+            "bid": NodeList[MarketOrderNode]('market', 'asc'), # always sort ascending for market orders
         }
         self.trigger = {
-            "above": NodeList[TriggerOrderNode](),
-            "below": NodeList[TriggerOrderNode](),
+            "above": NodeList[TriggerOrderNode]('trigger', 'asc'),
+            "below": NodeList[TriggerOrderNode]('trigger', 'desc'),
         }
 
 OrderBookCallback = Callable[[], None]
@@ -71,11 +71,11 @@ class NodeToTrigger:
         self.node = node
 
 SUPPORTED_ORDER_TYPES = [
-    'market',
-    'limit',
-    'triggerMarket',
-    'triggerLimit',
-    'oracle',
+    'Market',
+    'Limit',
+    'TriggerMarket',
+    'TriggerLimit',
+    'Oracle',
 ]
 
 class DLOB:
@@ -93,6 +93,44 @@ class DLOB:
         self.order_lists['perp'] = {}
         self.order_lists['spot'] = {}
 
+    def add_order_list(self, market_type: str, market_index: int) -> None:
+        if market_type not in self.order_lists:
+            self.order_lists[market_type] = {}
+        
+        self.order_lists[market_type][market_index] = MarketNodeLists()
+    
+    def get_list_for_order(self, order: Order, slot: int) -> Optional[NodeList]:
+        is_inactive_trigger_order = must_be_triggered(order) and not is_triggered(order)
+
+        if is_inactive_trigger_order:
+            node_type = 'trigger'
+        elif is_one_of_variant(order.order_type, ['Market', 'TriggerMarket', 'Oracle']):
+            node_type = 'market'
+        elif order.oracle_price_offset != 0:
+            node_type = 'floating_limit'
+        else:
+            is_resting = is_resting_limit_order(order, slot)
+            node_type = 'resting_limit' if is_resting else 'taking_limit'
+
+        if is_inactive_trigger_order:
+            sub_type = 'above' if is_variant(order.trigger_condition, 'Above') else 'Below'
+        else:
+            sub_type = 'bid' if is_variant(order.direction, 'Long') else 'ask'
+
+        market_type = market_type_to_string(order.market_type)
+
+        if market_type not in self.order_lists:
+            return None
+
+        market_node_lists = self.order_lists[market_type][order.market_index]
+
+        if hasattr(market_node_lists, node_type):
+            node_list_group = getattr(market_node_lists, node_type)
+            if sub_type in node_list_group:
+                return node_list_group[sub_type]
+
+        return None
+    
     def insert_order(
         self,
         order: Order, 
@@ -103,27 +141,19 @@ class DLOB:
         from driftpy.dlob.node_list import get_order_signature
         if is_variant(order.status, "Init"):
             return
-        
+
         if not is_one_of_variant(order.order_type, SUPPORTED_ORDER_TYPES):
             return
         
         market_type = market_type_to_string(order.market_type)
 
         if not order.market_index in self.order_lists.get(market_type):
-            self.order_lists = add_order_list(market_type, order.market_index, self.order_lists)
+            self.add_order_list(market_type, order.market_index)
 
         if is_variant(order.status, "Open"):
             self.open_orders.get(market_type).add(get_order_signature(order.order_id, user_account))
 
-        type, subtype = get_list_identifiers(order, slot, self.order_lists)
-
-        node_list = self.order_lists.get(market_type, {}).get(order.market_index, None)
-
-        target_list = getattr(node_list, type, {}).get(subtype, None)
-
-        if target_list is not None:
-            target_list: NodeList
-            target_list.insert(order, market_type, user_account)
+        self.get_list_for_order(order, slot).insert(order, market_type, user_account)
 
         if on_insert is not None and callable(on_insert):
             on_insert()
@@ -139,7 +169,6 @@ class DLOB:
         return None
     
     def _update_resting_limit_orders_for_market_type(self, slot: int, market_type_str: str):
-
         if market_type_str not in self.order_lists:
             return
         
@@ -174,8 +203,8 @@ class DLOB:
         
         self.max_slot_for_resting_limit_orders = slot
 
-        self.update_resting_limit_orders_for_market_type(slot, 'perp')
-        self.update_resting_limit_orders_for_market_type(slot, 'spot')
+        self._update_resting_limit_orders_for_market_type(slot, 'perp')
+        self._update_resting_limit_orders_for_market_type(slot, 'spot')
     
     def update_order(
         self,
@@ -198,17 +227,8 @@ class DLOB:
 
         new_order.base_asset_amount_filled = cumulative_base_asset_amount_filled
 
-        type, subtype = get_list_identifiers(order, slot, self.order_lists)
+        self.get_list_for_order(order, slot).update(new_order, user_account)
 
-        market_type = market_type_to_string(order.market_type)
-
-        node_list = self.order_lists.get(market_type, {}).get(order.market_index, None)
-
-        target_list = getattr(node_list, type, {}).get(subtype, None)
-
-        if target_list is not None:
-            target_list: NodeList
-            target_list.update(order, user_account)
 
         if on_update is not None and callable(on_update):
             on_update()
@@ -225,17 +245,7 @@ class DLOB:
         
         self.update_resting_limit_orders(slot)
 
-        type, subtype = get_list_identifiers(order, slot, self.order_lists)
-
-        market_type = market_type_to_string(order.market_type)
-
-        node_list = self.order_lists.get(market_type, {}).get(order.market_index, None)
-
-        target_list = getattr(node_list, type, {}).get(subtype, None)
-
-        if target_list is not None:
-            target_list: NodeList
-            target_list.remove(order, user_account)
+        self.get_list_for_order(order, slot).remove(order, user_account)
 
         if on_delete is not None and callable(on_delete):
             on_delete()
@@ -281,15 +291,7 @@ class DLOB:
             .trigger['above' if is_variant(order.trigger_condition, 'above') else 'below']
         trigger_list.remove(order, user_account)
 
-        type, subtype = get_list_identifiers(order, slot, self.order_lists)
-
-        node_list = self.order_lists.get(market_type, {}).get(order.market_index, None)
-
-        target_list = getattr(node_list, type, {}).get(subtype, None)
-
-        if target_list is not None:
-            target_list: NodeList
-            target_list.insert(order, market_type, user_account)
+        self.get_list_for_order(order, slot).insert(order, market_type, user_account)
 
         if on_trigger is not None and callable(on_trigger):
             on_trigger()
@@ -340,7 +342,10 @@ class DLOB:
         compare_fcn: Callable[[DLOBNode, DLOBNode, int, OraclePriceData], bool],
         filter_fcn: Optional[DLOBFilterFcn] = None
     ) -> Generator[DLOBNode, None, None]:
-        
+        # curframe = inspect.currentframe()
+        # calframe = inspect.getouterframes(curframe, 2)
+        # print('caller name:', calframe[1][3])
+        # print(compare_fcn)
         generators = [{'next': next(generator, None), 'generator': generator} for generator in generator_list]
 
         side_exhausted = False
@@ -349,7 +354,6 @@ class DLOB:
             for current_generator in generators:
                 if current_generator['next'] is None:
                     continue
-
                 if best_generator is None or compare_fcn(best_generator['next'], current_generator['next'], slot, oracle_price_data):
                     best_generator = current_generator
 
@@ -360,7 +364,10 @@ class DLOB:
                     continue
 
                 yield best_generator['next']
-                best_generator['next'] = next(best_generator['generator'])
+                try:
+                    best_generator['next'] = next(best_generator['generator'])
+                except StopIteration:
+                    best_generator['next'] = None
             else:
                 side_exhausted = True
 
@@ -443,12 +450,14 @@ class DLOB:
             node_lists.resting_limit['bid'].get_generator(),
             node_lists.floating_limit['bid'].get_generator()
         ]
-
+        def cmp(best_node, current_node, oracle_price_data):
+            return best_node.get_price(oracle_price_data, slot) > current_node.get_price(oracle_price_data, slot)
+        
         yield from self._get_best_node(
             generator_list,
             oracle_price_data,
             slot,
-            lambda best_node, current_node, slot, oracle_price_data: best_node.get_price(oracle_price_data, slot) > current_node.get_price(oracle_price_data, slot),
+            cmp,
             filter_fcn
         )
 
@@ -496,7 +505,7 @@ class DLOB:
         
         self.update_resting_limit_orders(slot)
 
-        generator_list = List[
+        generator_list = [
             order_lists.market['bid'].get_generator(),
             order_lists.taking_limit['bid'].get_generator()
         ]
@@ -505,7 +514,7 @@ class DLOB:
             generator_list,
             oracle_price_data,
             slot,
-            lambda best_node, current_node: best_node.order.slot < current_node.order.slot
+            lambda best_node, current_node, slot, oracle_price_data: best_node.order.slot < current_node.order.slot
         )
 
     def get_taking_asks(
@@ -523,9 +532,9 @@ class DLOB:
         
         self.update_resting_limit_orders(slot)
 
-        generator_list = List[
+        generator_list = [
             order_lists.market['ask'].get_generator(),
-            order_lists.market['ask'].get_generator()
+            order_lists.taking_limit['ask'].get_generator()
         ]
 
         yield from self._get_best_node(
@@ -534,6 +543,81 @@ class DLOB:
             slot,
             lambda best_node, current_node: best_node.order.slot < current_node.order.slot
         )
+
+    def get_asks(
+        self,
+        market_index: int,
+        slot: int,
+        market_type: int,
+        oracle_price_data: OraclePriceData,
+        fallback_ask: Optional[int] = None
+    ) -> Generator[DLOBNode, None, None]:
+        if is_variant(market_type, 'Spot') and not oracle_price_data:
+            raise ValueError("Must provide oracle price data to get spot asks")
+        
+        generator_list = [
+            self.get_taking_asks(market_index, market_type, slot, oracle_price_data),
+            self.get_resting_limit_asks(market_index, slot, market_type, oracle_price_data)
+        ]
+
+        market_type_str = market_type_to_string(market_type)
+        if market_type_str == 'perp' and fallback_ask:
+            generator_list.append(get_vamm_node_generator(fallback_ask))
+
+        def cmp(best_node, current_node, slot, oracle_price_data):
+            best_node_taking = bool(best_node.order) and is_taking_order(best_node.order, slot)
+            current_node_taking = bool(current_node.order) and is_taking_order(current_node.order, slot)
+
+            if best_node_taking and current_node_taking:
+                return best_node.order.slot < current_node.order.slot
+            
+            if best_node_taking:
+                return True
+            
+            if current_node_taking:
+                return False
+            
+            return best_node.get_price(oracle_price_data, slot) < current_node.get_price(oracle_price_data, slot)
+        
+        return self._get_best_node(generator_list, oracle_price_data, slot, cmp)
+
+
+    def get_bids(
+        self,
+        market_index: int,
+        slot: int,
+        market_type: int,
+        oracle_price_data: OraclePriceData,
+        fallback_bid: Optional[int] = None
+    ) -> Generator[DLOBNode, None, None]:
+        if is_variant(market_type, 'Spot') and not oracle_price_data:
+            raise ValueError("must provde oracle price data to get spot bids")
+        
+        generator_list = [
+            self.get_taking_bids(market_index, market_type, slot, oracle_price_data),
+            self.get_resting_limit_bids(market_index, slot, market_type, oracle_price_data)
+        ]
+
+        market_type_str = market_type_to_string(market_type)
+        if market_type_str == 'perp' and fallback_bid:
+            generator_list.append(get_vamm_node_generator(fallback_bid))
+
+        def cmp(best_node, current_node, slot, oracle_price_data):
+            best_node_taking = bool(best_node.order) and is_taking_order(best_node.order, slot)
+            current_node_taking = bool(current_node.order) and is_taking_order(current_node.order, slot)
+
+            if best_node_taking and current_node_taking:
+                return best_node.order.slot < current_node.order.slot
+            
+            if best_node_taking:
+                return True
+            
+            if current_node_taking:
+                return False
+            
+            return best_node.get_price(oracle_price_data, slot) > current_node.get_price(oracle_price_data, slot)
+
+        return self._get_best_node(generator_list, oracle_price_data, slot, cmp)
 
     def find_nodes_crossing_fallback_liquidity(
         self,
@@ -601,32 +685,12 @@ class DLOB:
                 new_maker_order = copy.deepcopy(maker_node.order)
                 new_maker_order.base_asset_amount_filled += base_filled
 
-                type, subtype = get_list_identifiers(new_maker_order, slot, self.order_lists)
-
-                market_type = market_type_to_string(new_maker_order.market_type)
-
-                node_list = self.order_lists.get(market_type, {}).get(new_maker_order.market_index, None)
-
-                target_list = getattr(node_list, type, {}).get(subtype, None)
-
-                if target_list is not None:
-                    target_list: NodeList
-                    target_list.update(new_maker_order, maker_node.user_account)
+                self.get_list_for_order(new_maker_order, slot).update(new_maker_order, maker_node.user_account)
 
                 new_taker_order = copy.deepcopy(taker_node.order)
                 new_taker_order.base_asset_amount_filled += base_filled
 
-                type, subtype = get_list_identifiers(new_taker_order, slot, self.order_lists)
-
-                market_type = market_type_to_string(new_maker_order.market_type)
-
-                node_list = self.order_lists.get(market_type, {}).get(new_maker_order.market_index, None)
-
-                target_list = getattr(node_list, type, {}).get(subtype, None)
-
-                if target_list is not None:
-                    target_list: NodeList
-                    target_list.update(new_taker_order, taker_node.user_account)
+                self.get_list_for_order(new_taker_order, slot).update(new_taker_order, taker_node.user_account)
 
                 if new_taker_order.base_asset_amount_filled == taker_node.order.base_asset_amount:
                     break

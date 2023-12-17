@@ -10,11 +10,25 @@ class DLOBNode(ABC):
     def get_price(oracle_price_data: OraclePriceData, slot: int) -> int:
         pass
 
-    def is_vamm_node() -> bool:
+    def is_vamm_node(self) -> bool:
         pass
 
-    def is_base_filled() -> bool:
+    def is_base_filled(self) -> bool:
         pass
+
+class VAMMNode(DLOBNode):
+    def __init__(self, price: int):
+        self.price = price
+        self.order = None
+
+    def get_price(self, oracle_price_data: OraclePriceData, slot: int) -> int:
+        return self.price
+
+    def is_vamm_node(self) -> bool:
+        return True
+
+    def is_base_filled(self) -> bool:
+        return False
 
 class OrderNode(DLOBNode):
     def __init__(self, order: Order, user_account: Pubkey):
@@ -57,7 +71,7 @@ class TakingLimitOrderNode(OrderNode):
 
     def get_sort_value(self, order: Order) -> int:
         return order.slot
-    
+
 class RestingLimitOrderNode(OrderNode):
     def __init__(self, order: Order, user_account: Pubkey):
         super().__init__(order, user_account)
@@ -92,10 +106,11 @@ class TriggerOrderNode(OrderNode):
         self.previous = None
 
     def get_sort_value(self, order: Order) -> int:
-        return order.trigger_price
+        return order.trigger_price    
     
-
 NodeType = Literal['restingLimit', 'takingLimit', 'floatingLimit', 'market', 'trigger']
+
+SortDirection = Literal['asc', 'desc']
 
 node_type_map: dict[NodeType, type] = {
     'restingLimit': RestingLimitOrderNode,

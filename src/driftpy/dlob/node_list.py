@@ -1,8 +1,9 @@
-from typing import Generic, TypeVar
+from typing import Generator, Generic, TypeVar
 from solders.pubkey import Pubkey
-from driftpy.dlob.dlob_node import DLOBNode, NodeType, create_node
+from driftpy.dlob.dlob_node import DLOBNode, NodeType, SortDirection, VAMMNode, create_node
 
 from driftpy.types import Order, is_variant
+import inspect
 
 T = TypeVar('T', bound = DLOBNode)
 
@@ -10,7 +11,7 @@ def get_order_signature(order_id: int, user_account: Pubkey) -> str:
     return f"{str(user_account)}-{str(order_id)}"
 
 class NodeList(Generic[T]):
-    def __init__(self, node_type: NodeType, sort_direction):
+    def __init__(self, node_type: NodeType, sort_direction: SortDirection):
         self.head = None
         self.length = 0
         self.node_map = {}
@@ -55,6 +56,7 @@ class NodeList(Generic[T]):
         current_node.next = new_node
         new_node.previous = current_node
 
+
     def prepend_node(self, current_node: T, new_node: T) -> bool:
         current_order = current_node.order
         new_order = new_node.order
@@ -92,7 +94,7 @@ class NodeList(Generic[T]):
 
             self.length -= 1
     
-    def get_generator(self):
+    def get_generator(self) -> Generator[DLOBNode, None, None]:
         node = self.head
         while node:
             yield node
@@ -116,14 +118,6 @@ class NodeList(Generic[T]):
         else:
             print("---")
 
-def get_vamm_node_generator(price):
-    if price is None:
-        return
-    yield {
-        'get_price': lambda: price,
-        'is_vamm_node': lambda: True,
-        'order': None,
-        'user_account': None,
-        'is_base_filled': lambda: False,
-        'have_filled': False
-    }
+def get_vamm_node_generator(price) -> Generator[DLOBNode, None, None]:
+    if price is not None:
+        yield VAMMNode(price)

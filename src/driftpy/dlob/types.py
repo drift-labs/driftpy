@@ -28,4 +28,3 @@ class DLOBSubscriberEvents(ABC):
     @abstractmethod
     def error(self, e: Exception) -> None:
         pass
-

@@ -1,8 +1,9 @@
+from typing import Optional
 from driftpy.math.auction import get_auction_price, is_auction_complete
 from driftpy.types import OraclePriceData, Order, PositionDirection, is_one_of_variant, is_variant
 
 
-def get_limit_price(order: Order, oracle_price_data: OraclePriceData, slot: int, fallback_price) -> int:
+def get_limit_price(order: Order, oracle_price_data: OraclePriceData, slot: int, fallback_price: Optional[int] = None) -> int:
     if has_auction_price(order, slot):
         limit_price = get_auction_price(order, slot, oracle_price_data.price)
     elif order.oracle_price_offset != 0:
@@ -17,7 +18,7 @@ def get_limit_price(order: Order, oracle_price_data: OraclePriceData, slot: int,
 
 def has_auction_price(order: Order, slot: int) -> bool:
     return not is_auction_complete(order, slot) and \
-        (order.auction.start_price) != 0 or order.auction_end_price != 0
+        (order.auction_start_price) != 0 or order.auction_end_price != 0
 
 def standardize_price(price: int, tick_size: int, direction: PositionDirection) -> int:
     if price == 0:
@@ -32,6 +33,9 @@ def standardize_price(price: int, tick_size: int, direction: PositionDirection) 
         return price - remainder
     else:
         return price + tick_size - remainder
+    
+def is_market_order(order: Order) -> bool:
+    return is_one_of_variant(order.order_type, ['Market', 'TriggerMarket', 'Oracle'])
 
 def is_limit_order(order: Order) -> bool:
     return is_one_of_variant(order.order_type, ['Limit', 'TriggerLimit'])
@@ -46,7 +50,7 @@ def is_resting_limit_order(order: Order, slot: int) -> bool:
     if not is_limit_order(order):
         return False
     
-    if is_variant(order.orderType, 'TriggerLimit'):
+    if is_variant(order.order_type, 'TriggerLimit'):
         if is_variant(order.direction, 'Long') and order.trigger_price < order.price:
             return False
         elif is_variant(order.direction, 'Short') and order.trigger_price > order.price:
@@ -66,3 +70,6 @@ def is_order_expired(order: Order, ts: int, enforce_buffer: bool = False) -> boo
         max_ts = order.max_ts
 
     return ts > max_ts
+
+def is_taking_order(order: Order, slot: int) -> bool:
+    return is_market_order(order) or not is_resting_limit_order(order, slot)
