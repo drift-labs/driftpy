@@ -389,51 +389,29 @@ def test_dlob_proper_bids_perp():
 
     all_bids = dlob.get_bids(market_index, slot, MarketType.Perp(), oracle_price_data, v_bid)
 
-    '''
-    This will print
-    Node 0 type: <class 'driftpy.dlob.dlob_node.RestingLimitOrderNode'>
-    Node 1 type: <class 'driftpy.dlob.dlob_node.RestingLimitOrderNode'>
-    Node 2 type: <class 'driftpy.dlob.dlob_node.VAMMNode'>
-    Node 3 type: <class 'driftpy.dlob.dlob_node.TakingLimitOrderNode'>
-    Node 4 type: <class 'driftpy.dlob.dlob_node.TakingLimitOrderNode'>
-    Node 5 type: <class 'driftpy.dlob.dlob_node.MarketOrderNode'>
-    Node 6 type: <class 'driftpy.dlob.dlob_node.MarketOrderNode'>
-    Node 7 type: <class 'driftpy.dlob.dlob_node.MarketOrderNode'>
-    '''
     count_bids = 0
     print()
     for bid in all_bids:
-        print(f"Node {count_bids} type:", type(bid))
-        # assert bid.is_vamm_node() == expected_testcases[count_bids].is_vamm, 'expected vamm node'
+        assert bid.is_vamm_node() == expected_testcases[count_bids].is_vamm, 'expected vamm node'
         
-        # if bid.order:
-        #     assert bid.order.order_id == expected_testcases[count_bids].order_id, 'expected order_id'
-        #     assert bid.order.price == expected_testcases[count_bids].price, 'expected price'
-        #     assert str(bid.order.direction) == str(expected_testcases[count_bids].direction), 'expected direction'
-        #     assert str(bid.order.order_type) == str(expected_testcases[count_bids].order_type), 'expected order type'
+        if bid.order:
+            assert bid.order.order_id == expected_testcases[count_bids].order_id, 'expected order_id'
+            assert bid.order.price == expected_testcases[count_bids].price, 'expected price'
+            assert str(bid.order.direction) == str(expected_testcases[count_bids].direction), 'expected direction'
+            assert str(bid.order.order_type) == str(expected_testcases[count_bids].order_type), 'expected order type'
         count_bids += 1
     assert len(testcases) == count_bids, "expected count"
 
-    '''
-    This will print
-    Node 0 type: <class 'driftpy.dlob.dlob_node.TakingLimitOrderNode'>
-    Node 1 type: <class 'driftpy.dlob.dlob_node.TakingLimitOrderNode'>
-    Node 2 type: <class 'driftpy.dlob.dlob_node.MarketOrderNode'>
-    Node 3 type: <class 'driftpy.dlob.dlob_node.MarketOrderNode'>
-    Node 4 type: <class 'driftpy.dlob.dlob_node.MarketOrderNode'>
-    '''
     taking_bids = dlob.get_taking_bids(market_index, MarketType.Perp(), slot, oracle_price_data)
-    print()
     count_bids = 0
     expected_testcases_slice = expected_testcases[:5]
     for bid in taking_bids:
-        print(f"Node {count_bids} type:", type(bid))
-        # assert bid.is_vamm_node() == expected_testcases_slice[count_bids].is_vamm, "expected vAMM node"
-        # if bid.order:
-        #     assert bid.order.order_id == expected_testcases_slice[count_bids].order_id, "expected orderId"
-        #     assert bid.order.price == expected_testcases_slice[count_bids].price, "expected price"
-        #     assert bid.order.direction == expected_testcases_slice[count_bids].direction, "expected order direction"
-        #     assert bid.order.order_type == expected_testcases_slice[count_bids].order_type, "expected order type"
+        assert bid.is_vamm_node() == expected_testcases_slice[count_bids].is_vamm, "expected vAMM node"
+        if bid.order:
+            assert bid.order.order_id == expected_testcases_slice[count_bids].order_id, "expected orderId"
+            assert bid.order.price == expected_testcases_slice[count_bids].price, "expected price"
+            assert bid.order.direction == expected_testcases_slice[count_bids].direction, "expected order direction"
+            assert bid.order.order_type == expected_testcases_slice[count_bids].order_type, "expected order type"
         count_bids += 1
 
     assert count_bids == len(expected_testcases_slice), "expected count"

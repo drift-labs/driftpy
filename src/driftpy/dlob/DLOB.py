@@ -21,7 +21,8 @@ from driftpy.dlob.dlob_node import (
     FloatingLimitOrderNode,
     TakingLimitOrderNode,
     MarketOrderNode,
-    TriggerOrderNode
+    TriggerOrderNode,
+    VAMMNode
 )
 from driftpy.math.auction import is_fallback_available_liquidity_source
 from driftpy.math.exchange_status import fill_paused, amm_paused
@@ -489,7 +490,6 @@ class DLOB:
             oracle_price_data
         )).get_price(oracle_price_data, slot)
 
-
     def get_taking_bids(
         self,
         market_index: int,
@@ -511,7 +511,7 @@ class DLOB:
         ]
 
         def cmp(best_node, current_node, slot, oracle_price_data):
-            return best_node.order.slot < current_node.order.slot
+            return best_node.order.slot > current_node.order.slot
 
         yield from self._get_best_node(
             generator_list,
@@ -584,41 +584,35 @@ class DLOB:
         
         return self._get_best_node(generator_list, oracle_price_data, slot, cmp)
 
-
     def get_bids(
         self,
-        market_index: int,
-        slot: int,
-        market_type: int,
-        oracle_price_data: OraclePriceData,
+        market_index: int, 
+        slot: int, 
+        market_type: int, 
+        oracle_price_data: OraclePriceData, 
         fallback_bid: Optional[int] = None
     ) -> Generator[DLOBNode, None, None]:
         if is_variant(market_type, 'Spot') and not oracle_price_data:
-            raise ValueError("must provde oracle price data to get spot bids")
+            raise ValueError("must provide oracle price data to get spot bids")
         
-        generator_list = [
-            self.get_taking_bids(market_index, market_type, slot, oracle_price_data),
-            self.get_resting_limit_bids(market_index, slot, market_type, oracle_price_data)
-        ]
+        generator_list = []
+
+        generator_list.append(self.get_taking_bids(market_index, market_type, slot, oracle_price_data))
 
         market_type_str = market_type_to_string(market_type)
         if market_type_str == 'perp' and fallback_bid:
             generator_list.append(get_vamm_node_generator(fallback_bid))
 
-        def cmp(best_node, current_node, slot, oracle_price_data):
-            best_node_taking = bool(best_node.order) and is_taking_order(best_node.order, slot)
-            current_node_taking = bool(current_node.order) and is_taking_order(current_node.order, slot)
+        generator_list.append(self.get_resting_limit_bids(market_index, slot, market_type, oracle_price_data))
 
-            if best_node_taking and current_node_taking:
-                return best_node.order.slot < current_node.order.slot
-            
-            if best_node_taking:
-                return True
-            
-            if current_node_taking:
-                return False
-            
-            return best_node.get_price(oracle_price_data, slot) > current_node.get_price(oracle_price_data, slot)
+        def cmp(best_node, current_node, slot, oracle_price_data):
+            if isinstance(best_node, RestingLimitOrderNode) or isinstance(current_node, RestingLimitOrderNode):
+                return isinstance(best_node, RestingLimitOrderNode)
+
+            if isinstance(best_node, VAMMNode) or isinstance(current_node, VAMMNode):
+                return isinstance(best_node, VAMMNode)
+
+            return best_node.get_price(oracle_price_data, slot) < current_node.get_price(oracle_price_data, slot)
 
         return self._get_best_node(generator_list, oracle_price_data, slot, cmp)
 
