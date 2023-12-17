@@ -4,7 +4,7 @@ from solders.pubkey import Pubkey
 from driftpy.constants.numeric_constants import BASE_PRECISION, PRICE_PRECISION, QUOTE_PRECISION
 from driftpy.dlob.dlob_generators import get_node_lists
 from driftpy.dlob.dlob_helpers import add_order_list, get_list_identifiers, get_maker_rebate
-from driftpy.dlob.node_list import get_order_signature, get_vamm_node_generator, NodeList
+from driftpy.dlob.node_list import get_vamm_node_generator, NodeList
 from driftpy.dlob.orderbook_levels import (
     create_l2_levels,
     merge_l2_level_generators,
@@ -15,7 +15,6 @@ from driftpy.dlob.orderbook_levels import (
     L3Level,
     L3OrderBook
 )
-from driftpy.dlob.dlob_orders import DLOBOrders
 from driftpy.dlob.dlob_node import (
     NodeType,
     DLOBNode, 
@@ -53,7 +52,7 @@ class MarketNodeLists:
             "below": NodeList[TriggerOrderNode](),
         }
 
-OrderBookCallback = Callable([], None)
+OrderBookCallback = Callable[[], None]
 '''
     Receives a DLOBNode and is expected to return True if the node should
     be taken into account when generating, or False otherwise
@@ -101,6 +100,7 @@ class DLOB:
         slot: int, 
         on_insert: Optional[OrderBookCallback] = None
     ):
+        from driftpy.dlob.node_list import get_order_signature
         if is_variant(order.status, "Init"):
             return
         
@@ -129,6 +129,7 @@ class DLOB:
             on_insert()
 
     def get_order(self, order_id: int, user_account: Pubkey) -> Optional[Order]:
+        from driftpy.dlob.node_list import get_order_signature
         order_signature = get_order_signature(order_id, user_account)
         for node_list in get_node_lists(self.order_lists):
             node = node_list.get(order_signature)
@@ -819,6 +820,7 @@ class DLOB:
         resting_limit_order_nodes_to_fill: List[NodeToFill],
         taking_order_nodes_to_fill: List[NodeToFill],
     ) -> List[NodeToFill]:
+        from driftpy.dlob.node_list import get_order_signature
         merged_nodes_to_fill: Dict[str, NodeToFill] = {}
 
         def merge_nodes_to_fill_helper(nodes_to_fill_list):

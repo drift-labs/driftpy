@@ -2,7 +2,6 @@ from abc import ABC, abstractmethod
 from typing import Literal
 from solders.pubkey import Pubkey
 from driftpy.constants.numeric_constants import AMM_RESERVE_PRECISION, PRICE_PRECISION
-from driftpy.dlob.node_list import get_order_signature
 from driftpy.math.conversion import convert_to_number
 from driftpy.math.orders import get_limit_price
 from driftpy.types import OraclePriceData, Order, is_variant
@@ -30,6 +29,7 @@ class OrderNode(DLOBNode):
         pass
 
     def get_label(self):
+        from driftpy.dlob.node_list import get_order_signature
         msg = f"Order {get_order_signature(self.order.order_id, self.user_account)}"
         direction = 'Long' if is_variant(self.order.direction, 'Long') else 'Short'
         msg += f" {direction} {convert_to_number(self.order.base_asset_amount, AMM_RESERVE_PRECISION):.3f}"

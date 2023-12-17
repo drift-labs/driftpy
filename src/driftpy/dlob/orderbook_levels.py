@@ -52,7 +52,7 @@ DEFAULT_TOP_OF_BOOK_QUOTE_AMOUNTS = [
     5000 * QUOTE_PRECISION,
 ]
 
-def get_l2_generator_from_dlob_nodes(dlob_nodes: Generator[DLOBNode], oracle_price_data: OraclePriceData, slot: int) -> Generator[L2Level]:
+def get_l2_generator_from_dlob_nodes(dlob_nodes: Generator[DLOBNode, None, None], oracle_price_data: OraclePriceData, slot: int) -> Generator[L2Level, None, None]:
     for dlob_node in dlob_nodes:
         size = dlob_node.order.base_asset_amount - dlob_node.order.base_asset_amount_filled
         yield L2Level(
@@ -62,9 +62,9 @@ def get_l2_generator_from_dlob_nodes(dlob_nodes: Generator[DLOBNode], oracle_pri
         )
 
 def merge_l2_level_generators(
-        l2_level_generators: List[Generator[L2Level]],
+        l2_level_generators: List[Generator[L2Level, None, None]],
         compare: callable
-) -> Generator[L2Level]:
+) -> Generator[L2Level, None, None]:
     generators = [{'generator': gen, 'next': next(gen, None)} for gen in l2_level_generators]
 
     while True:
@@ -81,7 +81,7 @@ def merge_l2_level_generators(
         yield next_gen['next']
         next_gen['next'] = next(next_gen['generator'], None)
 
-def create_l2_levels(generator: Generator[L2Level], depth: int) -> List[L2Level]:
+def create_l2_levels(generator: Generator[L2Level, None, None], depth: int) -> List[L2Level]:
     levels: List[L2Level] = []
     for level in generator:
         price = level.price
