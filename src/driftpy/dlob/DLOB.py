@@ -510,11 +510,14 @@ class DLOB:
             order_lists.taking_limit['bid'].get_generator()
         ]
 
+        def cmp(best_node, current_node, slot, oracle_price_data):
+            return best_node.order.slot < current_node.order.slot
+
         yield from self._get_best_node(
             generator_list,
             oracle_price_data,
             slot,
-            lambda best_node, current_node, slot, oracle_price_data: best_node.order.slot < current_node.order.slot
+            cmp,
         )
 
     def get_taking_asks(
