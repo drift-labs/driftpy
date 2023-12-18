@@ -381,7 +381,6 @@ def test_dlob_proper_bids_perp():
     all_bids = dlob.get_bids(market_index, slot, MarketType.Perp(), oracle_price_data, v_bid)
 
     count_bids = 0
-    print()
     for bid in all_bids:
         assert bid.is_vamm_node() == expected_testcases[count_bids].is_vamm, 'expected vamm node'
         
@@ -611,3 +610,79 @@ def test_dlob_estimate_fill_exact_base_amount_spot_buy():
 
     # (1 * 20.69) + (2 * 20.70) + (1 * 20.71) = 82.8
     assert quote_amt_out == 82.8
+
+def test_dlob_estimate_fill_exact_base_amount_spot_sell():
+    dlob = DLOB()
+    v_ask = 20790000
+    v_bid = 20580000
+
+    slot = 1
+    oracle_price_data = OraclePriceData((v_bid + v_ask) // 2, slot, 1, 1, 1, True)
+
+    user0 = Keypair()
+    user1 = Keypair()
+    user2 = Keypair()
+
+    market_index = 0
+    market_type = MarketType.Spot()
+
+    b1 = BASE_PRECISION
+    insert_order_to_dlob(
+        dlob,
+        user0.pubkey(),
+        OrderType.Limit(),
+        market_type,
+        1,
+        market_index,
+        20690000,
+        b1,
+        PositionDirection.Long(),
+        v_bid,
+        v_ask,
+        1
+    )
+
+    b2 = 2 * BASE_PRECISION
+    insert_order_to_dlob(
+        dlob,
+        user1.pubkey(),
+        OrderType.Limit(),
+        market_type,
+        2,
+        market_index,
+        20680000,
+        b2,
+        PositionDirection.Long(),
+        v_bid,
+        v_ask,
+        1
+    )
+
+    b3 = 3 * BASE_PRECISION
+    insert_order_to_dlob(
+        dlob,
+        user2.pubkey(),
+        OrderType.Limit(),
+        market_type,
+        3,
+        market_index,
+        20670000,
+        b3,
+        PositionDirection.Long(),
+        v_bid,
+        v_ask,
+        1
+    )
+
+    slot += 11
+
+    resting_bids = list(dlob.get_resting_limit_bids(market_index, slot, market_type, oracle_price_data))
+
+    assert len(resting_bids) == 3
+
+    base_amount = 4 * BASE_PRECISION
+    out = dlob.estimate_fill_with_exact_base_amount(market_index, market_type, base_amount, PositionDirection.Short(), slot, oracle_price_data)
+    quote_amt_out = convert_to_number(out, QUOTE_PRECISION)
+
+    # 1 * 20.69 + 2 * 20.68 + 1 * 20.67 = 82.72
+    assert quote_amt_out == 82.72

@@ -395,7 +395,6 @@ class DLOB:
                 running_sum_base += base_amount_remaining
                 running_sum_quote += (base_amount_remaining * price)
 
-        print(running_sum_quote)
         return running_sum_quote * QUOTE_PRECISION // (BASE_PRECISION * PRICE_PRECISION)
 
     def estimate_fill_with_exact_base_amount(
