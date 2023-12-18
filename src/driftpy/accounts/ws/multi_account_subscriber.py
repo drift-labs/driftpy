@@ -14,8 +14,9 @@ class WebSocketProgramAccountSubscriber:
             # options has the filters / commitment / encoding for `program_subscribe()`
             # think having them all in one type is cleaner
             options: WebsocketProgramAccountOptions,
-            on_update: UpdateCallback,
+            on_update: Optional[UpdateCallback],
             decode: Optional[Callable[[bytes], T]] = None,
+            resub_timeout_ms: Optional[int] = None
         ):
         self.program = program
         self.options = options
@@ -26,6 +27,7 @@ class WebSocketProgramAccountSubscriber:
         )
         self.subscribed_accounts: Dict[Pubkey, DataAndSlot[T]] = {}
         self.ws = None
+        self.resub_timeout_ms = resub_timeout_ms
         
     async def subscribe(self): 
         self.task = asyncio.create_task(self.subscribe_ws())
@@ -57,7 +59,8 @@ class WebSocketProgramAccountSubscriber:
                             data = self.decode(res.value.account.data)
                             new_data = DataAndSlot(slot, data)
                             pubkey = res.value.pubkey
-                            await self.on_update(str(pubkey), new_data)
+                            if self.on_update is not None and callable(self.on_update):
+                                await self.on_update(str(pubkey), new_data)
                             # for debug
                             print("Processed Account " + str(counter))
                     except Exception as e:
