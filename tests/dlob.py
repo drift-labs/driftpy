@@ -1,12 +1,15 @@
 from dataclasses import dataclass
 from typing import Optional
-from driftpy.constants.numeric_constants import BASE_PRECISION
+from driftpy.constants.numeric_constants import BASE_PRECISION, QUOTE_PRECISION
 from driftpy.dlob.dlob import DLOB
 from dlob_test_constants import mock_perp_markets, mock_spot_markets
-from driftpy.types import MarketType, OraclePriceData, OrderType, PositionDirection
+from driftpy.math.auction import is_auction_complete
+from driftpy.math.conversion import convert_to_number
+from driftpy.math.orders import is_resting_limit_order
+from driftpy.types import MarketType, OraclePriceData, OrderTriggerCondition, OrderType, PositionDirection
 from solders.keypair import Keypair
 
-from dlob_test_helpers import insert_order_to_dlob
+from dlob_test_helpers import insert_order_to_dlob, insert_trigger_order_to_dlob
 
 @dataclass
 class TestCase:
@@ -491,3 +494,119 @@ def test_dlob_proper_asks_perp():
         count_asks += 1
 
     assert count_asks == len(expected_testcases_slice), "expected count"
+
+# def test_trigger_limit_isnt_maker():
+#     dlob = DLOB()
+#     v_ask = 15
+#     v_bid = 8
+    
+#     user0 = Keypair()
+#     market_index = 0
+
+#     slot = 20
+#     oracle_price_data = OraclePriceData((v_bid + v_ask) // 2, slot, 1, 1, 1, True)
+
+#     insert_trigger_order_to_dlob(
+#         dlob,
+#         user0.pubkey(),
+#         OrderType.TriggerLimit(),
+#         MarketType.Perp(),
+#         1,
+#         market_index,
+#         oracle_price_data.price + 1,
+#         BASE_PRECISION,
+#         PositionDirection.Long(),
+#         oracle_price_data.price - 1,
+#         OrderTriggerCondition.TriggeredAbove(),
+#         v_bid,
+#         v_ask,
+#         1
+#     )
+
+#     resting_limit_bids = list(dlob.get_resting_limit_bids(market_index, slot, MarketType.Perp(), oracle_price_data))
+
+#     assert len(resting_limit_bids) == 0
+
+#     taking_bids = list(dlob.get_taking_bids(market_index, MarketType.Perp(), slot, oracle_price_data))
+#     assert len(taking_bids) == 1
+
+#     trigger_limit_bid = taking_bids[0]
+#     assert trigger_limit_bid is not None
+#     assert is_auction_complete(trigger_limit_bid.order, slot)
+#     assert not is_resting_limit_order(trigger_limit_bid.order, slot)
+    
+# SPOT MARKET TESTS
+def test_dlob_estimate_fill_exact_base_amount_spot_buy():
+    dlob = DLOB()
+    v_ask = 20790000
+    v_bid = 20580000
+
+    slot = 1
+    oracle_price_data = OraclePriceData((v_bid + v_ask) // 2, slot, 1, 1, 1, True)
+
+    user0 = Keypair()
+    user1 = Keypair()
+    user2 = Keypair()
+
+    market_index = 0
+    market_type = MarketType.Spot()
+
+    b1 = BASE_PRECISION
+    insert_order_to_dlob(
+        dlob,
+        user0.pubkey(),
+        OrderType.Limit(),
+        market_type,
+        1,
+        market_index,
+        20690000,
+        b1,
+        PositionDirection.Short(),
+        v_ask,
+        v_bid,
+        1
+    )
+
+    b2 = b1 * 2
+    insert_order_to_dlob(
+        dlob,
+        user1.pubkey(),
+        OrderType.Limit(),
+        market_type,
+        1,
+        market_index,
+        20700000,
+        b2,
+        PositionDirection.Short(),
+        v_ask,
+        v_bid,
+        1
+    )
+
+    b3 = b1 * 3
+    insert_order_to_dlob(
+        dlob,
+        user2.pubkey(),
+        OrderType.Limit(),
+        market_type,
+        3,
+        market_index,
+        20710000,
+        b3,
+        PositionDirection.Short(),
+        v_ask,
+        v_bid, 
+        1
+    )
+
+    slot += 11
+
+    resting_asks = list(dlob.get_resting_limit_asks(market_index, slot, market_type, oracle_price_data))
+
+    assert len(resting_asks) == 3
+
+    base_amount = 4 * BASE_PRECISION
+    out = dlob.estimate_fill_with_exact_base_amount(market_index, market_type, base_amount, PositionDirection.Long(), slot, oracle_price_data)
+    quote_amt_out = convert_to_number(out, QUOTE_PRECISION)
+
+    assert quote_amt_out == 82.32

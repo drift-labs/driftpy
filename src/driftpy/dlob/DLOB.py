@@ -27,7 +27,7 @@ from driftpy.dlob.dlob_node import (
 from driftpy.math.auction import is_fallback_available_liquidity_source
 from driftpy.math.exchange_status import fill_paused, amm_paused
 from driftpy.math.orders import get_limit_price, is_order_expired, is_resting_limit_order, is_taking_order, is_triggered, must_be_triggered
-from driftpy.types import MarketType, OraclePriceData, Order, OrderActionRecord, OrderRecord, PerpMarketAccount, SpotMarketAccount, StateAccount, is_variant, is_one_of_variant, market_type_to_string
+from driftpy.types import MarketType, OraclePriceData, Order, OrderActionRecord, OrderRecord, PerpMarketAccount, PositionDirection, SpotMarketAccount, StateAccount, is_variant, is_one_of_variant, market_type_to_string
 import inspect
 
 class MarketNodeLists:
@@ -396,6 +396,30 @@ class DLOB:
 
         return running_sum_quote * QUOTE_PRECISION // (BASE_PRECISION * PRICE_PRECISION)
 
+    def estimate_fill_with_exact_base_amount(
+        self,
+        market_index: int,
+        market_type: MarketType,
+        base_amount: int,
+        order_direction: PositionDirection,
+        slot: int,
+        oracle_price_data: OraclePriceData
+    ) -> int: 
+        if is_variant(order_direction, 'Long'):
+            return self._estimate_fill_exact_base_amount_in_for_side(
+                base_amount,
+                oracle_price_data,
+                slot,
+                self.get_resting_limit_asks(market_index, slot, market_type, oracle_price_data)
+            )
+        elif is_variant(order_direction, 'Short'):
+            return self._estimate_fill_exact_base_amount_in_for_side(
+                base_amount,
+                oracle_price_data,
+                slot,
+                self.get_resting_limit_bids(market_index, slot, market_type, oracle_price_data)
+            )
+
     def get_resting_limit_asks(
         self,
         market_index: int,
@@ -510,7 +534,7 @@ class DLOB:
 
         generator_list = [
             order_lists.market['bid'].get_generator(),
-            order_lists.taking_limit['bid'].get_generator()
+            order_lists.taking_limit['bid'].get_generator(),
         ]
 
         def cmp(best_node, current_node, slot, oracle_price_data):
@@ -540,7 +564,7 @@ class DLOB:
 
         generator_list = [
             order_lists.market['ask'].get_generator(),
-            order_lists.taking_limit['ask'].get_generator()
+            order_lists.taking_limit['ask'].get_generator(),
         ]
 
         yield from self._get_best_node(
