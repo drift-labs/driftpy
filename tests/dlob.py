@@ -495,45 +495,45 @@ def test_dlob_proper_asks_perp():
 
     assert count_asks == len(expected_testcases_slice), "expected count"
 
-# def test_trigger_limit_isnt_maker():
-#     dlob = DLOB()
-#     v_ask = 15
-#     v_bid = 8
+def test_trigger_limit_isnt_maker():
+    dlob = DLOB()
+    v_ask = 15
+    v_bid = 8
     
-#     user0 = Keypair()
-#     market_index = 0
+    user0 = Keypair()
+    market_index = 0
 
-#     slot = 20
-#     oracle_price_data = OraclePriceData((v_bid + v_ask) // 2, slot, 1, 1, 1, True)
+    slot = 20
+    oracle_price_data = OraclePriceData((v_bid + v_ask) // 2, slot, 1, 1, 1, True)
 
-#     insert_trigger_order_to_dlob(
-#         dlob,
-#         user0.pubkey(),
-#         OrderType.TriggerLimit(),
-#         MarketType.Perp(),
-#         1,
-#         market_index,
-#         oracle_price_data.price + 1,
-#         BASE_PRECISION,
-#         PositionDirection.Long(),
-#         oracle_price_data.price - 1,
-#         OrderTriggerCondition.TriggeredAbove(),
-#         v_bid,
-#         v_ask,
-#         1
-#     )
+    insert_trigger_order_to_dlob(
+        dlob,
+        user0.pubkey(),
+        OrderType.TriggerLimit(),
+        MarketType.Perp(),
+        1,
+        market_index,
+        oracle_price_data.price + 1,
+        BASE_PRECISION,
+        PositionDirection.Long(),
+        oracle_price_data.price - 1,
+        OrderTriggerCondition.TriggeredAbove(),
+        v_bid,
+        v_ask,
+        1
+    )
 
-#     resting_limit_bids = list(dlob.get_resting_limit_bids(market_index, slot, MarketType.Perp(), oracle_price_data))
+    resting_limit_bids = list(dlob.get_resting_limit_bids(market_index, slot, MarketType.Perp(), oracle_price_data))
 
-#     assert len(resting_limit_bids) == 0
+    assert len(resting_limit_bids) == 0
 
-#     taking_bids = list(dlob.get_taking_bids(market_index, MarketType.Perp(), slot, oracle_price_data))
-#     assert len(taking_bids) == 1
+    taking_bids = list(dlob.get_taking_bids(market_index, MarketType.Perp(), slot, oracle_price_data))
+    assert len(taking_bids) == 1
 
-#     trigger_limit_bid = taking_bids[0]
-#     assert trigger_limit_bid is not None
-#     assert is_auction_complete(trigger_limit_bid.order, slot)
-#     assert not is_resting_limit_order(trigger_limit_bid.order, slot)
+    trigger_limit_bid = taking_bids[0]
+    assert trigger_limit_bid is not None
+    assert is_auction_complete(trigger_limit_bid.order, slot)
+    assert not is_resting_limit_order(trigger_limit_bid.order, slot)
     
 # SPOT MARKET TESTS
 def test_dlob_estimate_fill_exact_base_amount_spot_buy():
@@ -567,7 +567,7 @@ def test_dlob_estimate_fill_exact_base_amount_spot_buy():
         1
     )
 
-    b2 = b1 * 2
+    b2 = BASE_PRECISION * 2
     insert_order_to_dlob(
         dlob,
         user1.pubkey(),
@@ -583,7 +583,7 @@ def test_dlob_estimate_fill_exact_base_amount_spot_buy():
         1
     )
 
-    b3 = b1 * 3
+    b3 = BASE_PRECISION * 3
     insert_order_to_dlob(
         dlob,
         user2.pubkey(),
@@ -609,4 +609,5 @@ def test_dlob_estimate_fill_exact_base_amount_spot_buy():
     out = dlob.estimate_fill_with_exact_base_amount(market_index, market_type, base_amount, PositionDirection.Long(), slot, oracle_price_data)
     quote_amt_out = convert_to_number(out, QUOTE_PRECISION)
 
-    assert quote_amt_out == 82.32
+    # (1 * 20.69) + (2 * 20.70) + (1 * 20.71) = 82.8
+    assert quote_amt_out == 82.8

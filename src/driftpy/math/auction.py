@@ -29,7 +29,7 @@ def get_auction_price_for_fixed_auction(order: Order, slot: int) -> int:
     else:
         price_delta = order.auction_start_price - order.auction_end_price \
             * delta_numerator // delta_denominator
-        
+
     if is_variant(order.direction, "Long"):
         price = order.auction_start_price + price_delta
     else:

@@ -18,7 +18,8 @@ def get_limit_price(order: Order, oracle_price_data: OraclePriceData, slot: int,
 
 def has_auction_price(order: Order, slot: int) -> bool:
     return not is_auction_complete(order, slot) and \
-        (order.auction_start_price) != 0 or order.auction_end_price != 0
+        (order.auction_start_price != 0 or order.auction_end_price != 0)
+
 
 def standardize_price(price: int, tick_size: int, direction: PositionDirection) -> int:
     if price == 0:
@@ -44,7 +45,7 @@ def must_be_triggered(order: Order) -> bool:
     return is_one_of_variant(order.order_type, ['TriggerMarket', 'TriggerLimit'])
 
 def is_triggered(order: Order) -> bool:
-    return is_one_of_variant(order.trigger_condition, ['TriggeredAbove, TriggeredBelow'])
+    return is_one_of_variant(order.trigger_condition, ['TriggeredAbove', 'TriggeredBelow'])
 
 def is_resting_limit_order(order: Order, slot: int) -> bool:
     if not is_limit_order(order):

@@ -383,6 +383,7 @@ class DLOB:
         running_sum_base = 0
         for side in dlob_side:
             price = side.get_price(oracle_price_data, slot)
+
             base_amount_remaining = side.order.base_asset_amount - side.order.base_asset_amount_filled
 
             if running_sum_base + base_amount_remaining > base_amount_in:
@@ -394,6 +395,7 @@ class DLOB:
                 running_sum_base += base_amount_remaining
                 running_sum_quote += (base_amount_remaining * price)
 
+        print(running_sum_quote)
         return running_sum_quote * QUOTE_PRECISION // (BASE_PRECISION * PRICE_PRECISION)
 
     def estimate_fill_with_exact_base_amount(
