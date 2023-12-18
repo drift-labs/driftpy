@@ -10,6 +10,8 @@ T = TypeVar("T")
 class WebSocketProgramAccountSubscriber:
     def __init__(
             self,
+            subscription_name: str,
+            account_discriminator: str,
             program: Program,
             # options has the filters / commitment / encoding for `program_subscribe()`
             # think having them all in one type is cleaner
@@ -18,6 +20,8 @@ class WebSocketProgramAccountSubscriber:
             decode: Optional[Callable[[bytes], T]] = None,
             resub_timeout_ms: Optional[int] = None
         ):
+        self.subscription_name = subscription_name
+        self.account_discriminator = account_discriminator
         self.program = program
         self.options = options
         self.task = None
@@ -27,47 +31,71 @@ class WebSocketProgramAccountSubscriber:
         )
         self.subscribed_accounts: Dict[Pubkey, DataAndSlot[T]] = {}
         self.ws = None
-        self.resub_timeout_ms = resub_timeout_ms
+        self.resub_timeout_ms = resub_timeout_ms if resub_timeout_ms is not None else 1_000
+        self.receiving_data = False
+        self.latest_slot = 0
         
     async def subscribe(self): 
         self.task = asyncio.create_task(self.subscribe_ws())
         return self.task
 
+    def _resubscribe(self):
+        if not self.on_update:
+            raise ValueError('on_update callback must be set!')
+        
     async def subscribe_ws(self):
         endpoint = self.program.provider.connection._provider.endpoint_uri
-        ws_endpoint = endpoint.replace("https", "wss").replace("http", "ws")
-        async with connect(ws_endpoint) as ws:
-            self.ws = ws
-            ws: SolanaWsClientProtocol
+        ws_endpoint = endpoint.replace('https', 'wss').replace('http', 'ws')
+        while True:
             try:
-                await ws.program_subscribe(
-                    self.program.program_id,
-                    self.options.commitment,
-                    self.options.encoding,
-                    filters = self.options.filters
-                )
-                # Start streaming account data to be processed 
-                await ws.recv()
-                # counter is just for the debug print
-                counter = 0
-                async for msg in ws:
-                    counter += 1
-                    try:
-                        for item in msg:
-                            res = item.result
-                            slot = res.context.slot
-                            data = self.decode(res.value.account.data)
-                            new_data = DataAndSlot(slot, data)
-                            pubkey = res.value.pubkey
-                            if self.on_update is not None and callable(self.on_update):
-                                await self.on_update(str(pubkey), new_data)
-                            # for debug
-                            print("Processed Account " + str(counter))
-                    except Exception as e:
-                        print(f"Error processing acount data: {e}")
+                async with connect(ws_endpoint) as ws:
+                    self.ws = ws
+                    ws: SolanaWsClientProtocol
+                    
+                    await ws.program_subscribe(
+                        self.program.program_id,
+                        self.options.commitment,
+                        self.options.encoding,
+                        filters = self.options.filters
+                    )
 
+                    last_received_ts = asyncio.get_event_loop().time()
+                    await ws.recv()
+
+                    counter = 0
+                    # for debug
+                    async for msg in ws:
+                        counter = await self._process_message(msg, counter)
+
+                        last_received_ts = asyncio.get_event_loop().time()
+                        if asyncio.get_event_loop().time() - last_received_ts > self.resub_timeout_ms / 1000:
+                            if not self.receiving_data:
+                                print(f"WebSocket timeout reached.  Resubscribing to {self.subscription_name}")
+                                break
+                            else: 
+                                self.receiving_data = False
             except Exception as e:
-                print(f"Connection failed: {e}")
+                print(f"Error in subscription {self.subscription_name}: {e}")
+                await asyncio.sleep(5) # wait a second before we retry
+        
+    async def _process_message(self, msg, counter):
+        for item in msg:
+            res = item.result
+            slot = res.context.slot
+            if slot >= self.latest_slot:
+                self.latest_slot = slot
+                data = self.decode(res.value.account.data)
+                new_data = DataAndSlot(slot, data)
+                pubkey = res.value.pubkey
+                if self.on_update is not None and callable(self.on_update):
+                    await self.on_update(str(pubkey), new_data)
+                # for debug
+                counter += 1
+                print("Processed Account " + str(counter))
+                self.receiving_data = True
+                return counter
+            else:
+                print(f"Received stale data from slot {slot}")
 
     def _update_data(self, account: Pubkey, new_data: Optional[DataAndSlot[T]]):
         if new_data is None:

@@ -22,7 +22,15 @@ class AuctionSubscriber:
         if self.subscriber is None:
             filters = (get_user_filter(), get_user_with_auction_filter())
             options = WebsocketProgramAccountOptions(filters, self.opts.preflight_commitment, "base64")
-            self.subscriber = WebSocketProgramAccountSubscriber(self.drift_client.program, options, self.on_update, decode_user)
+            self.subscriber = WebSocketProgramAccountSubscriber(
+                'AuctionSubscriber',
+                'User',
+                self.drift_client.program, 
+                options, 
+                self.on_update, 
+                decode_user,
+                self.resub_timeout_ms
+                )
 
         await self.subscriber.subscribe()
 

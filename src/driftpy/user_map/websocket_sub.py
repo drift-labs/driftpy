@@ -36,7 +36,13 @@ class WebsocketSubscription:
             if not self.include_idle:
                 filters += (get_non_idle_user_filter(),)
             options = WebsocketProgramAccountOptions(filters, self.commitment, "base64")
-            self.subscriber = WebSocketProgramAccountSubscriber(self.user_map.drift_client.program, options, self.on_update, self.decode)
+            self.subscriber = WebSocketProgramAccountSubscriber(
+                'UserMap',
+                'User',
+                self.user_map.drift_client.program, 
+                options, 
+                self.on_update, 
+                self.decode)
         
         await self.subscriber.subscribe()
 
