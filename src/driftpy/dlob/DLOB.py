@@ -420,11 +420,14 @@ class DLOB:
             node_lists.floating_limit['ask'].get_generator()
         ]
 
+        def cmp(best_node, current_node, slot, oracle_price_data):
+            return best_node.get_price(oracle_price_data, slot) < best_node.get_price(oracle_price_data, slot)
+        
         yield from self._get_best_node(
             generator_list,
             oracle_price_data,
             slot,
-            lambda best_node, current_node, slot, oracle_price_data: best_node.get_price(oracle_price_data, slot) < current_node.get_price(oracle_price_data, slot),
+            cmp,
             filter_fcn
         )
 
@@ -544,14 +547,14 @@ class DLOB:
             generator_list,
             oracle_price_data,
             slot,
-            lambda best_node, current_node: best_node.order.slot < current_node.order.slot
+            lambda best_node, current_node, slot, oracle_price_data: best_node.order.slot > current_node.order.slot
         )
 
     def get_asks(
         self,
         market_index: int,
         slot: int,
-        market_type: int,
+        market_type: MarketType,
         oracle_price_data: OraclePriceData,
         fallback_ask: Optional[int] = None
     ) -> Generator[DLOBNode, None, None]:

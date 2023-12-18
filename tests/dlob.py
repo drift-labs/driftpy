@@ -351,18 +351,6 @@ def test_dlob_proper_bids_perp():
         TestCase(6, False, 4, 9, PositionDirection.Long(), OrderType.Limit(), 6, True)
     ]
 
-    '''
-        should be sorted 
-        market
-        market
-        market
-        highest limit non post-only
-        second highest limit non post-only
-        vamm
-        highest limit post-only
-        second highest limit post-only
-    '''
-
     for t in testcases:
         if t.is_vamm:
             continue
@@ -431,4 +419,75 @@ def test_dlob_proper_bids_perp():
         count_bids += 1
 
     assert count_bids == len(expected_testcases_slice), "expected count"
+
+def test_dlob_proper_asks_perp():
+    dlob = DLOB()
+    v_ask = 15
+    v_bid = 10
+    market_index = 0
+
+    slot = 12
+    oracle_price_data = OraclePriceData((v_bid + v_ask) // 2, slot, 1, 1, 1, True)
+
+    testcases = [
+        TestCase(0, False, 3, 0, PositionDirection.Short(), OrderType.Market(), 0, False),
+        TestCase(1, False, 4, 0, PositionDirection.Short(), OrderType.Market(), 1, False),
+        TestCase(2, False, 5, 0, PositionDirection.Short(), OrderType.Market(), 2, False),
+        TestCase(3, False, 1, 13, PositionDirection.Short(), OrderType.Limit(), 3, False),
+        TestCase(6, False, 6, 16, PositionDirection.Short(), OrderType.Limit(), 4, True),
+        TestCase(4, True, None, None, None, None, 0, False),
+        TestCase(7, False, 7, 17, PositionDirection.Short(), OrderType.Limit(), 4, True),
+        TestCase(5, False, 2, 14, PositionDirection.Short(), OrderType.Limit(), 4, True)
+    ]
+
+    for t in testcases:
+        if t.is_vamm:
+            continue
+
+        user = Keypair()
+
+        insert_order_to_dlob(
+            dlob,
+            user.pubkey(),
+            t.order_type or OrderType.Limit(),
+            MarketType.Perp(),
+            t.order_id or 0,
+            market_index,
+            t.price or 0,
+            BASE_PRECISION,
+            t.direction or PositionDirection.Short(),
+            0 if t.post_only else v_bid,
+            0 if t.post_only else v_ask,
+            t.slot,
+            post_only = t.post_only
+        )
+
+    expected_testcases = sorted(testcases, key=lambda tc: tc.expected_idx)
+
+    taking_asks = dlob.get_taking_asks(market_index, MarketType.Perp(), slot, oracle_price_data)
+    count_asks = 0
+    expected_testcases_slice = expected_testcases[:4]
+    for ask in taking_asks:
+        assert ask.is_vamm_node() == expected_testcases_slice[count_asks].is_vamm, "expected vAMM node"
+        if ask.order:
+            assert ask.order.order_id == expected_testcases_slice[count_asks].order_id, "expected orderId"
+            assert ask.order.price == expected_testcases_slice[count_asks].price, "expected price"
+            assert ask.order.direction == expected_testcases_slice[count_asks].direction, "expected order direction"
+            assert ask.order.order_type == expected_testcases_slice[count_asks].order_type, "expected order type"
+        count_asks += 1
+
+    assert count_asks == len(expected_testcases_slice), "expected count"
     
+    limit_asks = dlob.get_resting_limit_asks(market_index, slot, MarketType.Perp(),oracle_price_data)
+    count_asks = 0
+    expected_testcases_slice = expected_testcases[5:]
+    for ask in limit_asks:
+        assert ask.is_vamm_node() == expected_testcases_slice[count_asks].is_vamm, "expected vAMM node"
+        if ask.order:
+            assert ask.order.order_id == expected_testcases_slice[count_asks].order_id, "expected orderId"
+            assert ask.order.price == expected_testcases_slice[count_asks].price, "expected price"
+            assert ask.order.direction == expected_testcases_slice[count_asks].direction, "expected order direction"
+            assert ask.order.order_type == expected_testcases_slice[count_asks].order_type, "expected order type"
+        count_asks += 1
+
+    assert count_asks == len(expected_testcases_slice), "expected count"
