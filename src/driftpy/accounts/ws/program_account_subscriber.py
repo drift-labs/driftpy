@@ -66,6 +66,7 @@ class WebSocketProgramAccountSubscriber:
                     counter = 0
                     # for debug
                     async for msg in ws:
+                        print(msg)
                         counter = await self._process_message(msg, counter)
 
                         last_received_ts = asyncio.get_event_loop().time()

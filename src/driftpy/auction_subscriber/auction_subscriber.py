@@ -17,8 +17,10 @@ class AuctionSubscriber:
         self.subscriber: Optional[WebSocketProgramAccountSubscriber] = None
         self.event_emitter.on("on_account_update")
 
-    async def subscribe(self):
+    async def on_update(self, account_pubkey: str, data: DataAndSlot[UserAccount]):
+        self.event_emitter.on_account_update("on_account_update", data.data, Pubkey.from_string(account_pubkey), data.slot)
 
+    async def subscribe(self):
         if self.subscriber is None:
             filters = (get_user_filter(), get_user_with_auction_filter())
             options = WebsocketProgramAccountOptions(filters, self.commitment, "base64")
@@ -36,9 +38,6 @@ class AuctionSubscriber:
             return
         
         await self.subscriber.subscribe()
-
-    def on_update(self, account_pubkey: Pubkey, data: DataAndSlot[UserAccount]):
-        self.event_emitter.emit("on_account_update", data.data, account_pubkey, data.slot)
 
     def unsubscribe(self):
         if self.subscriber is None:
