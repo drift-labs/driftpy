@@ -1,4 +1,5 @@
 import asyncio
+import traceback
 from typing import Dict, Optional, TypeVar, Callable
 from anchorpy import Program
 from driftpy.accounts.types import DataAndSlot, UpdateCallback, WebsocketProgramAccountOptions
@@ -31,17 +32,17 @@ class WebSocketProgramAccountSubscriber:
         )
         self.subscribed_accounts: Dict[Pubkey, DataAndSlot[T]] = {}
         self.ws = None
-        self.resub_timeout_ms = resub_timeout_ms if resub_timeout_ms is not None else 1_000
+        self.resub_timeout_ms = resub_timeout_ms if resub_timeout_ms is not None else 1000
         self.receiving_data = False
+        self.subscribed = False
+        self.is_unsubscribing = False
         self.latest_slot = 0
         
     async def subscribe(self): 
+        if self.subscribed:
+            return
         self.task = asyncio.create_task(self.subscribe_ws())
         return self.task
-
-    def _resubscribe(self):
-        if not self.on_update:
-            raise ValueError('on_update callback must be set!')
         
     async def subscribe_ws(self):
         endpoint = self.program.provider.connection._provider.endpoint_uri
@@ -71,11 +72,15 @@ class WebSocketProgramAccountSubscriber:
                         if asyncio.get_event_loop().time() - last_received_ts > self.resub_timeout_ms / 1000:
                             if not self.receiving_data:
                                 print(f"WebSocket timeout reached.  Resubscribing to {self.subscription_name}")
+                                await self.ws.close()
+                                self.ws = None
                                 break
                             else: 
                                 self.receiving_data = False
             except Exception as e:
                 print(f"Error in subscription {self.subscription_name}: {e}")
+                await self.ws.close()
+                self.ws = None
                 await asyncio.sleep(5) # wait a second before we retry
         
     async def _process_message(self, msg, counter):
@@ -91,8 +96,8 @@ class WebSocketProgramAccountSubscriber:
                     await self.on_update(str(pubkey), new_data)
                 # for debug
                 counter += 1
-                print("Processed Account " + str(counter))
                 self.receiving_data = True
+                print("Processed Account " + str(counter))
                 return counter
             else:
                 print(f"Received stale data from slot {slot}")
@@ -103,11 +108,15 @@ class WebSocketProgramAccountSubscriber:
         self.subscribed_accounts[account] = new_data
 
     def unsubscribe(self):
+        self.is_unsubscribing = True
+        self.receiving_data = False
         if self.task:
             self.task.cancel()
             self.task = None
         if self.ws:
             self.ws.close()
             self.ws = None
+        self.is_unsubscribing = False
+        self.subscribed = False
 
             

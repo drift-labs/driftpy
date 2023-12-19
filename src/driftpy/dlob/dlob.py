@@ -1,6 +1,7 @@
 import copy
 from typing import Callable, Dict, Generator, List, Optional, Union
 from solders.pubkey import Pubkey
+
 from driftpy.constants.numeric_constants import BASE_PRECISION, PRICE_PRECISION, QUOTE_PRECISION
 from driftpy.dlob.dlob_helpers import get_maker_rebate, get_node_lists
 from driftpy.dlob.node_list import get_vamm_node_generator, NodeList
@@ -8,14 +9,12 @@ from driftpy.dlob.orderbook_levels import (
     create_l2_levels,
     merge_l2_level_generators,
     get_l2_generator_from_dlob_nodes, 
-    L2Level, 
     L2OrderBook, 
     L2OrderBookGenerator,
     L3Level,
     L3OrderBook
 )
 from driftpy.dlob.dlob_node import (
-    NodeType,
     DLOBNode, 
     RestingLimitOrderNode,
     FloatingLimitOrderNode,
@@ -26,9 +25,27 @@ from driftpy.dlob.dlob_node import (
 )
 from driftpy.math.auction import is_fallback_available_liquidity_source
 from driftpy.math.exchange_status import fill_paused, amm_paused
-from driftpy.math.orders import get_limit_price, is_order_expired, is_resting_limit_order, is_taking_order, is_triggered, must_be_triggered
-from driftpy.types import MarketType, OraclePriceData, Order, OrderActionRecord, OrderRecord, PerpMarketAccount, PositionDirection, SpotMarketAccount, StateAccount, is_variant, is_one_of_variant, market_type_to_string
-import inspect
+from driftpy.math.orders import (
+    get_limit_price, 
+    is_order_expired, 
+    is_resting_limit_order, 
+    is_taking_order, 
+    is_triggered, 
+    must_be_triggered
+    )
+from driftpy.types import (
+    MarketType, 
+    OraclePriceData, 
+    Order, 
+    OrderRecord, 
+    PerpMarketAccount, 
+    PositionDirection, 
+    SpotMarketAccount, 
+    StateAccount, 
+    is_variant, 
+    is_one_of_variant, 
+    market_type_to_string
+    )
 
 class MarketNodeLists:
     def __init__(self):
@@ -85,7 +102,6 @@ class DLOB:
         self.open_orders: Dict[str, set] = {}
         self.order_lists: Dict[str, Dict[int, MarketNodeLists]] = {}
         self.max_slot_for_resting_limit_orders = 0
-        self.initialized = False
         self.init()
 
     def init(self):
@@ -199,7 +215,7 @@ class DLOB:
                 node_lists.resting_limit[side].insert(node.order, market_type_str, node.user_account)
 
     def update_resting_limit_orders(self, slot: int):
-        if slot < self.max_slot_for_resting_limit_orders:
+        if slot <= self.max_slot_for_resting_limit_orders:
             return
         
         self.max_slot_for_resting_limit_orders = slot
@@ -289,7 +305,7 @@ class DLOB:
         market_type = market_type_to_string(order.market_type)
 
         trigger_list = self.order_lists.get(market_type).get(order.market_index) \
-            .trigger['above' if is_variant(order.trigger_condition, 'above') else 'below']
+            .trigger['above' if is_variant(order.trigger_condition, 'Above') else 'Below']
         trigger_list.remove(order, user_account)
 
         self.get_list_for_order(order, slot).insert(order, market_type, user_account)
@@ -300,40 +316,6 @@ class DLOB:
     def handle_order_record(self, record: OrderRecord, slot: int):
         self.insert_order(record.order, record.user, slot)
 
-    def handle_order_action_record(self, record: OrderActionRecord, slot: int):
-        if is_one_of_variant(record.action, ['PLACE', 'EXPIRE']):
-            return
-        
-        if is_variant(record.action, 'TRIGGER'):
-            if record.taker is not None:
-                taker_order = self.get_order(record.taker_order_id, record.taker)
-                if taker_order is not None:
-                    self.trigger(taker_order, record.taker, slot)
-
-            if record.maker is not None:
-                maker_order = self.get_order(record.maker_order_id, record.maker)
-                if maker_order is not None:
-                    self.trigger(maker_order, record.maker, slot)
-        elif is_variant(record.action, 'FILL'):
-            if record.taker is not None:
-                taker_order = self.get_order(record.taker_order_id, record.taker)
-                if taker_order is not None:
-                    self.update_order(taker_order, record.taker, slot, record.taker_order_cumulative_base_asset_amount_filled)
-
-            if record.maker is not None:
-                maker_order = self.get_order(record.maker_order_id, record.maker)
-                if maker_order is not None:
-                    self.update_order(maker_order, record.maker, slot, record.maker_order_cumulative_base_asset_amount_filled)
-        elif is_variant(record.action, 'CANCEL'):
-            if record.taker is not None:
-                taker_order = self.get_order(record.taker_order_id, record.taker)
-                if taker_order is not None:
-                    self.delete(taker_order, record.taker, slot)
-
-            if record.maker is not None:
-                maker_order = self.get_order(record.maker_order_id, record.maker)
-                if maker_order is not None:
-                    self.delete(maker_order, record.maker, slot)
     
     def _get_best_node(
         self,
@@ -343,10 +325,6 @@ class DLOB:
         compare_fcn: Callable[[DLOBNode, DLOBNode, int, OraclePriceData], bool],
         filter_fcn: Optional[DLOBFilterFcn] = None
     ) -> Generator[DLOBNode, None, None]:
-        # curframe = inspect.currentframe()
-        # calframe = inspect.getouterframes(curframe, 2)
-        # print('caller name:', calframe[1][3])
-        # print(compare_fcn)
         generators = [{'next': next(generator, None), 'generator': generator} for generator in generator_list]
 
         side_exhausted = False
@@ -372,31 +350,6 @@ class DLOB:
             else:
                 side_exhausted = True
 
-    def _estimate_fill_exact_base_amount_in_for_side(
-        self,
-        base_amount_in: int,
-        oracle_price_data: OraclePriceData,
-        slot: int,
-        dlob_side: Generator[DLOBNode, None, None]
-    ) -> int:
-        running_sum_quote = 0
-        running_sum_base = 0
-        for side in dlob_side:
-            price = side.get_price(oracle_price_data, slot)
-
-            base_amount_remaining = side.order.base_asset_amount - side.order.base_asset_amount_filled
-
-            if running_sum_base + base_amount_remaining > base_amount_in:
-                remaining_base = base_amount_in - running_sum_base
-                running_sum_base += remaining_base
-                running_sum_quote += (remaining_base * price)
-                break
-            else:
-                running_sum_base += base_amount_remaining
-                running_sum_quote += (base_amount_remaining * price)
-
-        return running_sum_quote * QUOTE_PRECISION // (BASE_PRECISION * PRICE_PRECISION)
-
     def estimate_fill_with_exact_base_amount(
         self,
         market_index: int,
@@ -421,6 +374,32 @@ class DLOB:
                 self.get_resting_limit_bids(market_index, slot, market_type, oracle_price_data)
             )
 
+
+    def _estimate_fill_exact_base_amount_in_for_side(
+        self,
+        base_amount_in: int,
+        oracle_price_data: OraclePriceData,
+        slot: int,
+        dlob_side: Generator[DLOBNode, None, None]
+    ) -> int:
+        running_sum_quote = 0
+        running_sum_base = 0
+        for side in dlob_side:
+            price = side.get_price(oracle_price_data, slot)
+
+            base_amount_remaining = side.order.base_asset_amount - side.order.base_asset_amount_filled
+
+            if running_sum_base + base_amount_remaining > base_amount_in:
+                remaining_base = base_amount_in - running_sum_base
+                running_sum_base += remaining_base
+                running_sum_quote += (remaining_base * price)
+                break
+            else:
+                running_sum_base += base_amount_remaining
+                running_sum_quote += (base_amount_remaining * price)
+
+        return running_sum_quote * QUOTE_PRECISION // (BASE_PRECISION * PRICE_PRECISION)
+    
     def get_resting_limit_asks(
         self,
         market_index: int,
@@ -446,7 +425,7 @@ class DLOB:
         ]
 
         def cmp(best_node, current_node, slot, oracle_price_data):
-            return best_node.get_price(oracle_price_data, slot) < best_node.get_price(oracle_price_data, slot)
+            return best_node.get_price(oracle_price_data, slot) < current_node.get_price(oracle_price_data, slot)
         
         yield from self._get_best_node(
             generator_list,
@@ -568,11 +547,14 @@ class DLOB:
             order_lists.taking_limit['ask'].get_generator(),
         ]
 
+        def cmp(best_node, current_node, slot, oracle_price_data):
+            return best_node.order.slot > current_node.order.slot
+
         yield from self._get_best_node(
             generator_list,
             oracle_price_data,
             slot,
-            lambda best_node, current_node, slot, oracle_price_data: best_node.order.slot > current_node.order.slot
+            cmp
         )
 
     def get_asks(
@@ -736,6 +718,8 @@ class DLOB:
 
         for market_ask in self.get_taking_asks(market_index, market_type, slot, oracle_price_data):
             nodes_to_fill.append(NodeToFill(market_ask, []))
+
+        return nodes_to_fill
     
     def find_taking_nodes_to_fill(
         self,
@@ -748,6 +732,9 @@ class DLOB:
         fallback_ask: Optional[int] = None,
         fallback_bid: Optional[int] = None,
     ) -> List[NodeToFill]:
+        '''
+            THIS NEEDS UNIT TESTS BEFORE BEING USED IN PROD
+        '''
         nodes_to_fill: List[NodeToFill] = []
 
         # Process taking asks

@@ -1,6 +1,6 @@
 from typing import Callable, Optional, TypeVar
 from driftpy.account_subscription_config import AccountSubscriptionConfig
-from driftpy.accounts.ws.multi_account_subscriber import WebSocketProgramAccountSubscriber
+from driftpy.accounts.ws.program_account_subscriber import WebSocketProgramAccountSubscriber
 from driftpy.memcmp import get_user_filter, get_non_idle_user_filter
 from driftpy.accounts.types import UpdateCallback, WebsocketProgramAccountOptions
 from driftpy.user_map.types import ConfigType

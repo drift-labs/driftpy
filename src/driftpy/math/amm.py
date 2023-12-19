@@ -617,6 +617,9 @@ def calculate_spread_reserves(
 
 
 def calculate_spread_reserves_dlob(amm: AMM, oracle_price_data: OraclePriceData, now = None):
+    '''
+        This is meant to replace `get_spread_reserves` eventually to match the TS SDK
+    '''
     def calculate_spread_reserve(spread: int, direction: PositionDirection, amm: AMM):
         if spread == 0:
             return amm.base_asset_reserve, amm.quote_asset_reserve

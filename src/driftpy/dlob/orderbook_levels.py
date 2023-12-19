@@ -107,6 +107,9 @@ def get_vamm_l2_generator(
         num_orders: int, now: Optional[int] = None, 
         top_of_book_quote_amounts: Optional[List[int]] = None
 ):
+    '''
+        THIS NEEDS UNIT TESTS BEFORE BEING USED IN PROD
+    '''
     num_base_orders = num_orders
     if top_of_book_quote_amounts:
         num_base_orders = num_orders - len(top_of_book_quote_amounts)
