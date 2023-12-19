@@ -46,6 +46,7 @@ class WebsocketSubscription:
         
         await self.subscriber.subscribe()
 
+        print(f"skip initial load: {self.skip_initial_load}")
         if not self.skip_initial_load:
             await self.user_map.sync()
         

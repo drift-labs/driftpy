@@ -29,7 +29,6 @@ class UserMap(UserMapInterface):
         self.user_map: Dict[str, DriftUser] = {}
         self.last_number_of_sub_accounts = None
         self.sync_lock = asyncio.Lock()  
-        self.sync_promise_resolver = None
         self.drift_client: DriftClient = config.drift_client
         self.is_subscribed = False
         if config.connection:
@@ -41,12 +40,14 @@ class UserMap(UserMapInterface):
         if isinstance(config.subscription_config, PollingConfig):
             self.subscription = PollingSubscription(self, config.subscription_config.frequency, config.skip_initial_load)
         else: 
-            self.subscription = WebsocketSubscription(self, self.commitment, self.update_user_account, config.subscription_config.resub_timeout_ms, config.skip_initial_load, decode = decode_user)
-
-    async def state_account_update_callback(self, state: StateAccount):
-        if state.max_number_of_sub_accounts != self.last_number_of_sub_accounts:
-            await self.sync()
-            self.last_number_of_sub_accounts = state.max_number_of_sub_accounts
+            self.subscription = WebsocketSubscription(
+                self,
+                self.commitment, 
+                self.update_user_account, 
+                config.skip_initial_load, 
+                config.subscription_config.resub_timeout_ms, 
+                decode = decode_user
+                )
 
     async def subscribe(self):
         if self.size() > 0:
@@ -137,7 +138,7 @@ class UserMap(UserMapInterface):
                         await self.add_pubkey(Pubkey.from_string(key))
                         self.user_map.get(key).account_subscriber._update_data(DataAndSlot(slot, user_account))
                     # let the loop breathe
-                    await asyncio.sleep(10)
+                    await asyncio.sleep(1)
 
                 # remove any stale data from the usermap or update the data to the latest gPA data
                 for key, user in self.user_map.items():
@@ -145,7 +146,7 @@ class UserMap(UserMapInterface):
                         user.unsubscribe()
                         del self.user_map[key]
                     # let the loop breathe
-                    await asyncio.sleep(10)
+                    await asyncio.sleep(1)
 
             except Exception as e:
                 print(f"Error in UserMap.sync(): {e}")
