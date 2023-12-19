@@ -137,7 +137,7 @@ class UserMap(UserMapInterface):
                         await self.add_pubkey(Pubkey.from_string(key))
                         self.user_map.get(key).account_subscriber._update_data(DataAndSlot(slot, user_account))
                     # let the loop breathe
-                    await asyncio.sleep(0)
+                    await asyncio.sleep(10)
 
                 # remove any stale data from the usermap or update the data to the latest gPA data
                 for key, user in self.user_map.items():
@@ -145,7 +145,7 @@ class UserMap(UserMapInterface):
                         user.unsubscribe()
                         del self.user_map[key]
                     # let the loop breathe
-                    await asyncio.sleep(0)
+                    await asyncio.sleep(10)
 
             except Exception as e:
                 print(f"Error in UserMap.sync(): {e}")
