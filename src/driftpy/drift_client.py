@@ -144,7 +144,7 @@ class DriftClient:
 
         user = DriftUser(
             drift_client=self,
-            authority=self.authority,
+            user_public_key=self.get_user_account_public_key(sub_account_id),
             sub_account_id=sub_account_id,
             account_subscription=self.account_subscription_config,
         )

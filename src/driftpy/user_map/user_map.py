@@ -104,7 +104,7 @@ class UserMap(UserMapInterface):
         ) -> None:
         user = DriftUser(
             self.drift_client, 
-            authority = user_account_public_key,
+            user_public_key = user_account_public_key,
             account_subscription = AccountSubscriptionConfig("cached", commitment=self.commitment)
             )
 

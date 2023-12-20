@@ -18,7 +18,7 @@ class DriftUser:
     def __init__(
         self,
         drift_client,
-        authority: Optional[Pubkey] = None,
+        user_public_key: Pubkey,
         sub_account_id: int = 0,
         account_subscription: Optional[
             AccountSubscriptionConfig
@@ -28,22 +28,17 @@ class DriftUser:
 
         Args:
             drift_client(DriftClient): required for program_id, idl, things (keypair doesnt matter)
-            authority (Optional[Pubkey], optional): authority to investigate if None will use drift_client.authority
+            user_public_key (Pubkey): pubkey for user account
             sub_account_id (int, optional): subaccount of authority to investigate. Defaults to 0.
         """
         from driftpy.drift_client import DriftClient
         self.drift_client: DriftClient = drift_client
-        self.authority = authority
-        if self.authority is None:
-            self.authority = drift_client.authority
         self.program = drift_client.program
         self.oracle_program = drift_client
         self.connection = self.program.provider.connection
         self.subaccount_id = sub_account_id
 
-        self.user_public_key = get_user_account_public_key(
-            self.program.program_id, self.authority, self.subaccount_id
-        )
+        self.user_public_key = user_public_key
 
         self.account_subscriber = account_subscription.get_user_client_subscriber(
             self.program, self.user_public_key
