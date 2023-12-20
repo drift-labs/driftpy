@@ -46,8 +46,8 @@ class SlotSubscriber:
                     await ws.recv()
 
                     async for msg in ws:
-                        print(msg[0].result)
                         await self.on_slot_change(msg[0].result)
+                    
             except Exception as e:
                 print(f"Error in SlotSubscriber: {e}")
                 await self.ws.close()
