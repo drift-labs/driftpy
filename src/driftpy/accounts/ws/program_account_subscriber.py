@@ -63,10 +63,8 @@ class WebSocketProgramAccountSubscriber:
                     last_received_ts = asyncio.get_event_loop().time()
                     await ws.recv()
 
-                    counter = 0
-                    # for debug
                     async for msg in ws:
-                        counter = await self._process_message(msg, counter)
+                        await self._process_message(msg, counter)
 
                         last_received_ts = asyncio.get_event_loop().time()
                         if asyncio.get_event_loop().time() - last_received_ts > self.resub_timeout_ms / 1000:
@@ -94,11 +92,7 @@ class WebSocketProgramAccountSubscriber:
                 pubkey = res.value.pubkey
                 if self.on_update is not None and callable(self.on_update):
                     await self.on_update(str(pubkey), new_data)
-                # for debug
-                counter += 1
                 self.receiving_data = True
-                print("Processed Account " + str(counter))
-                return counter
             else:
                 print(f"Received stale data from slot {slot}")
 
