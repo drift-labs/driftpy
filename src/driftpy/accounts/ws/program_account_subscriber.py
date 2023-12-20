@@ -64,7 +64,7 @@ class WebSocketProgramAccountSubscriber:
                     await ws.recv()
 
                     async for msg in ws:
-                        await self._process_message(msg, counter)
+                        await self._process_message(msg)
 
                         last_received_ts = asyncio.get_event_loop().time()
                         if asyncio.get_event_loop().time() - last_received_ts > self.resub_timeout_ms / 1000:
@@ -81,7 +81,7 @@ class WebSocketProgramAccountSubscriber:
                 self.ws = None
                 await asyncio.sleep(5) # wait a second before we retry
         
-    async def _process_message(self, msg, counter):
+    async def _process_message(self, msg):
         for item in msg:
             res = item.result
             slot = res.context.slot
