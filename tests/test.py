@@ -292,6 +292,7 @@ async def test_open_orders(
 ):
     drift_user = DriftUser(
         drift_client,
+        user_public_key=drift_client.get_user_account_public_key(),
         account_subscription=AccountSubscriptionConfig("cached"),
     )
     await drift_user.subscribe()

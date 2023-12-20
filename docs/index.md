@@ -68,7 +68,7 @@ leverage = await drift_user.get_leverage()
 print('current leverage:', leverage / 10_000)
 
 # you can also inspect other accounts information using the (authority=) flag
-bigz_acc = DriftUser(drift_client, authority=PublicKey('bigZ'))
+bigz_acc = DriftUser(drift_client, user_public_key=PublicKey('bigZ'))
 leverage = await bigz_acc.get_leverage()
 print('bigZs leverage:', leverage / 10_000)
 
