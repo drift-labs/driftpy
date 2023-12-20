@@ -84,6 +84,9 @@ class UserAccountSubscriber:
     async def fetch(self):
         pass
 
+    async def update_data(self, data: Optional[DataAndSlot[UserAccount]]):
+        pass
+
     @abstractmethod
     def get_user_account_and_slot(self) -> Optional[DataAndSlot[UserAccount]]:
         pass

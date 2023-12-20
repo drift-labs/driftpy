@@ -55,6 +55,3 @@ class WebsocketSubscription:
             return
         self.subscriber.unsubscribe()
         self.subscriber = None
-
-    def get_subscription_config(self):
-        return AccountSubscriptionConfig(ConfigType.WEBSOCKET.value, commitment = self.commitment)
