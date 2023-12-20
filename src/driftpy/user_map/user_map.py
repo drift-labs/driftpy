@@ -118,10 +118,11 @@ class UserMap(UserMapInterface):
     async def sync(self) -> None:
         async with self.sync_lock:
             try:
-                filters = (get_user_filter(),)
+                filters = (get_user_filter(), )
                 if not self.include_idle:
                     filters += (get_non_idle_user_filter(),)
 
+                print(filters)
                 rpc_json_response = await self.connection.get_program_accounts(self.drift_client.program_id, self.commitment, 'base64', filters=filters)
                 rpc_response_and_context = rpc_json_response.value
                 
@@ -138,7 +139,7 @@ class UserMap(UserMapInterface):
                 for key in program_account_buffer_map.keys():
                     if key not in self.user_map:
                         data = program_account_buffer_map.get(key)
-                        user_account = data
+                        user_account: UserAccount = data
                         await self.add_pubkey(Pubkey.from_string(key), DataAndSlot(slot, user_account))
                     # let the loop breathe
                     await asyncio.sleep(0)
@@ -154,6 +155,7 @@ class UserMap(UserMapInterface):
                 for key in keys_to_delete:
                     del self.user_map[key]
 
+                print(len(self.user_map))
             except Exception as e:
                 print(f"Error in UserMap.sync(): {e}")
                 traceback.print_exc()

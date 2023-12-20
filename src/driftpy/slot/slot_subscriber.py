@@ -4,6 +4,7 @@ import asyncio
 from solana.rpc.websocket_api import connect, SolanaWsClientProtocol
 
 from driftpy.drift_client import DriftClient
+from events import Events as EventEmitter
 
 class SlotSubscriber:
     def __init__(self, drift_client: DriftClient):
@@ -13,7 +14,13 @@ class SlotSubscriber:
         self.program = drift_client.program
         self.ws = None
         self.subscribed = False
+        self.event_emitter = EventEmitter(("on_slot_change"))
+        self.event_emitter.on("on_slot_change")
 
+    async def on_slot_change(self, slot_info):
+        self.current_slot = slot_info.slot
+        self.event_emitter.on_slot_change(slot_info.slot)
+        
     async def subscribe(self):
         if self.subscribed:
             return
@@ -39,13 +46,14 @@ class SlotSubscriber:
                     await ws.recv()
 
                     async for msg in ws:
-                        print(f"Received message: {msg}")
+                        print(msg[0].result)
+                        await self.on_slot_change(msg[0].result)
             except Exception as e:
                 print(f"Error in SlotSubscriber: {e}")
                 await self.ws.close()
                 self.ws = None
                 await asyncio.sleep(5) # wait a second before we retry
-
+    
     def get_slot(self) -> int:
         return self.current_slot
 

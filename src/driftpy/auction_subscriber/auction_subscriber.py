@@ -12,13 +12,14 @@ class AuctionSubscriber:
     def __init__(self, config: AuctionSubscriberConfig):
         self.drift_client = config.drift_client
         self.commitment = config.commitment if config.commitment is not None else self.drift_client.connection.commitment
-        self.event_emitter = EventEmitter(("on_account_update"))
         self.resub_timeout_ms = config.resub_timeout_ms
         self.subscriber: Optional[WebSocketProgramAccountSubscriber] = None
+        self.event_emitter = EventEmitter(("on_account_update"))
         self.event_emitter.on("on_account_update")
 
     async def on_update(self, account_pubkey: str, data: DataAndSlot[UserAccount]):
-        self.event_emitter.on_account_update("on_account_update", data.data, Pubkey.from_string(account_pubkey), data.slot)
+        print("Emitting Auction Event!")
+        self.event_emitter.on_account_update(data.data, Pubkey.from_string(account_pubkey), data.slot)
 
     async def subscribe(self):
         if self.subscriber is None:
