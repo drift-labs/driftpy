@@ -3,6 +3,7 @@ from driftpy.account_subscription_config import AccountSubscriptionConfig
 from driftpy.accounts.bulk_account_loader import BulkAccountLoader
 from driftpy.user_map.types import ConfigType, Subscription
 
+
 class PollingSubscription(Subscription):
     def __init__(self, user_map, frequency: float, skip_initial_load: bool = False):
         from driftpy.user_map.user_map import UserMap
@@ -22,6 +23,9 @@ class PollingSubscription(Subscription):
         self.timer_task = asyncio.create_task(self._polling_loop())
 
     async def _polling_loop(self):
+        if self.frequency == 0:
+            # We don't want to start this loop if the frequency is zero.
+            return
         while True:
             await asyncio.sleep(self.frequency)
             await self.user_map.sync()
