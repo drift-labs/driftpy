@@ -1,6 +1,7 @@
 import asyncio
 from solana.rpc.async_api import AsyncClient
 from solana.rpc.commitment import Commitment
+from solana.rpc.websocket_api import SolanaWsClientProtocol
 from solders.pubkey import Pubkey
 from solders.rpc.config import RpcTransactionLogsFilterMentions
 
@@ -30,6 +31,7 @@ class WebsocketLogProvider(LogProvider):
         endpoint = self.connection._provider.endpoint_uri
         ws_endpoint = endpoint.replace("https", "wss").replace("http", "ws")
         async for ws in connect(ws_endpoint):
+            ws: SolanaWsClientProtocol
             try:
                 await ws.logs_subscribe(
                     RpcTransactionLogsFilterMentions(self.address),
