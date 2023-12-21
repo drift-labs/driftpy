@@ -1,9 +1,3 @@
-from driftpy.math.amm import (
-    calculate_price,
-    calculate_spread_reserves,
-    calculate_peg_multiplier,
-    calculate_budgeted_repeg,
-)
 from driftpy.types import PositionDirection
 import copy
 import numpy as np
@@ -18,6 +12,8 @@ from driftpy.constants.numeric_constants import (
 
 
 def calculate_freepeg_cost(market, target_price, bonus=0):
+    from driftpy.math.amm import calculate_budgeted_repeg
+
     def calculate_budgeted_k(market, cost):
         if cost == 0:
             return 1
@@ -84,6 +80,8 @@ def calculate_freepeg_cost(market, target_price, bonus=0):
 
 
 def calculate_candidate_amm(market, oracle_price=None):
+    from driftpy.math.amm import calculate_peg_multiplier
+
     prepeg = "PrePeg" in market.amm.strategies
     prefreepeg = "PreFreePeg" in market.amm.strategies
 
@@ -125,6 +123,8 @@ def calculate_candidate_amm(market, oracle_price=None):
 
 
 def calculate_long_short_reserves_and_peg(market, oracle_price=None):
+    from driftpy.math.amm import calculate_spread_reserves
+
     candidate_amm = calculate_candidate_amm(market, oracle_price)
 
     base_asset_reserves_short, quote_asset_reserves_short = calculate_spread_reserves(
@@ -145,6 +145,8 @@ def calculate_long_short_reserves_and_peg(market, oracle_price=None):
 
 
 def calculate_mark_price(market, oracle_price=None):
+    from driftpy.math.amm import calculate_price
+
     if oracle_price is not None:
         candidate_amm = calculate_candidate_amm(market, oracle_price)
     else:
@@ -158,6 +160,8 @@ def calculate_mark_price(market, oracle_price=None):
 
 
 def calculate_bid_ask_price(market, oracle_price=None):
+    from driftpy.math.amm import calculate_price
+
     [
         base_asset_reserves_long,
         quote_asset_reserves_long,
@@ -178,6 +182,8 @@ def calculate_bid_ask_price(market, oracle_price=None):
 
 
 def calculate_bid_price(market, oracle_price=None):
+    from driftpy.math.amm import calculate_price, calculate_spread_reserves
+
     candidate_amm = calculate_candidate_amm(market, oracle_price)
 
     base_asset_reserves_short, quote_asset_reserves_short = calculate_spread_reserves(
@@ -192,6 +198,7 @@ def calculate_bid_price(market, oracle_price=None):
 
 
 def calculate_ask_price(market, oracle_price=None):
+    from driftpy.math.amm import calculate_price, calculate_spread_reserves
     candidate_amm = calculate_candidate_amm(market, oracle_price)
 
     base_asset_reserves_long, quote_asset_reserves_long = calculate_spread_reserves(

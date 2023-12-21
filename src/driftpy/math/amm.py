@@ -1,11 +1,286 @@
+from copy import deepcopy
+import time
+from typing import Optional
 from driftpy.constants.numeric_constants import (
     AMM_RESERVE_PRECISION,
+    BID_ASK_SPREAD_PRECISION,
+    DEFAULT_REVENUE_SINCE_LAST_FUNDING_SPREAD_RETREAT,
+    PERCENTAGE_PRECISION,
     PRICE_DIV_PEG,
     PEG_PRECISION,
     AMM_TIMES_PEG_TO_QUOTE_PRECISION_RATIO,
+    PRICE_PRECISION,
     QUOTE_PRECISION,
 )
-from driftpy.types import PositionDirection, SwapDirection, AMM, AssetType
+from driftpy.math.oracles import calculate_live_oracle_std
+from driftpy.math.repeg import calculate_adjust_k_cost, calculate_budgeted_peg, calculate_optimal_peg_and_budget, calculate_repeg_cost
+from driftpy.math.utils import clamp_num
+from driftpy.types import OraclePriceData, PositionDirection, SwapDirection, AMM, AssetType, is_variant
+
+def calculate_vol_spread_bn(
+        last_oracle_conf_pct: int,
+        reserve_price: int,
+        mark_std: int,
+        oracle_std: int,
+        long_intensity: int,
+        short_intensity: int,
+        volume_24h: int
+):
+    market_avg_std_pct = mark_std + oracle_std * PERCENTAGE_PRECISION // reserve_price // 2
+    vol_spread = max(last_oracle_conf_pct, market_avg_std_pct // 2)
+
+    clamp_min = PERCENTAGE_PRECISION // 100
+    clamp_max = PERCENTAGE_PRECISION * 16 // 10
+
+    long_vol_spread_factor = clamp_num(long_intensity * PERCENTAGE_PRECISION // max(1, volume_24h), clamp_min, clamp_max)
+    short_vol_spread_factor = clamp_num(short_intensity * PERCENTAGE_PRECISION // max(1, volume_24h), clamp_min, clamp_max)
+
+    conf_component = last_oracle_conf_pct
+
+    if last_oracle_conf_pct <= PRICE_PRECISION // 400:
+        conf_component = last_oracle_conf_pct // 10
+    
+    long_vol_spread = max(conf_component, vol_spread * long_vol_spread_factor // PERCENTAGE_PRECISION)
+    short_vol_spread = max(conf_component, vol_spread * short_vol_spread_factor // PERCENTAGE_PRECISION)
+
+    return long_vol_spread, short_vol_spread
+
+def calculate_effective_leverage(
+        base_spread: int,
+        quote_asset_reserve: int,
+        terminal_quote_asset_reserve: int,
+        peg_multiplier: int,
+        net_base_asset_amount: int,
+        reserve_price: int,
+        total_fee_minus_distributions: int
+) -> int:
+    net_base_asset_value = quote_asset_reserve - terminal_quote_asset_reserve * peg_multiplier // AMM_TIMES_PEG_TO_QUOTE_PRECISION_RATIO
+
+    local_base_asset_avlue = net_base_asset_amount * reserve_price // (AMM_TIMES_PEG_TO_QUOTE_PRECISION_RATIO * PRICE_PRECISION)
+
+    effective_gap = max(0, local_base_asset_avlue - net_base_asset_value)
+
+    effective_leverage = effective_gap // (max(0, total_fee_minus_distributions) + 1) + 1 // QUOTE_PRECISION
+
+    return effective_leverage
+
+def calculate_inventory_scale(
+        base_asset_amount_with_amm: int,
+        base_asset_reserve: int,
+        min_base_asset_reserve: int,
+        max_base_asset_reserve: int,
+        directional_spread: int,
+        max_spread: int
+) -> int:
+    if base_asset_amount_with_amm == 0:
+        return 1
+    
+    max_bid_ask_inventory_skew_factor = BID_ASK_SPREAD_PRECISION * 10
+
+    open_bids, open_asks = calculate_market_open_bid_ask(base_asset_reserve, min_base_asset_reserve, max_base_asset_reserve)
+
+    min_side_liquidity = min(abs(open_bids), abs(open_asks))
+
+    inventory_scale_bn = min(abs(base_asset_amount_with_amm * PERCENTAGE_PRECISION // max(min_side_liquidity, 1)), PERCENTAGE_PRECISION)
+
+    inventory_scale_max_bn = max(max_bid_ask_inventory_skew_factor, max_spread * BID_ASK_SPREAD_PRECISION // max(directional_spread, 1))
+
+    inventory_scale_capped = min(inventory_scale_max_bn, BID_ASK_SPREAD_PRECISION + inventory_scale_max_bn * inventory_scale_bn // PERCENTAGE_PRECISION) // BID_ASK_SPREAD_PRECISION
+
+    return inventory_scale_capped
+
+def calculate_spread_bn(
+        base_spread, 
+        last_oracle_reserve_price_spread_pct, 
+        last_oracle_conf_pct,
+        max_spread, 
+        quote_asset_reserve, 
+        terminal_quote_asset_reserve, 
+        peg_multiplier,
+        base_asset_amount_with_amm, 
+        reserve_price, 
+        total_fee_minus_distributions,
+        net_revenue_since_last_funding, 
+        base_asset_reserve, min_base_asset_reserve,
+        max_base_asset_reserve, 
+        mark_std, 
+        oracle_std, 
+        long_intensity, 
+        short_intensity,
+        volume24H, 
+        return_terms=False
+):
+
+    assert isinstance(base_spread, int)
+    assert isinstance(max_spread, int)
+
+    spread_terms = {
+        "long_vol_spread": 0,
+        "short_vol_spread": 0,
+        "long_spread_w_ps": 0,
+        "short_spread_w_ps": 0,
+        "max_target_spread": 0,
+        "inventory_spread_scale": 0,
+        "long_spread_w_inv_scale": 0,
+        "short_spread_w_inv_scale": 0,
+        "effective_leverage": 0,
+        "effective_leverage_capped": 0,
+        "long_spread_w_el": 0,
+        "short_spread_w_el": 0,
+        "revenue_retreat_amount": 0,
+        "half_revenue_retreat_amount": 0,
+        "long_spread_w_rev_retreat": 0,
+        "short_spread_w_rev_retreat": 0,
+        "total_spread": 0,
+        "long_spread": 0,
+        "short_spread": 0,
+    }
+
+    long_vol_spread, short_vol_spread = calculate_vol_spread_bn(
+        last_oracle_conf_pct, reserve_price, mark_std, oracle_std, long_intensity,
+        short_intensity, volume24H)
+
+    spread_terms['long_vol_spread'] = int(long_vol_spread)
+    spread_terms['short_vol_spread'] = int(short_vol_spread)
+
+    long_spread = max(base_spread // 2, int(long_vol_spread))
+    short_spread = max(base_spread // 2, int(short_vol_spread))
+
+    if last_oracle_reserve_price_spread_pct > 0:
+        short_spread = max(short_spread, abs(last_oracle_reserve_price_spread_pct) + int(short_vol_spread))
+    elif last_oracle_reserve_price_spread_pct < 0:
+        long_spread = max(long_spread, abs(last_oracle_reserve_price_spread_pct) + int(long_vol_spread))
+
+    spread_terms['long_spread_w_ps'] = long_spread
+    spread_terms['short_spread_w_ps'] = short_spread
+
+    max_target_spread = max(max_spread, abs(last_oracle_reserve_price_spread_pct))
+
+    inventory_spread_scale = calculate_inventory_scale(
+        base_asset_amount_with_amm, base_asset_reserve, min_base_asset_reserve,
+        max_base_asset_reserve, base_asset_amount_with_amm if base_asset_amount_with_amm > 0 else short_spread,
+        max_target_spread)
+
+    if base_asset_amount_with_amm > 0:
+        long_spread *= inventory_spread_scale
+    elif base_asset_amount_with_amm < 0:
+        short_spread *= inventory_spread_scale
+
+    spread_terms['max_target_spread'] = max_target_spread
+    spread_terms['inventory_spread_scale'] = inventory_spread_scale
+    spread_terms['long_spread_w_inv_scale'] = long_spread
+    spread_terms['short_spread_w_inv_scale'] = short_spread
+
+    MAX_SPREAD_SCALE = 10
+    if total_fee_minus_distributions > 0:
+        effective_leverage = calculate_effective_leverage(
+            base_spread, quote_asset_reserve, terminal_quote_asset_reserve, peg_multiplier,
+            base_asset_amount_with_amm, reserve_price, total_fee_minus_distributions)
+        spread_terms['effective_leverage'] = effective_leverage
+
+        spread_scale = min(MAX_SPREAD_SCALE, 1 + effective_leverage)
+
+        spread_terms['effective_leverage_capped'] = spread_scale
+
+        if base_asset_amount_with_amm > 0:
+            long_spread *= spread_scale
+            long_spread = int(long_spread)
+        else:
+            short_spread *= spread_scale
+            short_spread = int(short_spread)
+    else:
+        long_spread *= MAX_SPREAD_SCALE
+        short_spread *= MAX_SPREAD_SCALE
+
+    spread_terms['long_spread_w_el'] = long_spread
+    spread_terms['short_spread_w_el'] = short_spread
+
+    if net_revenue_since_last_funding < DEFAULT_REVENUE_SINCE_LAST_FUNDING_SPREAD_RETREAT:
+        max_retreat = max_target_spread // 10
+        revenue_retreat_amount = max_retreat
+
+        if net_revenue_since_last_funding >= DEFAULT_REVENUE_SINCE_LAST_FUNDING_SPREAD_RETREAT * 1000:
+            revenue_retreat_amount = min(
+                max_retreat,
+                int((base_spread * abs(net_revenue_since_last_funding)) // abs(DEFAULT_REVENUE_SINCE_LAST_FUNDING_SPREAD_RETREAT)))
+
+        half_revenue_retreat_amount = revenue_retreat_amount // 2
+
+        spread_terms['revenue_retreat_amount'] = revenue_retreat_amount
+        spread_terms['half_revenue_retreat_amount'] = half_revenue_retreat_amount
+
+        if base_asset_amount_with_amm > 0:
+            long_spread += revenue_retreat_amount
+            short_spread += half_revenue_retreat_amount
+        elif base_asset_amount_with_amm < 0:
+            long_spread += half_revenue_retreat_amount
+            short_spread += revenue_retreat_amount
+        else:
+            long_spread += half_revenue_retreat_amount
+            short_spread += half_revenue_retreat_amount
+
+    spread_terms['long_spread_w_rev_retreat'] = long_spread
+    spread_terms['short_spread_w_rev_retreat'] = short_spread
+
+    total_spread = long_spread + short_spread
+    if total_spread > max_target_spread:
+        if long_spread > short_spread:
+            long_spread = (long_spread * max_target_spread) // total_spread
+            short_spread = max_target_spread - long_spread
+        else:
+            short_spread = (short_spread * max_target_spread) // total_spread
+            long_spread = max_target_spread - short_spread
+
+    spread_terms['total_spread'] = total_spread
+    spread_terms['long_spread'] = long_spread
+    spread_terms['short_spread'] = short_spread
+
+    if return_terms:
+        return spread_terms
+    return long_spread, short_spread
+
+
+def calculate_spread(amm: AMM, oracle_price_data: OraclePriceData, now: Optional[int] = None):
+    if amm.base_spread == 0 or amm.curve_update_intensity == 0:
+        return amm.base_spread // 2, amm.base_spread // 2
+    
+    reserve_price = calculate_price(amm.base_asset_reserve, amm.quote_asset_reserve, amm.peg_multiplier)
+
+    target_price = oracle_price_data.price if oracle_price_data is not None else reserve_price
+    conf_interval = oracle_price_data.confidence if oracle_price_data is not None else 0
+
+    target_mark_spread_pct = reserve_price - target_price * BID_ASK_SPREAD_PRECISION // reserve_price
+    conf_interval_pct = conf_interval * BID_ASK_SPREAD_PRECISION // reserve_price
+
+    now = now if now is not None else int(time.time())
+    live_oracle_std = calculate_live_oracle_std(amm, oracle_price_data, now)
+
+    spreads = calculate_spread_bn(
+        amm.base_spread,
+        target_mark_spread_pct,
+        conf_interval_pct,
+        amm.max_spread,
+        amm.quote_asset_reserve,
+        amm.terminal_quote_asset_reserve,
+        amm.peg_multiplier,
+        amm.base_asset_amount_with_amm,
+        reserve_price,
+        amm.total_fee_minus_distributions,
+        amm.net_revenue_since_last_funding,
+        amm.base_asset_reserve,
+        amm.min_base_asset_reserve,
+        amm.max_base_asset_reserve,
+        amm.mark_std,
+        live_oracle_std,
+        amm.long_intensity_volume,
+        amm.short_intensity_volume,
+        amm.volume24h
+    )
+
+    long_spread = spreads["long_vol_spread"]
+    short_spread = spreads["short_vol_spread"]
+
+    return long_spread, short_spread
 
 
 def calculate_peg_from_target_price(
@@ -19,7 +294,6 @@ def calculate_peg_from_target_price(
         / PRICE_DIV_PEG,
         1,
     )
-
 
 def calculate_mark_price_amm(amm: AMM):
     return calculate_price(
@@ -342,6 +616,129 @@ def calculate_spread_reserves(
     return base_asset_reserve, quote_asset_reserve
 
 
+def calculate_spread_reserves_dlob(amm: AMM, oracle_price_data: OraclePriceData, now = None):
+    '''
+        This is meant to replace `get_spread_reserves` eventually to match the TS SDK
+    '''
+    def calculate_spread_reserve(spread: int, direction: PositionDirection, amm: AMM):
+        if spread == 0:
+            return amm.base_asset_reserve, amm.quote_asset_reserve
+        
+        spread_fraction = max(spread // 2, 1)
+        quote_asset_reserve_delta = amm.quote_asset_reserve // (BID_ASK_SPREAD_PRECISION // spread_fraction)
+
+        if direction == PositionDirection.Long:
+            quote_asset_reserve = amm.quote_asset_reserve + quote_asset_reserve_delta
+        else:
+            quote_asset_reserve = amm.quote_asset_reserve + quote_asset_reserve_delta
+
+        base_asset_reserve = (amm.sqrt_k * amm.sqrt_k) // quote_asset_reserve
+
+        return base_asset_reserve, quote_asset_reserve
+    
+    long_spread, short_spread = calculate_spread(amm, oracle_price_data, now)
+    ask_reserves = calculate_spread_reserve(long_spread, PositionDirection.Long, amm)
+    bid_reserves = calculate_spread_reserve(short_spread, PositionDirection.Short, amm)
+
+    return bid_reserves, ask_reserves
+
+def calculate_quote_asset_amount_swapped(
+    quote_asset_reserves: int,
+    peg_multiplier: int,
+    swap_direction: SwapDirection
+) -> int:
+    if is_variant(swap_direction, 'Remove'):
+        quote_asset_reserves += 1
+
+    quote_asset_amount = quote_asset_reserves * peg_multiplier // AMM_TIMES_PEG_TO_QUOTE_PRECISION_RATIO
+
+    if is_variant(swap_direction, 'Remove'):
+        quote_asset_amount += 1
+
+    return quote_asset_amount
+
+def calculate_market_open_bid_ask(
+        base_asset_reserve: int,
+        min_base_asset_reserve: int,
+        max_base_asset_reserve: int,
+        step_size: Optional[int] = None
+):
+    if min_base_asset_reserve < base_asset_reserve:
+        open_asks = (base_asset_reserve - min_base_asset_reserve) * -1
+        if step_size and abs(open_asks) // 2 < step_size:
+            open_asks = 0
+    else:
+        open_asks = 0
+
+    if max_base_asset_reserve > base_asset_reserve:
+        open_bids = max_base_asset_reserve - base_asset_reserve
+        if step_size and open_bids // 2 < step_size:
+            open_bids = 0
+    else:
+        open_bids = 0
+
+    return open_bids, open_asks
+
+def calculate_updated_amm(amm: AMM, oracle_price_data: OraclePriceData) -> AMM:
+    if amm.curve_update_intensity == 0 or oracle_price_data is None:
+        return amm
+
+    new_amm = deepcopy(amm)
+    prepeg_cost, p_k_numer, p_k_denom, new_peg = calculate_new_amm(amm, oracle_price_data)
+
+    new_amm.base_asset_reserve *= p_k_numer
+    new_amm.base_asset_reserve //= p_k_denom
+    new_amm.sqrt_k *= p_k_numer
+    new_amm.sqrt_k //= p_k_denom
+    invariant = new_amm.sqrt_k * new_amm.sqrt_k
+    new_amm.quote_asset_reserve = invariant // new_amm.base_asset_reserve
+    new_amm.peg_multiplier = new_peg
+
+    direction_to_close = PositionDirection.SHORT if amm.base_asset_amount_with_amm > 0 else PositionDirection.LONG
+    new_quote_asset_reserve, _new_base_asset_reserve = calculate_amm_reserves_after_swap(
+        new_amm, AssetType.BASE, abs(amm.base_asset_amount_with_amm), get_swap_direction(AssetType.BASE, direction_to_close)
+    )
+
+    new_amm.terminal_quote_asset_reserve = new_quote_asset_reserve
+    new_amm.total_fee_minus_distributions -= prepeg_cost
+    new_amm.net_revenue_since_last_funding -= prepeg_cost
+
+    return new_amm
+
+def calculate_new_amm(amm: AMM, oracle_price_data: OraclePriceData):
+    p_k_numer = 1
+    p_k_denom = 1
+
+    target_price, new_peg, budget, check_lower_bound = calculate_optimal_peg_and_budget(amm, oracle_price_data)
+    pre_peg_cost = calculate_repeg_cost(amm, new_peg)
+
+    if pre_peg_cost >= budget and pre_peg_cost > 0:
+        p_k_numer, p_k_denom = 999, 1000
+        deficit_madeup = calculate_adjust_k_cost(amm, p_k_numer, p_k_denom)
+        assert deficit_madeup <= 0, "Deficit made up should be less than or equal to 0"
+        pre_peg_cost = budget + abs(deficit_madeup)
+
+        new_amm = deepcopy(amm)
+        new_amm.base_asset_reserve *= p_k_numer
+        new_amm.base_asset_reserve //= p_k_denom
+        new_amm.sqrt_k *= p_k_numer
+        new_amm.sqrt_k //= p_k_denom
+        invariant = new_amm.sqrt_k * new_amm.sqrt_k
+        new_amm.quote_asset_reserve = invariant // new_amm.base_asset_reserve
+
+        direction_to_close = PositionDirection.SHORT if amm.base_asset_amount_with_amm > 0 else PositionDirection.LONG
+        new_quote_asset_reserve, new_base_asset_reserve = calculate_amm_reserves_after_swap(
+            new_amm, 'base', abs(amm.base_asset_amount_with_amm), get_swap_direction('base', direction_to_close)
+        )
+
+        new_amm.terminal_quote_asset_reserve = new_quote_asset_reserve
+        new_peg = calculate_budgeted_peg(new_amm, pre_peg_cost, target_price)
+        pre_peg_cost = calculate_repeg_cost(new_amm, new_peg)
+
+    return pre_peg_cost, p_k_numer, p_k_denom, new_peg
+
+
+    
 # async def main():
 #     # Try out  the functions here
 

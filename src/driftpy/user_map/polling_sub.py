@@ -30,7 +30,3 @@ class PollingSubscription(Subscription):
         if self.timer_task is not None:
             self.timer_task.cancel()
             self.timer_task = None
-
-    def get_subscription_config(self):
-        bulk_account_loader = BulkAccountLoader(self.user_map.drift_client.connection)
-        return AccountSubscriptionConfig(ConfigType.POLLING.value, bulk_account_loader)

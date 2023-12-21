@@ -78,7 +78,6 @@ async def get_user_account(
 ) -> UserAccount:
     return (await get_user_account_and_slot(program, user_public_key)).data
 
-
 async def get_perp_market_account_and_slot(
     program: Program, market_index: int
 ) -> Optional[DataAndSlot[PerpMarketAccount]]:

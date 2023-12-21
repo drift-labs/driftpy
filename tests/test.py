@@ -236,7 +236,7 @@ async def test_usdc_deposit(
 @mark.asyncio
 
 async def test_user_map_polling(drift_client: Admin, workspace):
-    polling_config = PollingConfig('polling', 0.5)
+    polling_config = PollingConfig(0.5)
     user_map_config = UserMapConfig(drift_client, polling_config)
     user_map = UserMap(user_map_config)
     await user_map.subscribe()
@@ -262,7 +262,7 @@ async def test_user_map_polling(drift_client: Admin, workspace):
 
 @mark.asyncio
 async def test_user_map_ws(drift_client: Admin, workspace):
-    ws_config = WebsocketConfig('websocket')
+    ws_config = WebsocketConfig()
     user_map_config = UserMapConfig(drift_client, ws_config)
     user_map = UserMap(user_map_config)
     await user_map.subscribe()
@@ -292,6 +292,7 @@ async def test_open_orders(
 ):
     drift_user = DriftUser(
         drift_client,
+        user_public_key=drift_client.get_user_account_public_key(),
         account_subscription=AccountSubscriptionConfig("cached"),
     )
     await drift_user.subscribe()

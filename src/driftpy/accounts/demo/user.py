@@ -31,6 +31,11 @@ class DemoUserAccountSubscriber(UserAccountSubscriber):
     async def fetch(self):
         await self.update_cache()
 
+    def update_data(self, data: Optional[DataAndSlot[UserAccount]]):
+        if data is not None:
+            if self.user_and_slot is None or data.slot >= self.user_and_slot.slot:
+                self.user_and_slot = data
+
     def get_user_account_and_slot(self) -> Optional[DataAndSlot[UserAccount]]:
         return self.user_and_slot
 

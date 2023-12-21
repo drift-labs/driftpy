@@ -1,6 +1,7 @@
 {
     "python.formatting.provider": "black", 
     "python.analysis.extraPaths": [
-        "${workspaceFolder}/src/"
+        "${workspaceFolder}/src/",
+        "./venv/bin/python"
     ]
 }

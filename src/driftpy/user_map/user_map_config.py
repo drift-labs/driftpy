@@ -11,13 +11,11 @@ class UserAccountFilterCriteria:
 
 @dataclass
 class PollingConfig:
-    type: str
     frequency: int
     commitment: Optional[Commitment] = None
 
 @dataclass
 class WebsocketConfig:
-    type: str
     resub_timeout_ms: Optional[int] = None
     commitment: Optional[Commitment] = None
 

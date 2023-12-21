@@ -6,12 +6,11 @@ from solders.pubkey import Pubkey
 
 from solana.rpc.commitment import Confirmed
 
-from driftpy.accounts.bulk_account_loader import BulkAccountLoader
 from driftpy.drift_client import DriftClient
 from driftpy.drift_user import DriftUser
 from driftpy.account_subscription_config import AccountSubscriptionConfig
 
-from driftpy.types import StateAccount, UserAccount
+from driftpy.types import UserAccount
 
 from driftpy.user_map.user_map_config import UserMapConfig, PollingConfig
 from driftpy.user_map.websocket_sub import WebsocketSubscription
@@ -29,7 +28,6 @@ class UserMap(UserMapInterface):
         self.user_map: Dict[str, DriftUser] = {}
         self.last_number_of_sub_accounts = None
         self.sync_lock = asyncio.Lock()  
-        self.sync_promise_resolver = None
         self.drift_client: DriftClient = config.drift_client
         self.is_subscribed = False
         if config.connection:
@@ -41,12 +39,14 @@ class UserMap(UserMapInterface):
         if isinstance(config.subscription_config, PollingConfig):
             self.subscription = PollingSubscription(self, config.subscription_config.frequency, config.skip_initial_load)
         else: 
-            self.subscription = WebsocketSubscription(self, self.commitment, self.update_user_account, config.subscription_config.resub_timeout_ms, config.skip_initial_load, decode = decode_user)
-
-    async def state_account_update_callback(self, state: StateAccount):
-        if state.max_number_of_sub_accounts != self.last_number_of_sub_accounts:
-            await self.sync()
-            self.last_number_of_sub_accounts = state.max_number_of_sub_accounts
+            self.subscription = WebsocketSubscription(
+                self,
+                self.commitment, 
+                self.update_user_account, 
+                config.skip_initial_load, 
+                config.subscription_config.resub_timeout_ms, 
+                decode = decode_user
+                )
 
     async def subscribe(self):
         if self.size() > 0:
@@ -99,27 +99,33 @@ class UserMap(UserMapInterface):
     
     async def add_pubkey(
             self, 
-            user_account_public_key: Pubkey, 
+            user_account_public_key: Pubkey,
+            data: Optional[DataAndSlot[UserAccount]] = None
         ) -> None:
-        config = self.subscription.get_subscription_config()
         user = DriftUser(
             self.drift_client, 
-            authority = user_account_public_key,
-            account_subscription = config
+            user_public_key = user_account_public_key,
+            account_subscription = AccountSubscriptionConfig("cached", commitment=self.commitment)
             )
-        await user.subscribe()
+
+        if data is not None:
+            user.account_subscriber.update_data(data)
+        else:
+            await user.subscribe()
+
         self.user_map[str(user_account_public_key)] = user
 
     async def sync(self) -> None:
         async with self.sync_lock:
             try:
-                filters = (get_user_filter(),)
+                filters = (get_user_filter(), )
                 if not self.include_idle:
                     filters += (get_non_idle_user_filter(),)
 
+                print(filters)
                 rpc_json_response = await self.connection.get_program_accounts(self.drift_client.program_id, self.commitment, 'base64', filters=filters)
                 rpc_response_and_context = rpc_json_response.value
-
+                
                 slot = (await self.drift_client.program.provider.connection.get_slot()).value
                 program_account_buffer_map: Dict[str, Container[Any]] = {}
 
@@ -133,20 +139,23 @@ class UserMap(UserMapInterface):
                 for key in program_account_buffer_map.keys():
                     if key not in self.user_map:
                         data = program_account_buffer_map.get(key)
-                        user_account = data
-                        await self.add_pubkey(Pubkey.from_string(key))
-                        self.user_map.get(key).account_subscriber._update_data(DataAndSlot(slot, user_account))
+                        user_account: UserAccount = data
+                        await self.add_pubkey(Pubkey.from_string(key), DataAndSlot(slot, user_account))
                     # let the loop breathe
                     await asyncio.sleep(0)
 
                 # remove any stale data from the usermap or update the data to the latest gPA data
-                for key, user in self.user_map.items():
+                keys_to_delete = []
+                for key in list(self.user_map.keys()):
                     if key not in program_account_buffer_map:
-                        user.unsubscribe()
-                        del self.user_map[key]
-                    # let the loop breathe
+                        self.user_map[key].unsubscribe()
+                        keys_to_delete.append(key)
                     await asyncio.sleep(0)
 
+                for key in keys_to_delete:
+                    del self.user_map[key]
+
+                print(len(self.user_map))
             except Exception as e:
                 print(f"Error in UserMap.sync(): {e}")
                 traceback.print_exc()
@@ -154,4 +163,4 @@ class UserMap(UserMapInterface):
     # this is used as a callback for ws subscriptions to update data as its streamed
     async def update_user_account(self, key: str, data: DataAndSlot[UserAccount]):
         user: DriftUser = await self.must_get(key)
-        user.account_subscriber._update_data(data)
+        user.account_subscriber.update_data(data)

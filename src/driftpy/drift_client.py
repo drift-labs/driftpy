@@ -144,7 +144,7 @@ class DriftClient:
 
         user = DriftUser(
             drift_client=self,
-            authority=self.authority,
+            user_public_key=self.get_user_account_public_key(sub_account_id),
             sub_account_id=sub_account_id,
             account_subscription=self.account_subscription_config,
         )
@@ -202,6 +202,12 @@ class DriftClient:
         )
         return getattr(spot_market_and_slot, "data", None)
 
+    def get_quote_spot_market_account(self) -> Optional[SpotMarketAccount]:
+        spot_market_and_slot = self.account_subscriber.get_spot_market_and_slot(
+            QUOTE_SPOT_MARKET_INDEX
+        )
+        return getattr(spot_market_and_slot, "data", None)
+        
     def get_oracle_price_data(self, oracle: Pubkey) -> Optional[OraclePriceData]:
         oracle_price_data_and_slot = (
             self.account_subscriber.get_oracle_price_data_and_slot(oracle)

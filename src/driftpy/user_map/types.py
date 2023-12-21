@@ -39,9 +39,7 @@ class UserMapInterface(ABC):
         pass
 
 class Subscription(ABC):
-    @abstractmethod
-    def get_subscription_config(self):
-        pass
+    pass
 
 class ConfigType(Enum):
     CACHED = "cached"

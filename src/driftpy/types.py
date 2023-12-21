@@ -8,7 +8,9 @@ from typing import Optional
 def is_variant(enum, type: str) -> bool:
     return type in str(enum)
 
-
+def is_one_of_variant(enum, types):
+    return any(type in str(enum) for type in types)
+    
 @_rust_enum
 class SwapDirection:
     Add = constructor()
@@ -269,6 +271,7 @@ class AssetTier:
 
 @_rust_enum
 class ExchangeStatus:
+    ACTIVE = constructor()
     DEPOSIT_PAUSED = constructor()
     WITHDRAW_PAUSED = constructor()
     AMM_PAUSED = constructor()
@@ -315,6 +318,14 @@ class MarketType:
     Spot = constructor()
     Perp = constructor()
 
+def market_type_to_string(market_type: MarketType):
+    type_str = str(type(market_type))
+    if 'Perp' in type_str:
+        return 'perp'
+    elif 'Spot' in type_str:
+        return 'spot'
+    else:
+        raise ValueError('Unknown market type, not Spot or Perp')
 
 @dataclass
 class MarketIdentifier:
@@ -941,6 +952,8 @@ class AssetType:
 @dataclass
 class MakerInfo:
     maker: Pubkey
+    maker_stats: Pubkey
+    maker_user_account: UserAccount
     order: Order
 
 

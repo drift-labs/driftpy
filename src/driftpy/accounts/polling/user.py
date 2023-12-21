@@ -58,9 +58,9 @@ class PollingUserAccountSubscriber(UserAccountSubscriber):
         data_and_slot = await get_user_account_and_slot(
             self.program, self.user_account_pubkey
         )
-        self._update_data(data_and_slot)
+        self.update_data(data_and_slot)
 
-    def _update_data(self, new_data: Optional[DataAndSlot[UserAccount]]):
+    def update_data(self, new_data: Optional[DataAndSlot[UserAccount]]):
         if new_data is None:
             return
 

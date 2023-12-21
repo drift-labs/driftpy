@@ -69,7 +69,7 @@ class WebsocketAccountSubscriber(UserAccountSubscriber, Generic[T]):
 
                         account_bytes = cast(bytes, msg[0].result.value.data)  # type: ignore
                         decoded_data = self.decode(account_bytes)
-                        self._update_data(DataAndSlot(slot, decoded_data))
+                        self.update_data(DataAndSlot(slot, decoded_data))
                     except Exception:
                         print(f"Error processing account data")
                         break
@@ -82,9 +82,9 @@ class WebsocketAccountSubscriber(UserAccountSubscriber, Generic[T]):
         new_data = await get_account_data_and_slot(
             self.pubkey, self.program, self.commitment, self.decode
         )
-        self._update_data(new_data)
+        self.update_data(new_data)
 
-    def _update_data(self, new_data: Optional[DataAndSlot[T]]):
+    def update_data(self, new_data: Optional[DataAndSlot[T]]):
         if new_data is None:
             return
 
