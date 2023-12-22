@@ -1,6 +1,6 @@
 # Changelog
 
-## [0.7.6] = 2023-12-21
+## [0.7.6] - 2023-12-21
 
 Added `DLOB`, `DLOBClient`, and corresponding math
 
