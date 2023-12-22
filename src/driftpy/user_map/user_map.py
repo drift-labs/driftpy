@@ -23,11 +23,12 @@ from driftpy.accounts.types import DataAndSlot
 
 from driftpy.decode.user import decode_user
 
+
 class UserMap(UserMapInterface):
     def __init__(self, config: UserMapConfig):
         self.user_map: Dict[str, DriftUser] = {}
         self.last_number_of_sub_accounts = None
-        self.sync_lock = asyncio.Lock()  
+        self.sync_lock = asyncio.Lock()
         self.drift_client: DriftClient = config.drift_client
         self.is_subscribed = False
         if config.connection:
@@ -37,23 +38,27 @@ class UserMap(UserMapInterface):
         self.commitment = config.subscription_config.commitment or Confirmed
         self.include_idle = config.include_idle or False
         if isinstance(config.subscription_config, PollingConfig):
-            self.subscription = PollingSubscription(self, config.subscription_config.frequency, config.skip_initial_load)
-        else: 
+            self.subscription = PollingSubscription(
+                self, config.subscription_config.frequency, config.skip_initial_load
+            )
+        else:
             self.subscription = WebsocketSubscription(
                 self,
-                self.commitment, 
-                self.update_user_account, 
-                config.skip_initial_load, 
-                config.subscription_config.resub_timeout_ms, 
-                decode = decode_user
-                )
+                self.commitment,
+                self.update_user_account,
+                config.skip_initial_load,
+                config.subscription_config.resub_timeout_ms,
+                decode=decode_user,
+            )
 
     async def subscribe(self):
         if self.size() > 0:
             return
-        
+
         await self.drift_client.subscribe()
-        self.last_number_of_sub_accounts = self.drift_client.get_state_account().max_number_of_sub_accounts
+        self.last_number_of_sub_accounts = (
+            self.drift_client.get_state_account().max_number_of_sub_accounts
+        )
         # there is no event emitter yet
         # if there was, we'd subscribe to it here as well
         await self.subscription.subscribe()
@@ -66,47 +71,49 @@ class UserMap(UserMapInterface):
             user = self.user_map[key]
             user.unsubscribe()
             del self.user_map[key]
-        
+
         if self.last_number_of_sub_accounts:
             # again, no event emitter
             self.last_number_of_sub_accounts = None
 
         self.is_subscribed = False
-        
+
     def has(self, key: str) -> bool:
         return key in self.user_map
-    
+
     def get(self, key: str) -> Optional[DriftUser]:
         return self.user_map.get(key)
 
     def size(self) -> int:
         return len(self.user_map)
-        
+
     def values(self):
         return iter(self.user_map.values())
-    
+
     def get_user_authority(self, user_account_public_key: str) -> Optional[Pubkey]:
         user = self.user_map.get(user_account_public_key)
         if not user:
             return None
         return user.get_user_account().authority
-    
+
     async def must_get(self, key: str) -> DriftUser:
         if not self.has(key):
             pubkey = Pubkey.from_string(key)
             await self.add_pubkey(pubkey)
         return self.get(key)
-    
+
     async def add_pubkey(
-            self, 
-            user_account_public_key: Pubkey,
-            data: Optional[DataAndSlot[UserAccount]] = None
-        ) -> None:
+        self,
+        user_account_public_key: Pubkey,
+        data: Optional[DataAndSlot[UserAccount]] = None,
+    ) -> None:
         user = DriftUser(
-            self.drift_client, 
-            user_public_key = user_account_public_key,
-            account_subscription = AccountSubscriptionConfig("cached", commitment=self.commitment)
-            )
+            self.drift_client,
+            user_public_key=user_account_public_key,
+            account_subscription=AccountSubscriptionConfig(
+                "cached", commitment=self.commitment
+            ),
+        )
 
         if data is not None:
             user.account_subscriber.update_data(data)
@@ -118,15 +125,21 @@ class UserMap(UserMapInterface):
     async def sync(self) -> None:
         async with self.sync_lock:
             try:
-                filters = (get_user_filter(), )
+                filters = (get_user_filter(),)
                 if not self.include_idle:
                     filters += (get_non_idle_user_filter(),)
 
-                print(filters)
-                rpc_json_response = await self.connection.get_program_accounts(self.drift_client.program_id, self.commitment, 'base64', filters=filters)
+                rpc_json_response = await self.connection.get_program_accounts(
+                    self.drift_client.program_id,
+                    self.commitment,
+                    "base64",
+                    filters=filters,
+                )
                 rpc_response_and_context = rpc_json_response.value
-                
-                slot = (await self.drift_client.program.provider.connection.get_slot()).value
+
+                slot = (
+                    await self.drift_client.program.provider.connection.get_slot()
+                ).value
                 program_account_buffer_map: Dict[str, Container[Any]] = {}
 
                 # parse the gPA data before inserting
@@ -140,7 +153,9 @@ class UserMap(UserMapInterface):
                     if key not in self.user_map:
                         data = program_account_buffer_map.get(key)
                         user_account: UserAccount = data
-                        await self.add_pubkey(Pubkey.from_string(key), DataAndSlot(slot, user_account))
+                        await self.add_pubkey(
+                            Pubkey.from_string(key), DataAndSlot(slot, user_account)
+                        )
                     # let the loop breathe
                     await asyncio.sleep(0)
 
@@ -155,7 +170,6 @@ class UserMap(UserMapInterface):
                 for key in keys_to_delete:
                     del self.user_map[key]
 
-                print(len(self.user_map))
             except Exception as e:
                 print(f"Error in UserMap.sync(): {e}")
                 traceback.print_exc()
