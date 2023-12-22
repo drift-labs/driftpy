@@ -1,9 +1,12 @@
 import asyncio
 import json
+import traceback
 from typing import Optional
 import aiohttp
+from events import Events as EventEmitter
 from dataclasses import dataclass
 from solders.pubkey import Pubkey
+from driftpy.dlob.client_types import DLOBClientConfig
 from driftpy.dlob.orderbook_levels import L3Level, L3OrderBook, L2Level, L2OrderBook
 from driftpy.types import (
     MarketType,
@@ -20,8 +23,46 @@ class MarketId:
 class DLOBClient:
     _session: Optional[aiohttp.ClientSession] = None
 
-    def __init__(self, url: str):
+    def __init__(self, url: str, config: Optional[DLOBClientConfig] = None):
         self.url = url.rstrip("/")
+        self.dlob = None
+        self.event_emitter = EventEmitter(("on_dlob_update"))
+        self.event_emitter.on("on_dlob_update")
+        if config is not None:
+            self.drift_client = config.drift_client
+            self.dlob_source = config.dlob_source
+            self.slot_source = config.slot_source
+            self.update_frequency = config.update_frequency
+            self.interval_task = None
+
+    async def on_dlob_update(self):
+        self.event_emitter.on_dlob_update(self.dlob)
+
+    async def subscribe(self):
+        if self.interval_task is not None and not self.interval_task.done():
+            return
+
+        async def interval_loop():
+            while True:
+                try:
+                    await self.update_dlob()
+                    await self.on_dlob_update()
+                except Exception as e:
+                    print(f"Error in DLOB subscription: {e}")
+                    traceback.print_exc()
+                await asyncio.sleep(self.update_frequency)
+
+        self.interval_task = asyncio.create_task(interval_loop())
+
+    def unsubscribe(self):
+        if self.interval_task is not None:
+            self.interval_task.cancel()
+
+    async def update_dlob(self):
+        self.dlob = await self.dlob_source.get_DLOB(self.slot_source.get_slot())
+
+    def get_dlob(self):
+        return self.dlob
 
     @classmethod
     async def get_session(cls):

@@ -5,6 +5,7 @@ from typing import Any, Container, Optional, Dict
 from solders.pubkey import Pubkey
 
 from solana.rpc.commitment import Confirmed
+from driftpy.dlob.client_types import DLOBSource
 
 from driftpy.drift_client import DriftClient
 from driftpy.drift_user import DriftUser
@@ -24,7 +25,7 @@ from driftpy.accounts.types import DataAndSlot
 from driftpy.decode.user import decode_user
 
 
-class UserMap(UserMapInterface):
+class UserMap(UserMapInterface, DLOBSource):
     def __init__(self, config: UserMapConfig):
         self.user_map: Dict[str, DriftUser] = {}
         self.last_number_of_sub_accounts = None
@@ -178,3 +179,10 @@ class UserMap(UserMapInterface):
     async def update_user_account(self, key: str, data: DataAndSlot[UserAccount]):
         user: DriftUser = await self.must_get(key)
         user.account_subscriber.update_data(data)
+
+    async def get_DLOB(self, slot: int):
+        from driftpy.dlob.dlob import DLOB
+
+        dlob = DLOB()
+        dlob.init_from_usermap(self, slot)
+        return dlob
