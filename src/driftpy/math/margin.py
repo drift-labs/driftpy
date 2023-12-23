@@ -58,6 +58,8 @@ def calculate_asset_weight(
                 spot_market.imf_factor,
                 spot_market.maintenance_asset_weight,
             )
+        case None:
+            asset_weight = calculate_scaled_initial_asset_weight(spot_market, oracle_price)
         case _:
             raise Exception(f"Invalid margin category: {margin_category}")
 
