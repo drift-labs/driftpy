@@ -207,7 +207,7 @@ class DriftClient:
             QUOTE_SPOT_MARKET_INDEX
         )
         return getattr(spot_market_and_slot, "data", None)
-        
+
     def get_oracle_price_data(self, oracle: Pubkey) -> Optional[OraclePriceData]:
         oracle_price_data_and_slot = (
             self.account_subscriber.get_oracle_price_data_and_slot(oracle)
@@ -218,6 +218,7 @@ class DriftClient:
         self, market_index: int
     ) -> Optional[OraclePriceData]:
         oracle = self.get_perp_market_account(market_index).amm.oracle
+        print(oracle)
         return self.get_oracle_price_data(oracle)
 
     def get_oracle_price_data_for_spot_market(

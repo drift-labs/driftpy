@@ -39,7 +39,11 @@ class DLOBClient:
         self.event_emitter.on_dlob_update(self.dlob)
 
     async def subscribe(self):
-        if self.interval_task is not None and not self.interval_task.done():
+        """
+        This function CANNOT be used unless a `DLOBClientConfig` was provided in the DLOBClient's constructor.
+        If it is used without a `DLOBClientConfig`, it will break.
+        """
+        if self.interval_task is not None:
             return
 
         async def interval_loop():
