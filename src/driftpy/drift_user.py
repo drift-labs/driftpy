@@ -553,7 +553,7 @@ class DriftUser:
         total_asset_value = spot_asset_value + perp_pnl
         total_liability_value = spot_liability_value + perp_liability
 
-        net_asset_value = total_asset_value - total_liability_value
+        net_asset_value = total_asset_value - spot_liability_value
 
         if net_asset_value == 0:
             return 0
