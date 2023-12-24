@@ -218,7 +218,6 @@ class DriftClient:
         self, market_index: int
     ) -> Optional[OraclePriceData]:
         oracle = self.get_perp_market_account(market_index).amm.oracle
-        print(oracle)
         return self.get_oracle_price_data(oracle)
 
     def get_oracle_price_data_for_spot_market(

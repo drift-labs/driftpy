@@ -425,6 +425,7 @@ class DLOB:
                     market_index, slot, market_type, oracle_price_data
                 ),
             )
+        return 0
 
     def _estimate_fill_exact_base_amount_in_for_side(
         self,
@@ -510,7 +511,7 @@ class DLOB:
             node_lists.floating_limit["bid"].get_generator(),
         ]
 
-        def cmp(best_node, current_node, oracle_price_data):
+        def cmp(best_node, current_node, slot, oracle_price_data):
             return best_node.get_price(
                 oracle_price_data, slot
             ) > current_node.get_price(oracle_price_data, slot)
@@ -825,7 +826,7 @@ class DLOB:
             market_index, market_type, slot, oracle_price_data
         )
         maker_node_generator_fn = lambda: self.get_resting_limit_bids(
-            market_index, market_type, slot, oracle_price_data
+            market_index, slot, market_type, oracle_price_data
         )
         does_cross = (
             lambda taker_price, maker_price: (
@@ -853,9 +854,10 @@ class DLOB:
             taking_order_generator = self.get_taking_asks(
                 market_index, market_type, slot, oracle_price_data
             )
-            does_cross = (
-                lambda taker_price: taker_price is None or taker_price <= fallback_bid,
-            )
+
+            def does_cross(price: Optional[int] = None) -> bool:
+                return price is None or price <= fallback_ask
+
             taking_asks_crossing_fallback = self.find_nodes_crossing_fallback_liquidity(
                 market_type,
                 slot,
@@ -871,7 +873,7 @@ class DLOB:
             market_index, market_type, slot, oracle_price_data
         )
         maker_node_generator_fn = lambda: self.get_resting_limit_asks(
-            market_index, market_type, slot, oracle_price_data
+            market_index, slot, market_type, oracle_price_data
         )
         does_cross = (
             lambda taker_price, maker_price: (
@@ -899,9 +901,10 @@ class DLOB:
             taking_order_generator = self.get_taking_bids(
                 market_index, market_type, slot, oracle_price_data
             )
-            does_cross = (
-                lambda taker_price: taker_price is None or taker_price >= fallback_ask,
-            )
+
+            def does_cross(price: Optional[int] = None) -> bool:
+                return price is None or price >= fallback_ask
+
             taking_bids_crossing_fallback = self.find_nodes_crossing_fallback_liquidity(
                 market_type,
                 slot,
@@ -1014,12 +1017,16 @@ class DLOB:
                 if is_order_expired(bid.order, ts, True):
                     nodes_to_fill.append(NodeToFill(ask, []))
 
+        return nodes_to_fill
+
     def merge_nodes_to_fill(
+        self,
         resting_limit_order_nodes_to_fill: List[NodeToFill],
         taking_order_nodes_to_fill: List[NodeToFill],
     ) -> List[NodeToFill]:
         from driftpy.dlob.node_list import get_order_signature
 
+        nodes_to_fill: List[NodeToFill] = []
         merged_nodes_to_fill: Dict[str, NodeToFill] = {}
 
         def merge_nodes_to_fill_helper(nodes_to_fill_list):
@@ -1041,7 +1048,12 @@ class DLOB:
         merge_nodes_to_fill_helper(resting_limit_order_nodes_to_fill)
         merge_nodes_to_fill_helper(taking_order_nodes_to_fill)
 
-        return list[merged_nodes_to_fill.values()]
+        values = merged_nodes_to_fill.values()
+
+        for value in values:
+            nodes_to_fill.append(value)
+
+        return nodes_to_fill
 
     def find_nodes_to_fill(
         self,
