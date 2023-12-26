@@ -815,3 +815,15 @@ class DriftUser:
             position.remainder_base_asset_amount = 0
 
         return position, remainder_before_removal, pnl
+
+    def get_net_spot_market_value(
+        self, with_weight_margin_category: Optional[MarginCategory]
+    ) -> int:
+        (
+            total_asset_value,
+            total_liability_value,
+        ) = self.get_spot_market_asset_and_liability_value(
+            None, with_weight_margin_category
+        )
+
+        return total_asset_value - total_liability_value
