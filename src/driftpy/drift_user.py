@@ -124,20 +124,25 @@ class DriftUser:
 
         return None
 
-    def get_total_perp_liability(
+    def get_perp_market_liability(
         self,
+        market_index: int = None,
         margin_category: Optional[MarginCategory] = None,
         liquidation_buffer: Optional[int] = 0,
         include_open_orders: bool = False,
+        signed: bool = False,
     ):
         user = self.get_user_account()
 
-        unrealized_pnl = 0
+        total_liability_value = 0
         for position in user.perp_positions:
-            market = self.drift_client.get_perp_market_account(position.market_index)
+            if market_index is not None and market_index != position.market_index:
+                continue
 
             if position.lp_shares > 0:
-                pass
+                continue
+
+            market = self.drift_client.get_perp_market_account(position.market_index)
 
             price = self.drift_client.get_oracle_price_data(market.amm.oracle).price
             base_asset_amount = (
@@ -146,7 +151,7 @@ class DriftUser:
                 else position.base_asset_amount
             )
             base_value = (
-                abs(base_asset_amount)
+                ((base_asset_amount) if signed else abs(base_asset_amount))
                 * price
                 / (AMM_TO_QUOTE_PRECISION_RATIO * PRICE_PRECISION)
             )
@@ -164,8 +169,8 @@ class DriftUser:
 
                 base_value = base_value * margin_ratio / MARGIN_PRECISION
 
-            unrealized_pnl += base_value
-        return unrealized_pnl
+            total_liability_value += base_value
+        return total_liability_value
 
     def can_be_liquidated(self) -> bool:
         total_collateral = self.get_total_collateral()
@@ -189,7 +194,7 @@ class DriftUser:
         liquidation_buffer: Optional[int] = 0,
         include_spot=True,
     ) -> int:
-        perp_liability = self.get_total_perp_liability(
+        perp_liability = self.get_perp_market_liability(
             margin_category, liquidation_buffer, include_open_orders=True
         )
 
@@ -538,7 +543,7 @@ class DriftUser:
         return liability_value
 
     def get_leverage(self, include_open_orders: bool = True) -> int:
-        perp_liability = self.get_total_perp_liability(
+        perp_liability = self.get_perp_market_liability(
             include_open_orders=include_open_orders
         )
         perp_pnl = self.get_unrealized_pnl(True)
@@ -558,7 +563,7 @@ class DriftUser:
         if net_asset_value == 0:
             return 0
 
-        return total_liability_value * 10_000 // net_asset_value
+        return (total_liability_value * 10_000) // net_asset_value
 
     def get_perp_liq_price(
         self,
