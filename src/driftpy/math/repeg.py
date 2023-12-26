@@ -14,8 +14,7 @@ from driftpy.types import AMM
 def calculate_optimal_peg_and_budget(
     amm: AMM, target_price: int
 ) -> tuple[int, int, int, bool]:
-    from driftpy.math.market import calculate_price
-    from driftpy.math.amm import calculate_peg_from_target_price
+    from driftpy.math.amm import calculate_peg_from_target_price, calculate_price
 
     mark_price_before = calculate_price(
         amm.base_asset_reserve, amm.quote_asset_reserve, amm.peg_multiplier
@@ -67,9 +66,11 @@ def calculate_optimal_peg_and_budget(
 
 
 def calculate_curve_op_cost(market, market_index, base_p, quote_p, new_peg=None):
-
     from driftpy.math.amm import calculate_terminal_price
-    from driftpy.math.perp_position import calculate_base_asset_value, calculate_position_pnl
+    from driftpy.math.perp_position import (
+        calculate_base_asset_value,
+        calculate_position_pnl,
+    )
 
     #     print(market)
     # print(base_p, quote_p)
@@ -126,7 +127,10 @@ def calculate_curve_op_cost(market, market_index, base_p, quote_p, new_peg=None)
 
 def calculate_rebalance_market(market, market_index):
     from driftpy.math.amm import calculate_terminal_price
-    from driftpy.math.perp_position import calculate_base_asset_value, calculate_position_pnl
+    from driftpy.math.perp_position import (
+        calculate_base_asset_value,
+        calculate_position_pnl,
+    )
 
     new_peg = calculate_terminal_price(market) * 1e3
     cur_mark = calculate_mark_price(market)
@@ -176,7 +180,10 @@ def calculate_rebalance_market(market, market_index):
 
 def calculate_buyout_cost(market, market_index, new_peg, sqrt_k):
     from driftpy.math.amm import calculate_terminal_price
-    from driftpy.math.perp_position import calculate_base_asset_value, calculate_position_pnl
+    from driftpy.math.perp_position import (
+        calculate_base_asset_value,
+        calculate_position_pnl,
+    )
 
     #     print(market)
 
@@ -326,18 +333,28 @@ def calculate_freepeg_cost(market, market_index, target_price, bonus=0):
 
     return bonly3, base_scale, quote_scale, new_peg
 
+
 def calculate_budgeted_peg(amm: AMM, budget: int, target_price: int) -> int:
-    per_peg_cost = (amm.quote_asset_reserve - amm.terminal_quote_asset_reserve) // (AMM_RESERVE_PRECISION // PRICE_PRECISION)
+    per_peg_cost = (amm.quote_asset_reserve - amm.terminal_quote_asset_reserve) // (
+        AMM_RESERVE_PRECISION // PRICE_PRECISION
+    )
 
     if per_peg_cost > 0:
         per_peg_cost += 1
     elif per_peg_cost < 0:
         per_peg_cost -= 1
 
-    target_peg = target_price * amm.base_asset_reserve // amm.quote_asset_reserve // PRICE_DIV_PEG
+    target_peg = (
+        target_price
+        * amm.base_asset_reserve
+        // amm.quote_asset_reserve
+        // PRICE_DIV_PEG
+    )
     peg_change_direction = target_peg - amm.peg_multiplier
 
-    use_target_peg = (per_peg_cost < 0 and peg_change_direction > 0) or (per_peg_cost > 0 and peg_change_direction < 0)
+    use_target_peg = (per_peg_cost < 0 and peg_change_direction > 0) or (
+        per_peg_cost > 0 and peg_change_direction < 0
+    )
 
     if per_peg_cost == 0 or use_target_peg:
         return target_peg
@@ -346,6 +363,7 @@ def calculate_budgeted_peg(amm: AMM, budget: int, target_price: int) -> int:
     new_peg = max(1, amm.peg_multiplier + budget_delta_peg)
 
     return new_peg
+
 
 def calculate_adjust_k_cost(amm: AMM, numerator: int, denominator: int) -> int:
     x = amm.base_asset_reserve
@@ -358,8 +376,13 @@ def calculate_adjust_k_cost(amm: AMM, numerator: int, denominator: int) -> int:
 
     p = numerator * PRICE_PRECISION // denominator
 
-    cost = (quote_scale * PERCENTAGE_PRECISION * PERCENTAGE_PRECISION // (x + d)) - \
-           (quote_scale * p * PERCENTAGE_PRECISION * PERCENTAGE_PRECISION // PRICE_PRECISION // (x * p // PRICE_PRECISION + d)) // \
-           PERCENTAGE_PRECISION // PERCENTAGE_PRECISION // AMM_TO_QUOTE_PRECISION_RATIO // PEG_PRECISION
+    cost = (quote_scale * PERCENTAGE_PRECISION * PERCENTAGE_PRECISION // (x + d)) - (
+        quote_scale
+        * p
+        * PERCENTAGE_PRECISION
+        * PERCENTAGE_PRECISION
+        // PRICE_PRECISION
+        // (x * p // PRICE_PRECISION + d)
+    ) // PERCENTAGE_PRECISION // PERCENTAGE_PRECISION // AMM_TO_QUOTE_PRECISION_RATIO // PEG_PRECISION
 
     return cost * -1

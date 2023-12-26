@@ -1,4 +1,4 @@
-from driftpy.types import PositionDirection
+from driftpy.types import OraclePriceData, PerpMarketAccount, PositionDirection
 import copy
 import numpy as np
 
@@ -181,32 +181,35 @@ def calculate_bid_ask_price(market, oracle_price=None):
     return bid_price, ask_price
 
 
-def calculate_bid_price(market, oracle_price=None):
-    from driftpy.math.amm import calculate_price, calculate_spread_reserves
+def calculate_bid_price(
+    market: PerpMarketAccount, oracle_price_data: OraclePriceData
+) -> int:
+    from driftpy.math.amm import calculate_updated_amm_spread_reserves, calculate_price
 
-    candidate_amm = calculate_candidate_amm(market, oracle_price)
-
-    base_asset_reserves_short, quote_asset_reserves_short = calculate_spread_reserves(
-        candidate_amm, PositionDirection.Short, oracle_price=oracle_price
+    (
+        base_asset_reserve,
+        quote_asset_reserve,
+        new_peg,
+        _,
+    ) = calculate_updated_amm_spread_reserves(
+        market.amm, PositionDirection.Short(), oracle_price_data
     )
 
-    return calculate_price(
-        base_asset_reserves_short,
-        quote_asset_reserves_short,
-        candidate_amm.peg_multiplier,
+    return calculate_price(base_asset_reserve, quote_asset_reserve, new_peg)
+
+
+def calculate_ask_price(
+    market: PerpMarketAccount, oracle_price_data: OraclePriceData
+) -> int:
+    from driftpy.math.amm import calculate_updated_amm_spread_reserves, calculate_price
+
+    (
+        base_asset_reserve,
+        quote_asset_reserve,
+        new_peg,
+        _,
+    ) = calculate_updated_amm_spread_reserves(
+        market.amm, PositionDirection.Long(), oracle_price_data
     )
 
-
-def calculate_ask_price(market, oracle_price=None):
-    from driftpy.math.amm import calculate_price, calculate_spread_reserves
-    candidate_amm = calculate_candidate_amm(market, oracle_price)
-
-    base_asset_reserves_long, quote_asset_reserves_long = calculate_spread_reserves(
-        candidate_amm, PositionDirection.Long, oracle_price=oracle_price
-    )
-
-    return calculate_price(
-        base_asset_reserves_long,
-        quote_asset_reserves_long,
-        candidate_amm.peg_multiplier,
-    )
+    return calculate_price(base_asset_reserve, quote_asset_reserve, new_peg)
