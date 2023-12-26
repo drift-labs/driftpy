@@ -1,4 +1,6 @@
+import json
 from deprecated import deprecated
+import requests
 from solders.pubkey import Pubkey
 from solders.keypair import Keypair
 from solders.transaction import TransactionVersion, Legacy
@@ -35,6 +37,8 @@ from driftpy.math.spot_market import cast_to_spot_precision
 from driftpy.name import encode_name
 from driftpy.tx.standard_tx_sender import StandardTxSender
 from driftpy.tx.types import TxSender, TxSigAndSlot
+from spl.token.constants import ASSOCIATED_TOKEN_PROGRAM_ID
+from solders.system_program import ID as SYS_PROGRAM_ID
 
 DEFAULT_USER_NAME = "Main Account"
 
@@ -2186,3 +2190,209 @@ class DriftClient:
                 }
             ),
         )
+
+    def create_associated_token_account_idempotent_instruction(
+        self, account: Pubkey, payer: Pubkey, owner: Pubkey, mint: Pubkey
+    ):
+        return Instruction(
+            accounts=[
+                AccountMeta(pubkey=payer, is_signer=True, is_writable=True),
+                AccountMeta(pubkey=account, is_signer=False, is_writable=True),
+                AccountMeta(pubkey=owner, is_signer=False, is_writable=False),
+                AccountMeta(pubkey=mint, is_signer=False, is_writable=False),
+                AccountMeta(pubkey=SYS_PROGRAM_ID, is_signer=False, is_writable=False),
+                AccountMeta(
+                    pubkey=TOKEN_PROGRAM_ID, is_signer=False, is_writable=False
+                ),
+                AccountMeta(pubkey=RENT, is_signer=False, is_writable=False),
+            ],
+            program_id=ASSOCIATED_TOKEN_PROGRAM_ID,
+            data=bytes([0x01]),
+        )
+
+    async def get_swap_flash_loan_ix(
+        self,
+        out_market_index: int,
+        in_market_index: int,
+        amount_in: int,
+        in_ata: Pubkey,
+        out_ata: Pubkey,
+        limit_price: Optional[int] = 0,
+        reduce_only: Optional[SwapReduceOnly] = False,
+        user_account_public_key: Optional[Pubkey] = None,
+    ):
+        user_public_key_to_use = (
+            user_account_public_key
+            if user_account_public_key
+            else (self.get_user_account_public_key())
+        )
+
+        user_accounts = []
+
+        try:
+            user_accounts.append(self.get_user().get_user_account_and_slot().data)
+        except:
+            pass  # ignore
+
+        remaining_accounts = self.get_remaining_accounts(
+            user_accounts=user_accounts,
+            writable_spot_market_indexes=[out_market_index, in_market_index],
+            readable_spot_market_indexes=[QUOTE_SPOT_MARKET_INDEX],
+        )
+
+        out_market = self.get_spot_market_account(out_market_index)
+        in_market = self.get_spot_market_account(in_market_index)
+
+        sysvar_pubkey = Pubkey.from_string(
+            "Sysvar1nstructions1111111111111111111111111"
+        )
+
+        begin_swap_ix = self.program.instruction["begin_swap"](
+            in_market_index,
+            out_market_index,
+            amount_in,
+            ctx=Context(
+                accounts={
+                    "state": self.get_state_public_key(),
+                    "user": user_public_key_to_use,
+                    "user_stats": self.get_user_stats_public_key(),
+                    "authority": self.wallet.public_key,
+                    "out_spot_market_vault": out_market.vault,
+                    "in_spot_market_vault": in_market.vault,
+                    "in_token_account": in_ata,
+                    "out_token_account": out_ata,
+                    "token_program": TOKEN_PROGRAM_ID,
+                    "drift_signer": self.get_state_account().signer,
+                    "instructions": sysvar_pubkey,
+                },
+                remaining_accounts=remaining_accounts,
+            ),
+        )
+
+        end_swap_ix = self.program.instruction["end_swap"](
+            in_market_index,
+            out_market_index,
+            limit_price,
+            reduce_only,
+            ctx=Context(
+                accounts={
+                    "state": self.get_state_public_key(),
+                    "user": user_public_key_to_use,
+                    "user_stats": self.get_user_stats_public_key(),
+                    "authority": self.wallet.public_key,
+                    "out_spot_market_vault": out_market.vault,
+                    "in_spot_market_vault": in_market.vault,
+                    "in_token_account": in_ata,
+                    "out_token_account": out_ata,
+                    "token_program": TOKEN_PROGRAM_ID,
+                    "drift_signer": self.get_state_account().signer,
+                    "instructions": sysvar_pubkey,
+                },
+                remaining_accounts=remaining_accounts,
+            ),
+        )
+
+        return begin_swap_ix, end_swap_ix
+
+    async def get_jupiter_swap_ix_v6(
+        self,
+        out_market_idx: int,
+        in_market_idx: int,
+        amount: int,
+        out_ata: Optional[Pubkey] = None,
+        in_ata: Optional[Pubkey] = None,
+        slippage_bps: Optional[int] = None,
+        quote=None,
+        reduce_only: Optional[SwapReduceOnly] = None,
+        user_account_public_key: Optional[Pubkey] = None,
+    ):
+        pre_instructions = []
+        JUPITER_URL = "https://quote-api.jup.ag/v6"
+
+        out_market = self.get_spot_market_account(out_market_idx)
+        in_market = self.get_spot_market_account(in_market_idx)
+
+        if slippage_bps is None:
+            slippage_bps = 10
+
+        if quote is None:
+            url = f"{JUPITER_URL}/quote?inputMint={str(in_market.mint)}&outputMint={str(out_market.mint)}&amount={amount}&slippageBps={slippage_bps}"
+
+            quote_resp = requests.get(url)
+
+            if quote_resp.status_code != 200:
+                raise Exception("Couldn't get a Jupiter quote")
+
+            quote = quote_resp.json()
+
+        if out_ata is None:
+            out_ata: Pubkey = self.get_associated_token_account_public_key(
+                out_market.market_index
+            )
+
+            ai = await self.connection.get_account_info(out_ata)
+
+            if not ai:
+                pre_instructions.append(
+                    self.create_associated_token_account_idempotent_instruction(
+                        out_ata,
+                        self.wallet.public_key,
+                        self.wallet.public_key,
+                        out_market.mint,
+                    )
+                )
+
+        if in_ata is None:
+            in_ata: Pubkey = self.get_associated_token_account_public_key(
+                in_market.market_index
+            )
+
+            ai = await self.connection.get_account_info(in_ata)
+
+            if not ai:
+                pre_instructions.append(
+                    self.create_associated_token_account_idempotent_instruction(
+                        in_ata,
+                        self.wallet.public_key,
+                        self.wallet.public_key,
+                        in_market.mint,
+                    )
+                )
+
+        data = {
+            "quoteResponse": quote,
+            "userPublicKey": str(self.wallet.public_key),
+            "destinationTokenAccount": str(out_ata),
+        }
+
+        swap_ix_resp = requests.post(
+            f"{JUPITER_URL}/swap-instructions",
+            headers={"Accept": "application/json", "Content-Type": "application/json"},
+            data=json.dumps(data),
+        )
+
+        if swap_ix_resp.status_code != 200:
+            raise Exception("Couldn't get Jupiter swap ix")
+
+        swap_ix_json = swap_ix_resp.json()
+
+        compute_budget_ix = swap_ix_json.get("computeBudgetInstructions")
+        swap_ix = swap_ix_json.get("swapInstruction")
+        address_table_lookups = swap_ix_json.get("addressLookupTableAddresses")
+
+        swap_ixs = [compute_budget_ix, swap_ix]
+
+        begin_swap_ix, end_swap_ix = await self.get_swap_flash_loan_ix(
+            out_market_idx,
+            in_market_idx,
+            amount,
+            in_ata,
+            out_ata,
+            None,
+            reduce_only,
+            user_account_public_key,
+        )
+
+        ixs = [*pre_instructions, begin_swap_ix, *swap_ixs, end_swap_ix]
+
+        return ixs, address_table_lookups
