@@ -7,6 +7,7 @@ from driftpy.math.spot_position import (
     get_worst_case_token_amounts,
     is_spot_position_available,
 )
+from driftpy.math.amm import calculate_market_open_bid_ask
 from driftpy.types import OraclePriceData
 
 from typing import Tuple
