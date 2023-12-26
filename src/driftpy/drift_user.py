@@ -1,4 +1,5 @@
 from driftpy.account_subscription_config import AccountSubscriptionConfig
+from driftpy.math.amm import calculate_market_open_bid_ask
 from driftpy.math.perp_position import *
 from driftpy.math.margin import *
 from driftpy.math.spot_market import *
@@ -11,6 +12,7 @@ from driftpy.types import OraclePriceData
 
 from typing import Tuple
 import copy
+
 
 class DriftUser:
     """This class is the main way to retrieve and inspect drift user account data."""
@@ -32,6 +34,7 @@ class DriftUser:
             sub_account_id (int, optional): subaccount of authority to investigate. Defaults to 0.
         """
         from driftpy.drift_client import DriftClient
+
         self.drift_client: DriftClient = drift_client
         self.program = drift_client.program
         self.oracle_program = drift_client
@@ -683,12 +686,9 @@ class DriftUser:
         baseUnit = int(AMM_RESERVE_PRECISION)
         if market.amm.per_lp_base == position.per_lp_base:
             if 0 <= position.per_lp_base <= 9:
-                marketPerLpRebase = 10 ** market.amm.per_lp_base
+                marketPerLpRebase = 10**market.amm.per_lp_base
                 baseUnit *= marketPerLpRebase
-            elif (
-                position.per_lp_base < 0
-                and position.per_lp_base >= -9
-            ):
+            elif position.per_lp_base < 0 and position.per_lp_base >= -9:
                 marketPerLpRebase = 10 ** abs(position.per_lp_base)
                 baseUnit //= marketPerLpRebase
             else:
@@ -697,11 +697,21 @@ class DriftUser:
             raise ValueError("market.amm.perLpBase != position.perLpBase")
 
         deltaBaa = (
-            market.amm.base_asset_amount_per_lp - position.last_base_asset_amount_per_lp
-        ) * nShares // baseUnit
+            (
+                market.amm.base_asset_amount_per_lp
+                - position.last_base_asset_amount_per_lp
+            )
+            * nShares
+            // baseUnit
+        )
         deltaQaa = (
-            market.amm.quote_asset_amount_per_lp - position.last_quote_asset_amount_per_lp
-        ) * nShares // baseUnit
+            (
+                market.amm.quote_asset_amount_per_lp
+                - position.last_quote_asset_amount_per_lp
+            )
+            * nShares
+            // baseUnit
+        )
 
         def sign(v: int) -> int:
             return -1 if v < 0 else 1
@@ -753,15 +763,15 @@ class DriftUser:
         elif updateType in [UpdateType.REDUCE, UpdateType.CLOSE]:
             newQuoteEntry = (
                 position.quote_entry_amount
-                - position.quote_entry_amount * abs(deltaBaa) // abs(position.base_asset_amount)
+                - position.quote_entry_amount
+                * abs(deltaBaa)
+                // abs(position.base_asset_amount)
             )
-            pnl = (
-                position.quote_entry_amount - newQuoteEntry + deltaQaa
-            )
+            pnl = position.quote_entry_amount - newQuoteEntry + deltaQaa
         else:
-            newQuoteEntry = (
-                deltaQaa - deltaQaa * abs(position.base_asset_amount) // abs(deltaBaa)
-            )
+            newQuoteEntry = deltaQaa - deltaQaa * abs(
+                position.base_asset_amount
+            ) // abs(deltaBaa)
             pnl = position.quote_entry_amount + deltaQaa - newQuoteEntry
 
         position.quote_entry_amount = newQuoteEntry
@@ -770,10 +780,12 @@ class DriftUser:
             position.quoteAssetAmount + deltaQaa + quoteFundingPnl - dustBaseAssetValue
         )
         position.quoteBreakEvenAmount = (
-            position.quoteBreakEvenAmount + deltaQaa + quoteFundingPnl - dustBaseAssetValue
+            position.quoteBreakEvenAmount
+            + deltaQaa
+            + quoteFundingPnl
+            - dustBaseAssetValue
         )
 
-        #todo impl
         market_open_bids, market_open_asks = calculate_market_open_bid_ask(
             market.amm.base_asset_reserve,
             market.amm.min_base_asset_reserve,
@@ -786,9 +798,13 @@ class DriftUser:
         position.openAsks += lp_open_asks
 
         if position.base_asset_amount > 0:
-            position.last_cumulative_funding_rate = market.amm.cumulative_funding_rate_long
+            position.last_cumulative_funding_rate = (
+                market.amm.cumulative_funding_rate_long
+            )
         elif position.base_asset_amount < 0:
-            position.last_cumulative_funding_rate = market.amm.cumulative_funding_rate_short
+            position.last_cumulative_funding_rate = (
+                market.amm.cumulative_funding_rate_short
+            )
         else:
             position.last_cumulative_funding_rate = 0
 
