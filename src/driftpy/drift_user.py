@@ -660,14 +660,14 @@ class DriftUser:
             or self.get_empty_position(market_index)
         )
 
-        if originalPosition.lpShares == 0:
+        if originalPosition.lp_shares == 0:
             return originalPosition, 0, 0
 
         position = copy.deepcopy(originalPosition)
         market = self.drift_client.get_perp_market_account(position.market_index)
 
-        if market.amm.perLpBase != position.perLpBase:
-            expoDiff = market.amm.perLpBase - position.perLpBase
+        if market.amm.per_lp_base != position.per_lp_base:
+            expoDiff = market.amm.per_lp_base - position.per_lp_base
             marketPerLpRebaseScalar = 10 ** abs(expoDiff)
 
             if expoDiff > 0:
@@ -677,9 +677,9 @@ class DriftUser:
                 position.lastbase_asset_amount_per_lp //= marketPerLpRebaseScalar
                 position.lastquote_asset_amount_per_lp //= marketPerLpRebaseScalar
 
-            position.perLpBase += expoDiff
+            position.per_lp_base += expoDiff
 
-        nShares = position.lpShares
+        nShares = position.lp_shares
 
         quoteFundingPnl = calculate_position_funding_pnl(market, position)
 
@@ -776,11 +776,14 @@ class DriftUser:
 
         position.quote_entry_amount = newQuoteEntry
         position.base_asset_amount += standardizedBaa
-        position.quoteAssetAmount = (
-            position.quoteAssetAmount + deltaQaa + quoteFundingPnl - dustBaseAssetValue
+        position.quote_asset_amount = (
+            position.quote_asset_amount
+            + deltaQaa
+            + quoteFundingPnl
+            - dustBaseAssetValue
         )
-        position.quoteBreakEvenAmount = (
-            position.quoteBreakEvenAmount
+        position.quote_break_even_amount = (
+            position.quote_break_even_amount
             + deltaQaa
             + quoteFundingPnl
             - dustBaseAssetValue
@@ -794,8 +797,8 @@ class DriftUser:
         )
         lp_open_bids = market_open_bids * position.lp_shares // market.amm.sqrt_k
         lp_open_asks = market_open_asks * position.lp_shares // market.amm.sqrt_k
-        position.openBids += lp_open_bids
-        position.openAsks += lp_open_asks
+        position.open_bids += lp_open_bids
+        position.open_asks += lp_open_asks
 
         if position.base_asset_amount > 0:
             position.last_cumulative_funding_rate = (
