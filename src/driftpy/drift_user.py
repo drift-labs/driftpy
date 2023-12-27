@@ -640,6 +640,9 @@ class DriftUser:
 
         return liq_price
 
+    def get_empty_position(self, market_index: int) -> PerpPosition:
+        return PerpPosition(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, market_index, 0, 0)
+
     def get_perp_position_with_lp_settle(
         self,
         market_index: int,
