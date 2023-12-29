@@ -1,5 +1,8 @@
 import asyncio
+import jsonrpcclient
 import traceback
+import base64
+
 from typing import Any, Container, Optional, Dict
 
 from solders.pubkey import Pubkey
@@ -126,27 +129,40 @@ class UserMap(UserMapInterface, DLOBSource):
     async def sync(self) -> None:
         async with self.sync_lock:
             try:
-                filters = (get_user_filter(),)
+                filters = [{"memcmp": {"offset": 0, "bytes": "TfwwBiNJtao"}}]
                 if not self.include_idle:
-                    filters += (get_non_idle_user_filter(),)
+                    filters.append({"memcmp": {"offset": 4350, "bytes": "1"}})
 
-                rpc_json_response = await self.connection.get_program_accounts(
-                    self.drift_client.program_id,
-                    self.commitment,
-                    "base64",
-                    filters=filters,
+                rpc_request = jsonrpcclient.request(
+                    "getProgramAccounts",
+                    [
+                        str(self.drift_client.program_id),
+                        {"filters": filters, "encoding": "base64", "withContext": True},
+                    ],
                 )
-                rpc_response_and_context = rpc_json_response.value
 
-                slot = (
-                    await self.drift_client.program.provider.connection.get_slot()
-                ).value
+                post = self.drift_client.connection._provider.session.post(
+                    self.drift_client.connection._provider.endpoint_uri,
+                    json=rpc_request,
+                    headers={"content-encoding": "gzip"},
+                )
+
+                resp = await asyncio.wait_for(post, timeout=10)
+
+                parsed_resp = jsonrpcclient.parse(resp.json())
+
+                slot = parsed_resp.result["context"]["slot"]
+
+                rpc_response_values = parsed_resp.result["value"]
+
                 program_account_buffer_map: Dict[str, Container[Any]] = {}
 
                 # parse the gPA data before inserting
-                for program_account in rpc_response_and_context:
-                    pubkey = program_account.pubkey
-                    data = decode_user(program_account.account.data)
+                for program_account in rpc_response_values:
+                    pubkey = program_account["pubkey"]
+                    data = decode_user(
+                        base64.b64decode(program_account["account"]["data"][0])
+                    )
                     program_account_buffer_map[str(pubkey)] = data
 
                 # "idempotent" insert into usermap

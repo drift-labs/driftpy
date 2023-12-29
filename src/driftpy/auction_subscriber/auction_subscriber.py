@@ -32,6 +32,7 @@ class AuctionSubscriber:
     async def subscribe(self):
         if self.subscriber is None:
             filters = (get_user_filter(), get_user_with_auction_filter())
+            print(filters)
             options = WebsocketProgramAccountOptions(filters, self.commitment, "base64")
             self.subscriber = WebSocketProgramAccountSubscriber(
                 "AuctionSubscriber",
