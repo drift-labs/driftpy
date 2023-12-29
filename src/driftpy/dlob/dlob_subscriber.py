@@ -3,7 +3,7 @@ import json
 import traceback
 from typing import Optional
 import aiohttp
-from events import Events as EventEmitter
+from events import Events as EventEmitter  # type: ignore
 from dataclasses import dataclass
 from solders.pubkey import Pubkey
 from driftpy.dlob.client_types import DLOBClientConfig
