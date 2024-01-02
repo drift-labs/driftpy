@@ -87,7 +87,7 @@ mainnet_spot_market_configs: list[SpotMarketConfig] = [
         mint=Pubkey.from_string("J1toso1uCk3RLmjorhTtrVwY9HJ7X8V9yYac6Y7kGCPn"),
     ),
     SpotMarketConfig(
-        symbol="SOL",
+        symbol="PYTH",
         market_index=7,
         oracle=Pubkey.from_string("nrYkQQQur7z8rYTST3G9GqATviK5SxTDkrqd21MW6Ue"),
         oracle_source=OracleSource.Pyth(),
