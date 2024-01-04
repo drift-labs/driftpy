@@ -238,7 +238,6 @@ async def test_usdc_deposit(
 
 
 @mark.asyncio
-@mark.asyncio
 async def test_open_orders(
     drift_client: Admin,
 ):
