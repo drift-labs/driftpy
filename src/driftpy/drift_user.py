@@ -22,7 +22,6 @@ class DriftUser:
         self,
         drift_client,
         user_public_key: Pubkey,
-        sub_account_id: int = 0,
         account_subscription: Optional[
             AccountSubscriptionConfig
         ] = AccountSubscriptionConfig.default(),
@@ -32,7 +31,7 @@ class DriftUser:
         Args:
             drift_client(DriftClient): required for program_id, idl, things (keypair doesnt matter)
             user_public_key (Pubkey): pubkey for user account
-            sub_account_id (int, optional): subaccount of authority to investigate. Defaults to 0.
+            account_subscription (Optional[AccountSubscriptionConfig], optional): method of receiving account updates
         """
         from driftpy.drift_client import DriftClient
 
@@ -40,7 +39,6 @@ class DriftUser:
         self.program = drift_client.program
         self.oracle_program = drift_client
         self.connection = self.program.provider.connection
-        self.subaccount_id = sub_account_id
 
         self.user_public_key = user_public_key
 
