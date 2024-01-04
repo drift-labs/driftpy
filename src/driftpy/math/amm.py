@@ -343,6 +343,8 @@ def calculate_spread(
         amm.base_asset_reserve, amm.quote_asset_reserve, amm.peg_multiplier
     )
 
+    print(f"reserve price: {reserve_price}")
+
     target_price = (
         oracle_price_data.price if oracle_price_data is not None else reserve_price
     )
@@ -354,7 +356,10 @@ def calculate_spread(
     conf_interval_pct = conf_interval * BID_ASK_SPREAD_PRECISION // reserve_price
 
     now = now if now is not None else int(time.time())
+    print(f"price: {oracle_price_data.price}")
     live_oracle_std = calculate_live_oracle_std(amm, oracle_price_data, now)
+
+    print(f"live_oracle_std: {live_oracle_std}")
 
     spreads = calculate_spread_bn(
         amm.base_spread,
@@ -379,7 +384,6 @@ def calculate_spread(
         True,
     )
 
-    print(type(spreads))
     long_spread = spreads["long_vol_spread"]
     short_spread = spreads["short_vol_spread"]
 
@@ -440,7 +444,34 @@ def calculate_ask_price_amm(amm: AMM, oracle_price=None):
     )
 
 
-def calculate_price(base_asset_amount, quote_asset_amount, peg_multiplier):
+def calculate_bid_ask_price(
+    amm: AMM, oracle_price_data: OraclePriceData, with_update: bool = True
+):
+    if with_update:
+        new_amm = calculate_updated_amm(amm, oracle_price_data)
+    else:
+        new_amm = amm
+
+    bid_reserves, ask_reserves = calculate_spread_reserves_dlob(
+        new_amm, oracle_price_data
+    )
+
+    print(f"bid res: {bid_reserves}")
+    print(f"ask res: {ask_reserves}")
+    bid_price = calculate_price(
+        bid_reserves[0], bid_reserves[1], new_amm.peg_multiplier
+    )
+
+    ask_price = calculate_price(
+        ask_reserves[0], ask_reserves[1], new_amm.peg_multiplier
+    )
+
+    return bid_price, ask_price
+
+
+def calculate_price(
+    base_asset_amount: int, quote_asset_amount: int, peg_multiplier: int
+):
     if abs(base_asset_amount) <= 0:
         return 0
     else:
@@ -708,7 +739,6 @@ def calculate_spread_reserves(
         quote_asset_reserve_delta = amm.quote_asset_reserve / (
             BID_ASK_SPREAD_PRECISION / (spread / 4)
         )
-    # print(quote_asset_reserve_delta)
 
     if position_direction == PositionDirection.Long:
         quote_asset_reserve = amm.quote_asset_reserve + quote_asset_reserve_delta
@@ -732,10 +762,8 @@ def calculate_spread_reserves_dlob(
             return amm.base_asset_reserve, amm.quote_asset_reserve
 
         spread_fraction = max(spread // 2, 1)
-        print(BID_ASK_SPREAD_PRECISION)
-        print(spread_fraction)
         quote_asset_reserve_delta = amm.quote_asset_reserve // (
-            BID_ASK_SPREAD_PRECISION // spread_fraction
+            BID_ASK_SPREAD_PRECISION / spread_fraction
         )
 
         if direction == PositionDirection.Long:
@@ -748,6 +776,8 @@ def calculate_spread_reserves_dlob(
         return base_asset_reserve, quote_asset_reserve
 
     long_spread, short_spread = calculate_spread(amm, oracle_price_data, now)
+    print(f"long, {long_spread}")
+    print(f"short, {short_spread}")
     ask_reserves = calculate_spread_reserve(long_spread, PositionDirection.Long, amm)
     bid_reserves = calculate_spread_reserve(short_spread, PositionDirection.Short, amm)
 
