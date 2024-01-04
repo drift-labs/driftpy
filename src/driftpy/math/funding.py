@@ -52,6 +52,8 @@ def calculate_live_mark_twap(
 
     if not mark_price:
         bid, ask = calculate_bid_ask_price(market.amm, oracle_price_data)
+        print(f"bid {bid}")
+        print(f"ask {ask}")
         mark_price = (bid + ask) // 2
 
     mark_twap_with_mantissa = (
@@ -153,7 +155,7 @@ async def calculate_all_estimated_funding_rate(
         abs(oracle_twap) // FUNDING_RATE_OFFSET_DENOMINATOR
     )
 
-    twap_spread_pct = twap_spread_with_offset * PRICE_PRECISION * 100 // oracle_twap
+    twap_spread_pct = (twap_spread_with_offset * PRICE_PRECISION * 100) // oracle_twap
 
     seconds_in_hour = 3600
     hours_in_day = 24
@@ -191,7 +193,7 @@ async def calculate_all_estimated_funding_rate(
         return mark_twap, oracle_twap, lowerbound_est, interp_est, interp_est
 
     if larger_side > 0:
-        capped_alt_est = smaller_side * twap_spread // hours_in_day
+        capped_alt_est = (smaller_side * twap_spread) // hours_in_day
         fee_pool_top_off = (
             fee_pool_size * (PRICE_PRECISION // QUOTE_PRECISION) * AMM_RESERVE_PRECISION
         )
