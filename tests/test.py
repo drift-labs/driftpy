@@ -459,11 +459,15 @@ async def test_liq_perp(
     from driftpy.constants.numeric_constants import AMM_RESERVE_PRECISION
     from driftpy.math.amm import calculate_price
 
-    price = calculate_price(
-        market.amm.base_asset_reserve,
-        market.amm.quote_asset_reserve,
-        market.amm.peg_multiplier,
+    price = (
+        calculate_price(
+            market.amm.base_asset_reserve,
+            market.amm.quote_asset_reserve,
+            market.amm.peg_multiplier,
+        )
+        / PRICE_PRECISION
     )
+
     baa = (
         user_account.spot_positions[0].scaled_balance
         / price
