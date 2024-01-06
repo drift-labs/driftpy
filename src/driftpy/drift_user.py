@@ -216,7 +216,7 @@ class DriftUser:
         self, margin_category: Optional[MarginCategory] = MarginCategory.INITIAL
     ) -> int:
         asset_value = self.get_spot_market_asset_value(
-            margin_category,
+            margin_category=margin_category,
             include_open_orders=True,
         )
         pnl = self.get_unrealized_pnl(True, with_weight_margin_category=margin_category)
@@ -428,7 +428,6 @@ class DriftUser:
                         spot_market_account,
                         margin_category,
                     )
-
                     total_asset_value += asset_value
 
                 continue
