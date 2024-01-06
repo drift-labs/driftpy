@@ -71,7 +71,7 @@ class DriftClient:
         sub_account_ids: Optional[list[int]] = None,
         market_lookup_table: Optional[Pubkey] = None,
     ):
-        """Initializes the drift client object -- likely want to use the .from_config method instead of this one
+        """Initializes the drift client object
 
         Args:
             program (Program): Drift anchor program (see from_config on how to initialize it)
