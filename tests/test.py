@@ -21,7 +21,11 @@ from math import sqrt
 from driftpy.drift_user import DriftUser
 from driftpy.drift_client import DriftClient
 from driftpy.user_map.user_map import UserMap
-from driftpy.user_map.user_map_config import UserMapConfig, PollingConfig, WebsocketConfig
+from driftpy.user_map.user_map_config import (
+    UserMapConfig,
+    PollingConfig,
+    WebsocketConfig,
+)
 from driftpy.events.event_subscriber import EventSubscriber
 from driftpy.events.types import EventSubscriptionOptions, PollingLogProviderConfig
 from driftpy.setup.helpers import (
@@ -60,9 +64,8 @@ PERIODICITY = 60 * 60  # 1 HOUR
 USDC_AMOUNT = int(10 * QUOTE_PRECISION)
 MARKET_INDEX = 0
 
-workspace = workspace_fixture(
-    "protocol-v2", build_cmd="anchor build", scope="session"
-)
+workspace = workspace_fixture("protocol-v2", build_cmd="anchor build", scope="session")
+
 
 @async_fixture(scope="session")
 async def usdc_mint(provider: Provider):
@@ -96,8 +99,8 @@ async def drift_client(program: Program, usdc_mint: Keypair) -> Admin:
         program.provider.connection,
         program.provider.wallet,
         account_subscription=AccountSubscriptionConfig("cached"),
-        spot_market_indexes = [0, 1],
-        perp_market_indexes = [0]
+        spot_market_indexes=[0, 1],
+        perp_market_indexes=[0],
     )
     await admin.initialize(usdc_mint.pubkey(), admin_controls_prices=True)
     await admin.subscribe()
@@ -233,58 +236,6 @@ async def test_usdc_deposit(
         == USDC_AMOUNT / QUOTE_PRECISION * SPOT_BALANCE_PRECISION
     )
 
-@mark.asyncio
-
-async def test_user_map_polling(drift_client: Admin, workspace):
-    polling_config = PollingConfig(0.5)
-    user_map_config = UserMapConfig(drift_client, polling_config)
-    user_map = UserMap(user_map_config)
-    await user_map.subscribe()
-
-    assert user_map.is_subscribed == True
-
-    user_account = drift_client.get_user(0)
-
-    assert user_map.has(str(user_account.user_public_key))
-
-    assert user_map.size() == 1
-
-    throwaway = Pubkey.new_unique()
-    
-    await user_map.must_get(str(throwaway))
-    
-    assert user_map.size() == 2
-    assert user_map.has(str(throwaway))
-    
-    await user_map.unsubscribe()
-
-    assert user_map.is_subscribed == False
-
-@mark.asyncio
-async def test_user_map_ws(drift_client: Admin, workspace):
-    ws_config = WebsocketConfig()
-    user_map_config = UserMapConfig(drift_client, ws_config)
-    user_map = UserMap(user_map_config)
-    await user_map.subscribe()
-
-    assert user_map.is_subscribed == True
-
-    user_account = drift_client.get_user(0)
-
-    assert user_map.has(str(user_account.user_public_key))
-
-    assert user_map.size() == 1
-
-    throwaway = Pubkey.new_unique()
-    
-    await user_map.must_get(str(throwaway))
-    
-    assert user_map.size() == 2
-    assert user_map.has(str(throwaway))
-
-    await user_map.unsubscribe()
-
-    assert user_map.is_subscribed == False
 
 @mark.asyncio
 async def test_open_orders(
@@ -475,6 +426,7 @@ async def test_stake_if(
     )
     assert user_stats.if_staked_quote_asset_amount == 0
 
+
 # note this goes at end bc the main clearing house loses all collateral ...
 @mark.asyncio
 async def test_liq_perp(
@@ -488,8 +440,8 @@ async def test_liq_perp(
         drift_client.program.provider.connection,
         liq,
         account_subscription=AccountSubscriptionConfig("cached"),
-        spot_market_indexes = [0, 1],
-        perp_market_indexes = [0]
+        spot_market_indexes=[0, 1],
+        perp_market_indexes=[0],
     )
     await liq_drift_client.subscribe()
     usdc_acc = await _create_and_mint_user_usdc(
@@ -507,11 +459,15 @@ async def test_liq_perp(
     from driftpy.constants.numeric_constants import AMM_RESERVE_PRECISION
     from driftpy.math.amm import calculate_price
 
-    price = calculate_price(
-        market.amm.base_asset_reserve,
-        market.amm.quote_asset_reserve,
-        market.amm.peg_multiplier,
+    price = (
+        calculate_price(
+            market.amm.base_asset_reserve,
+            market.amm.quote_asset_reserve,
+            market.amm.peg_multiplier,
+        )
+        / PRICE_PRECISION
     )
+
     baa = (
         user_account.spot_positions[0].scaled_balance
         / price

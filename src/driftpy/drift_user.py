@@ -22,7 +22,6 @@ class DriftUser:
         self,
         drift_client,
         user_public_key: Pubkey,
-        sub_account_id: int = 0,
         account_subscription: Optional[
             AccountSubscriptionConfig
         ] = AccountSubscriptionConfig.default(),
@@ -32,7 +31,7 @@ class DriftUser:
         Args:
             drift_client(DriftClient): required for program_id, idl, things (keypair doesnt matter)
             user_public_key (Pubkey): pubkey for user account
-            sub_account_id (int, optional): subaccount of authority to investigate. Defaults to 0.
+            account_subscription (Optional[AccountSubscriptionConfig], optional): method of receiving account updates
         """
         from driftpy.drift_client import DriftClient
 
@@ -40,7 +39,6 @@ class DriftUser:
         self.program = drift_client.program
         self.oracle_program = drift_client
         self.connection = self.program.provider.connection
-        self.subaccount_id = sub_account_id
 
         self.user_public_key = user_public_key
 
@@ -218,7 +216,7 @@ class DriftUser:
         self, margin_category: Optional[MarginCategory] = MarginCategory.INITIAL
     ) -> int:
         asset_value = self.get_spot_market_asset_value(
-            margin_category,
+            margin_category=margin_category,
             include_open_orders=True,
         )
         pnl = self.get_unrealized_pnl(True, with_weight_margin_category=margin_category)
@@ -430,7 +428,6 @@ class DriftUser:
                         spot_market_account,
                         margin_category,
                     )
-
                     total_asset_value += asset_value
 
                 continue

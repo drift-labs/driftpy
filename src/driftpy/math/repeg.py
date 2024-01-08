@@ -1,5 +1,6 @@
+import math
 from driftpy.constants.numeric_constants import *
-from driftpy.types import PerpPosition
+from driftpy.types import OraclePriceData, PerpPosition
 from driftpy.math.market import calculate_mark_price
 from driftpy.constants.numeric_constants import (
     PEG_PRECISION,
@@ -12,48 +13,53 @@ from driftpy.types import AMM
 
 
 def calculate_optimal_peg_and_budget(
-    amm: AMM, target_price: int
+    amm: AMM, oracle_price_data: OraclePriceData
 ) -> tuple[int, int, int, bool]:
     from driftpy.math.amm import calculate_peg_from_target_price, calculate_price
 
-    mark_price_before = calculate_price(
+    reserve_price_before = calculate_price(
         amm.base_asset_reserve, amm.quote_asset_reserve, amm.peg_multiplier
     )
+
+    target_price = oracle_price_data.price
+
     new_peg = calculate_peg_from_target_price(
         target_price, amm.base_asset_reserve, amm.quote_asset_reserve
     )
+
     pre_peg_cost = calculate_repeg_cost(amm, new_peg)
 
-    total_fee_lb = amm.total_exchange_fee / 2
+    total_fee_lb = amm.total_exchange_fee // 2
     budget = max(0, amm.total_fee_minus_distributions - total_fee_lb)
-    target_price_gap = mark_price_before - target_price
 
-    # if cant pay for the full repeg
+    check_lower_bound = True
     if budget < pre_peg_cost:
-        max_price_spread = amm.max_spread * target_price / BID_ASK_SPREAD_PRECISION
-        target_price_gap = mark_price_before - target_price
+        half_max_price_spread = (
+            (amm.max_spread // 2) * target_price
+        ) // BID_ASK_SPREAD_PRECISION
 
-        # if cant push the spread to the target price
-        if abs(target_price_gap) > max_price_spread:
-            # this how much we can afford -- will always be > 0
-            mark_adj = abs(target_price_gap) - max_price_spread
+        target_price_gap = reserve_price_before - target_price
+
+        if abs(target_price_gap) > half_max_price_spread:
+            mark_adj = abs(target_price_gap) - half_max_price_spread
 
             if target_price_gap < 0:
-                # want to shift down but we cant fully = add back
-                new_target_price = mark_price_before + mark_adj
+                new_target_price = reserve_price_before + mark_adj
             else:
-                new_target_price = mark_price_before - mark_adj
+                new_target_price = reserve_price_before - mark_adj
 
             new_optimal_peg = calculate_peg_from_target_price(
                 new_target_price, amm.base_asset_reserve, amm.quote_asset_reserve
             )
 
             new_budget = calculate_repeg_cost(amm, new_optimal_peg)
-            return (new_target_price, new_optimal_peg, new_budget, False)
+            check_lower_bound = False
 
-    return (target_price, new_peg, budget, True)
+            return (new_target_price, new_optimal_peg, new_budget, check_lower_bound)
+        elif amm.total_fee_minus_distributions < amm.total_exchange_fee // 2:
+            check_lower_bound = False
 
-    # new_peg = calculate_repeg_cost(amm, )
+    return (target_price, new_peg, budget, check_lower_bound)
 
 
 # def get_optimal_peg(market, target_px):
@@ -235,12 +241,9 @@ def calculate_buyout_cost(market, market_index, new_peg, sqrt_k):
 def calculate_repeg_cost(amm: AMM, new_peg: int) -> int:
     dqar = amm.quote_asset_reserve - amm.terminal_quote_asset_reserve
     cost = (
-        dqar
-        * (new_peg - amm.peg_multiplier)
-        / AMM_TO_QUOTE_PRECISION_RATIO
-        / PEG_PRECISION
-    )
-    return cost
+        (dqar * (new_peg - amm.peg_multiplier)) / AMM_TO_QUOTE_PRECISION_RATIO
+    ) / PEG_PRECISION
+    return math.floor(cost)
 
 
 # def calculate_repeg_cost(market, new_peg):
