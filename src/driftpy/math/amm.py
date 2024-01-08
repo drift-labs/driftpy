@@ -95,8 +95,9 @@ def calculate_effective_leverage(
 
     effective_gap = max(0, local_base_asset_value - net_base_asset_value)
 
-    effective_leverage = (effective_gap / max(0, total_fee_minus_distributions + 1)) + (
-        1 / QUOTE_PRECISION
+    effective_leverage = (
+        effective_gap / (max(0, total_fee_minus_distributions) + 1)
+        + 1 / QUOTE_PRECISION
     )
 
     return effective_leverage
@@ -108,7 +109,7 @@ def calculate_inventory_scale(
     min_base_asset_reserve: int,
     max_base_asset_reserve: int,
     directional_spread: float,
-    max_spread: int,
+    max_spread: float,
 ) -> float:
     if base_asset_amount_with_amm == 0:
         return 1
@@ -223,8 +224,8 @@ def calculate_spread_bn(
     spread_terms["long_spread_w_ps"] = long_spread
     spread_terms["short_spread_w_ps"] = short_spread
 
-    max_target_spread = math.floor(
-        max(max_spread, abs(last_oracle_reserve_price_spread_pct))
+    max_target_spread = float(
+        math.floor(max(max_spread, abs(last_oracle_reserve_price_spread_pct)))
     )
 
     inventory_spread_scale = calculate_inventory_scale(
