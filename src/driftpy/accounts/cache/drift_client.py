@@ -98,3 +98,11 @@ class CachedDriftClientAccountSubscriber(DriftClientAccountSubscriber):
 
     def unsubscribe(self):
         self.cache = None
+
+    def get_market_accounts_and_slots(self) -> list[DataAndSlot[PerpMarketAccount]]:
+        return [self.cache["perp_markets"].values()]
+
+    def get_spot_market_accounts_and_slots(
+        self,
+    ) -> list[DataAndSlot[SpotMarketAccount]]:
+        return [self.cache["spot_markets"].values()]

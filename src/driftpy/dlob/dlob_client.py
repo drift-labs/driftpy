@@ -7,7 +7,15 @@ from events import Events as EventEmitter
 from dataclasses import dataclass
 from solders.pubkey import Pubkey
 from driftpy.dlob.client_types import DLOBClientConfig
-from driftpy.dlob.orderbook_levels import L3Level, L3OrderBook, L2Level, L2OrderBook
+from driftpy.dlob.orderbook_levels import (
+    DEFAULT_TOP_OF_BOOK_QUOTE_AMOUNTS,
+    L3Level,
+    L3OrderBook,
+    L2Level,
+    L2OrderBook,
+    L2OrderBookGenerator,
+    get_vamm_l2_generator,
+)
 from driftpy.types import (
     MarketType,
     is_variant,
@@ -40,9 +48,12 @@ class DLOBClient:
 
     async def subscribe(self):
         """
-        This function CANNOT be used unless a `DLOBClientConfig` was provided in the DLOBClient's constructor.
-        If it is used without a `DLOBClientConfig`, it will break.
+        This function CANNOT be used unless a `DLOBClientConfig` was provided in the `DLOBClient`'s constructor.
+        If it is used without a `DLOBClientConfig`, it will return nothing.
         """
+        if not all([self.dlob_source, self.slot_source, self.drift_client]):
+            return
+
         if self.interval_task is not None:
             return
 
@@ -161,3 +172,101 @@ class DLOBClient:
             except Exception as e:
                 print(f"Error fetching L3 OrderBook: {e}")
                 break
+
+    def get_l2_orderbook_sync(
+        self,
+        market_name: Optional[str] = None,
+        market_index: Optional[int] = None,
+        market_type: Optional[MarketType] = None,
+        include_vamm: Optional[bool] = None,
+        num_vamm_orders: Optional[int] = False,
+        fallback_l2_generators: Optional[L2OrderBookGenerator] = [],
+        depth: Optional[int] = 10,
+    ) -> L2OrderBook:
+        if market_name:
+            derived_market_info = self.drift_client.get_market_index_and_type(
+                market_name
+            )
+            if not derived_market_info:
+                raise ValueError(
+                    f"Market index and type for {market_name} could not be found."
+                )
+            market_index = derived_market_info[0]
+            market_type = derived_market_info[1]
+        else:
+            if market_index is None or market_type is None:
+                raise ValueError(
+                    "Either market_name or market_index and market_type must be provided"
+                )
+
+        market_is_perp = is_variant(market_type, "Perp")
+        if market_is_perp:
+            oracle_price_data = self.drift_client.get_oracle_price_data_for_perp_market(
+                market_index
+            )
+        else:
+            oracle_price_data = self.drift_client.get_oracle_price_data_for_spot_market(
+                market_index
+            )
+
+        if market_is_perp and include_vamm:
+            if not fallback_l2_generators:
+                fallback_l2_generators = []
+            if len(fallback_l2_generators) > 0:
+                raise ValueError(
+                    "include_vamm can only be used if fallback_l2_generators is empty"
+                )
+
+            fallback_l2_generators = [
+                get_vamm_l2_generator(
+                    self.drift_client.get_perp_market_account(market_index),
+                    oracle_price_data,
+                    num_vamm_orders if num_vamm_orders is not None else depth,
+                    DEFAULT_TOP_OF_BOOK_QUOTE_AMOUNTS,
+                )
+            ]
+
+        return self.dlob.get_l2(
+            market_index,
+            market_type,
+            self.slot_source.get_slot(),
+            oracle_price_data,
+            depth,
+            fallback_l2_generators,
+        )
+
+    def get_l3_orderbook_sync(
+        self,
+        market_name: Optional[str] = None,
+        market_index: Optional[int] = None,
+        market_type: Optional[MarketType] = None,
+    ) -> L3OrderBook:
+        if market_name:
+            derived_market_info = self.drift_client.get_market_index_and_type(
+                market_name
+            )
+            if not derived_market_info:
+                raise ValueError(
+                    f"Market index and type for {market_name} could not be found."
+                )
+            market_index = derived_market_info[0]
+            market_type = derived_market_info[1]
+        else:
+            if market_index is None or market_type is None:
+                raise ValueError(
+                    "Either market_name or market_index and market_type must be provided"
+                )
+
+        market_is_perp = is_variant(market_type, "Perp")
+        if market_is_perp:
+            oracle_price_data = self.drift_client.get_oracle_price_data_for_perp_market(
+                market_index
+            )
+        else:
+            oracle_price_data = self.drift_client.get_oracle_price_data_for_spot_market(
+                market_index
+            )
+
+        return self.dlob.get_l3(
+            market_index, market_type, self.slot_source.get_slot(), oracle_price_data
+        )

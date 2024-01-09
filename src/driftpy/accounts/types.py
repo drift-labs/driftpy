@@ -8,7 +8,6 @@ from solders.pubkey import Pubkey
 from driftpy.types import (
     PerpMarketAccount,
     SpotMarketAccount,
-    OracleSource,
     UserAccount,
     OraclePriceData,
     StateAccount,
@@ -22,10 +21,12 @@ class DataAndSlot(Generic[T]):
     slot: int
     data: T
 
+
 @dataclass
 class BufferAndSlot:
     slot: int
     buffer: bytes
+
 
 @dataclass
 class WebsocketProgramAccountOptions:
@@ -33,7 +34,9 @@ class WebsocketProgramAccountOptions:
     commitment: Commitment
     encoding: str
 
+
 UpdateCallback = Callable[[str, DataAndSlot[UserAccount]], Awaitable[None]]
+
 
 class DriftClientAccountSubscriber:
     @abstractmethod
@@ -68,6 +71,16 @@ class DriftClientAccountSubscriber:
     def get_oracle_price_data_and_slot(
         self, oracle: Pubkey
     ) -> Optional[DataAndSlot[OraclePriceData]]:
+        pass
+
+    @abstractmethod
+    def get_market_accounts_and_slots(self) -> list[DataAndSlot[PerpMarketAccount]]:
+        pass
+
+    @abstractmethod
+    def get_spot_market_accounts_and_slots(
+        self,
+    ) -> list[DataAndSlot[SpotMarketAccount]]:
         pass
 
 

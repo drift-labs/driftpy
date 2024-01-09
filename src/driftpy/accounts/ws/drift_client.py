@@ -22,6 +22,7 @@ from driftpy.types import OracleSource
 
 from driftpy.accounts.oracle import get_oracle_decode_fn
 
+
 class WebsocketDriftClientAccountSubscriber(DriftClientAccountSubscriber):
     def __init__(
         self,
@@ -165,3 +166,17 @@ class WebsocketDriftClientAccountSubscriber(DriftClientAccountSubscriber):
                 perp_market_subscriber.unsubscribe()
             for oracle_subscriber in self.oracle_subscribers.values():
                 oracle_subscriber.unsubscribe()
+
+    def get_market_accounts_and_slots(self) -> list[DataAndSlot[PerpMarketAccount]]:
+        return [
+            subscriber.data_and_slot
+            for subscriber in self.perp_market_subscribers.values()
+        ]
+
+    def get_spot_market_accounts_and_slots(
+        self,
+    ) -> list[DataAndSlot[SpotMarketAccount]]:
+        return [
+            subscriber.data_and_slot
+            for subscriber in self.spot_market_subscribers.values()
+        ]
