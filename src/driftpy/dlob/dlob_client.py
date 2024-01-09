@@ -31,8 +31,15 @@ class MarketId:
 class DLOBClient:
     _session: Optional[aiohttp.ClientSession] = None
 
-    def __init__(self, url: str, config: Optional[DLOBClientConfig] = None):
-        self.url = url.rstrip("/")
+    def __init__(
+        self,
+        url: Optional[str] = None,  # Provide this if using DLOB server
+        config: Optional[
+            DLOBClientConfig
+        ] = None,  # Provide this if building from usermap
+    ):
+        if url:
+            self.url = url.rstrip("/")
         self.dlob = None
         self.event_emitter = EventEmitter(("on_dlob_update"))
         self.event_emitter.on("on_dlob_update")
