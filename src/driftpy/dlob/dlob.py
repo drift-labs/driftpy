@@ -1187,6 +1187,10 @@ class DLOB:
         slot: int,
         oracle_price_data: OraclePriceData,
     ) -> L3OrderBook:
+        """
+        get an l3 view of the orderbook for a given market
+        """
+
         bids: List[L3Level] = []
         asks: List[L3Level] = []
 

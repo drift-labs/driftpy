@@ -34,6 +34,7 @@ class UserMap(UserMapInterface, DLOBSource):
         self.last_number_of_sub_accounts = None
         self.sync_lock = asyncio.Lock()
         self.drift_client: DriftClient = config.drift_client
+        self.latest_slot: int = 0
         self.is_subscribed = False
         if config.connection:
             self.connection = config.connection
@@ -151,7 +152,9 @@ class UserMap(UserMapInterface, DLOBSource):
 
                 parsed_resp = jsonrpcclient.parse(resp.json())
 
-                slot = parsed_resp.result["context"]["slot"]
+                slot = int(parsed_resp.result["context"]["slot"])
+
+                self.latest_slot = slot
 
                 rpc_response_values = parsed_resp.result["value"]
 
@@ -166,12 +169,19 @@ class UserMap(UserMapInterface, DLOBSource):
                     program_account_buffer_map[str(pubkey)] = data
 
                 # "idempotent" insert into usermap
-                for key in program_account_buffer_map.keys():
-                    if key not in self.user_map:
-                        data = program_account_buffer_map.get(key)
-                        user_account: UserAccount = data
+                for pubkey in program_account_buffer_map.keys():
+                    data = program_account_buffer_map.get(pubkey)
+                    user_account: UserAccount = data
+                    if pubkey not in self.user_map:
                         await self.add_pubkey(
-                            Pubkey.from_string(key), DataAndSlot(slot, user_account)
+                            Pubkey.from_string(pubkey), DataAndSlot(slot, user_account)
+                        )
+                        self.user_map.get(pubkey).account_subscriber.update_data(
+                            DataAndSlot(slot, user_account)
+                        )
+                    else:
+                        self.user_map.get(pubkey).account_subscriber.update_data(
+                            DataAndSlot(slot, user_account)
                         )
                     # let the loop breathe
                     await asyncio.sleep(0)

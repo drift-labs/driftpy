@@ -180,3 +180,11 @@ class PollingDriftClientAccountSubscriber(DriftClientAccountSubscriber):
         self, oracle: Pubkey
     ) -> Optional[DataAndSlot[OraclePriceData]]:
         return self.oracle.get(str(oracle))
+
+    def get_market_accounts_and_slots(self) -> list[DataAndSlot[PerpMarketAccount]]:
+        return [self.perp_markets.values()]
+
+    def get_spot_market_accounts_and_slots(
+        self,
+    ) -> list[DataAndSlot[SpotMarketAccount]]:
+        return [self.spot_markets.values()]

@@ -25,12 +25,13 @@ from driftpy.constants import BASE_PRECISION, PRICE_PRECISION
 from driftpy.constants.numeric_constants import (
     QUOTE_SPOT_MARKET_INDEX,
 )
+from driftpy.decode.utils import decode_name
 from driftpy.drift_user import DriftUser
 from driftpy.accounts import *
 
 from driftpy.constants.config import DriftEnv, DRIFT_PROGRAM_ID, configs
 
-from typing import Union, Optional, List
+from typing import Tuple, Union, Optional, List
 from driftpy.math.perp_position import is_available
 from driftpy.math.spot_position import is_spot_position_available
 from driftpy.math.spot_market import cast_to_spot_precision
@@ -2395,3 +2396,36 @@ class DriftClient:
         ixs = [*pre_instructions, begin_swap_ix, *swap_ixs, end_swap_ix]
 
         return ixs, address_table_lookups
+
+    def get_perp_market_accounts(self) -> list[PerpMarketAccount]:
+        return [
+            value.data
+            for value in self.account_subscriber.get_market_accounts_and_slots()
+            if value is not None
+        ]
+
+    def get_spot_market_accounts(self) -> list[SpotMarketAccount]:
+        return [
+            value.data
+            for value in self.account_subscriber.get_spot_market_accounts_and_slots()
+            if value is not None
+        ]
+
+    def get_market_index_and_type(
+        self, name: str
+    ) -> Union[Tuple[int, MarketType], None]:
+        """
+        Returns the market index and type for a given market name \n
+        Returns `None` if the market name couldn't be matched \n
+        e.g. "SOL-PERP" -> `(0, MarketType.Perp())`
+        """
+        name = name.upper()
+        for perp_market_account in self.get_perp_market_accounts():
+            if decode_name(perp_market_account.name).upper() == name:
+                return (perp_market_account.market_index, MarketType.Perp())
+
+        for spot_market_account in self.get_spot_market_accounts():
+            if decode_name(spot_market_account.name).upper() == name:
+                return (spot_market_account.market_index, MarketType.Spot())
+
+        return None  # explicitly return None if no match is found
