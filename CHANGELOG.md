@@ -25,3 +25,7 @@ Removed `sub_account_id` field from `DriftUser`
 Changed `UserMap` to assign slots from the `getProgramAccounts` RPC call
 
 Updated `constants/perp_markets.py` with new perp market listings
+
+## [0.7.9] - 2024-1-8
+
+Fix breaking bug in `DriftClient.get_jupiter_swap_ix_v6` where token accounts wouldn't be created properly
