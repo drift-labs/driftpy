@@ -185,8 +185,8 @@ class DLOBClient:
         market_name: Optional[str] = None,
         market_index: Optional[int] = None,
         market_type: Optional[MarketType] = None,
-        include_vamm: Optional[bool] = None,
-        num_vamm_orders: Optional[int] = False,
+        include_vamm: Optional[bool] = False,
+        num_vamm_orders: Optional[int] = None,
         fallback_l2_generators: Optional[L2OrderBookGenerator] = [],
         depth: Optional[int] = 10,
     ) -> L2OrderBook:
