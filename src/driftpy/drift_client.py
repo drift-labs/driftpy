@@ -2305,7 +2305,7 @@ class DriftClient:
         reduce_only: Optional[SwapReduceOnly] = None,
         user_account_public_key: Optional[Pubkey] = None,
     ):
-        pre_instructions = []
+        pre_instructions: list[Instruction] = []
         JUPITER_URL = "https://quote-api.jup.ag/v6"
 
         out_market = self.get_spot_market_account(out_market_idx)
@@ -2331,7 +2331,7 @@ class DriftClient:
 
             ai = await self.connection.get_account_info(out_ata)
 
-            if not ai:
+            if not ai.value:
                 pre_instructions.append(
                     self.create_associated_token_account_idempotent_instruction(
                         out_ata,
@@ -2348,7 +2348,7 @@ class DriftClient:
 
             ai = await self.connection.get_account_info(in_ata)
 
-            if not ai:
+            if not ai.value:
                 pre_instructions.append(
                     self.create_associated_token_account_idempotent_instruction(
                         in_ata,
