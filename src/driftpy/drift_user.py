@@ -373,6 +373,134 @@ class DriftUser:
                     oracle_price_data.price, twap_5m
                 )
 
+                if (
+                    spot_position.market_index == QUOTE_SPOT_MARKET_INDEX
+                    and count_for_quote
+                ):
+                    token_amount = get_signed_token_amount(
+                        get_token_amount(
+                            spot_position.scaled_balance,
+                            spot_market_account,
+                            spot_position.balance_type,
+                        ),
+                        spot_position.balance_type,
+                    )
+
+                    if is_variant(spot_position.balance_type, "Borrow"):
+                        # REWRITE
+                        weighted_token_value = abs(
+                            self.get_spot_liability_value(
+                                token_amount,
+                                strict_oracle_price,
+                                spot_market_account,
+                                margin_category,
+                                liquidation_buffer,
+                            )
+                        )
+
+                        net_quote_value -= weighted_token_value
+
+                    else:  # REWRITE
+                        weighted_token_value = self.get_spot_asset_value(
+                            token_amount,
+                            strict_oracle_price,
+                            spot_market_account,
+                            margin_category,
+                        )
+
+                        net_quote_value += weighted_token_value
+
+                    continue
+
+                if not include_open_orders and count_for_base:
+                    if is_variant(spot_position.balance_type, "Borrow"):
+                        token_amount = get_signed_token_amount(
+                            get_token_amount(
+                                spot_position.scaled_balance,
+                                spot_market_account,
+                                spot_position.balance_type,
+                            ),
+                            spot_position.balance_type,
+                        )
+                        # REWRITE
+                        liability_value = abs(
+                            self.get_spot_liability_value(
+                                token_amount,
+                                strict_oracle_price,
+                                spot_market_account,
+                                margin_category,
+                                liquidation_buffer,
+                            )
+                        )
+
+                        total_liability_value += liability_value
+
+                    else:
+                        token_amount = get_token_amount(
+                            spot_position.scaled_balance,
+                            spot_market_account,
+                            spot_position.balance_type,
+                        )
+                        # REWRITE
+                        asset_value = self.get_spot_asset_value(
+                            token_amount,
+                            strict_oracle_price,
+                            spot_market_account,
+                            margin_category,
+                        )
+
+                        total_asset_value += asset_value
+
+                    continue
+                    # REWRITE
+                order_fill_simulation = get_worst_case_token_amounts(
+                    spot_position,
+                    spot_market_account,
+                    strict_oracle_price,
+                    margin_category,
+                    self.get_user_account().max_margin_ratio,
+                )
+                worst_case_token_amount = order_fill_simulation.token_amount
+                worst_case_quote_token_amount = order_fill_simulation.orders_value
+
+                if worst_case_token_amount > 0 and count_for_base:
+                    # REWRITE
+                    base_asset_value = self.get_spot_asset_value(
+                        worst_case_token_amount,
+                        strict_oracle_price,
+                        spot_market_account,
+                        margin_category,
+                    )
+
+                    total_asset_value += base_asset_value
+
+                if worst_case_token_amount < 0 and count_for_base:
+                    # REWRITE
+                    base_liability_value = abs(
+                        self.get_spot_liability_value(
+                            worst_case_token_amount,
+                            strict_oracle_price,
+                            spot_market_account,
+                            margin_category,
+                            liquidation_buffer,
+                        )
+                    )
+
+                    total_liability_value += base_liability_value
+
+                if worst_case_quote_token_amount < 0 and count_for_quote:
+                    weight = SPOT_MARKET_WEIGHT_PRECISION
+                    if margin_category == MarginCategory.INITIAL:
+                        weight = max(weight, self.get_user_account().max_margin_ratio)
+
+                    weighted_token_value = (
+                        abs(worst_case_quote_token_amount)
+                        * weight
+                        // SPOT_MARKET_WEIGHT_PRECISION
+                    )
+
+                    net_quote_value -= weighted_token_value
+
         return total_asset_value, total_liability_value
 
     def get_spot_asset_value(
