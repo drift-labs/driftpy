@@ -17,12 +17,9 @@ from driftpy.types import (
     SpotMarketAccount,
     OraclePriceData,
     StateAccount,
-    OracleInfo,
 )
 
 from driftpy.addresses import *
-
-from driftpy.types import OracleSource
 
 from driftpy.accounts.oracle import get_oracle_decode_fn
 
@@ -86,6 +83,16 @@ class WebsocketDriftClientAccountSubscriber(DriftClientAccountSubscriber):
 
         for full_oracle_wrapper in self.full_oracle_wrappers:
             await self.subscribe_to_oracle(full_oracle_wrapper)
+
+        else:
+            for market_index in self.perp_market_indexes:
+                await self.subscribe_to_perp_market(market_index)
+
+            for market_index in self.spot_market_indexes:
+                await self.subscribe_to_spot_market(market_index)
+
+            for full_oracle_wrapper in self.full_oracle_wrappers:
+                await self.subscribe_to_oracle(full_oracle_wrapper)
 
     async def subscribe_to_spot_market(
         self,
