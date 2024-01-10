@@ -6,6 +6,7 @@ from solana.rpc.commitment import Commitment
 from solders.pubkey import Pubkey
 
 from driftpy.types import (
+    OracleSource,
     PerpMarketAccount,
     SpotMarketAccount,
     UserAccount,
@@ -20,6 +21,13 @@ T = TypeVar("T")
 class DataAndSlot(Generic[T]):
     slot: int
     data: T
+
+
+@dataclass
+class FullOracleWrapper:
+    pubkey: Pubkey
+    oracle_source: OracleSource
+    oracle_price_data_and_slot: Optional[DataAndSlot[OraclePriceData]]
 
 
 @dataclass

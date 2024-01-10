@@ -3,7 +3,11 @@ import asyncio
 from anchorpy import Program
 from solana.rpc.commitment import Commitment
 
-from driftpy.accounts.types import DriftClientAccountSubscriber, DataAndSlot
+from driftpy.accounts.types import (
+    DriftClientAccountSubscriber,
+    DataAndSlot,
+    FullOracleWrapper,
+)
 from typing import Optional, Sequence
 
 from driftpy.accounts.ws.account_subscriber import WebsocketAccountSubscriber
@@ -29,7 +33,7 @@ class WebsocketDriftClientAccountSubscriber(DriftClientAccountSubscriber):
         program: Program,
         perp_market_indexes: Sequence[int],
         spot_market_indexes: Sequence[int],
-        oracle_infos: Sequence[OracleInfo],
+        full_oracle_wrappers: Sequence[FullOracleWrapper],
         should_find_all_markets_and_oracles: bool,
         commitment: Commitment = "confirmed",
     ):
@@ -38,7 +42,7 @@ class WebsocketDriftClientAccountSubscriber(DriftClientAccountSubscriber):
 
         self.perp_market_indexes = perp_market_indexes
         self.spot_market_indexes = spot_market_indexes
-        self.oracle_infos = oracle_infos
+        self.full_oracle_wrappers = full_oracle_wrappers
         self.should_find_all_markets_and_oracles = should_find_all_markets_and_oracles
 
         self.state_subscriber = None
@@ -58,24 +62,36 @@ class WebsocketDriftClientAccountSubscriber(DriftClientAccountSubscriber):
 
         if self.should_find_all_markets_and_oracles:
             (
-                perp_market_indexes,
-                spot_market_indexes,
-                oracle_infos,
-            ) = await find_all_market_and_oracles(self.program)
-            self.perp_market_indexes = perp_market_indexes
-            self.spot_market_indexes = spot_market_indexes
-            self.oracle_infos = oracle_infos
+                perp_ds,
+                spot_ds,
+                full_oracle_wrappers,
+            ) = await find_all_market_and_oracles(self.program, data_and_slots=True)
+            self.perp_market_indexes = [
+                data_and_slot.data.market_index for data_and_slot in perp_ds
+            ]
+            self.spot_market_indexes = [
+                data_and_slot.data.market_index for data_and_slot in spot_ds
+            ]
+            self.full_oracle_wrappers = full_oracle_wrappers
 
-        for perp_market_index in self.perp_market_indexes:
-            await self.subscribe_to_perp_market(perp_market_index)
+        for data_and_slot in perp_ds:
+            await self.subscribe_to_perp_market(
+                data_and_slot.data.market_index, data_and_slot
+            )
 
-        for spot_market_index in self.spot_market_indexes:
-            await self.subscribe_to_spot_market(spot_market_index)
+        for data_and_slot in spot_ds:
+            await self.subscribe_to_spot_market(
+                data_and_slot.data.market_index, data_and_slot
+            )
 
-        for oracle_info in self.oracle_infos:
-            await self.subscribe_to_oracle(oracle_info.pubkey, oracle_info.source)
+        for full_oracle_wrapper in self.full_oracle_wrappers:
+            await self.subscribe_to_oracle(full_oracle_wrapper)
 
-    async def subscribe_to_spot_market(self, market_index: int):
+    async def subscribe_to_spot_market(
+        self,
+        market_index: int,
+        initial_data: Optional[DataAndSlot[SpotMarketAccount]] = None,
+    ):
         if market_index in self.spot_market_subscribers:
             return
 
@@ -83,12 +99,19 @@ class WebsocketDriftClientAccountSubscriber(DriftClientAccountSubscriber):
             self.program.program_id, market_index
         )
         spot_market_subscriber = WebsocketAccountSubscriber[SpotMarketAccount](
-            spot_market_public_key, self.program, self.commitment
+            spot_market_public_key,
+            self.program,
+            self.commitment,
+            initial_data=initial_data,
         )
         await spot_market_subscriber.subscribe()
         self.spot_market_subscribers[market_index] = spot_market_subscriber
 
-    async def subscribe_to_perp_market(self, market_index: int):
+    async def subscribe_to_perp_market(
+        self,
+        market_index: int,
+        initial_data: Optional[DataAndSlot[PerpMarketAccount]] = None,
+    ):
         if market_index in self.perp_market_subscribers:
             return
 
@@ -96,26 +119,30 @@ class WebsocketDriftClientAccountSubscriber(DriftClientAccountSubscriber):
             self.program.program_id, market_index
         )
         perp_market_subscriber = WebsocketAccountSubscriber[PerpMarketAccount](
-            perp_market_public_key, self.program, self.commitment
+            perp_market_public_key,
+            self.program,
+            self.commitment,
+            initial_data=initial_data,
         )
         await perp_market_subscriber.subscribe()
         self.perp_market_subscribers[market_index] = perp_market_subscriber
 
-    async def subscribe_to_oracle(self, oracle: Pubkey, oracle_source: OracleSource):
-        if oracle == Pubkey.default():
+    async def subscribe_to_oracle(self, full_oracle_wrapper: FullOracleWrapper):
+        if full_oracle_wrapper.pubkey == Pubkey.default():
             return
 
-        if str(oracle) in self.oracle_subscribers:
+        if str(full_oracle_wrapper.pubkey) in self.oracle_subscribers:
             return
 
         oracle_subscriber = WebsocketAccountSubscriber[OraclePriceData](
-            oracle,
+            full_oracle_wrapper.pubkey,
             self.program,
             self.commitment,
-            get_oracle_decode_fn(oracle_source),
+            get_oracle_decode_fn(full_oracle_wrapper.oracle_source),
+            initial_data=full_oracle_wrapper.oracle_price_data_and_slot,
         )
         await oracle_subscriber.subscribe()
-        self.oracle_subscribers[str(oracle)] = oracle_subscriber
+        self.oracle_subscribers[str(full_oracle_wrapper.pubkey)] = oracle_subscriber
 
     def is_subscribed(self):
         return (
