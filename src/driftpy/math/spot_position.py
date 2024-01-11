@@ -1,16 +1,20 @@
 from dataclasses import dataclass
+from typing import Optional
 
 from driftpy.constants import SPOT_WEIGHT_PRECISION
+from driftpy.constants.numeric_constants import SPOT_MARKET_WEIGHT_PRECISION
 from driftpy.math.margin import (
     MarginCategory,
     calculate_asset_weight,
     calculate_liability_weight,
 )
+from driftpy.math.spot_balance import get_strict_token_value
 from driftpy.math.spot_market import (
     get_signed_token_amount,
     get_token_amount,
     get_token_value,
 )
+from driftpy.oracles.strict_oracle_price import StrictOraclePrice
 from driftpy.types import SpotPosition, SpotMarketAccount, OraclePriceData
 
 
@@ -27,8 +31,9 @@ class OrderFillSimulation:
 def get_worst_case_token_amounts(
     spot_position: SpotPosition,
     spot_market_account: SpotMarketAccount,
-    oracle_price_data: OraclePriceData,
-    margin_category: MarginCategory = MarginCategory.INITIAL,
+    strict_oracle_price: StrictOraclePrice,
+    margin_category: MarginCategory,
+    custom_margin_ratio: Optional[float] = None,
 ) -> OrderFillSimulation:
     token_amount = get_signed_token_amount(
         get_token_amount(
@@ -39,17 +44,18 @@ def get_worst_case_token_amounts(
         spot_position.balance_type,
     )
 
-    token_value = get_token_value(
-        token_amount, spot_market_account.decimals, oracle_price_data
+    token_value = get_strict_token_value(
+        token_amount, spot_market_account.decimals, strict_oracle_price
     )
 
     if spot_position.open_bids == 0 and spot_position.open_asks == 0:
         weight, weighted_token_value = calculate_weighted_token_value(
             token_amount,
             token_value,
-            oracle_price_data.price,
+            strict_oracle_price.current,
             spot_market_account,
             margin_category,
+            custom_margin_ratio,
         )
 
         return OrderFillSimulation(
@@ -65,7 +71,7 @@ def get_worst_case_token_amounts(
         token_amount,
         token_value,
         spot_position.open_bids,
-        oracle_price_data,
+        strict_oracle_price,
         spot_market_account,
         margin_category,
     )
@@ -74,7 +80,7 @@ def get_worst_case_token_amounts(
         token_amount,
         token_value,
         spot_position.open_asks,
-        oracle_price_data,
+        strict_oracle_price,
         spot_market_account,
         margin_category,
     )
@@ -94,6 +100,7 @@ def calculate_weighted_token_value(
     oracle_price: int,
     spot_market_account: SpotMarketAccount,
     margin_category: MarginCategory,
+    custom_margin_ratio: Optional[float] = None,
 ) -> (int, int):
     if token_value >= 0:
         weight = calculate_asset_weight(
@@ -101,24 +108,40 @@ def calculate_weighted_token_value(
         )
     else:
         weight = calculate_liability_weight(
-            token_amount, spot_market_account, margin_category
+            abs(token_amount), spot_market_account, margin_category
         )
 
-    weighted_token_value = token_value * weight // SPOT_WEIGHT_PRECISION
+    if (
+        margin_category == MarginCategory.INITIAL
+        and custom_margin_ratio
+        and spot_market_account.market_index != QUOTE_SPOT_MARKET_INDEX
+    ):
+        user_custom_asset_weight = (
+            max(0, SPOT_MARKET_WEIGHT_PRECISION - custom_margin_ratio)
+            if token_value >= 0
+            else SPOT_MARKET_WEIGHT_PRECISION + custom_margin_ratio
+        )
 
-    return weight, weighted_token_value
+        weight = (
+            min(weight, user_custom_asset_weight)
+            if token_value >= 0
+            else max(weight, user_custom_asset_weight)
+        )
+
+    return (weight, (token_value * weight) // SPOT_MARKET_WEIGHT_PRECISION)
 
 
 def simulate_order_fill(
     token_amount: int,
     token_value: int,
     open_orders: int,
-    oracle_price_data: OraclePriceData,
+    strict_oracle_price: StrictOraclePrice,
     spot_market: SpotMarketAccount,
     margin_category: MarginCategory,
+    custom_margin_ratio: Optional[float] = None,
 ):
     orders_value = get_token_value(
-        -open_orders, spot_market.decimals, oracle_price_data
+        -open_orders, spot_market.decimals, strict_oracle_price.max()
     )
     token_amount_after_fill = token_amount + open_orders
     token_value_after_fill = token_value - orders_value
@@ -126,9 +149,10 @@ def simulate_order_fill(
     weight, weighted_token_value_after_fill = calculate_weighted_token_value(
         token_amount_after_fill,
         token_value_after_fill,
-        oracle_price_data.price,
+        strict_oracle_price.current,
         spot_market,
         margin_category,
+        custom_margin_ratio,
     )
 
     free_collateral_contribution = weighted_token_value_after_fill + orders_value

@@ -59,7 +59,9 @@ def calculate_asset_weight(
                 spot_market.maintenance_asset_weight,
             )
         case None:
-            asset_weight = calculate_scaled_initial_asset_weight(spot_market, oracle_price)
+            asset_weight = calculate_scaled_initial_asset_weight(
+                spot_market, oracle_price
+            )
         case _:
             raise Exception(f"Invalid margin category: {margin_category}")
 
@@ -133,7 +135,7 @@ def calculate_net_user_pnl_imbalance(
     user_pnl = calculate_net_user_pnl(perp_market, oracle_data)
 
     pnl_pool = get_token_amount(
-        perp_market.pnl_pool.scaled_balance, spot_market, "SpotBalanceType.Deposit()"
+        perp_market.pnl_pool.scaled_balance, spot_market, SpotBalanceType.Deposit()
     )
 
     imbalance = user_pnl - pnl_pool
