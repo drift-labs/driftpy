@@ -24,11 +24,12 @@ class WebsocketAccountSubscriber(UserAccountSubscriber, Generic[T]):
         program: Program,
         commitment: Commitment = "confirmed",
         decode: Optional[Callable[[bytes], T]] = None,
+        initial_data: Optional[DataAndSlot] = None,
     ):
         self.program = program
         self.commitment = commitment
         self.pubkey = pubkey
-        self.data_and_slot = None
+        self.data_and_slot = initial_data or None
         self.task = None
         self.decode = (
             decode if decode is not None else self.program.coder.accounts.decode
