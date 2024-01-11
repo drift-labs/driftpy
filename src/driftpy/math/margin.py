@@ -209,12 +209,21 @@ def calculate_liability_weight(
 
 
 def calculate_market_margin_ratio(
-    market: PerpMarketAccount, size: int, margin_category: MarginCategory
+    market: PerpMarketAccount,
+    size: int,
+    margin_category: MarginCategory,
+    custom_margin_ratio: int = 0,
 ) -> int:
     match margin_category:
         case MarginCategory.INITIAL:
-            margin_ratio = calculate_size_premium_liability_weight(
-                size, market.imf_factor, market.margin_ratio_initial, MARGIN_PRECISION
+            margin_ratio = max(
+                calculate_size_premium_liability_weight(
+                    size,
+                    market.imf_factor,
+                    market.margin_ratio_initial,
+                    MARGIN_PRECISION,
+                ),
+                custom_margin_ratio,
             )
         case MarginCategory.MAINTENANCE:
             margin_ratio = calculate_size_premium_liability_weight(

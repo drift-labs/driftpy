@@ -208,6 +208,132 @@ class DriftUser:
             None, margin_category, liquidation_buffer, True, strict
         )
 
+        return total_perp_pos_value + spot_market_liab_value
+
+    def get_total_perp_position_value(
+        self,
+        margin_category: Optional[MarginCategory] = None,
+        liquidation_buffer: Optional[int] = None,
+        include_open_orders: Optional[bool] = False,
+        strict: bool = False,
+    ) -> int:
+        total_perp_value = 0
+        for perp_position in self.get_active_perp_positions():
+            base_asset_value = self.calculate_weighted_perp_position_value(
+                perp_position,
+                margin_category,
+                liquidation_buffer,
+                include_open_orders,
+                strict,
+            )
+            total_perp_value += base_asset_value
+
+        return total_perp_value
+
+    def calculate_weighted_perp_position_value(
+        self,
+        perp_position: PerpPosition,
+        margin_category: Optional[MarginCategory] = None,
+        liquidation_buffer: Optional[int] = None,
+        include_open_orders: Optional[bool] = False,
+        strict: bool = False,
+    ) -> int:
+        market = self.drift_client.get_perp_market_account(perp_position.market_index)
+
+        if perp_position.lp_shares > 0:
+            perp_position = self.get_perp_position_with_lp_settle(
+                market.market_index,
+                copy.deepcopy(perp_position),
+                margin_category is not None,
+            )[0]
+
+        valuation_price = self.get_oracle_data_for_perp_market(
+            market.market_index
+        ).price
+
+        if is_variant(market.status, "SETTLEMENT"):
+            valuation_price = market.expiry_price
+
+        base_asset_amount = (
+            calculate_worst_case_base_asset_amount(perp_position)
+            if include_open_orders
+            else perp_position.base_asset_amount
+        )
+
+        base_asset_value = (abs(base_asset_amount) * valuation_price) // BASE_PRECISION
+
+        if margin_category is not None:
+            margin_ratio = calculate_market_margin_ratio(
+                market,
+                abs(base_asset_amount),
+                margin_category,
+                self.get_user_account().max_margin_ratio,
+            )
+
+            if liquidation_buffer is not None:
+                margin_ratio += liquidation_buffer
+
+            if is_variant(market.status, "SETTLEMENT"):
+                margin_ratio = 0
+
+            quote_spot_market = self.drift_client.get_spot_market_account(
+                market.quote_spot_market_index
+            )
+
+            quote_oracle_price_data = self.drift_client.get_oracle_price_data(
+                quote_spot_market.oracle
+            )
+
+            if strict:
+                quote_price = max(
+                    quote_oracle_price_data.price,
+                    quote_spot_market.historical_oracle_data.last_oracle_price_twap5min,
+                )
+            else:
+                quote_price = quote_oracle_price_data.price
+
+            base_asset_value = (
+                ((base_asset_value * quote_price) // PRICE_PRECISION) * margin_ratio
+            ) // MARGIN_PRECISION
+
+            if include_open_orders:
+                base_asset_value += (
+                    perp_position.open_orders * OPEN_ORDER_MARGIN_REQUIREMENT
+                )
+
+                if perp_position.lp_shares > 0:
+                    base_asset_value += max(
+                        QUOTE_PRECISION,
+                        (
+                            (
+                                valuation_price
+                                * market.amm.order_step_size
+                                * QUOTE_PRECISION
+                            )
+                            // AMM_RESERVE_PRECISION
+                        )
+                        // PRICE_PRECISION,
+                    )
+                    print(f"4. Base Asset Value: {base_asset_value}")
+
+        return base_asset_value
+
+    def get_active_perp_positions(self) -> list[PerpPosition]:
+        user = self.get_user_account()
+        return self.get_active_perp_positions_for_user_account(user)
+
+    def get_active_perp_positions_for_user_account(
+        self, user: UserAccount
+    ) -> list[PerpPosition]:
+        return [
+            pos
+            for pos in user.perp_positions
+            if pos.base_asset_amount != 0
+            or pos.quote_asset_amount != 0
+            or pos.open_orders != 0
+            or pos.lp_shares != 0
+        ]
+
     def get_total_collateral(
         self,
         margin_category: Optional[MarginCategory] = MarginCategory.INITIAL,
@@ -216,9 +342,7 @@ class DriftUser:
         asset_value = self.get_spot_market_asset_value(
             margin_category=margin_category, include_open_orders=True, strict=strict
         )
-        print(asset_value)
         pnl = self.get_unrealized_pnl(True, with_weight_margin_category=margin_category)
-        print(pnl)
         total_collateral = asset_value + pnl
         return total_collateral
 
@@ -290,8 +414,6 @@ class DriftUser:
             position_unrealized_pnl = calculate_position_pnl_with_oracle(
                 market, position, oracle_data, with_funding
             )
-
-            print(position_unrealized_pnl)
 
             if with_weight_margin_category is not None:
                 if position_unrealized_pnl > 0:
