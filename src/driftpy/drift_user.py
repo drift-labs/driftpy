@@ -1,6 +1,11 @@
 import time
+import copy
+
+from typing import Tuple
+
 from driftpy.account_subscription_config import AccountSubscriptionConfig
 from driftpy.math.amm import calculate_market_open_bid_ask
+from driftpy.math.conversion import convert_to_number
 from driftpy.math.oracles import calculate_live_oracle_twap
 from driftpy.math.perp_position import *
 from driftpy.math.margin import *
@@ -14,9 +19,6 @@ from driftpy.math.spot_position import (
 from driftpy.math.amm import calculate_market_open_bid_ask
 from driftpy.oracles.strict_oracle_price import StrictOraclePrice
 from driftpy.types import OraclePriceData
-
-from typing import Tuple
-import copy
 
 
 class DriftUser:
@@ -203,7 +205,6 @@ class DriftUser:
         total_perp_pos_value = self.get_total_perp_position_value(
             margin_category, liquidation_buffer, True, strict
         )
-
         spot_market_liab_value = self.get_spot_market_liability_value(
             None, margin_category, liquidation_buffer, True, strict
         )
@@ -314,7 +315,6 @@ class DriftUser:
                         )
                         // PRICE_PRECISION,
                     )
-                    print(f"4. Base Asset Value: {base_asset_value}")
 
         return base_asset_value
 

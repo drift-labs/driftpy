@@ -433,7 +433,8 @@ async def test_liq_perp(
     drift_client: Admin, usdc_mint: Keypair, workspace: WorkspaceType
 ):
     market = await get_perp_market_account(drift_client.program, 0)
-    user_account = drift_client.get_user(0).get_user_account()
+    user = drift_client.get_user(0)
+    user_account = user.get_user_account()
 
     liq, _ = await _airdrop_user(drift_client.program.provider)
     liq_drift_client = DriftClient(
