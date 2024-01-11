@@ -29,3 +29,9 @@ Updated `constants/perp_markets.py` with new perp market listings
 ## [0.7.9] - 2024-1-8
 
 Fix breaking bug in `DriftClient.get_jupiter_swap_ix_v6` where token accounts wouldn't be created properly
+
+## [0.7.10] - 2024-1-11
+
+Add `get_l2_orderbook_sync` and `get_l3_orderbook_sync` to `DLOBClient` for building orderbooks from `DLOB` instead of `DLOB-server`
+
+Refactor the `WebsocketDriftClientAccountSubscriber` subscription logic to reduce 429s
