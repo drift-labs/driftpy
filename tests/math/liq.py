@@ -30,7 +30,6 @@ PERIODICITY = 0
 USDC_AMOUNT = int(10 * QUOTE_PRECISION)
 MARKET_INDEX = 0
 N_LP_SHARES = 0
-ORACLE_DEVIATION_TOLERANCE = 1.0
 LIQUIDATION_DEVIATION_TOLERANCE = 0.0001
 
 workspace = workspace_fixture("protocol-v2", build_cmd="anchor build", scope="session")
@@ -196,7 +195,7 @@ async def test_perp_liq_price(
     oracle_price = drift_client.get_oracle_price_data_for_perp_market(0).price
     expected_oracle_price = 0.9 * PRICE_PRECISION
     print(f"updated oracle price: {oracle_price}")
-    assert abs(oracle_price - expected_oracle_price) <= ORACLE_DEVIATION_TOLERANCE
+    assert abs(oracle_price - expected_oracle_price) == 0.0
 
     liq_price_after_oracle_change = drift_user.get_perp_liq_price(0, 0)
     deviation = 1 - (
@@ -223,7 +222,7 @@ async def test_perp_liq_price(
 
     oracle_price = drift_client.get_oracle_price_data_for_perp_market(0).price
     print(f"oracle price: {oracle_price}")
-    assert abs(oracle_price - expected_oracle_price) <= ORACLE_DEVIATION_TOLERANCE
+    assert abs(oracle_price - expected_oracle_price) == 0.0
 
     maintenance_total_collateral = drift_user.get_total_collateral(
         MarginCategory.MAINTENANCE
@@ -268,7 +267,7 @@ async def test_perp_liq_price(
     oracle_price = drift_client.get_oracle_price_data_for_perp_market(0).price
     expected_oracle_price = 1.1 * PRICE_PRECISION
     print(f"updated oracle price: {oracle_price}")
-    assert abs(oracle_price - expected_oracle_price) <= ORACLE_DEVIATION_TOLERANCE
+    assert abs(oracle_price - expected_oracle_price) == 0.0
 
     await drift_client.settle_pnl(
         drift_user.user_public_key, drift_user.get_user_account(), 0
