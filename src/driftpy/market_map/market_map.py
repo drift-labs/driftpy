@@ -155,6 +155,5 @@ class MarketMap:
     async def update_market(
         self, key: str, data: DataAndSlot[GenericMarketType]
     ) -> None:
-        # print(f"Updating market: {decode_name(data.data.name)}")
         await self.must_get(key)
         self.market_map[key] = [data]

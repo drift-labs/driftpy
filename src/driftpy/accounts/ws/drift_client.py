@@ -46,8 +46,8 @@ class WebsocketDriftClientAccountSubscriber(DriftClientAccountSubscriber):
         self.should_find_all_markets_and_oracles = should_find_all_markets_and_oracles
 
         self.state_subscriber = None
-        # self.spot_market_subscribers = {}
-        # self.perp_market_subscribers = {}
+        self.spot_market_subscribers = {}
+        self.perp_market_subscribers = {}
         self.oracle_subscribers = {}
         self.spot_market_map = None
         self.perp_market_map = None
@@ -199,12 +199,18 @@ class WebsocketDriftClientAccountSubscriber(DriftClientAccountSubscriber):
     def get_perp_market_and_slot(
         self, market_index: int
     ) -> Optional[DataAndSlot[PerpMarketAccount]]:
-        return self.perp_market_map.get_market_by_index(market_index)
+        if self.perp_market_map:
+            return self.perp_market_map.get_market_by_index(market_index)
+        else:
+            return self.perp_market_subscribers[market_index].data_and_slot
 
     def get_spot_market_and_slot(
         self, market_index: int
     ) -> Optional[DataAndSlot[SpotMarketAccount]]:
-        return self.spot_market_map.get_market_by_index(market_index)
+        if self.spot_market_map:
+            return self.spot_market_map.get_market_by_index(market_index)
+        else:
+            return self.spot_market_subscribers[market_index].data_and_slot
 
     def get_oracle_price_data_and_slot(
         self, oracle: Pubkey
@@ -214,21 +220,33 @@ class WebsocketDriftClientAccountSubscriber(DriftClientAccountSubscriber):
     def unsubscribe(self):
         if self.is_subscribed():
             self.state_subscriber.unsubscribe()
-            self.spot_market_map.unsubscribe()
-            self.perp_market_map.unsubscribe()
+            if self.spot_market_map and self.perp_market_map:
+                self.spot_market_map.unsubscribe()
+                self.perp_market_map.unsubscribe()
+            else:
+                for spot_market_subscriber in self.spot_market_subscribers.values():
+                    spot_market_subscriber.unsubscribe()
+                for perp_market_subscriber in self.perp_market_subscribers.values():
+                    perp_market_subscriber.unsubscribe()
             for oracle_subscriber in self.oracle_subscribers.values():
                 oracle_subscriber.unsubscribe()
 
     def get_market_accounts_and_slots(self) -> list[DataAndSlot[PerpMarketAccount]]:
-        return [
-            subscriber.data_and_slot
-            for subscriber in self.perp_market_subscribers.values()
-        ]
+        if self.perp_market_map:
+            return [data_and_slot for data_and_slot in self.perp_market_map.values()]
+        else:
+            return [
+                subscriber.data_and_slot
+                for subscriber in self.perp_market_subscribers.values()
+            ]
 
     def get_spot_market_accounts_and_slots(
         self,
     ) -> list[DataAndSlot[SpotMarketAccount]]:
-        return [
-            subscriber.data_and_slot
-            for subscriber in self.spot_market_subscribers.values()
-        ]
+        if self.spot_market_map:
+            return [data_and_slot for data_and_slot in self.spot_market_map.values()]
+        else:
+            return [
+                subscriber.data_and_slot
+                for subscriber in self.spot_market_subscribers.values()
+            ]
