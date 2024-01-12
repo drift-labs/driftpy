@@ -77,7 +77,7 @@ class MarketMap:
         return iter(self.market_map.values())
 
     async def add_pubkey(
-        self, market_public_key: Pubkey, data: DataAndSlot[GenericMarketType]
+        self, market_public_key: Pubkey, data: Optional[DataAndSlot[GenericMarketType]]
     ) -> None:
         self.market_map[str(market_public_key)] = data
 
@@ -149,5 +149,5 @@ class MarketMap:
         self, key: str, data: DataAndSlot[GenericMarketType]
     ) -> None:
         print(f"Updating market: {decode_name(data.data.name)}")
-        await self.must_get(key, data)
+        await self.must_get(key)
         self.market_map[key] = [data]

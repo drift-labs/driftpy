@@ -32,10 +32,8 @@ class WebsocketSubscription:
 
     async def subscribe(self):
         if not self.subscriber:
-            filters = get_market_type_filter(self.market_map.market_type)
-            print("1")
+            filters = (get_market_type_filter(self.market_map.market_type),)
             options = WebsocketProgramAccountOptions(filters, self.commitment, "base64")
-            print("2")
             self.subscriber = WebSocketProgramAccountSubscriber(
                 f"{market_type_to_string(self.market_map.market_type)}MarketMap",
                 self.market_map.drift_client.program,
