@@ -66,14 +66,16 @@ class MarketMap:
     def get_market_by_index(
         self, market_index: int
     ) -> Optional[DataAndSlot[GenericMarketType]]:
-        for data in self.market_map.values():
-            if data.data.market_index == market_index:
-                return data
+        for data_and_slot in self.market_map.values():
+            if data_and_slot.data.market_index == market_index:
+                return data_and_slot
         return None
 
-    async def must_get(self, key: str) -> Optional[GenericMarketType]:
+    async def must_get(
+        self, key: str, data: DataAndSlot[GenericMarketType]
+    ) -> Optional[GenericMarketType]:
         if not self.has(key):
-            pubkey = Pubkey.from_string(key)
+            pubkey = Pubkey.from_string(key, data)
             await self.add_pubkey(pubkey)
         return self.get(key)
 
@@ -84,7 +86,7 @@ class MarketMap:
         return iter(self.market_map.values())
 
     async def add_pubkey(
-        self, market_public_key: Pubkey, data: Optional[DataAndSlot[GenericMarketType]]
+        self, market_public_key: Pubkey, data: DataAndSlot[GenericMarketType]
     ) -> None:
         self.market_map[str(market_public_key)] = data
 
@@ -155,5 +157,5 @@ class MarketMap:
     async def update_market(
         self, key: str, data: DataAndSlot[GenericMarketType]
     ) -> None:
-        await self.must_get(key)
-        self.market_map[key] = [data]
+        await self.must_get(key, data)
+        self.market_map[key] = data
