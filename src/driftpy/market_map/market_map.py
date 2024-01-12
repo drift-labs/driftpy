@@ -42,6 +42,22 @@ class MarketMap:
         self.latest_slot = 0
         self.is_subscribed = False
 
+    async def subscribe(self):
+        if self.size() > 0:
+            return
+
+        await self.drift_client.subscribe()
+        await self.subscription.subscribe()
+        self.is_subscribed = True
+
+    async def unsubscribe(self):
+        await self.subscription.unsubscribe()
+
+        for key in list(self.market_map.keys()):
+            del self.market_map[key]
+
+        self.is_subscribed = False
+
     def has(self, key: str) -> bool:
         return key in self.market_map
 
