@@ -75,9 +75,11 @@ def decode_pyth_price_info(
 
     pyth_price_info = PythPriceInfo.deserialise(buffer, offset, exponent=exponent)
 
-    raw_price_to_price_precision = (
-        pyth_price_info.raw_price // 10
-    )  # 7 decimals from oracle to PRICE_PRECISION of 6
+    raw_price_scaler = abs(exponent) - 6
+
+    raw_price_to_price_precision = pyth_price_info.raw_price // (
+        10**raw_price_scaler
+    )  # exponent decimals from oracle to PRICE_PRECISION of 6
 
     scale = 1
     if "1K" in str(oracle_source):
