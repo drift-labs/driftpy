@@ -63,6 +63,14 @@ class MarketMap:
     def get(self, key: str) -> Optional[GenericMarketType]:
         return self.market_map.get(key)
 
+    def get_market_by_index(
+        self, market_index: int
+    ) -> Optional[DataAndSlot[GenericMarketType]]:
+        for data in self.market_map.values():
+            if data.data.market_index == market_index:
+                return data
+        return None
+
     async def must_get(self, key: str) -> Optional[GenericMarketType]:
         if not self.has(key):
             pubkey = Pubkey.from_string(key)
@@ -147,6 +155,6 @@ class MarketMap:
     async def update_market(
         self, key: str, data: DataAndSlot[GenericMarketType]
     ) -> None:
-        print(f"Updating market: {decode_name(data.data.name)}")
+        # print(f"Updating market: {decode_name(data.data.name)}")
         await self.must_get(key)
         self.market_map[key] = [data]

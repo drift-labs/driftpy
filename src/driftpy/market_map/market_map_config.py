@@ -2,8 +2,7 @@ from anchorpy import Program
 from solana.rpc.async_api import AsyncClient
 from solana.rpc.commitment import Commitment
 from dataclasses import dataclass
-from typing import Optional, Union
-from driftpy.drift_client import DriftClient
+from typing import Optional
 from driftpy.types import MarketType
 
 
