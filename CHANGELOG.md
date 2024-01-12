@@ -35,3 +35,6 @@ Fix breaking bug in `DriftClient.get_jupiter_swap_ix_v6` where token accounts wo
 Add `get_l2_orderbook_sync` and `get_l3_orderbook_sync` to `DLOBClient` for building orderbooks from `DLOB` instead of `DLOB-server`
 
 Refactor the `WebsocketDriftClientAccountSubscriber` subscription logic to reduce 429s
+
+## [0.7.11] - 2024-1-12
+
