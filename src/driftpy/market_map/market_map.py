@@ -24,10 +24,10 @@ class MarketMap:
             self.market_map: Dict[str, PerpMarketAccount] = {}
         else:
             self.market_map: Dict[str, SpotMarketAccount] = {}
+        self.program = config.program
         self.market_type = config.market_type
         self.sync_lock = asyncio.Lock()
-        self.drift_client = config.drift_client
-        self.connection = config.connection or config.drift_client.connection
+        self.connection = config.connection
         self.commitment = config.subscription_config.commitment or Confirmed
 
         self.subscription = WebsocketSubscription(
@@ -36,7 +36,7 @@ class MarketMap:
             self.update_market,
             config.skip_initial_load,
             config.subscription_config.resub_timeout_ms,
-            self.drift_client.program.coder.accounts.decode,
+            config.program.coder.accounts.decode,
         )
 
         self.latest_slot = 0
@@ -46,7 +46,6 @@ class MarketMap:
         if self.size() > 0:
             return
 
-        await self.drift_client.subscribe()
         await self.subscription.subscribe()
         self.is_subscribed = True
 
@@ -90,13 +89,13 @@ class MarketMap:
                 rpc_request = jsonrpcclient.request(
                     "getProgramAccounts",
                     [
-                        str(self.drift_client.program_id),
+                        str(self.program.program_id),
                         {"filters": filters, "encoding": "base64", "withContext": True},
                     ],
                 )
 
-                post = self.drift_client.connection._provider.session.post(
-                    self.drift_client.connection._provider.endpoint_uri,
+                post = self.connection._provider.session.post(
+                    self.connection._provider.endpoint_uri,
                     json=rpc_request,
                     headers={"content-encoding": "gzip"},
                 )
@@ -117,7 +116,7 @@ class MarketMap:
                 for program_account in rpc_response_values:
                     pubkey = program_account["pubkey"]
                     buffer = base64.b64decode(program_account["account"]["data"][0])
-                    data = self.drift_client.program.coder.accounts.decode(buffer)
+                    data = self.program.coder.accounts.decode(buffer)
                     program_account_buffer_map[str(pubkey)] = data
 
                 # "idempotent" insert into marketmap

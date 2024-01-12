@@ -36,7 +36,7 @@ class WebsocketSubscription:
             options = WebsocketProgramAccountOptions(filters, self.commitment, "base64")
             self.subscriber = WebSocketProgramAccountSubscriber(
                 f"{market_type_to_string(self.market_map.market_type)}MarketMap",
-                self.market_map.drift_client.program,
+                self.market_map.program,
                 options,
                 self.on_update,
                 self.decode,

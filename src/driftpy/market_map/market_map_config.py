@@ -1,3 +1,4 @@
+from anchorpy import Program
 from solana.rpc.async_api import AsyncClient
 from solana.rpc.commitment import Commitment
 from dataclasses import dataclass
@@ -14,8 +15,8 @@ class WebsocketConfig:
 
 @dataclass
 class MarketMapConfig:
-    drift_client: DriftClient
+    program: Program
     market_type: MarketType  # perp market map or spot market map
     subscription_config: WebsocketConfig
-    connection: Optional[AsyncClient] = None
+    connection: AsyncClient
     skip_initial_load: Optional[bool] = None

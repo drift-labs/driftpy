@@ -71,18 +71,18 @@ class WebsocketDriftClientAccountSubscriber(DriftClientAccountSubscriber):
             ]
             self.full_oracle_wrappers = full_oracle_wrappers
 
-        for data_and_slot in perp_ds:
-            await self.subscribe_to_perp_market(
-                data_and_slot.data.market_index, data_and_slot
-            )
+            for data_and_slot in perp_ds:
+                await self.subscribe_to_perp_market(
+                    data_and_slot.data.market_index, data_and_slot
+                )
 
-        for data_and_slot in spot_ds:
-            await self.subscribe_to_spot_market(
-                data_and_slot.data.market_index, data_and_slot
-            )
+            for data_and_slot in spot_ds:
+                await self.subscribe_to_spot_market(
+                    data_and_slot.data.market_index, data_and_slot
+                )
 
-        for full_oracle_wrapper in self.full_oracle_wrappers:
-            await self.subscribe_to_oracle(full_oracle_wrapper)
+            for full_oracle_wrapper in self.full_oracle_wrappers:
+                await self.subscribe_to_oracle(full_oracle_wrapper)
 
         else:
             for market_index in self.perp_market_indexes:
