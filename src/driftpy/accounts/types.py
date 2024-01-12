@@ -1,6 +1,6 @@
 from abc import abstractmethod
 from dataclasses import dataclass
-from typing import Awaitable, Callable, TypeVar, Generic, Optional, Sequence
+from typing import Awaitable, Callable, TypeVar, Generic, Optional, Sequence, Union
 from solana.rpc.types import MemcmpOpts
 from solana.rpc.commitment import Commitment
 from solders.pubkey import Pubkey
@@ -44,6 +44,10 @@ class WebsocketProgramAccountOptions:
 
 
 UpdateCallback = Callable[[str, DataAndSlot[UserAccount]], Awaitable[None]]
+
+MarketUpdateCallback = Callable[
+    [str, DataAndSlot[Union[PerpMarketAccount, SpotMarketAccount]]], Awaitable[None]
+]
 
 
 class DriftClientAccountSubscriber:

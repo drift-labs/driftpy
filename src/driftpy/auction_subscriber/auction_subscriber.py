@@ -35,7 +35,6 @@ class AuctionSubscriber:
             options = WebsocketProgramAccountOptions(filters, self.commitment, "base64")
             self.subscriber = WebSocketProgramAccountSubscriber(
                 "AuctionSubscriber",
-                "User",
                 self.drift_client.program,
                 options,
                 self.on_update,
