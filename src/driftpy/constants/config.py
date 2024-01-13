@@ -76,7 +76,7 @@ configs = {
         perp_markets=mainnet_perp_market_configs,
         spot_markets=mainnet_spot_market_configs,
         market_lookup_table=Pubkey.from_string(
-            "GPZkp76cJtNL2mphCvT6FXkJCVPpouidnacckR6rzKDN"
+            "D9cnvzswDikQDf53k4HpQ3KJ9y1Fv3HGGDFYMXnK5T6c"
         ),
     ),
 }

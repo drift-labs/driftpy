@@ -1,5 +1,3 @@
-from dataclasses import dataclass
-
 from .types import DataAndSlot
 from driftpy.constants.numeric_constants import *
 from driftpy.types import OracleSource, OraclePriceData, is_variant
@@ -34,7 +32,10 @@ async def get_oracle_price_data_and_slot(
     else:
         raise NotImplementedError("Unsupported Oracle Source", str(oracle_source))
 
-def oracle_ai_to_oracle_price_data(oracle_ai: Account, oracle_source=OracleSource.Pyth()) -> DataAndSlot[OraclePriceData]:
+
+def oracle_ai_to_oracle_price_data(
+    oracle_ai: Account, oracle_source=OracleSource.Pyth()
+) -> DataAndSlot[OraclePriceData]:
     if "Pyth" in str(oracle_source):
         oracle_price_data = decode_pyth_price_info(oracle_ai.data, oracle_source)
 
@@ -45,6 +46,7 @@ def oracle_ai_to_oracle_price_data(oracle_ai: Account, oracle_source=OracleSourc
         )
     else:
         raise NotImplementedError("Unsupported Oracle Source", str(oracle_source))
+
 
 def decode_pyth_price_info(
     buffer: bytes,
