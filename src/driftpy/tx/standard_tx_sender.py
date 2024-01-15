@@ -20,16 +20,13 @@ class StandardTxSender(TxSender):
         self,
         connection: AsyncClient,
         opts: TxOpts,
-        blockhash_commitment: Optional[Commitment],
+        blockhash_commitment: Commitment = Confirmed,
     ):
         self.connection = connection
         if opts.skip_confirmation:
             raise ValueError("RetryTxSender doesnt support skip confirmation")
-        self.blockhash_commitment = (
-            blockhash_commitment if blockhash_commitment is not None else Confirmed
-        )
-
         self.opts = opts
+        self.blockhash_commitment = blockhash_commitment
 
     async def get_blockhash(self) -> Hash:
         return (
