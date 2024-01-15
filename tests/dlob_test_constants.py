@@ -1,17 +1,44 @@
-from driftpy.constants.numeric_constants import AMM_TO_QUOTE_PRECISION_RATIO, BASE_PRECISION, PRICE_PRECISION, QUOTE_PRECISION, SPOT_CUMULATIVE_INTEREST_PRECISION, SPOT_MARKET_CUMULATIVE_INTEREST_PRECISION, SPOT_MARKET_CUMULATIVE_INTEREST_PRECISION_EXP, SPOT_MARKET_WEIGHT_PRECISION
-from driftpy.types import AMM, AssetTier, ContractTier, ContractType, HistoricalIndexData, HistoricalOracleData, InsuranceClaim, InsuranceFund, MarketStatus, OracleSource, PerpMarketAccount, PoolBalance, SpotMarketAccount
+from driftpy.constants.numeric_constants import (
+    AMM_TO_QUOTE_PRECISION_RATIO,
+    BASE_PRECISION,
+    PRICE_PRECISION,
+    QUOTE_PRECISION,
+    SPOT_CUMULATIVE_INTEREST_PRECISION,
+    SPOT_MARKET_CUMULATIVE_INTEREST_PRECISION,
+    SPOT_MARKET_CUMULATIVE_INTEREST_PRECISION_EXP,
+    SPOT_MARKET_WEIGHT_PRECISION,
+)
+from driftpy.types import (
+    AMM,
+    AssetTier,
+    ContractTier,
+    ContractType,
+    HistoricalIndexData,
+    HistoricalOracleData,
+    InsuranceClaim,
+    InsuranceFund,
+    MarketStatus,
+    OracleSource,
+    PerpMarketAccount,
+    PoolBalance,
+    SpotMarketAccount,
+)
 from driftpy.constants.config import devnet_spot_market_configs
 from solders.pubkey import Pubkey
 
-mock_pool_balance = PoolBalance(scaled_balance=0, market_index=0, padding=[0]*6)  # Replace with actual PoolBalance mock data
-mock_fee_pool = PoolBalance(scaled_balance=0, market_index=0, padding=[0]*6)  # Replace with actual PoolBalance mock data
+mock_pool_balance = PoolBalance(
+    scaled_balance=0, market_index=0, padding=[0] * 6
+)  # Replace with actual PoolBalance mock data
+mock_fee_pool = PoolBalance(
+    scaled_balance=0, market_index=0, padding=[0] * 6
+)  # Replace with actual PoolBalance mock data
 mock_insurance_claim = InsuranceClaim(
     revenue_withdraw_since_last_settle=0,
     max_revenue_withdraw_per_period=0,
     last_revenue_withdraw_ts=0,
     quote_settled_insurance=0,
-    quote_max_insurance=0
-) 
+    quote_max_insurance=0,
+)
 
 mock_insurance_fund = InsuranceFund(
     Pubkey.default(),
@@ -39,19 +66,11 @@ mock_historical_oracle_data = HistoricalOracleData(
     last_oracle_delay=0,
     last_oracle_price_twap=0,
     last_oracle_price_twap5min=0,
-    last_oracle_price_twap_ts=0
+    last_oracle_price_twap_ts=0,
 )
-mock_revenue_pool = PoolBalance(
-    scaled_balance=0,
-    market_index=0,
-    padding=[0]*6
-)
+mock_revenue_pool = PoolBalance(scaled_balance=0, market_index=0, padding=[0] * 6)
 
-mock_spot_fee_pool = PoolBalance(
-    scaled_balance=0,
-    market_index=0,
-    padding=[0]*6
-)
+mock_spot_fee_pool = PoolBalance(scaled_balance=0, market_index=0, padding=[0] * 6)
 
 mock_amm = AMM(
     oracle=Pubkey.default,  # Replace with the default pubkey
@@ -134,20 +153,20 @@ mock_amm = AMM(
     padding1=0,
     padding2=0,
     total_fee_earned_per_lp=0,
-    padding=[0]*12  # Padding with 12 zeros
+    padding=[0] * 12,  # Padding with 12 zeros
 )
 
 # Mock Perp Markets
 mock_perp_markets = [
     PerpMarketAccount(
-        status=MarketStatus.INITIALIZED(),
+        status=MarketStatus.Initialized(),
         name=[],
-        contract_type=ContractType.PERPETUAL(),
+        contract_type=ContractType.Perpetual(),
         contract_tier=ContractTier.A(),
         expiry_ts=0,
         expiry_price=0,
         market_index=0,
-        pubkey=Pubkey.default(),  
+        pubkey=Pubkey.default(),
         amm=mock_amm,
         number_of_users_with_base=0,
         number_of_users=0,
@@ -168,12 +187,12 @@ mock_perp_markets = [
         quote_spot_market_index=0,
         fee_adjustment=0,
         padding1=0,
-        padding=[0]*46,
+        padding=[0] * 46,
     ),
     PerpMarketAccount(
-        status=MarketStatus.INITIALIZED(),
+        status=MarketStatus.Initialized(),
         name=[],
-        contract_type=ContractType.PERPETUAL(),
+        contract_type=ContractType.Perpetual(),
         contract_tier=ContractTier.A(),
         expiry_ts=0,
         expiry_price=0,
@@ -199,12 +218,12 @@ mock_perp_markets = [
         quote_spot_market_index=0,
         fee_adjustment=0,
         padding1=0,
-        padding=[0]*46,
+        padding=[0] * 46,
     ),
     PerpMarketAccount(
-        status=MarketStatus.INITIALIZED(),
+        status=MarketStatus.Initialized(),
         name=[],
-        contract_type=ContractType.PERPETUAL(),
+        contract_type=ContractType.Perpetual(),
         contract_tier=ContractTier.A(),
         expiry_ts=0,
         expiry_price=0,
@@ -230,13 +249,13 @@ mock_perp_markets = [
         quote_spot_market_index=0,
         fee_adjustment=0,
         padding1=0,
-        padding=[0]*46,
-    )
+        padding=[0] * 46,
+    ),
 ]
 
 mock_spot_markets = [
     SpotMarketAccount(
-        status=MarketStatus.ACTIVE,
+        status=MarketStatus.Active(),
         asset_tier=AssetTier.COLLATERAL,
         name=[],
         max_token_deposits=1000000 * QUOTE_PRECISION,
@@ -286,12 +305,12 @@ mock_spot_markets = [
         oracle_source=OracleSource.Pyth(),
         historical_oracle_data=mock_historical_oracle_data,
         historical_index_data=mock_historical_index_data,
-        padding1=[0]*6,
-        padding=[0]*48,
+        padding1=[0] * 6,
+        padding=[0] * 48,
         expiry_ts=0,
     ),
     SpotMarketAccount(
-        status=MarketStatus.ACTIVE,
+        status=MarketStatus.Active(),
         asset_tier=AssetTier.CROSS,
         name=[],
         max_token_deposits=100 * QUOTE_PRECISION,
@@ -341,12 +360,12 @@ mock_spot_markets = [
         oracle_source=OracleSource.Pyth(),
         historical_oracle_data=mock_historical_oracle_data,
         historical_index_data=mock_historical_index_data,
-        padding1=[0]*6,
-        padding=[0]*48,
+        padding1=[0] * 6,
+        padding=[0] * 48,
         expiry_ts=0,
     ),
     SpotMarketAccount(
-        status=MarketStatus.ACTIVE,
+        status=MarketStatus.Active(),
         asset_tier=AssetTier.PROTECTED,
         name=[],
         max_token_deposits=100 * QUOTE_PRECISION,
@@ -396,8 +415,8 @@ mock_spot_markets = [
         oracle_source=OracleSource.Pyth(),
         historical_oracle_data=mock_historical_oracle_data,
         historical_index_data=mock_historical_index_data,
-        padding1=[0]*6,
-        padding=[0]*48,
+        padding1=[0] * 6,
+        padding=[0] * 48,
         expiry_ts=0,
-    )
+    ),
 ]

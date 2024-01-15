@@ -34,7 +34,10 @@ async def get_oracle_price_data_and_slot(
     else:
         raise NotImplementedError("Unsupported Oracle Source", str(oracle_source))
 
-def oracle_ai_to_oracle_price_data(oracle_ai: Account, oracle_source=OracleSource.Pyth()) -> DataAndSlot[OraclePriceData]:
+
+def oracle_ai_to_oracle_price_data(
+    oracle_ai: Account, oracle_source=OracleSource.Pyth()
+) -> DataAndSlot[OraclePriceData]:
     if "Pyth" in str(oracle_source):
         oracle_price_data = decode_pyth_price_info(oracle_ai.data, oracle_source)
 
@@ -45,6 +48,7 @@ def oracle_ai_to_oracle_price_data(oracle_ai: Account, oracle_source=OracleSourc
         )
     else:
         raise NotImplementedError("Unsupported Oracle Source", str(oracle_source))
+
 
 def decode_pyth_price_info(
     buffer: bytes,
@@ -71,14 +75,20 @@ def decode_pyth_price_info(
 
     pyth_price_info = PythPriceInfo.deserialise(buffer, offset, exponent=exponent)
 
+    raw_price_scaler = abs(exponent) - 6
+
+    raw_price_to_price_precision = pyth_price_info.raw_price // (
+        10**raw_price_scaler
+    )  # exponent decimals from oracle to PRICE_PRECISION of 6
+
     scale = 1
     if "1K" in str(oracle_source):
-        scale = 1e3
+        raw_price_to_price_precision *= 1e3
     elif "1M" in str(oracle_source):
-        scale = 1e6
+        raw_price_to_price_precision *= 1e6
 
     return OraclePriceData(
-        price=convert_pyth_price(pyth_price_info.price, scale),
+        price=raw_price_to_price_precision,
         slot=pyth_price_info.pub_slot,
         confidence=convert_pyth_price(pyth_price_info.confidence_interval, scale),
         twap=convert_pyth_price(twap, scale),

@@ -2218,7 +2218,7 @@ class DriftClient:
         in_ata: Pubkey,
         out_ata: Pubkey,
         limit_price: Optional[int] = 0,
-        reduce_only: Optional[SwapReduceOnly] = False,
+        reduce_only: Optional[SwapReduceOnly] = None,
         user_account_public_key: Optional[Pubkey] = None,
     ):
         user_public_key_to_use = (
