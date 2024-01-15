@@ -252,7 +252,7 @@ class DriftUser:
             market.market_index
         ).price
 
-        if is_variant(market.status, "SETTLEMENT"):
+        if is_variant(market.status, "Settlement"):
             valuation_price = market.expiry_price
 
         base_asset_amount = (
@@ -274,7 +274,7 @@ class DriftUser:
             if liquidation_buffer is not None:
                 margin_ratio += liquidation_buffer
 
-            if is_variant(market.status, "SETTLEMENT"):
+            if is_variant(market.status, "Settlement"):
                 margin_ratio = 0
 
             quote_spot_market = self.drift_client.get_spot_market_account(
@@ -350,7 +350,10 @@ class DriftUser:
         self, margin_category: MarginCategory = MarginCategory.INITIAL
     ):
         total_collateral = self.get_total_collateral(margin_category, True)
-        margin_req = self.get_margin_requirement(margin_category)
+        if margin_category == MarginCategory.INITIAL:
+            margin_req = self.get_margin_requirement(margin_category, strict=True)
+        else:
+            margin_req = self.get_margin_requirement(margin_category)
         free_collateral = total_collateral - margin_req
         free_collateral = max(0, free_collateral)
         return free_collateral

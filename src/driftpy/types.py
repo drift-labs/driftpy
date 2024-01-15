@@ -34,20 +34,20 @@ class SpotFulfillmentType:
 
 @_rust_enum
 class SwapReduceOnly:
-    IN = constructor()
-    OUT = constructor()
+    In = constructor()
+    Out = constructor()
 
 
 @_rust_enum
 class TwapPeriod:
-    FUNDING_PERIOD = constructor()
-    FIVE_MIN = constructor()
+    FundingPeriod = constructor()
+    FiveMin = constructor()
 
 
 @_rust_enum
 class LiquidationMultiplierType:
-    DISCOUNT = constructor()
-    PREMIUM = constructor()
+    Discount = constructor()
+    Premium = constructor()
 
 
 @_rust_enum
@@ -217,21 +217,21 @@ class ModifyOrderPolicy:
 
 @_rust_enum
 class MarketStatus:
-    INITIALIZED = constructor()
-    ACTIVE = constructor()
-    FUNDING_PAUSED = constructor()
-    AMM_PAUSED = constructor()
-    FILL_PAUSED = constructor()
-    WITHDRAW_PAUSED = constructor()
-    REDUCE_ONLY = constructor()
-    SETTLEMENT = constructor()
-    DELISTED = constructor()
+    Initialized = constructor()
+    Active = constructor()
+    FundingPaused = constructor()
+    AmmPaused = constructor()
+    FillPaused = constructor()
+    WithdrawPaused = constructor()
+    ReduceOnly = constructor()
+    Settlement = constructor()
+    Delisted = constructor()
 
 
 @_rust_enum
 class ContractType:
-    PERPETUAL = constructor()
-    FUTURE = constructor()
+    Perpetual = constructor()
+    Future = constructor()
 
 
 @_rust_enum
