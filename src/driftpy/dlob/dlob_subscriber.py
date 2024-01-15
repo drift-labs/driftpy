@@ -28,7 +28,7 @@ class MarketId:
     kind: MarketType
 
 
-class DLOBClient:
+class DLOBSubscriber:
     _session: Optional[aiohttp.ClientSession] = None
 
     def __init__(
