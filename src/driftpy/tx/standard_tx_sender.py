@@ -4,6 +4,7 @@ from solders.keypair import Keypair
 from driftpy.tx.types import TxSender, TxSigAndSlot
 from solana.rpc.async_api import AsyncClient
 from solana.rpc.types import TxOpts
+from solana.rpc.commitment import Commitment, Confirmed
 from typing import Union, Sequence, Optional
 
 from solders.address_lookup_table_account import AddressLookupTableAccount
@@ -15,16 +16,24 @@ from solders.transaction import VersionedTransaction
 
 
 class StandardTxSender(TxSender):
-    def __init__(self, connection: AsyncClient, opts: TxOpts):
+    def __init__(
+        self,
+        connection: AsyncClient,
+        opts: TxOpts,
+        blockhash_commitment: Optional[Commitment],
+    ):
         self.connection = connection
         if opts.skip_confirmation:
             raise ValueError("RetryTxSender doesnt support skip confirmation")
+        self.blockhash_commitment = (
+            blockhash_commitment if blockhash_commitment is not None else Confirmed
+        )
 
         self.opts = opts
 
     async def get_blockhash(self) -> Hash:
         return (
-            await self.connection.get_latest_blockhash(self.opts.preflight_commitment)
+            await self.connection.get_latest_blockhash(self.blockhash_commitment)
         ).value.blockhash
 
     async def get_legacy_tx(
