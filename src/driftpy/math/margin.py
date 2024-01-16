@@ -7,17 +7,17 @@ from driftpy.constants.numeric_constants import *
 
 
 def calculate_size_discount_asset_weight(
-    size,
-    imf_factor,
-    asset_weight,
-):
+    size: int,
+    imf_factor: int,
+    asset_weight: int,
+) -> int:
     if imf_factor == 0:
         return asset_weight
 
-    size_sqrt = int((size * 10) ** 0.5) + 1
+    size_sqrt = int((abs(size) * 10) ** 0.5) + 1
     imf_num = SPOT_IMF_PRECISION + (SPOT_IMF_PRECISION / 10)
 
-    size_discount_asset_weight = (
+    size_discount_asset_weight = int(
         imf_num
         * SPOT_WEIGHT_PRECISION
         / (SPOT_IMF_PRECISION + size_sqrt * imf_factor / 100_000)

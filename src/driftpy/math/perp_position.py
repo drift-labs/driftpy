@@ -84,20 +84,20 @@ def calculate_base_asset_value(
         return 0
 
     direction_to_close = (
-        PositionDirection.Short
+        PositionDirection.Short()
         if user_position.base_asset_amount > 0
-        else PositionDirection.Long
+        else PositionDirection.Long()
     )
 
     new_quote_asset_reserve, _ = calculate_amm_reserves_after_swap(
         market.amm,
-        AssetType.BASE,
+        AssetType.BASE(),
         abs(user_position.base_asset_amount),
-        get_swap_direction(AssetType.BASE, direction_to_close),
+        get_swap_direction(AssetType.BASE(), direction_to_close),
     )
 
     result = None
-    if direction_to_close == PositionDirection.Short:
+    if direction_to_close == PositionDirection.Short():
         result = (
             (market.amm.quote_asset_reserve - new_quote_asset_reserve)
             * market.amm.peg_multiplier

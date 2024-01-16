@@ -10,7 +10,7 @@ from driftpy.math.amm import (
     calculate_amm_reserves_after_swap,
     calculate_market_open_bid_ask,
     calculate_quote_asset_amount_swapped,
-    calculate_spread_reserves_dlob,
+    calculate_spread_reserves,
     calculate_updated_amm,
 )
 from driftpy.math.orders import standardize_price
@@ -167,7 +167,7 @@ def get_vamm_l2_generator(
         open_asks = 0
 
     now = now or int(datetime.now().timestamp())
-    bid_reserves, ask_reserves = calculate_spread_reserves_dlob(
+    bid_reserves, ask_reserves = calculate_spread_reserves(
         updated_amm, oracle_price_data, now
     )
 
