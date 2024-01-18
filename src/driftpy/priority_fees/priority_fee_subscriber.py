@@ -70,11 +70,6 @@ class PriorityFeeSubscriber:
         ) / len(desc_results)
         self.max_priority_fee = max(item["prioritizationFee"] for item in desc_results)
 
-        print(f"latest: {self.latest_priority_fee}")
-        print(f"slot: {self.last_slot_seen}")
-        print(f"avg: {self.avg_priority_fee}")
-        print(f"max: {self.max_priority_fee}")
-
     async def unsubscribe(self):
         if self.subscribed:
             self.subscribed = False
