@@ -95,6 +95,9 @@ class WebsocketDriftClientAccountSubscriber(DriftClientAccountSubscriber):
             spot_market_map = MarketMap(spot_market_config)
             perp_market_map = MarketMap(perp_market_config)
 
+            spot_market_map.init(spot_ds)
+            perp_market_map.init(perp_ds)
+
             await spot_market_map.subscribe()
             await perp_market_map.subscribe()
 
@@ -200,7 +203,7 @@ class WebsocketDriftClientAccountSubscriber(DriftClientAccountSubscriber):
         self, market_index: int
     ) -> Optional[DataAndSlot[PerpMarketAccount]]:
         if self.perp_market_map:
-            return self.perp_market_map.get_market_by_index(market_index)
+            return self.perp_market_map.get(market_index)
         else:
             return self.perp_market_subscribers[market_index].data_and_slot
 
@@ -208,7 +211,7 @@ class WebsocketDriftClientAccountSubscriber(DriftClientAccountSubscriber):
         self, market_index: int
     ) -> Optional[DataAndSlot[SpotMarketAccount]]:
         if self.spot_market_map:
-            return self.spot_market_map.get_market_by_index(market_index)
+            return self.spot_market_map.get(market_index)
         else:
             return self.spot_market_subscribers[market_index].data_and_slot
 

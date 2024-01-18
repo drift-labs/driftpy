@@ -42,6 +42,10 @@ class MarketMap:
         self.latest_slot = 0
         self.is_subscribed = False
 
+    def init(self, market_ds: list[DataAndSlot[GenericMarketType]]):
+        for data_and_slot in market_ds:
+            self.market_map[data_and_slot.data.market_index] = data_and_slot
+
     async def subscribe(self):
         if self.size() > 0:
             return
@@ -57,22 +61,14 @@ class MarketMap:
 
         self.is_subscribed = False
 
-    def has(self, key: str) -> bool:
+    def has(self, key: int) -> bool:
         return key in self.market_map
 
-    def get(self, key: str) -> Optional[GenericMarketType]:
+    def get(self, key: int) -> Optional[GenericMarketType]:
         return self.market_map.get(key)
 
-    def get_market_by_index(
-        self, market_index: int
-    ) -> Optional[DataAndSlot[GenericMarketType]]:
-        for data_and_slot in self.market_map.values():
-            if data_and_slot.data.market_index == market_index:
-                return data_and_slot
-        return None
-
     async def must_get(
-        self, key: str, data: DataAndSlot[GenericMarketType]
+        self, key: int, data: DataAndSlot[GenericMarketType]
     ) -> Optional[GenericMarketType]:
         if not self.has(key):
             pubkey = Pubkey.from_string(key, data)
@@ -85,10 +81,10 @@ class MarketMap:
     def values(self):
         return iter(self.market_map.values())
 
-    async def add_pubkey(
-        self, market_public_key: Pubkey, data: DataAndSlot[GenericMarketType]
+    async def add_market(
+        self, market_index: int, data: DataAndSlot[GenericMarketType]
     ) -> None:
-        self.market_map[str(market_public_key)] = data
+        self.market_map[market_index] = data
 
     async def sync(self) -> None:
         async with self.sync_lock:
@@ -133,8 +129,8 @@ class MarketMap:
                 for pubkey in program_account_buffer_map.keys():
                     data = program_account_buffer_map.get(pubkey)
                     if pubkey not in self.market_map:
-                        await self.add_pubkey(
-                            Pubkey.from_string(pubkey), DataAndSlot(slot, data)
+                        await self.add_market(
+                            data.market_index, DataAndSlot(slot, data)
                         )
                     else:
                         self.update_market(pubkey, DataAndSlot(slot, data))
@@ -155,7 +151,7 @@ class MarketMap:
                 traceback.print_exc()
 
     async def update_market(
-        self, key: str, data: DataAndSlot[GenericMarketType]
+        self, _key: str, data: DataAndSlot[GenericMarketType]
     ) -> None:
-        await self.must_get(key, data)
-        self.market_map[key] = data
+        await self.must_get(data.data.market_index, data)
+        self.market_map[data.data.market_index] = data
