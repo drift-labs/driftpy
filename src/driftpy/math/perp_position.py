@@ -137,29 +137,6 @@ def calculate_position_pnl(
     return pnl
 
 
-def calculate_position_funding_pnl(
-    market: PerpMarketAccount, market_position: PerpPosition
-):
-    funding_pnl = 0.0
-
-    if market_position.base_asset_amount == 0:
-        return funding_pnl
-
-    amm_cum_funding_rate = (
-        market.amm.cumulative_funding_rate_long
-        if market_position.base_asset_amount > 0
-        else market.amm.cumulative_funding_rate_short
-    )
-
-    funding_pnl = (
-        market_position.last_cumulative_funding_rate - amm_cum_funding_rate
-    ) * market_position.base_asset_amount
-
-    funding_pnl /= float(AMM_RESERVE_PRECISION * FUNDING_RATE_BUFFER)
-
-    return funding_pnl
-
-
 def calculate_entry_price(market_position: PerpPosition):
     if market_position.base_asset_amount == 0:
         return 0

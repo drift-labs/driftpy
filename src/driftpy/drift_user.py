@@ -1,7 +1,15 @@
+import time
+import copy
+
+from typing import Tuple
+
 from driftpy.account_subscription_config import AccountSubscriptionConfig
 from driftpy.math.amm import calculate_market_open_bid_ask
+from driftpy.math.conversion import convert_to_number
+from driftpy.math.oracles import calculate_live_oracle_twap
 from driftpy.math.perp_position import *
 from driftpy.math.margin import *
+from driftpy.math.spot_balance import get_strict_token_value
 from driftpy.math.spot_market import *
 from driftpy.accounts.oracle import *
 from driftpy.math.spot_position import (
@@ -9,10 +17,8 @@ from driftpy.math.spot_position import (
     is_spot_position_available,
 )
 from driftpy.math.amm import calculate_market_open_bid_ask
+from driftpy.oracles.strict_oracle_price import StrictOraclePrice
 from driftpy.types import OraclePriceData
-
-from typing import Tuple
-import copy
 
 
 class DriftUser:
@@ -194,30 +200,147 @@ class DriftUser:
         self,
         margin_category: MarginCategory = MarginCategory.INITIAL,
         liquidation_buffer: Optional[int] = 0,
-        include_spot=True,
+        strict: bool = False,
     ) -> int:
-        perp_liability = self.get_perp_market_liability(
-            margin_category, liquidation_buffer, include_open_orders=True
+        total_perp_pos_value = self.get_total_perp_position_value(
+            margin_category, liquidation_buffer, True, strict
+        )
+        spot_market_liab_value = self.get_spot_market_liability_value(
+            None, margin_category, liquidation_buffer, True, strict
         )
 
-        result = perp_liability
-        if include_spot:
-            spot_liability = self.get_spot_market_liability(
-                None,
+        return total_perp_pos_value + spot_market_liab_value
+
+    def get_total_perp_position_value(
+        self,
+        margin_category: Optional[MarginCategory] = None,
+        liquidation_buffer: Optional[int] = None,
+        include_open_orders: Optional[bool] = False,
+        strict: bool = False,
+    ) -> int:
+        total_perp_value = 0
+        for perp_position in self.get_active_perp_positions():
+            base_asset_value = self.calculate_weighted_perp_position_value(
+                perp_position,
                 margin_category,
                 liquidation_buffer,
-                include_open_orders=True,
+                include_open_orders,
+                strict,
             )
-            result += spot_liability
+            total_perp_value += base_asset_value
 
-        return result
+        return total_perp_value
+
+    def calculate_weighted_perp_position_value(
+        self,
+        perp_position: PerpPosition,
+        margin_category: Optional[MarginCategory] = None,
+        liquidation_buffer: Optional[int] = None,
+        include_open_orders: Optional[bool] = False,
+        strict: bool = False,
+    ) -> int:
+        market = self.drift_client.get_perp_market_account(perp_position.market_index)
+
+        if perp_position.lp_shares > 0:
+            perp_position = self.get_perp_position_with_lp_settle(
+                market.market_index,
+                copy.deepcopy(perp_position),
+                margin_category is not None,
+            )[0]
+
+        valuation_price = self.get_oracle_data_for_perp_market(
+            market.market_index
+        ).price
+
+        if is_variant(market.status, "Settlement"):
+            valuation_price = market.expiry_price
+
+        base_asset_amount = (
+            calculate_worst_case_base_asset_amount(perp_position)
+            if include_open_orders
+            else perp_position.base_asset_amount
+        )
+
+        base_asset_value = (abs(base_asset_amount) * valuation_price) // BASE_PRECISION
+
+        if margin_category is not None:
+            margin_ratio = calculate_market_margin_ratio(
+                market,
+                abs(base_asset_amount),
+                margin_category,
+                self.get_user_account().max_margin_ratio,
+            )
+
+            if liquidation_buffer is not None:
+                margin_ratio += liquidation_buffer
+
+            if is_variant(market.status, "Settlement"):
+                margin_ratio = 0
+
+            quote_spot_market = self.drift_client.get_spot_market_account(
+                market.quote_spot_market_index
+            )
+
+            quote_oracle_price_data = self.drift_client.get_oracle_price_data(
+                quote_spot_market.oracle
+            )
+
+            if strict:
+                quote_price = max(
+                    quote_oracle_price_data.price,
+                    quote_spot_market.historical_oracle_data.last_oracle_price_twap5min,
+                )
+            else:
+                quote_price = quote_oracle_price_data.price
+
+            base_asset_value = (
+                ((base_asset_value * quote_price) // PRICE_PRECISION) * margin_ratio
+            ) // MARGIN_PRECISION
+
+            if include_open_orders:
+                base_asset_value += (
+                    perp_position.open_orders * OPEN_ORDER_MARGIN_REQUIREMENT
+                )
+
+                if perp_position.lp_shares > 0:
+                    base_asset_value += max(
+                        QUOTE_PRECISION,
+                        (
+                            (
+                                valuation_price
+                                * market.amm.order_step_size
+                                * QUOTE_PRECISION
+                            )
+                            // AMM_RESERVE_PRECISION
+                        )
+                        // PRICE_PRECISION,
+                    )
+
+        return base_asset_value
+
+    def get_active_perp_positions(self) -> list[PerpPosition]:
+        user = self.get_user_account()
+        return self.get_active_perp_positions_for_user_account(user)
+
+    def get_active_perp_positions_for_user_account(
+        self, user: UserAccount
+    ) -> list[PerpPosition]:
+        return [
+            pos
+            for pos in user.perp_positions
+            if pos.base_asset_amount != 0
+            or pos.quote_asset_amount != 0
+            or pos.open_orders != 0
+            or pos.lp_shares != 0
+        ]
 
     def get_total_collateral(
-        self, margin_category: Optional[MarginCategory] = MarginCategory.INITIAL
+        self,
+        margin_category: Optional[MarginCategory] = MarginCategory.INITIAL,
+        strict: bool = False,
     ) -> int:
         asset_value = self.get_spot_market_asset_value(
-            margin_category=margin_category,
-            include_open_orders=True,
+            margin_category=margin_category, include_open_orders=True, strict=strict
         )
         pnl = self.get_unrealized_pnl(True, with_weight_margin_category=margin_category)
         total_collateral = asset_value + pnl
@@ -226,9 +349,12 @@ class DriftUser:
     def get_free_collateral(
         self, margin_category: MarginCategory = MarginCategory.INITIAL
     ):
-        total_collateral = self.get_total_collateral(margin_category)
-        init_margin_req = self.get_margin_requirement(margin_category)
-        free_collateral = total_collateral - init_margin_req
+        total_collateral = self.get_total_collateral(margin_category, True)
+        if margin_category == MarginCategory.INITIAL:
+            margin_req = self.get_margin_requirement(margin_category, strict=True)
+        else:
+            margin_req = self.get_margin_requirement(margin_category)
+        free_collateral = total_collateral - margin_req
         free_collateral = max(0, free_collateral)
         return free_collateral
 
@@ -332,11 +458,14 @@ class DriftUser:
 
     def get_spot_market_asset_and_liability_value(
         self,
-        market_index: int = None,
-        margin_category: MarginCategory = None,
-        liquidation_buffer: int = None,
+        market_index: Optional[int] = None,
+        margin_category: Optional[MarginCategory] = None,
+        liquidation_buffer: Optional[int] = None,
         include_open_orders: bool = True,
+        strict: bool = False,
+        now: Optional[int] = None,
     ) -> (int, int):
+        now = now or int(time.time())
         net_quote_value = 0
         total_asset_value = 0
         total_liability_value = 0
@@ -358,13 +487,23 @@ class DriftUser:
             spot_market_account = self.drift_client.get_spot_market_account(
                 spot_position.market_index
             )
-
             oracle_price_data = self.drift_client.get_oracle_price_data(
                 spot_market_account.oracle
             )
 
+            twap_5m = None
+            if strict:
+                twap_5m = calculate_live_oracle_twap(
+                    spot_market_account.historical_oracle_data,
+                    oracle_price_data,
+                    now,
+                    FIVE_MINUTE,
+                )
+
+            strict_oracle_price = StrictOraclePrice(oracle_price_data.price, twap_5m)
+
             if (
-                spot_market_account.market_index == QUOTE_SPOT_MARKET_INDEX
+                spot_position.market_index == QUOTE_SPOT_MARKET_INDEX
                 and count_for_quote
             ):
                 token_amount = get_signed_token_amount(
@@ -375,96 +514,110 @@ class DriftUser:
                     ),
                     spot_position.balance_type,
                 )
-
                 if is_variant(spot_position.balance_type, "Borrow"):
                     weighted_token_value = abs(
                         self.get_spot_liability_value(
                             token_amount,
-                            oracle_price_data,
+                            strict_oracle_price,
                             spot_market_account,
                             margin_category,
                             liquidation_buffer,
                         )
                     )
-
                     net_quote_value -= weighted_token_value
                 else:
                     weighted_token_value = self.get_spot_asset_value(
                         token_amount,
-                        oracle_price_data,
+                        strict_oracle_price,
                         spot_market_account,
                         margin_category,
                     )
-
                     net_quote_value += weighted_token_value
-
                 continue
 
             if not include_open_orders and count_for_base:
-                token_amount = get_signed_token_amount(
-                    get_token_amount(
-                        spot_position.scaled_balance,
-                        spot_market_account,
-                        spot_position.balance_type,
-                    ),
-                    spot_position.balance_type,
-                )
-
                 if is_variant(spot_position.balance_type, "Borrow"):
+                    token_amount = get_signed_token_amount(
+                        get_token_amount(
+                            spot_position.scaled_balance,
+                            spot_market_account,
+                            spot_position.balance_type,
+                        ),
+                        "Borrow",
+                    )
                     liability_value = abs(
                         self.get_spot_liability_value(
                             token_amount,
-                            oracle_price_data,
+                            strict_oracle_price,
                             spot_market_account,
                             margin_category,
+                            liquidation_buffer,
                         )
                     )
-
                     total_liability_value += liability_value
                 else:
+                    token_amount = get_token_amount(
+                        spot_position.scaled_balance,
+                        spot_market_account,
+                        spot_position.balance_type,
+                    )
                     asset_value = self.get_spot_asset_value(
                         token_amount,
-                        oracle_price_data,
+                        strict_oracle_price,
                         spot_market_account,
                         margin_category,
                     )
                     total_asset_value += asset_value
-
                 continue
 
             order_fill_simulation = get_worst_case_token_amounts(
-                spot_position, spot_market_account, oracle_price_data, margin_category
+                spot_position,
+                spot_market_account,
+                strict_oracle_price,
+                margin_category,
+                self.get_user_account().max_margin_ratio,
             )
-
-            worst_case_token_amount, wort_case_orders_value = (
-                order_fill_simulation.token_amount,
-                order_fill_simulation.orders_value,
-            )
+            worst_case_token_amount = order_fill_simulation.token_amount
+            worst_case_quote_token_amount = order_fill_simulation.orders_value
 
             if worst_case_token_amount > 0 and count_for_base:
-                asset_value = self.get_spot_asset_value(
+                base_asset_value = self.get_spot_asset_value(
                     worst_case_token_amount,
-                    oracle_price_data,
+                    strict_oracle_price,
                     spot_market_account,
                     margin_category,
                 )
-
-                total_asset_value += asset_value
+                total_asset_value += base_asset_value
 
             if worst_case_token_amount < 0 and count_for_base:
-                liability_value = abs(
+                base_liability_value = abs(
                     self.get_spot_liability_value(
                         worst_case_token_amount,
-                        oracle_price_data,
+                        strict_oracle_price,
                         spot_market_account,
                         margin_category,
+                        liquidation_buffer,
                     )
                 )
+                total_liability_value += base_liability_value
 
-                total_liability_value += liability_value
+            if worst_case_quote_token_amount > 0 and count_for_quote:
+                net_quote_value += worst_case_quote_token_amount
 
-            if wort_case_orders_value != 0 and count_for_quote:
-                net_quote_value += wort_case_orders_value
+            if worst_case_quote_token_amount < 0 and count_for_quote:
+                weight = SPOT_MARKET_WEIGHT_PRECISION
+                if margin_category == MarginCategory.INITIAL:
+                    weight = max(weight, self.get_user_account().max_margin_ratio)
+                weighted_token_value = (
+                    abs(worst_case_quote_token_amount)
+                    * weight
+                    // SPOT_MARKET_WEIGHT_PRECISION
+                )
+                net_quote_value -= weighted_token_value
+
+            total_liability_value += (
+                spot_position.open_orders * OPEN_ORDER_MARGIN_REQUIREMENT
+            )
 
         if market_index is None or market_index == QUOTE_SPOT_MARKET_INDEX:
             if net_quote_value > 0:
@@ -476,47 +629,69 @@ class DriftUser:
 
     def get_spot_asset_value(
         self,
-        amount: int,
-        oracle_price_data: OraclePriceData,
-        spot_market: SpotMarketAccount,
-        margin_category: MarginCategory,
-    ):
-        asset_value = get_token_value(amount, spot_market.decimals, oracle_price_data)
+        token_amount: int,
+        strict_oracle_price: StrictOraclePrice,
+        spot_market_account: SpotMarketAccount,
+        margin_category: Optional[MarginCategory] = None,
+    ) -> int:
+        asset_value = get_strict_token_value(
+            token_amount, spot_market_account.decimals, strict_oracle_price
+        )
 
         if margin_category is not None:
             weight = calculate_asset_weight(
-                amount, oracle_price_data.price, spot_market, margin_category
+                token_amount,
+                strict_oracle_price.current,
+                spot_market_account,
+                margin_category,
             )
-            asset_value = asset_value * weight // SPOT_WEIGHT_PRECISION
+
+            if (
+                margin_category == MarginCategory.INITIAL
+                and spot_market_account.market_index != QUOTE_SPOT_MARKET_INDEX
+            ):
+                user_custom_asset_weight = max(
+                    0,
+                    SPOT_MARKET_WEIGHT_PRECISION
+                    - self.get_user_account().max_margin_ratio,
+                )
+                weight = min(weight, user_custom_asset_weight)
+
+            asset_value = (asset_value * weight) // SPOT_MARKET_WEIGHT_PRECISION
 
         return asset_value
 
     def get_spot_liability_value(
         self,
         token_amount: int,
-        oracle_data: OraclePriceData,
-        spot_market: SpotMarketAccount,
-        margin_category: MarginCategory,
-        liquidation_buffer: int = None,
-        max_margin_ratio: int = None,
+        strict_oracle_price: StrictOraclePrice,
+        spot_market_account: SpotMarketAccount,
+        margin_category: Optional[MarginCategory] = None,
+        liquidation_buffer: Optional[int] = None,
     ) -> int:
-        liability_value = get_token_value(
-            token_amount, spot_market.decimals, oracle_data
+        liability_value = get_strict_token_value(
+            token_amount, spot_market_account.decimals, strict_oracle_price
         )
 
         if margin_category is not None:
             weight = calculate_liability_weight(
-                token_amount, spot_market, margin_category
+                token_amount, spot_market_account, margin_category
             )
 
-            if margin_category == MarginCategory.INITIAL:
-                if max_margin_ratio:
-                    weight = max(weight, max_margin_ratio)
+            if (
+                margin_category == MarginCategory.INITIAL
+                and spot_market_account.market_index != QUOTE_SPOT_MARKET_INDEX
+            ):
+                weight = max(
+                    weight,
+                    SPOT_MARKET_WEIGHT_PRECISION
+                    + self.get_user_account().max_margin_ratio,
+                )
 
             if liquidation_buffer is not None:
                 weight += liquidation_buffer
 
-            liability_value = liability_value * weight // SPOT_WEIGHT_PRECISION
+            liability_value = (liability_value * weight) // SPOT_MARKET_WEIGHT_PRECISION
 
         return liability_value
 
@@ -524,24 +699,37 @@ class DriftUser:
         self,
         market_index: Optional[int] = None,
         margin_category: Optional[MarginCategory] = None,
-        include_open_orders=True,
+        include_open_orders: bool = True,
+        strict: bool = False,
+        now: Optional[int] = None,
     ):
         asset_value, _ = self.get_spot_market_asset_and_liability_value(
-            market_index, margin_category, include_open_orders=include_open_orders
+            market_index,
+            margin_category,
+            include_open_orders=include_open_orders,
+            strict=strict,
+            now=now,
         )
         return asset_value
 
-    def get_spot_market_liability(
+    def get_spot_market_liability_value(
         self,
-        market_index=None,
-        margin_category=None,
-        liquidation_buffer=None,
-        include_open_orders=None,
+        market_index: Optional[int] = None,
+        margin_category: Optional[MarginCategory] = None,
+        liquidation_buffer: Optional[int] = None,
+        include_open_orders: bool = True,
+        strict: bool = False,
+        now: Optional[int] = None,
     ):
-        _, liability_value = self.get_spot_market_asset_and_liability_value(
-            market_index, margin_category, liquidation_buffer, include_open_orders
+        _, total_liability_value = self.get_spot_market_asset_and_liability_value(
+            market_index,
+            margin_category,
+            liquidation_buffer,
+            include_open_orders,
+            strict,
+            now,
         )
-        return liability_value
+        return total_liability_value
 
     def get_leverage(self, include_open_orders: bool = True) -> int:
         perp_liability = self.get_perp_market_liability(
@@ -566,28 +754,148 @@ class DriftUser:
 
         return (total_liability_value * 10_000) // net_asset_value
 
-    def get_perp_liq_price(
+    def calculate_free_collateral_delta_for_perp(
         self,
-        perp_market_index: int,
-    ) -> Optional[int]:
-        position = self.get_user_position(perp_market_index)
-        if position is None or position.base_asset_amount == 0:
-            return None
+        market: PerpMarketAccount,
+        perp_position: PerpPosition,
+        position_base_size_change: int,
+    ) -> Union[int, None]:
+        current_base_asset_amt = perp_position.base_asset_amount
 
-        total_collateral = self.get_total_collateral(MarginCategory.MAINTENANCE)
-        margin_req = self.get_margin_requirement(MarginCategory.MAINTENANCE)
-        delta_liq = total_collateral - margin_req
-
-        delta_per_baa = delta_liq / (position.base_asset_amount / AMM_RESERVE_PRECISION)
-
-        oracle_price = (
-            self.get_oracle_data_for_perp_market(perp_market_index).price
-            / PRICE_PRECISION
+        worst_case_base_asset_amt = calculate_worst_case_base_asset_amount(
+            perp_position
         )
 
-        liq_price = oracle_price - (delta_per_baa / QUOTE_PRECISION)
-        if liq_price < 0:
+        order_base_asset_amt = worst_case_base_asset_amt - current_base_asset_amt
+
+        proposed_base_asset_amt = current_base_asset_amt + position_base_size_change
+
+        proposed_worst_case_base_asset_amt = (
+            worst_case_base_asset_amt + position_base_size_change
+        )
+
+        margin_ratio = calculate_market_margin_ratio(
+            market, abs(proposed_worst_case_base_asset_amt), MarginCategory.MAINTENANCE
+        )
+
+        margin_ratio_quote_precision = (
+            margin_ratio * QUOTE_PRECISION
+        ) // MARGIN_PRECISION
+
+        if proposed_worst_case_base_asset_amt == 0:
             return None
+
+        free_collateral_delta = 0
+        if proposed_base_asset_amt > 0:
+            free_collateral_delta = (
+                (QUOTE_PRECISION - margin_ratio_quote_precision)
+                * proposed_base_asset_amt
+            ) // BASE_PRECISION
+        else:
+            free_collateral_delta = (
+                (-QUOTE_PRECISION - margin_ratio_quote_precision)
+                * abs(proposed_base_asset_amt)
+            ) // BASE_PRECISION
+
+        if not order_base_asset_amt == 0:
+            free_collateral_delta = free_collateral_delta - (
+                margin_ratio_quote_precision
+                * abs(order_base_asset_amt)
+                // BASE_PRECISION
+            )
+
+        return free_collateral_delta
+
+    def calculate_free_collateral_delta_for_spot(
+        self, market: SpotMarketAccount, signed_token_amount: int
+    ) -> int:
+        token_precision = 10**market.decimals
+
+        if signed_token_amount > 0:
+            asset_weight = calculate_asset_weight(
+                signed_token_amount,
+                self.drift_client.get_oracle_price_data(market.oracle).price,
+                market,
+                MarginCategory.MAINTENANCE,
+            )
+
+            return (
+                ((QUOTE_PRECISION * asset_weight) // SPOT_MARKET_WEIGHT_PRECISION)
+                * signed_token_amount
+            ) // token_precision
+
+        else:
+            liability_weight = calculate_liability_weight(
+                abs(signed_token_amount), market, MarginCategory.MAINTENANCE
+            )
+
+            return (
+                ((-QUOTE_PRECISION * liability_weight) // SPOT_MARKET_WEIGHT_PRECISION)
+                * abs(signed_token_amount)
+            ) // token_precision
+
+    def get_perp_liq_price(
+        self, perp_market_index: int, position_base_size_change: int = 0
+    ) -> Optional[int]:
+        total_collateral = self.get_total_collateral(MarginCategory.MAINTENANCE)
+        maintenance_margin_req = self.get_margin_requirement(MarginCategory.MAINTENANCE)
+        free_collateral = max(0, total_collateral - maintenance_margin_req)
+
+        market = self.drift_client.get_perp_market_account(perp_market_index)
+        current_perp_pos = self.get_perp_position_with_lp_settle(
+            perp_market_index, burnLpShares=True
+        )[0] or self.get_empty_position(perp_market_index)
+
+        free_collateral_delta = self.calculate_free_collateral_delta_for_perp(
+            market, current_perp_pos, position_base_size_change
+        )
+
+        if not free_collateral_delta:
+            return -1
+
+        oracle = market.amm.oracle
+
+        sister_market = None
+        for market in self.drift_client.get_spot_market_accounts():
+            if market.oracle == oracle:
+                sister_market = market
+                break
+
+        if sister_market:
+            spot_position = self.get_spot_position(sister_market.market_index)
+            if spot_position:
+                signed_token_amount = get_signed_token_amount(
+                    get_token_amount(
+                        spot_position.scaled_balance,
+                        sister_market,
+                        spot_position.balance_type,
+                    ),
+                    spot_position.balance_type,
+                )
+
+                spot_free_collateral_delta = (
+                    self.calculate_free_collateral_delta_for_spot(
+                        sister_market, signed_token_amount
+                    )
+                )
+
+                free_collateral_delta = (
+                    free_collateral_delta + spot_free_collateral_delta
+                )
+
+        if free_collateral_delta == 0:
+            return -1
+
+        oracle_price = self.drift_client.get_oracle_price_data_for_perp_market(
+            perp_market_index
+        ).price
+
+        liq_price_delta = (free_collateral * QUOTE_PRECISION) // free_collateral_delta
+
+        liq_price = oracle_price - liq_price_delta
+
+        if liq_price < 0:
+            return -1
 
         return liq_price
 

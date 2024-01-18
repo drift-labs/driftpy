@@ -215,7 +215,6 @@ async def set_price_feed(
 ):
     data = await get_feed_data(oracle_program, oracle_public_key)
     int_price = int(price * 10**-data.exponent)
-    print("setting oracle price", int_price)
     return await oracle_program.rpc["set_price"](
         int_price, ctx=Context(accounts={"price": oracle_public_key})
     )

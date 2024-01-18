@@ -23,7 +23,7 @@ def get_token_amount(
 
 
 def get_token_value(
-    amount, spot_decimals, oracle_price_data: Union[OraclePriceData | int]
+    amount, spot_decimals, oracle_price_data: Union[OraclePriceData, int]
 ):
     precision_decrease = 10**spot_decimals
     if isinstance(oracle_price_data, OraclePriceData):

@@ -539,3 +539,13 @@ class Admin(DriftClient):
                 }
             ),
         )
+
+    async def update_initial_percent_to_liquidate(
+        self, initial_percent_to_liquidate: int
+    ) -> Signature:
+        state_public_key = get_state_public_key(self.program.program_id)
+
+        return await self.program.rpc["update_initial_pct_to_liquidate"](
+            initial_percent_to_liquidate,
+            ctx=Context(accounts={"admin": self.authority, "state": state_public_key}),
+        )

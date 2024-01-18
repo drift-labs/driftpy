@@ -119,9 +119,9 @@ class DemoDriftClientAccountSubscriber(DriftClientAccountSubscriber):
         self.cache = None
 
     def get_market_accounts_and_slots(self) -> list[DataAndSlot[PerpMarketAccount]]:
-        return [self.cache["perp_markets"].values()]
+        return self.cache["perp_markets"]
 
     def get_spot_market_accounts_and_slots(
         self,
     ) -> list[DataAndSlot[SpotMarketAccount]]:
-        return [self.cache["spot_markets"].values()]
+        return self.cache["spot_markets"]
