@@ -45,3 +45,7 @@ Update `drift.json` IDL for Drift Program
 Fix several major math bugs in `DriftUser.get_perp_liq_price()` and downstream math functions
 
 Add default `Confirmed` commitment in `StandardTxSender`
+
+## [0.7.14] - 2024-1-18
+
+Add `PriorityFeeSubscriber`
