@@ -2,7 +2,6 @@ import asyncio
 import jsonrpcclient
 
 from dataclasses import dataclass
-from typing import Optional
 
 from solana.rpc.async_api import AsyncClient
 from solders.pubkey import Pubkey
@@ -35,8 +34,11 @@ class PriorityFeeSubscriber:
 
         self.subscribed = True
 
+        asyncio.create_task(self.poll())
+
+    async def poll(self):
         while self.subscribed:
-            await self.load()
+            asyncio.create_task(self.load())
             await asyncio.sleep(self.frequency_ms)
 
     async def load(self):
@@ -69,6 +71,8 @@ class PriorityFeeSubscriber:
             item["prioritizationFee"] for item in desc_results
         ) / len(desc_results)
         self.max_priority_fee = max(item["prioritizationFee"] for item in desc_results)
+
+        print("loaded")
 
     async def unsubscribe(self):
         if self.subscribed:

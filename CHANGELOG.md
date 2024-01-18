@@ -49,3 +49,7 @@ Add default `Confirmed` commitment in `StandardTxSender`
 ## [0.7.14] - 2024-1-18
 
 Add `PriorityFeeSubscriber`
+
+## [0.7.15] - 2024-1-18
+
+Fix bug where `PriorityFeeSubscriber.subscribe()` blocks
