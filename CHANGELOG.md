@@ -38,3 +38,14 @@ Refactor the `WebsocketDriftClientAccountSubscriber` subscription logic to reduc
 
 ## [0.7.11] - 2024-1-12
 
+Update `drift.json` IDL for Drift Program
+
+## [0.7.12] - 2024-1-15
+
+Fix several major math bugs in `DriftUser.get_perp_liq_price()` and downstream math functions
+
+Add default `Confirmed` commitment in `StandardTxSender`
+
+## [0.7.14] - 2024-1-18
+
+Add `PriorityFeeSubscriber`
