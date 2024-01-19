@@ -10,16 +10,16 @@ from driftpy.types import (
 
 
 def exchange_paused(state: StateAccount) -> bool:
-    return not is_variant(state.exchange_status, "ACTIVE")
+    return not is_variant(state.exchange_status, "Active")
 
 
 def fill_paused(
     state: StateAccount, market: Union[PerpMarketAccount, SpotMarketAccount]
 ) -> bool:
     return (
-        state.exchange_status & ExchangeStatus.FILL_PAUSED
-    ) == ExchangeStatus.FILL_PAUSED or is_one_of_variant(
-        market.status, ["PAUSED", "FILL_PAUSED"]
+        state.exchange_status & ExchangeStatus.FillPaused
+    ) == ExchangeStatus.FillPaused or is_one_of_variant(
+        market.status, ["Paused", "FillPaused"]
     )
 
 
@@ -27,7 +27,7 @@ def amm_paused(
     state: StateAccount, market: Union[PerpMarketAccount, SpotMarketAccount]
 ) -> bool:
     return (
-        state.exchange_status & ExchangeStatus.AMM_PAUSED
-    ) == ExchangeStatus.AMM_PAUSED or is_one_of_variant(
-        market.status, ["PAUSED", "AMM_PAUSED"]
+        state.exchange_status & ExchangeStatus.AmmPaused
+    ) == ExchangeStatus.AmmPaused or is_one_of_variant(
+        market.status, ["Paused", "AmmPaused"]
     )
