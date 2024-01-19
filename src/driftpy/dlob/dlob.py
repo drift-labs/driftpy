@@ -28,7 +28,7 @@ from driftpy.dlob.dlob_node import (
     VAMMNode,
 )
 from driftpy.math.auction import is_fallback_available_liquidity_source
-from driftpy.math.exchange_status import fill_paused, amm_paused
+from driftpy.math.exchange_status import exchange_paused, fill_paused, amm_paused
 from driftpy.math.orders import (
     get_limit_price,
     is_order_expired,

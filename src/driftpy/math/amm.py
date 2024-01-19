@@ -661,3 +661,45 @@ def calculate_updated_amm_spread_reserves(
     dir_reserves = long_reserves if is_variant(direction, "Long") else short_reserves
 
     return dir_reserves[0], dir_reserves[1], new_amm.sqrt_k, new_amm.peg_multiplier
+
+
+def calculate_max_base_asset_amount_to_trade(
+    amm: AMM,
+    limit_price: int,
+    direction: PositionDirection,
+    oracle_price_data: OraclePriceData,
+    now: Optional[int] = None,
+) -> (int, PositionDirection):
+    invariant = amm.sqrt_k * amm.sqrt_k
+
+    new_base_asset_reserve_squared = (
+        ((invariant * PRICE_PRECISION) * amm.peg_multiplier) // limit_price
+    ) // PEG_PRECISION
+
+    new_base_asset_reserve = math.sqrt(new_base_asset_reserve_squared)
+
+    short_spread_reserves, long_spread_reserves = calculate_spread_reserves(
+        amm, oracle_price_data, now
+    )
+
+    base_asset_reserve_before = (
+        long_spread_reserves[0]
+        if is_variant(direction, "Long")
+        else short_spread_reserves[0]
+    )
+
+    if new_base_asset_reserve > base_asset_reserve_before:
+        return (
+            new_base_asset_reserve - base_asset_reserve_before,
+            PositionDirection.Short(),
+        )
+    elif new_base_asset_reserve < base_asset_reserve_before:
+        return (
+            base_asset_reserve_before - new_base_asset_reserve,
+            PositionDirection.Long(),
+        )
+    else:
+        print(
+            "trade too small @ calculate_max_base_asset_amount_to_trade: math/amm.py:665"
+        )
+        return (0, PositionDirection.Long())

@@ -1,5 +1,5 @@
-from driftpy.constants.numeric_constants import FIVE_MINUTE
-from driftpy.types import AMM, HistoricalOracleData, OraclePriceData
+from driftpy.constants.numeric_constants import BID_ASK_SPREAD_PRECISION, FIVE_MINUTE
+from driftpy.types import AMM, HistoricalOracleData, OracleGuardRails, OraclePriceData
 
 
 def calculate_live_oracle_twap(
@@ -51,3 +51,40 @@ def calculate_live_oracle_std(
     )
 
     return oracle_std
+
+
+def is_oracle_valid(
+    amm: AMM,
+    oracle_price_data: OraclePriceData,
+    oracle_guard_rails: OracleGuardRails,
+    slot: int,
+) -> bool:
+    is_oracle_price_non_positive = oracle_price_data.price <= 0
+
+    lhs = (
+        oracle_price_data.price
+        // (max(1, amm.historical_oracle_data.last_oracle_price_twap))
+    ) > oracle_guard_rails.validity.too_volatile_ratio
+    rhs = (
+        amm.historical_oracle_data.last_oracle_price_twap
+        // (max(1, oracle_price_data.price))
+    ) > oracle_guard_rails.validity.too_volatile_ratio
+
+    is_oracle_price_too_volatile = lhs or rhs
+
+    is_confidence_too_large = (
+        (max(1, oracle_price_data.confidence) * BID_ASK_SPREAD_PRECISION)
+        // oracle_price_data.price
+    ) > oracle_guard_rails.validity.confidence_interval_max_size
+
+    is_oracle_stale = (
+        slot - oracle_price_data.slot
+    ) > oracle_guard_rails.validity.slots_before_stale_for_amm
+
+    return not (
+        not oracle_price_data.has_sufficient_number_of_data_points
+        or is_oracle_stale
+        or is_oracle_price_non_positive
+        or is_oracle_price_too_volatile
+        or is_confidence_too_large
+    )
