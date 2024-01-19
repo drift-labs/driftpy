@@ -1,6 +1,5 @@
 import copy
 import pytest
-import asyncio
 from driftpy.constants.numeric_constants import (
     BASE_PRECISION,
     PEG_PRECISION,
