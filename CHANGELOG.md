@@ -53,3 +53,15 @@ Add `PriorityFeeSubscriber`
 ## [0.7.15] - 2024-1-18
 
 Fix bug where `PriorityFeeSubscriber.subscribe()` blocks
+
+## [0.7.17] - 2024-1-19
+
+Refactor math entirely to align more closely with TypeScript SDK
+
+Add some math functions to `orders.py`, `amm.py`, and `oracles.py`
+
+Update casing conventions for `ExchangeStatus`
+
+Add `find_nodes_to_trigger()`  to `dlob.py`
+
+Add `get_slot()` to `user_map.py`

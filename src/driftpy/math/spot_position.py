@@ -1,8 +1,10 @@
 from dataclasses import dataclass
 from typing import Optional
 
-from driftpy.constants import SPOT_WEIGHT_PRECISION
-from driftpy.constants.numeric_constants import SPOT_MARKET_WEIGHT_PRECISION
+from driftpy.constants.numeric_constants import (
+    QUOTE_SPOT_MARKET_INDEX,
+    SPOT_MARKET_WEIGHT_PRECISION,
+)
 from driftpy.math.margin import (
     MarginCategory,
     calculate_asset_weight,
@@ -15,7 +17,7 @@ from driftpy.math.spot_market import (
     get_token_value,
 )
 from driftpy.oracles.strict_oracle_price import StrictOraclePrice
-from driftpy.types import SpotPosition, SpotMarketAccount, OraclePriceData
+from driftpy.types import SpotPosition, SpotMarketAccount
 
 
 @dataclass

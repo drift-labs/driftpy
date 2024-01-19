@@ -28,7 +28,7 @@ from driftpy.dlob.dlob_node import (
     VAMMNode,
 )
 from driftpy.math.auction import is_fallback_available_liquidity_source
-from driftpy.math.exchange_status import fill_paused, amm_paused
+from driftpy.math.exchange_status import exchange_paused, fill_paused, amm_paused
 from driftpy.math.orders import (
     get_limit_price,
     is_order_expired,
@@ -1124,6 +1124,40 @@ class DLOB:
             )
             + expired_nodes_to_fill
         )
+
+    def find_nodes_to_trigger(
+        self,
+        market_index: int,
+        oracle_price: int,
+        market_type: MarketType,
+        state_account: StateAccount,
+    ) -> list[NodeToTrigger]:
+        if exchange_paused(state_account):
+            return []
+
+        nodes_to_trigger = []
+        market_type_str = market_type_to_string(market_type)
+        market_node_lists = self.order_lists.get(market_type_str).get(market_index)  # type: ignore
+
+        trigger_above_list = market_node_lists.trigger["above"] or None  # type: ignore
+
+        if trigger_above_list:
+            for node in trigger_above_list.get_generator():
+                if oracle_price > node.order.trigger_price:
+                    nodes_to_trigger.append(NodeToTrigger(node))
+                else:
+                    break
+
+        trigger_below_list = market_node_lists.trigger["below"] or None  # type: ignore
+
+        if trigger_below_list:
+            for node in trigger_below_list.get_generator():
+                if oracle_price < node.order.trigger_price:
+                    nodes_to_trigger.append(NodeToTrigger(node))
+                else:
+                    break
+
+        return nodes_to_trigger
 
     def get_l2(
         self,

@@ -212,3 +212,6 @@ class UserMap(UserMapInterface, DLOBSource):
         dlob = DLOB()
         dlob.init_from_usermap(self, slot)
         return dlob
+
+    def get_slot(self) -> int:
+        return self.latest_slot
