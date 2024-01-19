@@ -2,27 +2,30 @@ import asyncio
 import traceback
 from typing import Dict, Optional, TypeVar, Callable
 from anchorpy import Program
-from driftpy.accounts.types import DataAndSlot, UpdateCallback, WebsocketProgramAccountOptions
+from driftpy.accounts.types import (
+    DataAndSlot,
+    UpdateCallback,
+    WebsocketProgramAccountOptions,
+)
 from solana.rpc.websocket_api import connect, SolanaWsClientProtocol
 from solders.pubkey import Pubkey
 
 T = TypeVar("T")
 
+
 class WebSocketProgramAccountSubscriber:
     def __init__(
-            self,
-            subscription_name: str,
-            account_discriminator: str,
-            program: Program,
-            # options has the filters / commitment / encoding for `program_subscribe()`
-            # think having them all in one type is cleaner
-            options: WebsocketProgramAccountOptions,
-            on_update: Optional[UpdateCallback],
-            decode: Optional[Callable[[bytes], T]] = None,
-            resub_timeout_ms: Optional[int] = None
-        ):
+        self,
+        subscription_name: str,
+        program: Program,
+        # options has the filters / commitment / encoding for `program_subscribe()`
+        # think having them all in one type is cleaner
+        options: WebsocketProgramAccountOptions,
+        on_update: Optional[UpdateCallback],
+        decode: Optional[Callable[[bytes], T]] = None,
+        resub_timeout_ms: Optional[int] = None,
+    ):
         self.subscription_name = subscription_name
-        self.account_discriminator = account_discriminator
         self.program = program
         self.options = options
         self.task = None
@@ -32,32 +35,34 @@ class WebSocketProgramAccountSubscriber:
         )
         self.subscribed_accounts: Dict[Pubkey, DataAndSlot[T]] = {}
         self.ws = None
-        self.resub_timeout_ms = resub_timeout_ms if resub_timeout_ms is not None else 1000
+        self.resub_timeout_ms = (
+            resub_timeout_ms if resub_timeout_ms is not None else 1000
+        )
         self.receiving_data = False
         self.subscribed = False
         self.is_unsubscribing = False
         self.latest_slot = 0
-        
-    async def subscribe(self): 
+
+    async def subscribe(self):
         if self.subscribed:
             return
         self.task = asyncio.create_task(self.subscribe_ws())
         return self.task
-        
+
     async def subscribe_ws(self):
         endpoint = self.program.provider.connection._provider.endpoint_uri
-        ws_endpoint = endpoint.replace('https', 'wss').replace('http', 'ws')
+        ws_endpoint = endpoint.replace("https", "wss").replace("http", "ws")
         while True:
             try:
                 async with connect(ws_endpoint) as ws:
                     self.ws = ws
                     ws: SolanaWsClientProtocol
-                    
+
                     await ws.program_subscribe(
                         self.program.program_id,
                         self.options.commitment,
                         self.options.encoding,
-                        filters = self.options.filters
+                        filters=self.options.filters,
                     )
 
                     last_received_ts = asyncio.get_event_loop().time()
@@ -67,20 +72,25 @@ class WebSocketProgramAccountSubscriber:
                         await self._process_message(msg)
 
                         last_received_ts = asyncio.get_event_loop().time()
-                        if asyncio.get_event_loop().time() - last_received_ts > self.resub_timeout_ms / 1000:
+                        if (
+                            asyncio.get_event_loop().time() - last_received_ts
+                            > self.resub_timeout_ms / 1000
+                        ):
                             if not self.receiving_data:
-                                print(f"WebSocket timeout reached.  Resubscribing to {self.subscription_name}")
+                                print(
+                                    f"WebSocket timeout reached.  Resubscribing to {self.subscription_name}"
+                                )
                                 await self.ws.close()
                                 self.ws = None
                                 break
-                            else: 
+                            else:
                                 self.receiving_data = False
             except Exception as e:
                 print(f"Error in subscription {self.subscription_name}: {e}")
                 await self.ws.close()
                 self.ws = None
-                await asyncio.sleep(5) # wait a second before we retry
-        
+                await asyncio.sleep(5)  # wait a second before we retry
+
     async def _process_message(self, msg):
         for item in msg:
             res = item.result
@@ -112,5 +122,3 @@ class WebSocketProgramAccountSubscriber:
             self.ws = None
         self.is_unsubscribing = False
         self.subscribed = False
-
-            

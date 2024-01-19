@@ -1,5 +1,3 @@
-from dataclasses import dataclass
-
 from .types import DataAndSlot
 from driftpy.constants.numeric_constants import *
 from driftpy.types import OracleSource, OraclePriceData, is_variant
