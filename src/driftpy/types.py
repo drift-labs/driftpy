@@ -239,8 +239,8 @@ class ContractTier:
     A = constructor()
     B = constructor()
     C = constructor()
-    SPECULATIVE = constructor()
-    ISOLATED = constructor()
+    Speculative = constructor()
+    Isolated = constructor()
 
 
 @_rust_enum
