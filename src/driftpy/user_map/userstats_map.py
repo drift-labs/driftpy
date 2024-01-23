@@ -113,7 +113,7 @@ class UserStatsMap:
                 print(f"Error in UserStatsMap.sync(): {e}")
                 traceback.print_exc()
 
-    async def unsubscribe(self):
+    def unsubscribe(self):
         keys = list(self.user_stats_map.keys())
         for key in keys:
             self.user_stats_map[key].unsubscribe()
