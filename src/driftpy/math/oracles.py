@@ -82,7 +82,7 @@ def is_oracle_valid(
     ) > oracle_guard_rails.validity.slots_before_stale_for_amm
 
     return not (
-        not oracle_price_data.has_sufficient_number_of_data_points
+        not oracle_price_data.has_sufficient_number_of_datapoints
         or is_oracle_stale
         or is_oracle_price_non_positive
         or is_oracle_price_too_volatile

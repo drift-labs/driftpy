@@ -2040,6 +2040,106 @@ class DriftClient:
             ),
         )
 
+    async def get_fill_perp_order_ix(
+        self,
+        user_account_pubkey: Pubkey,
+        user_account: UserAccount,
+        order: Order,
+        maker_info: Optional[Union[MakerInfo, list[MakerInfo]]],
+        referrer_info: Optional[ReferrerInfo],
+    ) -> Instruction:
+        user_stats_pubkey = get_user_stats_account_public_key(
+            self.program.program_id, user_account.authority
+        )
+
+        filler_pubkey = await self.get_user_account_public_key()
+        filler_stats_pubkey = self.get_user_stats_public_key()
+
+        market_index = (
+            order.market_index
+            if order
+            else next(
+                (
+                    order.market_index
+                    for order in user_account.orders
+                    if order.order_id == user_account.next_order_id - 1
+                ),
+                None,
+            )
+        )
+
+        maker_info = (
+            maker_info
+            if isinstance(maker_info, list)
+            else [maker_info]
+            if maker_info
+            else []
+        )
+
+        user_accounts = [user_account]
+        for maker in maker_info:
+            user_accounts.append(maker.maker_user_account)
+
+        remaining_accounts = self.get_remaining_accounts(user_accounts, [market_index])
+
+        for maker in maker_info:
+            remaining_accounts.append(
+                AccountMeta(pubkey=maker.maker, is_writable=True, is_signer=False)
+            )
+            remaining_accounts.append(
+                AccountMeta(pubkey=maker.maker_stats, is_writable=True, is_signer=False)
+            )
+
+        if referrer_info:
+            referrer_is_maker = any(
+                maker.maker == referrer_info.referrer for maker in maker_info
+            )
+            if not referrer_is_maker:
+                remaining_accounts.append(
+                    AccountMeta(
+                        pubkey=referrer_info.referrer, is_writable=True, is_signer=False
+                    )
+                )
+                remaining_accounts.append(
+                    AccountMeta(
+                        pubkey=referrer_info.referrer_stats,
+                        is_writable=True,
+                        is_signer=False,
+                    )
+                )
+
+        order_id = order.order_id
+        return self.program.instruction["fill_perp_order"](
+            order_id,
+            None,
+            ctx=Context(
+                accounts={
+                    "state": self.get_state_public_key(),
+                    "filler": filler_pubkey,
+                    "filler_stats": filler_stats_pubkey,
+                    "user": user_account_pubkey,
+                    "user_stats": user_stats_pubkey,
+                    "authority": self.authority,
+                },
+                remaining_accounts=remaining_accounts,
+            ),
+        )
+
+    def get_revert_fill_ix(self):
+        filler_pubkey = self.get_user_account_public_key()
+        filler_stats_pubkey = self.get_user_stats_public_key()
+
+        return self.program.instruction["revert_fill"](
+            ctx=Context(
+                accounts={
+                    "state": self.get_state_public_key(),
+                    "filler": filler_pubkey,
+                    "filler_stats": filler_stats_pubkey,
+                    "authority": self.authority,
+                }
+            )
+        )
+
     @deprecated
     async def open_position(
         self,
