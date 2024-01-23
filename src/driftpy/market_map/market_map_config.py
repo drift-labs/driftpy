@@ -18,4 +18,4 @@ class MarketMapConfig:
     market_type: MarketType  # perp market map or spot market map
     subscription_config: WebsocketConfig
     connection: AsyncClient
-    skip_initial_load: Optional[bool] = None
+    skip_initial_load: Optional[bool] = False
