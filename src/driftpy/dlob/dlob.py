@@ -984,7 +984,7 @@ class DLOB:
                 new_bid.base_asset_amount_filled += base_filled
                 self.get_list_for_order(new_bid, slot).update(new_bid, bid.user_account)
 
-                new_ask = copy.deecopy(ask_order)
+                new_ask = copy.deepcopy(ask_order)
                 new_ask.base_asset_amount_filled += base_filled
                 self.get_list_for_order(new_ask, slot).update(new_ask, ask.user_account)
 

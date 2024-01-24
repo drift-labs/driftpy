@@ -201,13 +201,21 @@ async def calculate_all_estimated_funding_rate(
         larger_side = abs(market.amm.base_asset_amount_long)
         smaller_side = abs(market.amm.base_asset_amount_short)
         if twap_spread > 0:
+            print(f"ts: {twap_spread}")
+            print(f"lbe: {lowerbound_est}")
+            print(f"ipe: {interp_est}")
             return mark_twap, oracle_twap, lowerbound_est, interp_est, interp_est
     elif market.amm.base_asset_amount_long < abs(market.amm.base_asset_amount_short):
         larger_side = abs(market.amm.base_asset_amount_short)
         smaller_side = abs(market.amm.base_asset_amount_long)
         if twap_spread < 0:
+            print(f"ts: {twap_spread}")
+            print(f"lbe: {lowerbound_est}")
+            print(f"ipe: {interp_est}")
             return mark_twap, oracle_twap, lowerbound_est, interp_est, interp_est
     else:
+        print(f"lbe: {lowerbound_est}")
+        print(f"ipe: {interp_est}")
         return mark_twap, oracle_twap, lowerbound_est, interp_est, interp_est
 
     if larger_side > 0:
@@ -222,6 +230,10 @@ async def calculate_all_estimated_funding_rate(
             capped_alt_est = interp_est
     else:
         capped_alt_est = interp_est
+
+    print(f"lbe: {lowerbound_est}")
+    print(f"cae: {capped_alt_est}")
+    print(f"ipe: {interp_est}")
 
     return mark_twap, oracle_twap, lowerbound_est, capped_alt_est, interp_est
 

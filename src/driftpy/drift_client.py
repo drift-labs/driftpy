@@ -2140,6 +2140,42 @@ class DriftClient:
             )
         )
 
+    def get_trigger_order_ix(
+        self,
+        user_account_pubkey: Pubkey,
+        user_account: UserAccount,
+        order: Order,
+        filler_pubkey: Optional[Pubkey] = None,
+    ):
+        filler = filler_pubkey or self.get_user_account_public_key()
+
+        if is_variant(order.market_type, "Perp"):
+            remaining_accounts = self.get_remaining_accounts(
+                user_accounts=[user_account],
+                writable_perp_market_indexes=[order.market_index],
+            )
+        else:
+            remaining_accounts = self.get_remaining_accounts(
+                user_accounts=[user_account],
+                writable_spot_market_indexes=[
+                    order.market_index,
+                    QUOTE_SPOT_MARKET_INDEX,
+                ],
+            )
+
+        return self.program.instruction["trigger_order"](
+            order.order_id,
+            ctx=Context(
+                accounts={
+                    "state": self.get_state_public_key(),
+                    "filler": filler,
+                    "user": user_account_pubkey,
+                    "authority": self.authority,
+                },
+                remaining_accounts=remaining_accounts,
+            ),
+        )
+
     @deprecated
     async def open_position(
         self,
