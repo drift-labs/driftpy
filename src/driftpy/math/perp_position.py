@@ -142,7 +142,7 @@ def calculate_entry_price(market_position: PerpPosition):
         return 0
 
     return abs(
-        market_position.quote_asset_amount
+        market_position.quote_entry_amount
         * PRICE_PRECISION
         * AMM_TO_QUOTE_PRECISION_RATIO
         / market_position.base_asset_amount

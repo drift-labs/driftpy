@@ -2052,7 +2052,7 @@ class DriftClient:
             self.program.program_id, user_account.authority
         )
 
-        filler_pubkey = await self.get_user_account_public_key()
+        filler_pubkey = self.get_user_account_public_key()
         filler_stats_pubkey = self.get_user_stats_public_key()
 
         market_index = (

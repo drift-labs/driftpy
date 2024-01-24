@@ -825,9 +825,8 @@ class DLOB:
         taking_order_generator = self.get_taking_asks(
             market_index, market_type, slot, oracle_price_data
         )
-        maker_node_generator_fn = lambda: self.get_resting_limit_bids(
-            market_index, slot, market_type, oracle_price_data
-        )
+        maker_node_generator_fn = self.get_resting_limit_bids
+
         does_cross = (
             lambda taker_price, maker_price: (
                 taker_price is None or taker_price <= maker_price
@@ -872,9 +871,8 @@ class DLOB:
         taking_order_generator = self.get_taking_bids(
             market_index, market_type, slot, oracle_price_data
         )
-        maker_node_generator_fn = lambda: self.get_resting_limit_asks(
-            market_index, slot, market_type, oracle_price_data
-        )
+        maker_node_generator_fn = self.get_resting_limit_asks
+
         does_cross = (
             lambda taker_price, maker_price: (
                 taker_price is None or taker_price >= maker_price
@@ -1094,7 +1092,7 @@ class DLOB:
 
         for ask_generator in ask_generators:
             for ask in ask_generator:
-                if is_order_expired(bid.order, ts, True):
+                if is_order_expired(ask.order, ts, True):
                     nodes_to_fill.append(NodeToFill(ask, []))
 
         return nodes_to_fill

@@ -676,6 +676,13 @@ def calculate_max_base_asset_amount_to_trade(
         ((invariant * PRICE_PRECISION) * amm.peg_multiplier) // limit_price
     ) // PEG_PRECISION
 
+    if new_base_asset_reserve_squared < 0:
+        print(f"nbars: {new_base_asset_reserve_squared}")
+        print(f"inv: {invariant}")
+        print(f"peg: {amm.peg_multiplier}")
+        print(f"lp: {limit_price}")
+        return (0, PositionDirection.Long())
+
     new_base_asset_reserve = math.sqrt(new_base_asset_reserve_squared)
 
     short_spread_reserves, long_spread_reserves = calculate_spread_reserves(
