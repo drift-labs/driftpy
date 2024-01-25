@@ -122,7 +122,7 @@ mainnet_perp_market_configs: list[PerpMarketConfig] = [
         oracle_source=OracleSource.Pyth(),
     ),
     PerpMarketConfig(
-        symbol="1MBONK",
+        symbol="1MBONK-PERP",
         base_asset_symbol="1MBONK",
         market_index=4,
         oracle=Pubkey.from_string("8ihFLu5FimgTQ1Unh4dVyEHUGodJ5gJQCrQf4KUVB9bN"),
