@@ -148,7 +148,7 @@ class UserMap(UserMapInterface, DLOBSource):
                     headers={"content-encoding": "gzip"},
                 )
 
-                resp = await asyncio.wait_for(post, timeout=10)
+                resp = await asyncio.wait_for(post, timeout=30)
 
                 parsed_resp = jsonrpcclient.parse(resp.json())
 

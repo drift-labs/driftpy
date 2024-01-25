@@ -64,6 +64,8 @@ class DLOBSubscriber:
         if self.interval_task is not None:
             return
 
+        await self.update_dlob()
+
         async def interval_loop():
             while True:
                 try:
