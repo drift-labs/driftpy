@@ -7,6 +7,7 @@ from solders.transaction import TransactionVersion, Legacy
 from solders.instruction import Instruction
 from solders.system_program import ID
 from solders.sysvar import RENT
+from solders.signature import Signature
 from solders.address_lookup_table_account import AddressLookupTableAccount
 from solana.rpc.async_api import AsyncClient
 from solana.rpc.types import TxOpts
@@ -1613,6 +1614,17 @@ class DriftClient:
 
         return instruction
 
+    def get_settle_pnl_ixs(
+        self, users: dict[Pubkey, UserAccount], market_indexes: list[int]
+    ) -> list[Instruction]:
+        ixs: list[Instruction] = []
+        for pubkey, account in users.items():
+            for market_index in market_indexes:
+                ix = self.get_settle_pnl_ix(pubkey, account, market_index)
+                ixs.append(ix)
+
+        return ixs
+
     async def resolve_spot_bankruptcy(
         self,
         user_authority: Pubkey,
@@ -2174,6 +2186,45 @@ class DriftClient:
                 },
                 remaining_accounts=remaining_accounts,
             ),
+        )
+
+    async def force_cancel_orders(
+        self,
+        user_account_pubkey: Pubkey,
+        user_account: UserAccount,
+        filler_pubkey: Optional[Pubkey] = None,
+    ) -> Signature:
+        tx_sig_and_slot = await self.send_ixs(
+            self.get_force_cancel_orders_ix(
+                user_account_pubkey, user_account, filler_pubkey
+            )
+        )
+
+        return tx_sig_and_slot.tx_sig
+
+    def get_force_cancel_orders_ix(
+        self,
+        user_account_pubkey: Pubkey,
+        user_account: UserAccount,
+        filler_pubkey: Optional[Pubkey] = None,
+    ):
+        filler = filler_pubkey or self.get_user_account_public_key()
+
+        remaining_accounts = self.get_remaining_accounts(
+            user_accounts=[user_account],
+            writable_spot_market_indexes=[QUOTE_SPOT_MARKET_INDEX],
+        )
+
+        return self.program.instruction["force_cancel_orders"](
+            ctx=Context(
+                accounts={
+                    "state": self.get_state_public_key(),
+                    "filler": filler,
+                    "user": user_account_pubkey,
+                    "authority": self.authority,
+                },
+                remaining_accounts=remaining_accounts,
+            )
         )
 
     @deprecated
