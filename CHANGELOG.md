@@ -66,6 +66,10 @@ Add `find_nodes_to_trigger()`  to `dlob.py`
 
 Add `get_slot()` to `user_map.py`
 
-## [0.7.18] - 2024-1025
+## [0.7.18] - 2024-1-25
 
 Minor tweaks to `UserMap`
+
+## [0.7.19] - 2024-1-29
+
+Add `FastTxSender`
