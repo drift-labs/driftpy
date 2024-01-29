@@ -40,6 +40,6 @@ class FastTxSender(StandardTxSender):
             await asyncio.sleep(self.blockhash_refresh_interval)
 
     async def fetch_latest_blockhash(self) -> Hash:
-        if self.recent_blockhash is not None:
-            return self.recent_blockhash
-        return await super().get_blockhash()
+        if self.recent_blockhash is None:
+            await self.subscribe_blockhash()
+        return self.recent_blockhash
