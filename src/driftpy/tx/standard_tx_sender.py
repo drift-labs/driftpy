@@ -33,13 +33,16 @@ class StandardTxSender(TxSender):
             await self.connection.get_latest_blockhash(self.blockhash_commitment)
         ).value.blockhash
 
+    async def fetch_latest_blockhash(self) -> Hash:
+        return await self.get_blockhash()
+
     async def get_legacy_tx(
         self,
         ixs: Sequence[Instruction],
         payer: Keypair,
         additional_signers: Optional[Sequence[Keypair]],
     ) -> Transaction:
-        latest_blockhash = await self.get_blockhash()
+        latest_blockhash = await self.fetch_latest_blockhash()
         tx = Transaction(
             instructions=ixs,
             recent_blockhash=latest_blockhash,
@@ -60,7 +63,7 @@ class StandardTxSender(TxSender):
         lookup_tables: Sequence[AddressLookupTableAccount],
         additional_signers: Optional[Sequence[Keypair]],
     ) -> VersionedTransaction:
-        latest_blockhash = await self.get_blockhash()
+        latest_blockhash = await self.fetch_latest_blockhash()
         msg = MessageV0.try_compile(
             payer.pubkey(), ixs, lookup_tables, latest_blockhash
         )
