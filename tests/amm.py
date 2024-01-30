@@ -33,7 +33,7 @@ async def test_orderbook_l2_gen_no_top_of_book_quote_amounts_10_num_orders_low_l
         confidence=1,
         twap=1,
         twap_confidence=1,
-        has_sufficient_number_of_datapoints=True,
+        has_sufficient_number_of_data_points=True,
     )
 
     mock_1.amm.historical_oracle_data.last_oracle_price = int(18.5535 * PRICE_PRECISION)
@@ -94,7 +94,7 @@ async def test_orderbook_l2_gen_no_top_of_book_quote_amounts_10_num_orders():
         confidence=1,
         twap=1,
         twap_confidence=1,
-        has_sufficient_number_of_datapoints=True,
+        has_sufficient_number_of_data_points=True,
     )
     mock_1.amm.historical_oracle_data.last_oracle_price = int(18.5535 * PRICE_PRECISION)
 
@@ -147,7 +147,7 @@ async def test_orderbook_l2_gen_4_top_of_book_quote_amounts_10_num_orders():
         confidence=1,
         twap=1,
         twap_confidence=1,
-        has_sufficient_number_of_datapoints=True,
+        has_sufficient_number_of_data_points=True,
     )
     mock_market1.amm.historical_oracle_data.last_oracle_price = int(
         18.5535 * PRICE_PRECISION
@@ -213,7 +213,7 @@ async def test_orderbook_l2_gen_4_top_quote_amounts_10_orders_low_bid_liquidity(
         confidence=1,
         twap=1,
         twap_confidence=1,
-        has_sufficient_number_of_datapoints=True,
+        has_sufficient_number_of_data_points=True,
     )
     mock_market1.amm.historical_oracle_data.last_oracle_price = int(
         18.5535 * PRICE_PRECISION
@@ -281,7 +281,7 @@ async def test_orderbook_l2_gen_4_top_quote_amounts_10_orders_low_ask_liquidity(
         confidence=1,
         twap=1,
         twap_confidence=1,
-        has_sufficient_number_of_datapoints=True,
+        has_sufficient_number_of_data_points=True,
     )
     mock_market1.amm.historical_oracle_data.last_oracle_price = int(
         18.5535 * PRICE_PRECISION
@@ -349,7 +349,7 @@ async def test_orderbook_l2_gen_no_top_of_book_quote_amounts_10_orders_no_liquid
         confidence=1,
         twap=1,
         twap_confidence=1,
-        has_sufficient_number_of_datapoints=True,
+        has_sufficient_number_of_data_points=True,
     )
     mock_market1.amm.historical_oracle_data.last_oracle_price = int(
         18.5535 * PRICE_PRECISION

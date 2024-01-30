@@ -940,7 +940,7 @@ class OraclePriceData:
     confidence: int
     twap: int
     twap_confidence: int
-    has_sufficient_number_of_datapoints: bool
+    has_sufficient_number_of_data_points: bool
 
 
 @dataclass
