@@ -73,3 +73,27 @@ Minor tweaks to `UserMap`
 ## [0.7.19] - 2024-1-29
 
 Add `FastTxSender`
+
+## [0.7.20] - 2024-1-30
+
+Add `determine_maker_and_taker` and `find_crossing_resting_limit_orders` to `DLOB`
+
+Fix bugs with lambda functions in `DLOB`
+
+Add `get_settle_perp_ixs`, `get_fill_perp_order_ix` `get_revert_fill_ix`,  `get_trigger_order_ix`, `force_cancel_orders`, and `get_force_cancel_orders_ix` to `DriftClient`
+
+Fix bugs in `amm.py`
+
+Fix bugs in `exchange_status.py`
+
+Update funding calculations in `funding.py/calculate_all_estimated_funding_rate`
+
+Increase RPC timeout in `PriorityFeeSubscriber.load()` from 5 to 20 seconds
+
+Increase RPC timeout in `UserMap.sync()` from 10 to 30 seconds
+
+Fix bug with python versions > 3.10 with mutable default struct fields in `types.py/OrderParams`
+
+Several semantics changes throughout the codebase
+
+
