@@ -2,19 +2,26 @@ import os
 import json
 import copy
 
+from borsh_construct.enum import _rust_enum
+from sumtypes import constructor
+
 from anchorpy import Wallet
-from anchorpy import Provider
-from solana.keypair import Keypair
+
+from solders.keypair import Keypair  # type: ignore
+
 from solana.rpc.async_api import AsyncClient
 
+from driftpy.account_subscription_config import AccountSubscriptionConfig
 from driftpy.constants.config import configs
-from driftpy.types import *
-
-# MarketType, OrderType, OrderParams, PositionDirection, OrderTriggerCondition
-
+from driftpy.types import (
+    MarketType,
+    OrderType,
+    OrderParams,
+    PositionDirection,
+    OrderTriggerCondition,
+)
 from driftpy.drift_client import DriftClient
 from driftpy.constants.numeric_constants import BASE_PRECISION, PRICE_PRECISION
-from borsh_construct.enum import _rust_enum
 
 
 @_rust_enum
@@ -63,8 +70,12 @@ async def main(
     config = configs[env]
     wallet = Wallet(kp)
     connection = AsyncClient(url)
-    provider = Provider(connection, wallet)
-    drift_acct = DriftClient.from_config(config, provider)
+    drift_acct = DriftClient(
+        connection,
+        wallet,
+        config,
+        account_subscription=AccountSubscriptionConfig("websocket"),
+    )
 
     is_perp = "PERP" in market_name.upper()
     market_type = MarketType.Perp() if is_perp else MarketType.Spot()

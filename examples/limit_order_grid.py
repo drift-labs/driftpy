@@ -1,27 +1,29 @@
 import os
 import json
-import copy
+import time
 import sys
+
 
 sys.path.append("../src/")
 
+from borsh_construct.enum import _rust_enum
+
+from sumtypes import constructor
+
 from anchorpy import Wallet
-from anchorpy import Provider
-from solana.keypair import Keypair
+
+from solders.keypair import Keypair  # type: ignore
+
 from solana.rpc.async_api import AsyncClient
 
 from driftpy.constants.config import configs
-from driftpy.types import *
-
-# MarketType, OrderType, OrderParams, PositionDirection, OrderTriggerCondition
+from driftpy.types import MarketType, OrderType, OrderParams, PositionDirection
+from driftpy.account_subscription_config import AccountSubscriptionConfig
 from driftpy.accounts import get_perp_market_account, get_spot_market_account
 from driftpy.accounts.oracle import get_oracle_price_data_and_slot
 from driftpy.math.spot_market import get_signed_token_amount, get_token_amount
 from driftpy.drift_client import DriftClient
-from driftpy.drift_user import DriftUser
 from driftpy.constants.numeric_constants import BASE_PRECISION, PRICE_PRECISION
-from borsh_construct.enum import _rust_enum
-import time
 
 
 @_rust_enum
@@ -108,11 +110,13 @@ async def main(
     config = configs[env]
     wallet = Wallet(kp)
     connection = AsyncClient(url)
-    provider = Provider(connection, wallet)
-    drift_acct = DriftClient.from_config(
-        config, provider, authority=PublicKey(authority)
+    drift_acct = DriftClient(
+        connection,
+        wallet,
+        config,
+        account_subscription=AccountSubscriptionConfig("websocket"),
     )
-    drift_user = User(drift_acct)
+    drift_user = drift_acct.get_user()
     is_perp = "PERP" in market_name.upper()
     market_type = MarketType.Perp() if is_perp else MarketType.Spot()
 
@@ -158,7 +162,7 @@ async def main(
                 market.historical_oracle_data.last_oracle_price / PRICE_PRECISION
             )
 
-        spot_pos = await drift_user.get_spot_position(market_index)
+        spot_pos = drift_user.get_spot_position(market_index)
         tokens = get_token_amount(
             spot_pos.scaled_balance, market, spot_pos.balance_type
         )
