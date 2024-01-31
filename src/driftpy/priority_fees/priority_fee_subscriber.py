@@ -52,7 +52,7 @@ class PriorityFeeSubscriber:
             headers={"content-encoding": "gzip"},
         )
 
-        resp = await asyncio.wait_for(post, timeout=5)
+        resp = await asyncio.wait_for(post, timeout=20)
 
         parsed_resp = jsonrpcclient.parse(resp.json())
 

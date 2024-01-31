@@ -473,7 +473,7 @@ def calculate_amm_reserves_after_swap(
 def get_swap_direction(
     input_asset_type: AssetType, position_direction: PositionDirection
 ) -> SwapDirection:
-    if is_variant(position_direction, "Long" and is_variant(input_asset_type, "BASE")):
+    if is_variant(position_direction, "Long") and is_variant(input_asset_type, "BASE"):
         return SwapDirection.Remove()
 
     if is_variant(position_direction, "Short") and is_variant(
@@ -481,7 +481,7 @@ def get_swap_direction(
     ):
         return SwapDirection.Remove()
 
-    return SwapDirection.Add(0)
+    return SwapDirection.Add()
 
 
 def calculate_spread_reserves(amm: AMM, oracle_price_data: OraclePriceData, now=None):
@@ -675,6 +675,9 @@ def calculate_max_base_asset_amount_to_trade(
     new_base_asset_reserve_squared = (
         ((invariant * PRICE_PRECISION) * amm.peg_multiplier) // limit_price
     ) // PEG_PRECISION
+
+    if new_base_asset_reserve_squared < 0:
+        return (0, PositionDirection.Long())
 
     new_base_asset_reserve = math.sqrt(new_base_asset_reserve_squared)
 

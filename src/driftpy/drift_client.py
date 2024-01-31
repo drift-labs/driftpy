@@ -7,6 +7,7 @@ from solders.transaction import TransactionVersion, Legacy
 from solders.instruction import Instruction
 from solders.system_program import ID
 from solders.sysvar import RENT
+from solders.signature import Signature
 from solders.address_lookup_table_account import AddressLookupTableAccount
 from solana.rpc.async_api import AsyncClient
 from solana.rpc.types import TxOpts
@@ -1613,6 +1614,17 @@ class DriftClient:
 
         return instruction
 
+    def get_settle_pnl_ixs(
+        self, users: dict[Pubkey, UserAccount], market_indexes: list[int]
+    ) -> list[Instruction]:
+        ixs: list[Instruction] = []
+        for pubkey, account in users.items():
+            for market_index in market_indexes:
+                ix = self.get_settle_pnl_ix(pubkey, account, market_index)
+                ixs.append(ix)
+
+        return ixs
+
     async def resolve_spot_bankruptcy(
         self,
         user_authority: Pubkey,
@@ -2038,6 +2050,181 @@ class DriftClient:
                     "system_program": ID,
                 }
             ),
+        )
+
+    async def get_fill_perp_order_ix(
+        self,
+        user_account_pubkey: Pubkey,
+        user_account: UserAccount,
+        order: Order,
+        maker_info: Optional[Union[MakerInfo, list[MakerInfo]]],
+        referrer_info: Optional[ReferrerInfo],
+    ) -> Instruction:
+        user_stats_pubkey = get_user_stats_account_public_key(
+            self.program.program_id, user_account.authority
+        )
+
+        filler_pubkey = self.get_user_account_public_key()
+        filler_stats_pubkey = self.get_user_stats_public_key()
+
+        market_index = (
+            order.market_index
+            if order
+            else next(
+                (
+                    order.market_index
+                    for order in user_account.orders
+                    if order.order_id == user_account.next_order_id - 1
+                ),
+                None,
+            )
+        )
+
+        maker_info = (
+            maker_info
+            if isinstance(maker_info, list)
+            else [maker_info]
+            if maker_info
+            else []
+        )
+
+        user_accounts = [user_account]
+        for maker in maker_info:
+            user_accounts.append(maker.maker_user_account)
+
+        remaining_accounts = self.get_remaining_accounts(user_accounts, [market_index])
+
+        for maker in maker_info:
+            remaining_accounts.append(
+                AccountMeta(pubkey=maker.maker, is_writable=True, is_signer=False)
+            )
+            remaining_accounts.append(
+                AccountMeta(pubkey=maker.maker_stats, is_writable=True, is_signer=False)
+            )
+
+        if referrer_info:
+            referrer_is_maker = any(
+                maker.maker == referrer_info.referrer for maker in maker_info
+            )
+            if not referrer_is_maker:
+                remaining_accounts.append(
+                    AccountMeta(
+                        pubkey=referrer_info.referrer, is_writable=True, is_signer=False
+                    )
+                )
+                remaining_accounts.append(
+                    AccountMeta(
+                        pubkey=referrer_info.referrer_stats,
+                        is_writable=True,
+                        is_signer=False,
+                    )
+                )
+
+        order_id = order.order_id
+        return self.program.instruction["fill_perp_order"](
+            order_id,
+            None,
+            ctx=Context(
+                accounts={
+                    "state": self.get_state_public_key(),
+                    "filler": filler_pubkey,
+                    "filler_stats": filler_stats_pubkey,
+                    "user": user_account_pubkey,
+                    "user_stats": user_stats_pubkey,
+                    "authority": self.authority,
+                },
+                remaining_accounts=remaining_accounts,
+            ),
+        )
+
+    def get_revert_fill_ix(self):
+        filler_pubkey = self.get_user_account_public_key()
+        filler_stats_pubkey = self.get_user_stats_public_key()
+
+        return self.program.instruction["revert_fill"](
+            ctx=Context(
+                accounts={
+                    "state": self.get_state_public_key(),
+                    "filler": filler_pubkey,
+                    "filler_stats": filler_stats_pubkey,
+                    "authority": self.authority,
+                }
+            )
+        )
+
+    def get_trigger_order_ix(
+        self,
+        user_account_pubkey: Pubkey,
+        user_account: UserAccount,
+        order: Order,
+        filler_pubkey: Optional[Pubkey] = None,
+    ):
+        filler = filler_pubkey or self.get_user_account_public_key()
+
+        if is_variant(order.market_type, "Perp"):
+            remaining_accounts = self.get_remaining_accounts(
+                user_accounts=[user_account],
+                writable_perp_market_indexes=[order.market_index],
+            )
+        else:
+            remaining_accounts = self.get_remaining_accounts(
+                user_accounts=[user_account],
+                writable_spot_market_indexes=[
+                    order.market_index,
+                    QUOTE_SPOT_MARKET_INDEX,
+                ],
+            )
+
+        return self.program.instruction["trigger_order"](
+            order.order_id,
+            ctx=Context(
+                accounts={
+                    "state": self.get_state_public_key(),
+                    "filler": filler,
+                    "user": user_account_pubkey,
+                    "authority": self.authority,
+                },
+                remaining_accounts=remaining_accounts,
+            ),
+        )
+
+    async def force_cancel_orders(
+        self,
+        user_account_pubkey: Pubkey,
+        user_account: UserAccount,
+        filler_pubkey: Optional[Pubkey] = None,
+    ) -> Signature:
+        tx_sig_and_slot = await self.send_ixs(
+            self.get_force_cancel_orders_ix(
+                user_account_pubkey, user_account, filler_pubkey
+            )
+        )
+
+        return tx_sig_and_slot.tx_sig
+
+    def get_force_cancel_orders_ix(
+        self,
+        user_account_pubkey: Pubkey,
+        user_account: UserAccount,
+        filler_pubkey: Optional[Pubkey] = None,
+    ):
+        filler = filler_pubkey or self.get_user_account_public_key()
+
+        remaining_accounts = self.get_remaining_accounts(
+            user_accounts=[user_account],
+            writable_spot_market_indexes=[QUOTE_SPOT_MARKET_INDEX],
+        )
+
+        return self.program.instruction["force_cancel_orders"](
+            ctx=Context(
+                accounts={
+                    "state": self.get_state_public_key(),
+                    "filler": filler,
+                    "user": user_account_pubkey,
+                    "authority": self.authority,
+                },
+                remaining_accounts=remaining_accounts,
+            )
         )
 
     @deprecated

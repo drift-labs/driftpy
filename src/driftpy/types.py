@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from solders.pubkey import Pubkey
 from borsh_construct.enum import _rust_enum
 from sumtypes import constructor
@@ -239,8 +239,8 @@ class ContractTier:
     A = constructor()
     B = constructor()
     C = constructor()
-    SPECULATIVE = constructor()
-    ISOLATED = constructor()
+    Speculative = constructor()
+    Isolated = constructor()
 
 
 @_rust_enum
@@ -347,11 +347,13 @@ class OrderParams:
     user_order_id: int = 0
     price: int = 0
     reduce_only: bool = False
-    post_only: PostOnlyParams = PostOnlyParams.NONE()
+    post_only: PostOnlyParams = field(default_factory=PostOnlyParams.NONE)
     immediate_or_cancel: bool = False
     max_ts: Optional[int] = None
     trigger_price: Optional[int] = None
-    trigger_condition: OrderTriggerCondition = OrderTriggerCondition.Above()
+    trigger_condition: OrderTriggerCondition = field(
+        default_factory=OrderTriggerCondition.Above
+    )
     oracle_price_offset: Optional[int] = None
     auction_duration: Optional[int] = None
     auction_start_price: Optional[int] = None
@@ -938,7 +940,7 @@ class OraclePriceData:
     confidence: int
     twap: int
     twap_confidence: int
-    has_sufficient_number_of_datapoints: bool
+    has_sufficient_number_of_data_points: bool
 
 
 @dataclass

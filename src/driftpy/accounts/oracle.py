@@ -91,7 +91,7 @@ def decode_pyth_price_info(
         confidence=convert_pyth_price(pyth_price_info.confidence_interval, scale),
         twap=convert_pyth_price(twap, scale),
         twap_confidence=convert_pyth_price(twac, scale),
-        has_sufficient_number_of_datapoints=True,
+        has_sufficient_number_of_data_points=True,
     )
 
 

@@ -1,5 +1,5 @@
 import copy
-from typing import Callable, Dict, Generator, List, Optional, Union
+from typing import Callable, Dict, Generator, List, Optional, Tuple, Union
 from solders.pubkey import Pubkey
 
 from driftpy.constants.numeric_constants import (
@@ -825,9 +825,8 @@ class DLOB:
         taking_order_generator = self.get_taking_asks(
             market_index, market_type, slot, oracle_price_data
         )
-        maker_node_generator_fn = lambda: self.get_resting_limit_bids(
-            market_index, slot, market_type, oracle_price_data
-        )
+        maker_node_generator_fn = self.get_resting_limit_bids
+
         does_cross = (
             lambda taker_price, maker_price: (
                 taker_price is None or taker_price <= maker_price
@@ -872,9 +871,8 @@ class DLOB:
         taking_order_generator = self.get_taking_bids(
             market_index, market_type, slot, oracle_price_data
         )
-        maker_node_generator_fn = lambda: self.get_resting_limit_asks(
-            market_index, slot, market_type, oracle_price_data
-        )
+        maker_node_generator_fn = self.get_resting_limit_asks
+
         does_cross = (
             lambda taker_price, maker_price: (
                 taker_price is None or taker_price >= maker_price
@@ -914,6 +912,86 @@ class DLOB:
                 min_auction_duration,
             )
             nodes_to_fill.extend(taking_bids_crossing_fallback)
+
+        return nodes_to_fill
+
+    def determine_maker_and_taker(
+        self, ask: DLOBNode, bid: DLOBNode
+    ) -> Union[Tuple[DLOBNode, DLOBNode], None]:
+        ask_slot = ask.order.slot + ask.order.auction_duration
+        bid_slot = bid.order.slot + bid.order.auction_duration
+
+        if bid.order.post_only and ask.order.post_only:
+            return None
+        elif bid.order.post_only:
+            return (ask, bid)
+        elif ask.order.post_only:
+            return (bid, ask)
+        elif ask_slot <= bid_slot:
+            return (bid, ask)
+        else:
+            return (ask, bid)
+
+    def find_crossing_resting_limit_orders(
+        self,
+        market_index: int,
+        slot: int,
+        market_type: MarketType,
+        oracle_price_data: OraclePriceData,
+    ) -> List[NodeToFill]:
+        nodes_to_fill: List[NodeToFill] = []
+
+        for ask in self.get_resting_limit_asks(
+            market_index, slot, market_type, oracle_price_data
+        ):
+            bid_generator = self.get_resting_limit_bids(
+                market_index, slot, market_type, oracle_price_data
+            )
+
+            for bid in bid_generator:
+                bid_price = bid.get_price(oracle_price_data, slot)
+                ask_price = ask.get_price(oracle_price_data, slot)
+
+                # don't cross
+                if bid_price < ask_price:
+                    break
+
+                bid_order = bid.order
+                ask_order = ask.order
+
+                # can't match from same user
+                if bid.user_account == ask.user_account:
+                    break
+
+                maker_and_taker = self.determine_maker_and_taker(ask, bid)
+
+                # unable to match maker and taker due to post only or slot
+                if not maker_and_taker:
+                    continue
+
+                taker, maker = maker_and_taker
+
+                bid_base_remaining = (
+                    bid_order.base_asset_amount - bid_order.base_asset_amount_filled
+                )
+                ask_base_remaining = (
+                    ask_order.base_asset_amount - ask_order.base_asset_amount_filled
+                )
+
+                base_filled = min(bid_base_remaining, ask_base_remaining)
+
+                new_bid = copy.deepcopy(bid_order)
+                new_bid.base_asset_amount_filled += base_filled
+                self.get_list_for_order(new_bid, slot).update(new_bid, bid.user_account)
+
+                new_ask = copy.deepcopy(ask_order)
+                new_ask.base_asset_amount_filled += base_filled
+                self.get_list_for_order(new_ask, slot).update(new_ask, ask.user_account)
+
+                nodes_to_fill.append(NodeToFill(taker, [maker]))
+
+                if new_ask.base_asset_amount == new_ask.base_asset_amount_filled:
+                    break
 
         return nodes_to_fill
 
@@ -1014,7 +1092,7 @@ class DLOB:
 
         for ask_generator in ask_generators:
             for ask in ask_generator:
-                if is_order_expired(bid.order, ts, True):
+                if is_order_expired(ask.order, ts, True):
                     nodes_to_fill.append(NodeToFill(ask, []))
 
         return nodes_to_fill
@@ -1040,9 +1118,9 @@ class DLOB:
                         node_to_fill.node, []
                     )
 
-                if node_to_fill.maker_nodes is not None:
-                    merged_nodes_to_fill[node_signature].maker_nodes.extend(
-                        node_to_fill.maker_nodes
+                if node_to_fill.maker is not None:
+                    merged_nodes_to_fill[node_signature].maker.extend(
+                        node_to_fill.maker
                     )
 
         merge_nodes_to_fill_helper(resting_limit_order_nodes_to_fill)
