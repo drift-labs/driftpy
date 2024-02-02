@@ -107,4 +107,18 @@ mainnet_spot_market_configs: list[SpotMarketConfig] = [
         oracle_source=OracleSource.Pyth(),
         mint=Pubkey.from_string("jtojtomepa8beP8AuQc6eXt5FriJwfFMwQx2v2f9mCL"),
     ),
+    SpotMarketConfig(
+        symbol="WIF",
+        market_index=10,
+        oracle=Pubkey.from_string("6ABgrEZk8urs6kJ1JNdC1sspH5zKXRqxy8sg3ZG2cQps"),
+        oracle_source=OracleSource.Pyth(),
+        mint=Pubkey.from_string("EKpQGSJtjMFqKZ9KQanSqYXRcF8fBopzLHYxdM65zcjm"),
+    ),
+    SpotMarketConfig(
+        symbol="JUP",
+        market_index=11,
+        oracle=Pubkey.from_string("g6eRCbboSwK4tSWngn773RCMexr1APQr4uA9bGZBYfo"),
+        oracle_source=OracleSource.Pyth(),
+        mint=Pubkey.from_string("JUPyiwrYJFskUPiHa7hkeR8VUtAeFoSYbKedZNsDvCN"),
+    ),
 ]
