@@ -96,4 +96,8 @@ Fix bug with python versions > 3.10 with mutable default struct fields in `types
 
 Several semantics changes throughout the codebase
 
+## [0.7.21] - 2024-2-1
+
+Fix blocking bug in `FastTxSender`
+
 

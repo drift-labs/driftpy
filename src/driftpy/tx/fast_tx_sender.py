@@ -41,5 +41,6 @@ class FastTxSender(StandardTxSender):
 
     async def fetch_latest_blockhash(self) -> Hash:
         if self.recent_blockhash is None:
-            await self.subscribe_blockhash()
+            asyncio.create_task(self.subscribe_blockhash())
+            return await super().get_blockhash()
         return self.recent_blockhash
