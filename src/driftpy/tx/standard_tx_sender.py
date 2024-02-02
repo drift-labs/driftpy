@@ -64,6 +64,7 @@ class StandardTxSender(TxSender):
         additional_signers: Optional[Sequence[Keypair]],
     ) -> VersionedTransaction:
         latest_blockhash = await self.fetch_latest_blockhash()
+
         msg = MessageV0.try_compile(
             payer.pubkey(), ixs, lookup_tables, latest_blockhash
         )
