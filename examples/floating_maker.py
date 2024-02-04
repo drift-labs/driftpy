@@ -19,16 +19,10 @@ from driftpy.types import (
     OrderParams,
     PositionDirection,
     OrderTriggerCondition,
+    PostOnlyParams,
 )
 from driftpy.drift_client import DriftClient
 from driftpy.constants.numeric_constants import BASE_PRECISION, PRICE_PRECISION
-
-
-@_rust_enum
-class PostOnlyParams:
-    NONE = constructor()
-    TRY_POST_ONLY = constructor()
-    MUST_POST_ONLY = constructor()
 
 
 def order_print(orders: list[OrderParams], market_str=None):
@@ -65,8 +59,8 @@ async def main(
 ):
     with open(os.path.expanduser(keypath), "r") as f:
         secret = json.load(f)
-    kp = Keypair.from_secret_key(bytes(secret))
-    print("using public key:", kp.public_key, "subaccount=", subaccount_id)
+    kp = Keypair.from_bytes(bytes(secret))
+    print("using public key:", kp.pubkey(), "subaccount=", subaccount_id)
     config = configs[env]
     wallet = Wallet(kp)
     connection = AsyncClient(url)
@@ -81,12 +75,12 @@ async def main(
     market_type = MarketType.Perp() if is_perp else MarketType.Spot()
 
     market_index = -1
-    for perp_market_config in config.markets:
+    for perp_market_config in config.perp_markets:
         if perp_market_config.symbol == market_name:
             market_index = perp_market_config.market_index
-    for spot_market_config in config.banks:
+    for spot_market_config in config.spot_markets:
         if spot_market_config.symbol == market_name:
-            market_index = spot_market_config.bank_index
+            market_index = spot_market_config.market_index
 
     default_order_params = OrderParams(
         order_type=OrderType.Limit(),

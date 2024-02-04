@@ -52,8 +52,8 @@ async def main(
 ):
     with open(keypath, "r") as f:
         secret = json.load(f)
-    kp = Keypair.from_secret_key(bytes(secret))
-    print("using public key:", kp.public_key)
+    kp = Keypair.from_bytes(bytes(secret))
+    print("using public key:", kp.pubkey())
     print("spot market:", spot_market_index)
 
     config = configs[env]
