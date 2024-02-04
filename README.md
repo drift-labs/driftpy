@@ -69,7 +69,7 @@ Updating public docs: `poetry run mkdocs gh-deploy --force`
 
 - `python new_release.py`
 - Create a new release at https://github.com/drift-labs/driftpy/releases.
-  - (The CI process will upload a new version of the package to PyPI.)
+  - (The CI process will upload a new version of the package to [PyPI](https://pypi.org/project/driftpy/))
 
 # Development
 
