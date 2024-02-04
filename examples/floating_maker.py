@@ -12,7 +12,7 @@ from solders.keypair import Keypair  # type: ignore
 from solana.rpc.async_api import AsyncClient
 
 from driftpy.account_subscription_config import AccountSubscriptionConfig
-from driftpy.constants.config import configs
+from driftpy.constants.config import configs, get_markets_and_oracles
 from driftpy.types import (
     MarketType,
     OrderType,
@@ -63,17 +63,8 @@ async def main(
     print("using public key:", kp.pubkey(), "subaccount=", subaccount_id)
     config = configs[env]
     wallet = Wallet(kp)
+
     connection = AsyncClient(url)
-    drift_acct = DriftClient(
-        connection,
-        wallet,
-        config,
-        account_subscription=AccountSubscriptionConfig("websocket"),
-    )
-
-    is_perp = "PERP" in market_name.upper()
-    market_type = MarketType.Perp() if is_perp else MarketType.Spot()
-
     market_index = -1
     for perp_market_config in config.perp_markets:
         if perp_market_config.symbol == market_name:
@@ -81,6 +72,35 @@ async def main(
     for spot_market_config in config.spot_markets:
         if spot_market_config.symbol == market_name:
             market_index = spot_market_config.market_index
+
+    if market_index == -1:
+        print("INVALID MARKET")
+        return
+    markets = [market_index]
+
+    is_perp = "PERP" in market_name.upper()
+    market_type = MarketType.Perp() if is_perp else MarketType.Spot()
+
+    (
+        spot_market_oracle_infos,
+        perp_market_oracle_infos,
+        spot_market_indexes,
+    ) = get_markets_and_oracles(perp_markets=markets)
+    oracle_infos = spot_market_oracle_infos + perp_market_oracle_infos
+    drift_client = DriftClient(
+        connection,
+        wallet,
+        str(env),
+        perp_market_indexes=markets,
+        spot_market_indexes=spot_market_indexes,
+        oracle_infos=oracle_infos,
+        account_subscription=AccountSubscriptionConfig("demo"),
+    )
+
+    await drift_client.add_user(subaccount_id)
+    await drift_client.subscribe()
+
+    drift_user = drift_client.get_user(subaccount_id)
 
     default_order_params = OrderParams(
         order_type=OrderType.Limit(),
@@ -116,18 +136,18 @@ async def main(
     spot_orders_ix = []
     if is_perp:
         perp_orders_ix = [
-            await drift_acct.get_place_perp_order_ix(bid_order_params, subaccount_id),
-            await drift_acct.get_place_perp_order_ix(ask_order_params, subaccount_id),
+            drift_client.get_place_perp_order_ix(bid_order_params, subaccount_id),
+            drift_client.get_place_perp_order_ix(ask_order_params, subaccount_id),
         ]
     else:
         spot_orders_ix = [
-            await drift_acct.get_place_spot_order_ix(bid_order_params, subaccount_id),
-            await drift_acct.get_place_spot_order_ix(ask_order_params, subaccount_id),
+            drift_client.get_place_spot_order_ix(bid_order_params, subaccount_id),
+            drift_client.get_place_spot_order_ix(ask_order_params, subaccount_id),
         ]
 
-    await drift_acct.send_ixs(
+    await drift_client.send_ixs(
         [
-            await drift_acct.get_cancel_orders_ix(sub_account_id=subaccount_id),
+            drift_client.get_cancel_orders_ix(sub_account_id=subaccount_id),
         ]
         + perp_orders_ix
         + spot_orders_ix
@@ -141,7 +161,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--keypath", type=str, required=False, default=os.environ.get("ANCHOR_WALLET")
     )
-    parser.add_argument("--env", type=str, default="devnet")
+    parser.add_argument("--env", type=str, default="mainnet")
     parser.add_argument("--amount", type=float, required=True)
     parser.add_argument("--market", type=str, required=True)
     parser.add_argument("--subaccount", type=int, required=False, default=0)

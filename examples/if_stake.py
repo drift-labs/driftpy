@@ -56,14 +56,13 @@ async def main(
     print("using public key:", kp.pubkey())
     print("spot market:", spot_market_index)
 
-    config = configs[env]
     wallet = Wallet(kp)
     connection = AsyncClient(url)
 
     dc = DriftClient(
         connection,
         wallet,
-        config,
+        str(env),
         account_subscription=AccountSubscriptionConfig("websocket"),
     )
 

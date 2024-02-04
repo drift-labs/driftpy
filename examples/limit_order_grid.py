@@ -115,6 +115,7 @@ async def main(
 
     is_perp = "PERP" in market_name.upper()
     market_type = MarketType.Perp() if is_perp else MarketType.Spot()
+
     (
         spot_market_oracle_infos,
         perp_market_oracle_infos,
