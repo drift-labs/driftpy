@@ -1,19 +1,27 @@
 from driftpy.math.spot_market import *
-from driftpy.types import OraclePriceData
+from driftpy.types import OraclePriceData, is_variant
 from driftpy.constants.numeric_constants import *
 from driftpy.math.amm import calculate_amm_reserves_after_swap, get_swap_direction
 
 
 def calculate_base_asset_value_with_oracle(
-    perp_position: PerpPosition, oracle_data: OraclePriceData
+    market: PerpMarketAccount,
+    perp_position: PerpPosition,
+    oracle_price_data: OraclePriceData,
+    include_open_orders: bool = False,
 ):
-    return (
-        abs(perp_position.base_asset_amount)
-        * oracle_data.price
-        * QUOTE_PRECISION
-        / AMM_RESERVE_PRECISION
-        / PRICE_PRECISION
+    price = oracle_price_data.price
+
+    if is_variant(market.status, "Settlement"):
+        price = market.expiry_price
+
+    baa = (
+        calculate_worst_case_base_asset_amount(perp_position)
+        if include_open_orders
+        else perp_position.base_asset_amount
     )
+
+    return (abs(baa) * price) // AMM_RESERVE_PRECISION
 
 
 def calculate_position_funding_pnl(
@@ -48,7 +56,9 @@ def calculate_position_pnl_with_oracle(
     if perp_position.base_asset_amount == 0:
         return perp_position.quote_asset_amount
 
-    base_value = calculate_base_asset_value_with_oracle(perp_position, oracle_data)
+    base_value = calculate_base_asset_value_with_oracle(
+        market, perp_position, oracle_data
+    )
     base_asset_sign = -1 if perp_position.base_asset_amount < 0 else 1
     pnl = base_value * base_asset_sign + perp_position.quote_asset_amount
 
@@ -116,23 +126,26 @@ def calculate_base_asset_value(
 
 
 def calculate_position_pnl(
-    market: PerpMarketAccount, market_position: PerpPosition, with_funding=False
+    market: PerpMarketAccount,
+    perp_position: PerpPosition,
+    oracle_price_data: OraclePriceData,
+    with_funding: bool = False,
 ):
-    pnl = 0.0
+    if perp_position.base_asset_amount == 0:
+        return perp_position.quote_asset_amount
 
-    if market_position.base_asset_amount == 0:
-        return pnl
+    base_asset_value = calculate_base_asset_value_with_oracle(
+        market, perp_position, oracle_price_data
+    )
 
-    base_asset_value = calculate_base_asset_value(market, market_position)
+    sign = -1 if perp_position.base_asset_amount < 0 else 1
 
-    if market_position.base_asset_amount > 0:
-        pnl = base_asset_value - market_position.quote_asset_amount
-    else:
-        pnl = market_position.quote_asset_amount - base_asset_value
+    pnl = base_asset_value * sign + perp_position.quote_asset_amount
 
     if with_funding:
-        funding_rate_pnl = 0.0
-        pnl += funding_rate_pnl / float(PRICE_TO_QUOTE_PRECISION_RATIO)
+        funding_rate_pnl = calculate_position_funding_pnl(market, perp_position)
+
+        pnl += funding_rate_pnl
 
     return pnl
 
