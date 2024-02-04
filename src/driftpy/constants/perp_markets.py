@@ -254,4 +254,18 @@ mainnet_perp_market_configs: list[PerpMarketConfig] = [
         oracle=Pubkey.from_string("Ax9ujW5B9oqcv59N8m6f1BpTBq2rGeGaBcpKjC5UYsXU"),
         oracle_source=OracleSource.Pyth(),
     ),
+    PerpMarketConfig(
+        symbol="WIF-PERP",
+        base_asset_symbol="WIF",
+        market_index=23,
+        oracle=Pubkey.from_string("6ABgrEZk8urs6kJ1JNdC1sspH5zKXRqxy8sg3ZG2cQps"),
+        oracle_source=OracleSource.Pyth(),
+    ),
+    PerpMarketConfig(
+        symbol="JUP-PERP",
+        base_asset_symbol="JUP",
+        market_index=24,
+        oracle=Pubkey.from_string("g6eRCbboSwK4tSWngn773RCMexr1APQr4uA9bGZBYfo"),
+        oracle_source=OracleSource.Pyth(),
+    ),
 ]
