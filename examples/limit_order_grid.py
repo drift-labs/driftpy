@@ -111,25 +111,15 @@ async def main(
     if market_index == -1:
         print("INVALID MARKET")
         return
-    markets = [market_index]
 
     is_perp = "PERP" in market_name.upper()
     market_type = MarketType.Perp() if is_perp else MarketType.Spot()
 
-    (
-        spot_market_oracle_infos,
-        perp_market_oracle_infos,
-        spot_market_indexes,
-    ) = get_markets_and_oracles(perp_markets=markets)
-    oracle_infos = spot_market_oracle_infos + perp_market_oracle_infos
     drift_client = DriftClient(
         connection,
         wallet,
         str(env),
-        perp_market_indexes=markets,
-        spot_market_indexes=spot_market_indexes,
-        oracle_infos=oracle_infos,
-        account_subscription=AccountSubscriptionConfig("demo"),
+        account_subscription=AccountSubscriptionConfig("websocket"),
     )
 
     await drift_client.add_user(subaccount_id)
@@ -270,9 +260,9 @@ if __name__ == "__main__":
             args.keypath = os.environ["ANCHOR_WALLET"]
 
     if args.env == "devnet":
-        url = "https://api.devnet.solana.com"
+        url = "https://devnet.helius-rpc.com/?api-key=3a1ca16d-e181-4755-9fe7-eac27579b48c"
     elif args.env == "mainnet":
-        url = "https://api.mainnet-beta.solana.com"
+        url = "https://mainnet.helius-rpc.com/?api-key=3a1ca16d-e181-4755-9fe7-eac27579b48c"
     else:
         raise NotImplementedError("only devnet/mainnet env supported")
     import asyncio
