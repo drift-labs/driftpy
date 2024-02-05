@@ -75,7 +75,6 @@ class DemoDriftClientAccountSubscriber(DriftClientAccountSubscriber):
             perp_markets.append(perp_market_and_slot)
 
         oracle_pubkeys = [oracle.pubkey for oracle in self.oracle_infos]
-
         oracle_accounts = await self.program.provider.connection.get_multiple_accounts(
             oracle_pubkeys
         )

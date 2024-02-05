@@ -1,23 +1,21 @@
 import sys
+import json
+import pprint
 
 sys.path.append("../src/")
 
-from driftpy.constants.config import configs
-from anchorpy import Provider
-import json
 from anchorpy import Wallet
+
 from solana.rpc.async_api import AsyncClient
+from solana.rpc import commitment
+
+from solders.keypair import Keypair  # type: ignore
+
+from driftpy.constants.config import configs
+from driftpy.constants.numeric_constants import AMM_RESERVE_PRECISION, QUOTE_PRECISION
 from driftpy.drift_client import DriftClient
 from driftpy.accounts import *
-from solana.keypair import Keypair
-
-# todo: airdrop udsc + init account for any kp
-# rn do it through UI
-from driftpy.drift_user import DriftUser
-from driftpy.constants.numeric_constants import AMM_RESERVE_PRECISION
-from solana.rpc import commitment
-import pprint
-from driftpy.constants.numeric_constants import QUOTE_PRECISION
+from driftpy.account_subscription_config import AccountSubscriptionConfig
 
 
 async def view_logs(sig: str, connection: AsyncClient):
@@ -48,10 +46,14 @@ async def main(
     config = configs[env]
     wallet = Wallet(kp)
     connection = AsyncClient(url)
-    provider = Provider(connection, wallet)
 
-    dc = DriftClient.from_config(config, provider)
-    drift_user = User(dc)
+    dc = DriftClient(
+        connection,
+        wallet,
+        config,
+        account_subscription=AccountSubscriptionConfig("websocket"),
+    )
+    drift_user = dc.get_user()
 
     total_collateral = await drift_user.get_total_collateral()
     print("total collateral:", total_collateral / QUOTE_PRECISION)
