@@ -8,6 +8,7 @@ from sumtypes import constructor
 from anchorpy import Wallet
 
 from solders.keypair import Keypair  # type: ignore
+from solders.pubkey import Pubkey  # type: ignore
 
 from solana.rpc.async_api import AsyncClient
 
@@ -85,10 +86,11 @@ async def main(
         connection,
         wallet,
         str(env),
+        authority=Pubkey.from_string("FetTyW8xAYfd33x4GMHoE7hTuEdWLj1fNnhJuyVMUGGa"),
         account_subscription=AccountSubscriptionConfig("websocket"),
     )
 
-    await drift_client.add_user(subaccount_id)
+    await drift_client.add_user(10)
     await drift_client.subscribe()
 
     default_order_params = OrderParams(
@@ -125,18 +127,18 @@ async def main(
     spot_orders_ix = []
     if is_perp:
         perp_orders_ix = [
-            drift_client.get_place_perp_order_ix(bid_order_params, subaccount_id),
-            drift_client.get_place_perp_order_ix(ask_order_params, subaccount_id),
+            drift_client.get_place_perp_order_ix(bid_order_params, 10),
+            drift_client.get_place_perp_order_ix(ask_order_params, 10),
         ]
     else:
         spot_orders_ix = [
-            drift_client.get_place_spot_order_ix(bid_order_params, subaccount_id),
-            drift_client.get_place_spot_order_ix(ask_order_params, subaccount_id),
+            drift_client.get_place_spot_order_ix(bid_order_params, 10),
+            drift_client.get_place_spot_order_ix(ask_order_params, 10),
         ]
 
     await drift_client.send_ixs(
         [
-            drift_client.get_cancel_orders_ix(sub_account_id=subaccount_id),
+            drift_client.get_cancel_orders_ix(sub_account_id=10),
         ]
         + perp_orders_ix
         + spot_orders_ix
