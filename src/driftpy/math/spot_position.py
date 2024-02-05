@@ -93,10 +93,8 @@ def get_worst_case_token_amounts(
         asks_simulation.free_collateral_contribution
         < bids_simulation.free_collateral_contribution
     ):
-        print("asks")
         return asks_simulation
     else:
-        print("bids")
         return bids_simulation
 
 
@@ -146,15 +144,12 @@ def simulate_order_fill(
     margin_category: MarginCategory,
     custom_margin_ratio: Optional[float] = None,
 ):
-    print(f"tokenao = {token_amount}")
-    print(f"tokenva = {token_value}")
     orders_value = get_token_value(
         -open_orders, spot_market.decimals, strict_oracle_price.max()
     )
     token_amount_after_fill = token_amount + open_orders
     token_value_after_fill = token_value - orders_value
-    print(f"tokena2o = {token_amount_after_fill}")
-    print(f"tokenva2 = {token_value_after_fill}")
+
     weight, weighted_token_value_after_fill = calculate_weighted_token_value(
         token_amount_after_fill,
         token_value_after_fill,

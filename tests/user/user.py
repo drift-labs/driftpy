@@ -8,6 +8,7 @@ from driftpy.math.perp_position import calculate_position_pnl
 from dlob_test_constants import mock_perp_markets, mock_spot_markets
 from driftpy.math.spot_position import get_worst_case_token_amounts
 from driftpy.oracles.strict_oracle_price import StrictOraclePrice
+from driftpy.types import SpotBalanceType
 from helpers import make_mock_user, mock_user_account
 
 
@@ -151,9 +152,8 @@ async def test_large_usdc():
 
     assert user.get_health() == 100
 
-    # TODO: these fail
-    # assert user.get_max_leverage_for_perp(0) == 50_000
-    # assert user.get_max_leverage_for_perp(0, MarginCategory.MAINTENANCE) == 100_000
+    assert user.get_max_leverage_for_perp(0) == 50_000
+    assert user.get_max_leverage_for_perp(0, MarginCategory.MAINTENANCE) == 100_000
 
 
 @mark.asyncio
@@ -213,15 +213,14 @@ async def test_worst_case_token_amt():
 
     spot_position = deepcopy(user_account.spot_positions[1])
     spot_position.market_index = 1
+    spot_position.balance_type = SpotBalanceType.Borrow()
     spot_position.scaled_balance = 100 * SPOT_BALANCE_PRECISION
     spot_position.open_asks = -100 * 1e9
 
-    print("4")
     worst_case = get_worst_case_token_amounts(
         spot_position, sol_market, strict_oracle_price, MarginCategory.INITIAL
     )
 
-    # TODO: all broken
     assert worst_case.token_amount == -200 * 1e9
     assert worst_case.token_value == -20_000 * PRICE_PRECISION
     assert worst_case.weighted_token_value == -24_000 * PRICE_PRECISION

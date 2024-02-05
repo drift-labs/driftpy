@@ -820,7 +820,7 @@ class DriftUser:
         total_liabs = perp_liab + spot_liab
 
         lp_buffer = (
-            market_price * market.amm.order_step_size / AMM_RESERVE_PRECISION
+            math.ceil(market_price * market.amm.order_step_size / AMM_RESERVE_PRECISION)
             if is_lp
             else 0
         )
@@ -840,7 +840,10 @@ class DriftUser:
 
         # upper bound for feasible sizing
         rhs = (
-            ((free_collateral * MARGIN_PRECISION) / raw_margin_ratio) * PRICE_PRECISION
+            math.ceil(
+                ((free_collateral * MARGIN_PRECISION) / raw_margin_ratio)
+                * PRICE_PRECISION
+            )
         ) / market_price
         max_size = max(0, rhs)
 
@@ -851,11 +854,17 @@ class DriftUser:
 
         attempts = 0
         while margin_ratio > (raw_margin_ratio + 1e-4) and attempts < 10:
-            rhs = (
-                ((free_collateral * MARGIN_PRECISION) / margin_ratio) * PRICE_PRECISION
-            ) / market_price
+            rhs = math.ceil(
+                (
+                    ((free_collateral * MARGIN_PRECISION) / margin_ratio)
+                    * PRICE_PRECISION
+                )
+                / market_price
+            )
 
             target_size = max(0, rhs)
+
+            print(f"ts: {target_size}")
 
             margin_ratio = calculate_market_margin_ratio(
                 market,
@@ -866,9 +875,9 @@ class DriftUser:
 
             attempts += 1
 
-        additional_liab = (free_collateral * MARGIN_PRECISION) / margin_ratio
+        additional_liab = math.ceil((free_collateral * MARGIN_PRECISION) / margin_ratio)
 
-        return ((total_liabs + additional_liab) * 10_000) / net_assets
+        return math.ceil(((total_liabs + additional_liab) * 10_000) / net_assets)
 
     def calculate_free_collateral_delta_for_perp(
         self,
