@@ -86,7 +86,6 @@ async def main(
         connection,
         wallet,
         str(env),
-        authority=Pubkey.from_string("FetTyW8xAYfd33x4GMHoE7hTuEdWLj1fNnhJuyVMUGGa"),
         account_subscription=AccountSubscriptionConfig("websocket"),
     )
 
