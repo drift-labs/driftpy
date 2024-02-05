@@ -76,6 +76,7 @@ def get_worst_case_token_amounts(
         strict_oracle_price,
         spot_market_account,
         margin_category,
+        custom_margin_ratio,
     )
 
     asks_simulation = simulate_order_fill(
@@ -85,6 +86,7 @@ def get_worst_case_token_amounts(
         strict_oracle_price,
         spot_market_account,
         margin_category,
+        custom_margin_ratio,
     )
 
     if (

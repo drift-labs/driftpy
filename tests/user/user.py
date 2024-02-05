@@ -158,7 +158,8 @@ async def test_large_usdc():
 
 @mark.asyncio
 async def test_worst_case_token_amt():
-    pass
+    user_account = deepcopy(mock_user_account)
+    sol_market = deepcopy(mock_spot_markets[1])
 
 
 @mark.asyncio
@@ -198,8 +199,7 @@ async def test_sol_spot_custom_mrgn_ratio():
         user_account.max_margin_ratio,
     )
 
-    # TODO: this fails
-    # assert worst_case_after.weight == 0
+    assert worst_case_after.weight == 0
 
 
 @mark.asyncio

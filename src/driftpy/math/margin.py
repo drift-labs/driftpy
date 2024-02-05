@@ -1,3 +1,5 @@
+import math
+
 from driftpy.math.spot_market import *
 
 from enum import Enum
@@ -14,10 +16,10 @@ def calculate_size_discount_asset_weight(
     if imf_factor == 0:
         return asset_weight
 
-    size_sqrt = int((abs(size) * 10) ** 0.5) + 1
+    size_sqrt = math.ceil((abs(size) * 10) ** 0.5) + 1
     imf_num = SPOT_IMF_PRECISION + (SPOT_IMF_PRECISION / 10)
 
-    size_discount_asset_weight = int(
+    size_discount_asset_weight = math.ceil(
         imf_num
         * SPOT_WEIGHT_PRECISION
         / (SPOT_IMF_PRECISION + size_sqrt * imf_factor / 100_000)
