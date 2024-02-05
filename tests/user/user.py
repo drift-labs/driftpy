@@ -161,6 +161,73 @@ async def test_worst_case_token_amt():
     user_account = deepcopy(mock_user_account)
     sol_market = deepcopy(mock_spot_markets[1])
 
+    sol_market.initial_asset_weight = 8_000
+    sol_market.initial_liability_weight = 12_000
+    sol_market.cumulative_deposit_interest = SPOT_CUMULATIVE_INTEREST_PRECISION
+    sol_market.cumulative_borrow_interest = SPOT_CUMULATIVE_INTEREST_PRECISION
+
+    strict_oracle_price = StrictOraclePrice(PRICE_PRECISION * 100, None)
+
+    spot_position = deepcopy(user_account.spot_positions[1])
+    spot_position.market_index = 1
+    spot_position.open_bids = 100 * 1e9
+
+    worst_case = get_worst_case_token_amounts(
+        spot_position, sol_market, strict_oracle_price, MarginCategory.INITIAL
+    )
+
+    assert worst_case.token_amount == 100 * 1e9
+    assert worst_case.token_value == 10_000 * PRICE_PRECISION
+    assert worst_case.weighted_token_value == 8_000 * PRICE_PRECISION
+    assert worst_case.orders_value == -10_000 * PRICE_PRECISION
+    assert worst_case.free_collateral_contribution == -2_000 * QUOTE_PRECISION
+
+    spot_position = deepcopy(user_account.spot_positions[1])
+    spot_position.market_index = 1
+    spot_position.scaled_balance = 100 * SPOT_BALANCE_PRECISION
+    spot_position.open_bids = 100 * 1e9
+
+    worst_case = get_worst_case_token_amounts(
+        spot_position, sol_market, strict_oracle_price, MarginCategory.INITIAL
+    )
+
+    assert worst_case.token_amount == 200 * 1e9
+    assert worst_case.token_value == 20_000 * PRICE_PRECISION
+    assert worst_case.weighted_token_value == 16_000 * PRICE_PRECISION
+    assert worst_case.orders_value == -10_000 * PRICE_PRECISION
+    assert worst_case.free_collateral_contribution == 6_000 * QUOTE_PRECISION
+
+    spot_position = deepcopy(user_account.spot_positions[1])
+    spot_position.market_index = 1
+    spot_position.open_asks = -100 * 1e9
+
+    worst_case = get_worst_case_token_amounts(
+        spot_position, sol_market, strict_oracle_price, MarginCategory.INITIAL
+    )
+
+    assert worst_case.token_amount == -100 * 1e9
+    assert worst_case.token_value == -10_000 * PRICE_PRECISION
+    assert worst_case.weighted_token_value == -12_000 * PRICE_PRECISION
+    assert worst_case.orders_value == 10_000 * PRICE_PRECISION
+    assert worst_case.free_collateral_contribution == -2_000 * QUOTE_PRECISION
+
+    spot_position = deepcopy(user_account.spot_positions[1])
+    spot_position.market_index = 1
+    spot_position.scaled_balance = 100 * SPOT_BALANCE_PRECISION
+    spot_position.open_asks = -100 * 1e9
+
+    print("4")
+    worst_case = get_worst_case_token_amounts(
+        spot_position, sol_market, strict_oracle_price, MarginCategory.INITIAL
+    )
+
+    # TODO: all broken
+    assert worst_case.token_amount == -200 * 1e9
+    assert worst_case.token_value == -20_000 * PRICE_PRECISION
+    assert worst_case.weighted_token_value == -24_000 * PRICE_PRECISION
+    assert worst_case.orders_value == 10_000 * PRICE_PRECISION
+    assert worst_case.free_collateral_contribution == -14_000 * QUOTE_PRECISION
+
 
 @mark.asyncio
 async def test_sol_spot_custom_mrgn_ratio():
@@ -176,7 +243,7 @@ async def test_sol_spot_custom_mrgn_ratio():
 
     spot_position = user_account.spot_positions[1]
     spot_position.market_index = 1
-    spot_position.open_bids = 100 * 10e9
+    spot_position.open_bids = 100 * 1e9
 
     worst_case_before = get_worst_case_token_amounts(
         spot_position,
