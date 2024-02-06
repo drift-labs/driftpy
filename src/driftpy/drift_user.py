@@ -423,6 +423,7 @@ class DriftUser:
         with_funding: bool = False,
         market_index: int = None,
         with_weight_margin_category: Optional[MarginCategory] = None,
+        strict: bool = False,
     ):
         user = self.get_user_account()
         quote_spot_market = self.drift_client.get_spot_market_account(
@@ -436,27 +437,52 @@ class DriftUser:
 
             market = self.drift_client.get_perp_market_account(position.market_index)
 
-            oracle_data = self.drift_client.get_oracle_price_data(market.amm.oracle)
-            position_unrealized_pnl = calculate_position_pnl_with_oracle(
-                market, position, oracle_data, with_funding
+            oracle_price_data = self.get_oracle_data_for_perp_market(
+                market.market_index
             )
 
-            if with_weight_margin_category is not None:
-                if position_unrealized_pnl > 0:
-                    unrealized_asset_weight = calculate_unrealized_asset_weight(
-                        market,
-                        quote_spot_market,
-                        position_unrealized_pnl,
-                        with_weight_margin_category,
-                        oracle_data,
-                    )
-                    position_unrealized_pnl = (
-                        position_unrealized_pnl
-                        * unrealized_asset_weight
-                        / SPOT_WEIGHT_PRECISION
-                    )
+            quote_oracle_price_data = self.get_oracle_data_for_spot_market(
+                quote_spot_market.market_index
+            )
 
-            unrealized_pnl += position_unrealized_pnl
+            if position.lp_shares > 0:
+                position = self.get_perp_position_with_lp_settle(
+                    position.market_index, None, bool(with_weight_margin_category)
+                )[0]
+
+            position_upnl = calculate_position_pnl(
+                market, position, oracle_price_data, with_funding
+            )
+
+            if strict and position_upnl > 0:
+                quote_price = min(
+                    quote_oracle_price_data.price,
+                    quote_spot_market.historical_oracle_data.last_oracle_price_twap5min,
+                )
+            elif strict and position_upnl < 0:
+                quote_price = max(
+                    quote_oracle_price_data.price,
+                    quote_spot_market.historical_oracle_data.last_oracle_price_twap5min,
+                )
+            else:
+                quote_price = quote_oracle_price_data.price
+
+            position_upnl = (position_upnl * quote_price) // PRICE_PRECISION
+
+            if with_weight_margin_category:
+                if position_upnl > 0:
+                    position_upnl = position_upnl * (
+                        calculate_unrealized_asset_weight(
+                            market,
+                            quote_spot_market,
+                            position_upnl,
+                            with_weight_margin_category,
+                            oracle_price_data,
+                        )
+                    )
+                    position_upnl = position_upnl // SPOT_MARKET_WEIGHT_PRECISION
+
+            unrealized_pnl += position_upnl
 
         return unrealized_pnl
 
