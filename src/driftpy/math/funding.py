@@ -171,9 +171,7 @@ async def calculate_all_estimated_funding_rate(
         twap_spread_with_offset, (max_spread * -1), max_spread
     )
 
-    twap_spread_pct = (
-        clamped_spread_with_offset * PRICE_PRECISION * 100
-    ) // oracle_twap
+    twap_spread_pct = (clamped_spread_with_offset * PRICE_PRECISION * 100) / oracle_twap
 
     seconds_in_hour = 3600
     hours_in_day = 24
@@ -188,7 +186,7 @@ async def calculate_all_estimated_funding_rate(
         // seconds_in_hour
         // hours_in_day
     )
-    interp_est = twap_spread_pct // hours_in_day
+    interp_est = int(twap_spread_pct / hours_in_day)
     interp_rate_quote = (
         twap_spread_pct // hours_in_day // (PRICE_PRECISION // QUOTE_PRECISION)
     )
@@ -229,10 +227,16 @@ async def calculate_all_estimated_funding_rate(
 def get_max_price_divergence_for_funding_rate(
     market: PerpMarketAccount, oracle_twap: int
 ) -> int:
-    if is_one_of_variant(market.contract_tier, ["A", "B"]):
+    if str(market.contract_tier) == "ContractTier.A()":
         return oracle_twap // 33
-    elif is_variant(market.contract_tier, "C"):
+    elif str(market.contract_tier) == "ContractTier.B()":
+        return oracle_twap // 33
+    elif str(market.contract_tier) == "ContractTier.C()":
         return oracle_twap // 20
+    elif str(market.contract_tier) == "ContractTier.Speculative()":
+        return oracle_twap // 10
+    elif str(market.contract_tier) == "ContractTier.Isolated()":
+        return oracle_twap // 10
     else:
         return oracle_twap // 10
 
