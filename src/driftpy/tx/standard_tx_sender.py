@@ -80,7 +80,6 @@ class StandardTxSender(TxSender):
 
         body = self.connection._send_raw_transaction_body(raw, self.opts)
         resp = await self.connection._provider.make_request(body, SendTransactionResp)
-        print(resp)
         sig = resp.value
 
         sig_status = await self.connection.confirm_transaction(
