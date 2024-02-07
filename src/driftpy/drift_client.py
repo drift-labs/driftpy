@@ -183,7 +183,7 @@ class DriftClient:
         )
 
     def get_user_stats_public_key(self):
-        return get_user_stats_account_public_key(self.program_id, self.AUTHORITY)
+        return get_user_stats_account_public_key(self.program_id, self.authority)
 
     def get_associated_token_account_public_key(self, market_index: int) -> Pubkey:
         spot_market = self.get_spot_market_account(market_index)
@@ -259,9 +259,13 @@ class DriftClient:
         ixs: Union[Instruction, list[Instruction]],
         signers=None,
         lookup_tables: list[AddressLookupTableAccount] = None,
+        tx_version: Optional[Union[Legacy, int]] = None,
     ) -> TxSigAndSlot:
         if isinstance(ixs, Instruction):
             ixs = [ixs]
+
+        if not tx_version:
+            tx_version = self.tx_version
 
         if self.tx_params.compute_units is not None:
             ixs.insert(0, set_compute_unit_limit(self.tx_params.compute_units))
@@ -269,10 +273,9 @@ class DriftClient:
         if self.tx_params.compute_units_price is not None:
             ixs.insert(1, set_compute_unit_price(self.tx_params.compute_units_price))
 
-        if self.tx_version == Legacy:
+        if tx_version == Legacy:
             tx = await self.tx_sender.get_legacy_tx(ixs, self.wallet.payer, signers)
-            print(str(tx.serialize(False)))
-        elif self.tx_version == 0:
+        elif tx_version == 0:
             if lookup_tables is None:
                 lookup_tables = [await self.fetch_market_lookup_table()]
             tx = await self.tx_sender.get_versioned_tx(
@@ -570,7 +573,7 @@ class DriftClient:
             self.program_id, spot_market_index
         )
         user_account_public_key = get_user_account_public_key(
-            self.program_id, self.AUTHORITY, sub_account_id
+            self.program_id, self.authority, sub_account_id
         )
         return self.program.instruction["deposit"](
             spot_market_index,
@@ -2492,7 +2495,7 @@ class DriftClient:
         quote=None,
         reduce_only: Optional[SwapReduceOnly] = None,
         user_account_public_key: Optional[Pubkey] = None,
-    ):
+    ) -> Tuple[list[Instruction], list[AddressLookupTableAccount]]:
         pre_instructions: list[Instruction] = []
         JUPITER_URL = "https://quote-api.jup.ag/v6"
 
@@ -2563,11 +2566,18 @@ class DriftClient:
 
         swap_ix_json = swap_ix_resp.json()
 
-        compute_budget_ix = swap_ix_json.get("computeBudgetInstructions")
         swap_ix = swap_ix_json.get("swapInstruction")
         address_table_lookups = swap_ix_json.get("addressLookupTableAddresses")
 
-        swap_ixs = [compute_budget_ix, swap_ix]
+        address_table_lookup_accounts: list[AddressLookupTableAccount] = []
+
+        for table_pubkey in address_table_lookups:
+            address_table_lookup_account = await get_address_lookup_table(
+                self.connection, Pubkey.from_string(table_pubkey)
+            )
+            address_table_lookup_accounts.append(address_table_lookup_account)
+
+        swap_ixs = [swap_ix]
 
         begin_swap_ix, end_swap_ix = await self.get_swap_flash_loan_ix(
             out_market_idx,
@@ -2581,8 +2591,32 @@ class DriftClient:
         )
 
         ixs = [*pre_instructions, begin_swap_ix, *swap_ixs, end_swap_ix]
+        cleansed_ixs: list[Instruction] = []
 
-        return ixs, address_table_lookups
+        for ix in ixs:
+            if type(ix) == list:
+                for i in ix:
+                    if type(i) == dict:
+                        cleansed_ixs.append(self._dict_to_instructions(i))
+            elif type(ix) == dict:
+                cleansed_ixs.append(self._dict_to_instructions(ix))
+            else:
+                cleansed_ixs.append(ix)
+
+        return cleansed_ixs, address_table_lookup_accounts
+
+    def _dict_to_instructions(self, instructions_dict: dict) -> Instruction:
+        program_id = Pubkey.from_string(instructions_dict["programId"])
+        accounts = [
+            AccountMeta(
+                Pubkey.from_string(account["pubkey"]),
+                account["isSigner"],
+                account["isWritable"],
+            )
+            for account in instructions_dict["accounts"]
+        ]
+        data = base64.b64decode(instructions_dict["data"])
+        return Instruction(program_id, data, accounts)
 
     def get_perp_market_accounts(self) -> list[PerpMarketAccount]:
         return [
