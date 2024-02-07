@@ -890,8 +890,6 @@ class DriftUser:
 
             target_size = max(0, rhs)
 
-            print(f"ts: {target_size}")
-
             margin_ratio = calculate_market_margin_ratio(
                 market,
                 target_size,

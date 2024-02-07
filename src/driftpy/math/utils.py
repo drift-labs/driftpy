@@ -15,6 +15,10 @@ def div_ceil(a: int, b: int) -> int:
         return int(quotient)
 
 
+def sig_num(x: int) -> int:
+    return -1 if x < 0 else 1
+
+
 def time_remaining_until_update(now: int, last_update_ts: int, update_period: int):
     time_since_last_update = now - last_update_ts
 

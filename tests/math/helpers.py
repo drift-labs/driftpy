@@ -117,7 +117,6 @@ class MockUserMap:
         self.drift_client = DriftClient(
             AsyncClient("http://localhost:8899"),
             wallet=Wallet(Keypair()),
-            program_id=Pubkey.default(),
         )
 
     async def add_pubkey(self, pubkey: Pubkey):
