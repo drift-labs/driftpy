@@ -1,3 +1,5 @@
+import math
+
 from driftpy.math.spot_market import *
 
 from enum import Enum
@@ -14,10 +16,10 @@ def calculate_size_discount_asset_weight(
     if imf_factor == 0:
         return asset_weight
 
-    size_sqrt = int((abs(size) * 10) ** 0.5) + 1
+    size_sqrt = math.ceil((abs(size) * 10) ** 0.5) + 1
     imf_num = SPOT_IMF_PRECISION + (SPOT_IMF_PRECISION / 10)
 
-    size_discount_asset_weight = int(
+    size_discount_asset_weight = math.ceil(
         imf_num
         * SPOT_WEIGHT_PRECISION
         / (SPOT_IMF_PRECISION + size_sqrt * imf_factor / 100_000)
@@ -96,18 +98,20 @@ def calculate_size_premium_liability_weight(
     if imf_factor == 0:
         return liability_weight
 
-    size_sqrt = int((abs(size) * 10 + 1) ** 0.5)
-    denom0 = max(1, SPOT_IMF_PRECISION / imf_factor)
-    assert denom0 > 0
-    liability_weight_numerator = liability_weight - (liability_weight / denom0)
+    size = abs(size) * 10 + 1
+    size_sqrt = size**0.5
 
-    denom = 100_000 * SPOT_IMF_PRECISION / precision
+    liability_weight_numerator = liability_weight - (liability_weight // 5)
+
+    denom = (100_000 * SPOT_IMF_PRECISION) // precision
     assert denom > 0
 
     size_premium_liability_weight = liability_weight_numerator + (
-        size_sqrt * imf_factor / denom
+        (size_sqrt * imf_factor) // denom
     )
+
     max_liability_weight = max(liability_weight, size_premium_liability_weight)
+
     return max_liability_weight
 
 

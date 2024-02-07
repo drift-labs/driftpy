@@ -283,11 +283,10 @@ class ExchangeStatus:
     SettlePnlPaused = constructor()
 
 
-@_rust_enum
 class UserStatus:
-    BEING_LIQUIDATED = constructor()
-    BANKRUPT = constructor()
-    REDUCE_ONLY = constructor()
+    BEING_LIQUIDATED = 1
+    BANKRUPT = 2
+    REDUCE_ONLY = 4
 
 
 @_rust_enum

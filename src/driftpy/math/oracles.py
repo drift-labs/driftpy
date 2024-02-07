@@ -53,6 +53,29 @@ def calculate_live_oracle_std(
     return oracle_std
 
 
+def get_new_oracle_conf_pct(
+    amm: AMM, oracle_price_data: OraclePriceData, reserve_price: int, now: int
+) -> int:
+    conf_interval = oracle_price_data.confidence or 0
+
+    since_last_update = max(
+        0, now - amm.historical_oracle_data.last_oracle_price_twap_ts
+    )
+
+    lower_bound = amm.last_oracle_conf_pct
+    if since_last_update > 0:
+        lower_bound_divisor = max(21 - since_last_update, 5)
+        lower_bound = amm.last_oracle_conf_pct - (
+            amm.last_oracle_conf_pct // lower_bound_divisor
+        )
+
+    conf_interval_pct = (conf_interval * BID_ASK_SPREAD_PRECISION) // reserve_price
+
+    conf_interval_pct_res = max(conf_interval_pct, lower_bound)
+
+    return conf_interval_pct_res
+
+
 def is_oracle_valid(
     amm: AMM,
     oracle_price_data: OraclePriceData,

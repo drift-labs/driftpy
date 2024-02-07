@@ -1,3 +1,4 @@
+import math
 import time
 import copy
 
@@ -180,12 +181,18 @@ class DriftUser:
             total_liability_value += base_value
         return total_liability_value
 
+    def is_being_liquidated(self) -> bool:
+        user_account = self.get_user_account()
+        return (
+            user_account.status & (UserStatus.BEING_LIQUIDATED | UserStatus.BANKRUPT)
+        ) > 0
+
     def can_be_liquidated(self) -> bool:
         total_collateral = self.get_total_collateral()
 
         user = self.get_user_account()
         liquidation_buffer = None
-        if "BeingLiquidated" in user.status:
+        if self.is_being_liquidated():
             liquidation_buffer = (
                 self.drift_client.get_state_account()
             ).liquidation_margin_buffer_ratio
@@ -395,11 +402,28 @@ class DriftUser:
 
         return position
 
+    def get_health(self) -> int:
+        if self.is_being_liquidated():
+            return 0
+
+        total_collateral = self.get_total_collateral(MarginCategory.MAINTENANCE)
+        maintenance_margin_req = self.get_margin_requirement(MarginCategory.MAINTENANCE)
+
+        if maintenance_margin_req == 0 and total_collateral >= 0:
+            return 100
+        elif total_collateral <= 0:
+            return 0
+        else:
+            return round(
+                min(100, max(0, (1 - maintenance_margin_req / total_collateral) * 100))
+            )
+
     def get_unrealized_pnl(
         self,
         with_funding: bool = False,
         market_index: int = None,
         with_weight_margin_category: Optional[MarginCategory] = None,
+        strict: bool = False,
     ):
         user = self.get_user_account()
         quote_spot_market = self.drift_client.get_spot_market_account(
@@ -413,27 +437,52 @@ class DriftUser:
 
             market = self.drift_client.get_perp_market_account(position.market_index)
 
-            oracle_data = self.drift_client.get_oracle_price_data(market.amm.oracle)
-            position_unrealized_pnl = calculate_position_pnl_with_oracle(
-                market, position, oracle_data, with_funding
+            oracle_price_data = self.get_oracle_data_for_perp_market(
+                market.market_index
             )
 
-            if with_weight_margin_category is not None:
-                if position_unrealized_pnl > 0:
-                    unrealized_asset_weight = calculate_unrealized_asset_weight(
-                        market,
-                        quote_spot_market,
-                        position_unrealized_pnl,
-                        with_weight_margin_category,
-                        oracle_data,
-                    )
-                    position_unrealized_pnl = (
-                        position_unrealized_pnl
-                        * unrealized_asset_weight
-                        / SPOT_WEIGHT_PRECISION
-                    )
+            quote_oracle_price_data = self.get_oracle_data_for_spot_market(
+                quote_spot_market.market_index
+            )
 
-            unrealized_pnl += position_unrealized_pnl
+            if position.lp_shares > 0:
+                position = self.get_perp_position_with_lp_settle(
+                    position.market_index, None, bool(with_weight_margin_category)
+                )[0]
+
+            position_upnl = calculate_position_pnl(
+                market, position, oracle_price_data, with_funding
+            )
+
+            if strict and position_upnl > 0:
+                quote_price = min(
+                    quote_oracle_price_data.price,
+                    quote_spot_market.historical_oracle_data.last_oracle_price_twap5min,
+                )
+            elif strict and position_upnl < 0:
+                quote_price = max(
+                    quote_oracle_price_data.price,
+                    quote_spot_market.historical_oracle_data.last_oracle_price_twap5min,
+                )
+            else:
+                quote_price = quote_oracle_price_data.price
+
+            position_upnl = (position_upnl * quote_price) // PRICE_PRECISION
+
+            if with_weight_margin_category:
+                if position_upnl > 0:
+                    position_upnl = position_upnl * (
+                        calculate_unrealized_asset_weight(
+                            market,
+                            quote_spot_market,
+                            position_upnl,
+                            with_weight_margin_category,
+                            oracle_price_data,
+                        )
+                    )
+                    position_upnl = position_upnl // SPOT_MARKET_WEIGHT_PRECISION
+
+            unrealized_pnl += position_upnl
 
         return unrealized_pnl
 
@@ -753,6 +802,106 @@ class DriftUser:
             return 0
 
         return (total_liability_value * 10_000) // net_asset_value
+
+    def get_leverage_components(
+        self,
+        include_open_orders: bool = True,
+        margin_category: Optional[MarginCategory] = None,
+    ):
+        perp_liability = self.get_total_perp_position_value(
+            margin_category, None, include_open_orders
+        )
+
+        perp_pnl = self.get_unrealized_pnl(True, None, margin_category)
+
+        (
+            spot_asset_value,
+            spot_liability_value,
+        ) = self.get_spot_market_asset_and_liability_value(
+            None, margin_category, None, include_open_orders
+        )
+
+        return perp_liability, perp_pnl, spot_asset_value, spot_liability_value
+
+    def get_max_leverage_for_perp(
+        self,
+        perp_market_index: int,
+        margin_category: MarginCategory = MarginCategory.INITIAL,
+        is_lp: bool = False,
+    ):
+        market = self.drift_client.get_perp_market_account(perp_market_index)
+        market_price = self.drift_client.get_oracle_price_data_for_perp_market(
+            perp_market_index
+        ).price
+
+        perp_liab, perp_pnl, spot_asset, spot_liab = self.get_leverage_components()
+
+        total_assets = spot_asset + perp_pnl
+
+        net_assets = total_assets - spot_liab
+
+        if net_assets == 0:
+            return 0
+
+        total_liabs = perp_liab + spot_liab
+
+        lp_buffer = (
+            math.ceil(market_price * market.amm.order_step_size / AMM_RESERVE_PRECISION)
+            if is_lp
+            else 0
+        )
+
+        free_collateral = self.get_free_collateral() - lp_buffer
+
+        match margin_category:
+            case MarginCategory.INITIAL:
+                raw_margin_ratio = max(
+                    market.margin_ratio_initial,
+                    self.get_user_account().max_margin_ratio,
+                )
+            case MarginCategory.MAINTENANCE:
+                raw_margin_ratio = market.margin_ratio_maintenance
+            case _:
+                raw_margin_ratio = market.margin_ratio_initial
+
+        # upper bound for feasible sizing
+        rhs = (
+            math.ceil(
+                ((free_collateral * MARGIN_PRECISION) / raw_margin_ratio)
+                * PRICE_PRECISION
+            )
+        ) / market_price
+        max_size = max(0, rhs)
+
+        # accounting for max size
+        margin_ratio = calculate_market_margin_ratio(
+            market, max_size, margin_category, self.get_user_account().max_margin_ratio
+        )
+
+        attempts = 0
+        while margin_ratio > (raw_margin_ratio + 1e-4) and attempts < 10:
+            rhs = math.ceil(
+                (
+                    ((free_collateral * MARGIN_PRECISION) / margin_ratio)
+                    * PRICE_PRECISION
+                )
+                / market_price
+            )
+
+            target_size = max(0, rhs)
+
+            margin_ratio = calculate_market_margin_ratio(
+                market,
+                target_size,
+                margin_category,
+                self.get_user_account().max_margin_ratio,
+            )
+
+            attempts += 1
+
+        additional_liab = math.ceil((free_collateral * MARGIN_PRECISION) / margin_ratio)
+
+        return math.ceil(((total_liabs + additional_liab) * 10_000) / net_assets)
 
     def calculate_free_collateral_delta_for_perp(
         self,

@@ -1,6 +1,7 @@
 from typing import Union
 
 from driftpy.accounts import *
+from driftpy.math.utils import div_ceil
 from driftpy.types import OraclePriceData
 
 
@@ -11,15 +12,16 @@ def get_signed_token_amount(amount, balance_type):
 def get_token_amount(
     balance: int, spot_market: SpotMarketAccount, balance_type: SpotBalanceType
 ) -> int:
-    percision_decrease = 10 ** (19 - spot_market.decimals)
+    precision_decrease = 10 ** (19 - spot_market.decimals)
 
-    cumm_interest = (
-        spot_market.cumulative_deposit_interest
-        if is_variant(balance_type, "Deposit")
-        else spot_market.cumulative_borrow_interest
-    )
-
-    return balance * cumm_interest // percision_decrease
+    if is_variant(balance_type, "Deposit"):
+        return int(
+            (balance * spot_market.cumulative_deposit_interest) / precision_decrease
+        )
+    else:
+        return div_ceil(
+            balance * spot_market.cumulative_borrow_interest, precision_decrease
+        )
 
 
 def get_token_value(

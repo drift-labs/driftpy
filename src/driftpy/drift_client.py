@@ -57,7 +57,6 @@ class DriftClient:
         connection: AsyncClient,
         wallet: Union[Keypair, Wallet],
         env: DriftEnv = "mainnet",
-        program_id: Optional[Pubkey] = DRIFT_PROGRAM_ID,
         opts: TxOpts = DEFAULT_TX_OPTIONS,
         authority: Pubkey = None,
         account_subscription: Optional[
@@ -87,7 +86,7 @@ class DriftClient:
         idl = Idl.from_json(raw)
 
         provider = Provider(connection, wallet, opts)
-        self.program_id = program_id
+        self.program_id = DRIFT_PROGRAM_ID
         self.program = Program(
             idl,
             self.program_id,
