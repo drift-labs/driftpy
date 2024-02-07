@@ -62,8 +62,6 @@ def calculate_live_mark_twap(
 
     if not mark_price:
         bid, ask = calculate_bid_ask_price(market.amm, oracle_price_data)
-        print(f"bid {bid}")
-        print(f"ask {ask}")
         mark_price = (bid + ask) // 2
 
     mark_twap_with_mantissa = (
