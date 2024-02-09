@@ -159,7 +159,7 @@ pyheck = ">=0.1.4,<0.2.0"
 pytest = ">=7.2.0,<8.0.0"
 pytest-asyncio = ">=0.21.0,<0.22.0"
 pytest-xprocess = ">=0.18.1,<0.19.0"
-solana = ">=0.30.1,<0.31.0"
+solana = ">=0.30.1,<=0.31.0"
 solders = ">=0.17.0,<0.18.0"
 toml = ">=0.10.2,<0.11.0"
 toolz = ">=0.11.2,<0.12.0"
@@ -1864,40 +1864,40 @@ files = [
 
 [[package]]
 name = "solana"
-version = "0.30.1"
+version = "0.31.0"
 description = "Solana Python API"
 optional = false
 python-versions = ">=3.7,<4.0"
 files = [
-    {file = "solana-0.30.1-py3-none-any.whl", hash = "sha256:b5f4964ec568d118e31384c45f1ecc3e29ed09c07925944070240de3a4e85480"},
-    {file = "solana-0.30.1.tar.gz", hash = "sha256:cd72d57278772d41def5ab68c54bccea40c9df40852882b938f3279d815ab51a"},
+    {file = "solana-0.31.0-py3-none-any.whl", hash = "sha256:b5f4964ec568d118e31384c45f1ecc3e29ed09c07925944070240de3a4e85480"},
+    {file = "solana-0.31.0.tar.gz", hash = "sha256:cd72d57278772d41def5ab68c54bccea40c9df40852882b938f3279d815ab51a"},
 ]
 
 [package.dependencies]
 cachetools = ">=4.2.2,<5.0.0"
 construct-typing = ">=0.5.2,<0.6.0"
 httpx = ">=0.23.0,<0.24.0"
-solders = ">=0.17.0,<0.18.0"
+solders = ">=0.17.0,<=0.19.0"
 types-cachetools = ">=4.2.4,<5.0.0"
 typing-extensions = ">=4.2.0"
 websockets = ">=9.0,<12.0"
 
 [[package]]
 name = "solders"
-version = "0.17.0"
+version = "0.19.0"
 description = "Python bindings for Solana Rust tools"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "solders-0.17.0-cp37-abi3-macosx_10_9_x86_64.macosx_11_0_arm64.macosx_10_9_universal2.whl", hash = "sha256:2222c20300a3b339d0c30cc85a38cb76b9341529c943f8f6e84e37b6c4cf7c3f"},
-    {file = "solders-0.17.0-cp37-abi3-manylinux_2_12_i686.manylinux2010_i686.whl", hash = "sha256:af069840d7aaafecfa819ab05ba13df1d1fb718650dab0e989bbb7c34b63b839"},
-    {file = "solders-0.17.0-cp37-abi3-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:b7ba319d05bdd5802b781326d9cbe70b9af05f935714d38b6595a51154d070b2"},
-    {file = "solders-0.17.0-cp37-abi3-manylinux_2_17_armv7l.manylinux2014_armv7l.whl", hash = "sha256:eab2565dc01ac1474bcb83d43a65e4e38c16cbe762650f77d8d075fae75ee832"},
-    {file = "solders-0.17.0-cp37-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:5002c1785ad301815d49a771ebd540bba15a8b30efbcef2f43456731e36a7df1"},
-    {file = "solders-0.17.0-cp37-abi3-musllinux_1_2_i686.whl", hash = "sha256:d3d1559134569bbf69a8fe86509e8bf94e6a73c8de796d8de4b29aaae78f0a7a"},
-    {file = "solders-0.17.0-cp37-abi3-musllinux_1_2_x86_64.whl", hash = "sha256:da0d8ff4e21b3acebb4c5b3ca097659c54358cb97df087fa9fdf717710425759"},
-    {file = "solders-0.17.0-cp37-abi3-win_amd64.whl", hash = "sha256:da64d20c0eb14b1b1e39bbe82b878a03e71c076f71345ff2faf5ca87f11fa431"},
-    {file = "solders-0.17.0.tar.gz", hash = "sha256:a898804637769ec22518f2667b961230a68ff3264d6ccf90d9c94942c12a0ea1"},
+    {file = "solders-0.19.0-cp37-abi3-macosx_10_9_x86_64.macosx_11_0_arm64.macosx_10_9_universal2.whl", hash = "sha256:2222c20300a3b339d0c30cc85a38cb76b9341529c943f8f6e84e37b6c4cf7c3f"},
+    {file = "solders-0.19.0-cp37-abi3-manylinux_2_12_i686.manylinux2010_i686.whl", hash = "sha256:af069840d7aaafecfa819ab05ba13df1d1fb718650dab0e989bbb7c34b63b839"},
+    {file = "solders-0.19.0-cp37-abi3-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:b7ba319d05bdd5802b781326d9cbe70b9af05f935714d38b6595a51154d070b2"},
+    {file = "solders-0.19.0-cp37-abi3-manylinux_2_17_armv7l.manylinux2014_armv7l.whl", hash = "sha256:eab2565dc01ac1474bcb83d43a65e4e38c16cbe762650f77d8d075fae75ee832"},
+    {file = "solders-0.19.0-cp37-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:5002c1785ad301815d49a771ebd540bba15a8b30efbcef2f43456731e36a7df1"},
+    {file = "solders-0.19.0-cp37-abi3-musllinux_1_2_i686.whl", hash = "sha256:d3d1559134569bbf69a8fe86509e8bf94e6a73c8de796d8de4b29aaae78f0a7a"},
+    {file = "solders-0.19.0-cp37-abi3-musllinux_1_2_x86_64.whl", hash = "sha256:da0d8ff4e21b3acebb4c5b3ca097659c54358cb97df087fa9fdf717710425759"},
+    {file = "solders-0.19.0-cp37-abi3-win_amd64.whl", hash = "sha256:da64d20c0eb14b1b1e39bbe82b878a03e71c076f71345ff2faf5ca87f11fa431"},
+    {file = "solders-0.19.0.tar.gz", hash = "sha256:a898804637769ec22518f2667b961230a68ff3264d6ccf90d9c94942c12a0ea1"},
 ]
 
 [package.dependencies]
