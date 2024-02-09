@@ -138,13 +138,13 @@ frozenlist = ">=1.1.0"
 
 [[package]]
 name = "anchorpy"
-version = "0.18.0"
+version = "0.19.0"
 description = "The Python Anchor client."
 optional = false
 python-versions = ">=3.9,<4.0"
 files = [
-    {file = "anchorpy-0.18.0-py3-none-any.whl", hash = "sha256:e95c53113a18e873228ef7673db8333d61df8d7cc961df7252764b5a039591b5"},
-    {file = "anchorpy-0.18.0.tar.gz", hash = "sha256:d8e6fbe68d7808433e7d18dccb75d119b396f6f9f75e9cd5f567f6df1f6f53e7"},
+    {file = "anchorpy-0.19.0-py3-none-any.whl", hash = "sha256:e95c53113a18e873228ef7673db8333d61df8d7cc961df7252764b5a039591b5"},
+    {file = "anchorpy-0.19.0.tar.gz", hash = "sha256:d8e6fbe68d7808433e7d18dccb75d119b396f6f9f75e9cd5f567f6df1f6f53e7"},
 ]
 
 [package.dependencies]
