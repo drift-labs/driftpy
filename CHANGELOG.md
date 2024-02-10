@@ -133,3 +133,7 @@ Add `OraclePriceData.default()`
 Add default values for padding in structs
 
 Bump `requests` and `typing-extensions` to ^ instead of pinned
+
+## [0.7.24] - 2024-2-10
+
+Update `drift.json` IDL
