@@ -2655,10 +2655,9 @@ class DriftClient:
 
         remaining_accounts = self.get_remaining_accounts(
             user_accounts=[self.get_user_account(sub_account_id)],
-
         )
 
-        return self.program.instruction["updateUserMarginTradingEnabled"](
+        return self.program.instruction["update_user_margin_trading_enabled"](
             sub_account_id,
             margin_trading_enabled,
             ctx=Context(
