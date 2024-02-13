@@ -221,14 +221,24 @@ class DriftClient:
     def get_oracle_price_data_for_perp_market(
         self, market_index: int
     ) -> Optional[OraclePriceData]:
-        oracle = self.get_perp_market_account(market_index).amm.oracle
-        return self.get_oracle_price_data(oracle)
+        return getattr(
+            self.account_subscriber.get_oracle_price_data_and_slot_for_perp_market(
+                market_index
+            ),
+            "data",
+            None,
+        )
 
     def get_oracle_price_data_for_spot_market(
         self, market_index: int
     ) -> Optional[OraclePriceData]:
-        oracle = self.get_spot_market_account(market_index).oracle
-        return self.get_oracle_price_data(oracle)
+        return getattr(
+            self.account_subscriber.get_oracle_price_data_and_slot_for_spot_market(
+                market_index
+            ),
+            "data",
+            None,
+        )
 
     def convert_to_spot_precision(self, amount: Union[int, float], market_index) -> int:
         spot_market = self.get_spot_market_account(market_index)

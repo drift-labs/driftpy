@@ -1,4 +1,4 @@
-from typing import Optional, Sequence
+from typing import Optional, Sequence, Union
 
 from driftpy.accounts import DriftClientAccountSubscriber, DataAndSlot
 
@@ -47,6 +47,8 @@ class PollingDriftClientAccountSubscriber(DriftClientAccountSubscriber):
         self.perp_markets = {}
         self.spot_markets = {}
         self.oracle = {}
+        self.perp_oracle_map: dict[int, Pubkey] = {}
+        self.spot_oracle_map: dict[int, Pubkey] = {}
 
     async def subscribe(self):
         if len(self.callbacks) != 0:
@@ -66,6 +68,9 @@ class PollingDriftClientAccountSubscriber(DriftClientAccountSubscriber):
 
         while self.accounts_ready() is False:
             await self.bulk_account_loader.load()
+
+        self._set_perp_oracle_map()
+        self._set_spot_oracle_map()
 
     async def fetch(self):
         await self.bulk_account_loader.load()
@@ -188,3 +193,54 @@ class PollingDriftClientAccountSubscriber(DriftClientAccountSubscriber):
         self,
     ) -> list[DataAndSlot[SpotMarketAccount]]:
         return [self.spot_markets.values()]
+
+    def _set_perp_oracle_map(self):
+        perp_markets = self.get_market_accounts_and_slots()
+        for market in perp_markets:
+            market_account = market.data
+            market_index = market_account.market_index
+            oracle = market_account.amm.oracle
+            self.perp_oracle_map[market_index] = oracle
+
+    def _set_spot_oracle_map(self):
+        spot_markets = self.get_spot_market_accounts_and_slots()
+        for market in spot_markets:
+            market_account = market.data
+            market_index = market_account.market_index
+            oracle = market_account.amm.oracle
+            self.spot_oracle_map[market_index] = oracle
+
+    def get_oracle_price_data_and_slot_for_perp_market(
+        self, market_index: int
+    ) -> Union[DataAndSlot[OraclePriceData], None]:
+        perp_market_account = self.get_perp_market_and_slot(market_index)
+        oracle = self.perp_oracle_map.get(market_index)
+
+        if not perp_market_account or not oracle:
+            return None
+
+        if str(perp_market_account.data.amm.oracle) != str(oracle):
+            self.add_oracle(
+                perp_market_account.data.amm.oracle,
+                perp_market_account.data.amm.oracle_source,
+            )
+            self._set_perp_oracle_map()
+
+        return self.get_oracle_price_data_and_slot(oracle)
+
+    def get_oracle_price_data_and_slot_for_spot_market(
+        self, market_index: int
+    ) -> Union[DataAndSlot[OraclePriceData], None]:
+        spot_market_account = self.get_spot_market_and_slot(market_index)
+        oracle = self.spot_oracle_map.get(market_index)
+
+        if not spot_market_account or not oracle:
+            return None
+
+        if str(spot_market_account.data.oracle) != str(oracle):
+            self.add_oracle(
+                spot_market_account.data.oracle, spot_market_account.data.oracle_source
+            )
+            self._set_spot_oracle_map()
+
+        return self.get_oracle_price_data_and_slot(oracle)
