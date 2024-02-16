@@ -402,6 +402,30 @@ class DriftUser:
 
         return position
 
+    def get_safest_tiers(self):
+        safest_perp_tier = 4
+        safest_spot_tier = 4
+
+        for perp_position in self.get_active_perp_positions():
+            safest_perp_tier = min(
+                safest_perp_tier,
+                get_perp_market_tier_number(
+                    self.drift_client.get_perp_market_account(
+                        perp_position.market_index
+                    )
+                ),
+            )
+
+        for spot_position in self.get_user_account().spot_positions:
+            safest_spot_tier = min(
+                safest_spot_tier,
+                get_spot_market_tier_number(
+                    self.drift_client.get_spot_market_account(
+                        spot_position.market_index
+                    )
+                ),
+            )
+
     def get_health(self) -> int:
         if self.is_being_liquidated():
             return 0

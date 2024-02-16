@@ -1501,6 +1501,72 @@ class DriftClient:
             ),
         )
 
+    async def liquidate_borrow_for_perp_pnl(
+        self,
+        user_account_pubkey: Pubkey,
+        user_account: UserAccount,
+        perp_market_index: int,
+        liability_market_index: int,
+        max_liability_transfer: int,
+        limit_price: Optional[int] = None,
+    ) -> Signature:
+        return (
+            await self.send_ixs(
+                [
+                    await self.get_liquidate_borrow_for_perp_pnl_ix(
+                        user_account_pubkey,
+                        user_account,
+                        perp_market_index,
+                        liability_market_index,
+                        max_liability_transfer,
+                        limit_price,
+                    )
+                ]
+            )
+        ).tx_sig
+
+    async def get_liquidate_borrow_for_perp_pnl_ix(
+        self,
+        user_account_pubkey: Pubkey,
+        user_account: UserAccount,
+        perp_market_index: int,
+        liability_market_index: int,
+        max_liability_transfer: int,
+        limit_price: Optional[int] = None,
+    ):
+        user_stats_pubkey = get_user_stats_account_public_key(
+            self.program.program_id, user_account.authority
+        )
+
+        liquidator_pubkey = self.get_user_account_public_key()
+        liquidator_stats_pubkey = self.get_user_stats_public_key()
+
+        remaining_accounts = self.get_remaining_accounts(
+            user_accounts=[self.get_user_account(), user_account],
+            writable_perp_market_indexes=[perp_market_index],
+            writable_spot_market_indexes=[liability_market_index],
+        )
+
+        ix = self.program.instruction["liquidate_borrow_for_perp_pnl"](
+            perp_market_index,
+            liability_market_index,
+            max_liability_transfer,
+            limit_price or None,
+            ctx=Context(
+                accounts={
+                    "state": self.get_state_public_key(),
+                    "authority": self.wallet.payer.pubkey(),
+                    "user": user_account_pubkey,
+                    "user_stats": user_stats_pubkey,
+                    "liquidator": liquidator_pubkey,
+                    "liquidator_stats": liquidator_stats_pubkey,
+                },
+                remaining_accounts=remaining_accounts,
+            ),
+        )
+
+        return ix
+
     async def liquidate_perp_pnl_for_deposit(
         self,
         user_authority: Pubkey,

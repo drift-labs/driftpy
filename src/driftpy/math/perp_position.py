@@ -1,3 +1,4 @@
+from driftpy.math.market import calculate_net_user_pnl_imbalance
 from driftpy.math.spot_market import *
 from driftpy.types import OraclePriceData, is_variant
 from driftpy.constants.numeric_constants import *
@@ -45,6 +46,14 @@ def calculate_position_funding_pnl(
     )
 
     return funding_rate_pnl
+
+
+# def calculate_claimable_pnl(
+#     market: PerpMarketAccount,
+#     spot_market: SpotMarketAccount,
+#     perp_position: PerpPosition,
+#     oracle_price_data: OraclePriceData
+# ):
 
 
 def calculate_position_pnl_with_oracle(
@@ -123,6 +132,32 @@ def calculate_base_asset_value(
         ) + 1.0
 
     return result
+
+
+def calculate_claimable_pnl(
+    market: PerpMarketAccount,
+    spot_market: SpotMarketAccount,
+    perp_position: PerpPosition,
+    oracle_price_data: OraclePriceData,
+):
+    upnl = calculate_position_pnl(market, perp_position, oracle_price_data, True)
+
+    unsettled_pnl = upnl
+    if upnl > 0:
+        excess_pnl_pool = max(
+            0,
+            calculate_net_user_pnl_imbalance(market, spot_market, oracle_price_data)
+            * -1,
+        )
+
+        max_positive_pnl = (
+            max(perp_position.quote_asset_amount - perp_position.quote_entry_amount, 0)
+            + excess_pnl_pool
+        )
+
+        unsettled_pnl = min(upnl, max_positive_pnl)
+
+    return unsettled_pnl
 
 
 def calculate_position_pnl(

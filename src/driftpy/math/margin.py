@@ -1,4 +1,5 @@
 import math
+from driftpy.math.market import calculate_net_user_pnl_imbalance
 
 from driftpy.math.spot_market import *
 
@@ -129,21 +130,6 @@ def calculate_net_user_pnl(
     net_user_pnl = net_user_position_value + net_user_cost_basis
 
     return net_user_pnl
-
-
-def calculate_net_user_pnl_imbalance(
-    perp_market: PerpMarketAccount,
-    spot_market: SpotMarketAccount,
-    oracle_data: OraclePriceData,
-):
-    user_pnl = calculate_net_user_pnl(perp_market, oracle_data)
-
-    pnl_pool = get_token_amount(
-        perp_market.pnl_pool.scaled_balance, spot_market, SpotBalanceType.Deposit()
-    )
-
-    imbalance = user_pnl - pnl_pool
-    return imbalance
 
 
 def calculate_unrealized_asset_weight(
