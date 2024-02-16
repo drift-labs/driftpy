@@ -150,6 +150,9 @@ class DriftUser:
 
             if position.lp_shares > 0:
                 continue
+            
+            if is_available(position):
+                continue
 
             market = self.drift_client.get_perp_market_account(position.market_index)
 
