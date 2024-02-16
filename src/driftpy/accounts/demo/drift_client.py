@@ -56,8 +56,8 @@ class DemoDriftClientAccountSubscriber(DriftClientAccountSubscriber):
         self.cache["state"] = state_and_slot
 
         oracle_data: dict[str, DataAndSlot[OraclePriceData]] = {}
-        spot_markets: list[DataAndSlot[SpotMarketAccount]] = []
-        perp_markets: list[DataAndSlot[PerpMarketAccount]] = []
+        spot_markets: dict[int, DataAndSlot[SpotMarketAccount]] = {}
+        perp_markets: dict[int, DataAndSlot[PerpMarketAccount]] = {}
 
         spot_market_indexes = sorted(self.spot_market_indexes)
         perp_market_indexes = sorted(self.perp_market_indexes)
@@ -66,13 +66,13 @@ class DemoDriftClientAccountSubscriber(DriftClientAccountSubscriber):
             spot_market_and_slot = await get_spot_market_account_and_slot(
                 self.program, index
             )
-            spot_markets.append(spot_market_and_slot)
+            spot_markets[index] = spot_market_and_slot
 
         for index in perp_market_indexes:
             perp_market_and_slot = await get_perp_market_account_and_slot(
                 self.program, index
             )
-            perp_markets.append(perp_market_and_slot)
+            perp_markets[index] = perp_market_and_slot
 
         oracle_pubkeys = [oracle.pubkey for oracle in self.oracle_infos]
         oracle_accounts = await self.program.provider.connection.get_multiple_accounts(

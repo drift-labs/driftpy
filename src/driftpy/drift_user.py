@@ -432,7 +432,7 @@ class DriftUser:
 
         unrealized_pnl = 0
         for position in user.perp_positions:
-            if market_index is not None and position.market_index != market_index:
+            if market_index is not None and position.market_index != market_index or is_available(position):
                 continue
 
             market = self.drift_client.get_perp_market_account(position.market_index)
