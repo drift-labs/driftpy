@@ -18,6 +18,7 @@ from driftpy.math.spot_position import (
     is_spot_position_available,
 )
 from driftpy.math.amm import calculate_market_open_bid_ask
+from driftpy.math.tiers import get_perp_market_tier_number, get_spot_market_tier_number
 from driftpy.oracles.strict_oracle_price import StrictOraclePrice
 from driftpy.types import OraclePriceData
 
@@ -187,7 +188,11 @@ class DriftUser:
             user_account.status & (UserStatus.BEING_LIQUIDATED | UserStatus.BANKRUPT)
         ) > 0
 
-    def can_be_liquidated(self) -> bool:
+    def is_bankrupt(self):
+        user_account = self.get_user_account()
+        return (user_account.status & UserStatus.BANKRUPT) > 0
+
+    def can_be_liquidated(self) -> Tuple[bool, int, int]:
         total_collateral = self.get_total_collateral()
 
         user = self.get_user_account()
@@ -201,7 +206,9 @@ class DriftUser:
             MarginCategory.MAINTENANCE, liquidation_buffer
         )
 
-        return total_collateral < maintenance_req
+        can_be_liquidated = total_collateral < maintenance_req
+
+        return can_be_liquidated, maintenance_req, total_collateral
 
     def get_margin_requirement(
         self,
@@ -425,6 +432,8 @@ class DriftUser:
                     )
                 ),
             )
+
+        return (safest_perp_tier, safest_spot_tier)
 
     def get_health(self) -> int:
         if self.is_being_liquidated():

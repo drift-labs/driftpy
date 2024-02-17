@@ -1645,7 +1645,7 @@ class DriftClient:
         settlee_user_account_public_key: Pubkey,
         settlee_user_account: UserAccount,
         market_index: int,
-    ):
+    ) -> Signature:
         return (
             await self.send_ixs(
                 self.get_settle_pnl_ix(

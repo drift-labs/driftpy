@@ -195,3 +195,9 @@ def calculate_entry_price(market_position: PerpPosition):
         * AMM_TO_QUOTE_PRECISION_RATIO
         / market_position.base_asset_amount
     )
+
+
+def has_open_orders(position: PerpPosition):
+    return (
+        position.open_orders != 0 or position.open_bids != 0 or position.open_asks != 0
+    )
