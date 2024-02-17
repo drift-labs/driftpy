@@ -1025,7 +1025,7 @@ class DriftUser:
 
         market = self.drift_client.get_perp_market_account(perp_market_index)
         current_perp_pos = self.get_perp_position_with_lp_settle(
-            perp_market_index, burnLpShares=True
+            perp_market_index, burn_lp_shares=True
         )[0] or self.get_empty_position(perp_market_index)
 
         free_collateral_delta = self.calculate_free_collateral_delta_for_perp(
