@@ -138,13 +138,13 @@ frozenlist = ">=1.1.0"
 
 [[package]]
 name = "anchorpy"
-version = "0.17.1"
+version = "0.19.0"
 description = "The Python Anchor client."
 optional = false
 python-versions = ">=3.9,<4.0"
 files = [
-    {file = "anchorpy-0.17.1-py3-none-any.whl", hash = "sha256:e95c53113a18e873228ef7673db8333d61df8d7cc961df7252764b5a039591b5"},
-    {file = "anchorpy-0.17.1.tar.gz", hash = "sha256:d8e6fbe68d7808433e7d18dccb75d119b396f6f9f75e9cd5f567f6df1f6f53e7"},
+    {file = "anchorpy-0.19.0-py3-none-any.whl", hash = "sha256:e95c53113a18e873228ef7673db8333d61df8d7cc961df7252764b5a039591b5"},
+    {file = "anchorpy-0.19.0.tar.gz", hash = "sha256:d8e6fbe68d7808433e7d18dccb75d119b396f6f9f75e9cd5f567f6df1f6f53e7"},
 ]
 
 [package.dependencies]
@@ -159,8 +159,8 @@ pyheck = ">=0.1.4,<0.2.0"
 pytest = ">=7.2.0,<8.0.0"
 pytest-asyncio = ">=0.21.0,<0.22.0"
 pytest-xprocess = ">=0.18.1,<0.19.0"
-solana = ">=0.30.1,<0.31.0"
-solders = ">=0.17.0,<0.18.0"
+solana = ">=0.30.1,<=0.33.0"
+solders = ">=0.17.0,<=0.20.0"
 toml = ">=0.10.2,<0.11.0"
 toolz = ">=0.11.2,<0.12.0"
 websockets = ">=9.0,<11.0"
@@ -171,22 +171,22 @@ cli = ["autoflake (>=1.4,<2.0)", "black (>=22.3.0,<23.0.0)", "genpy (>=2021.1,<2
 
 [[package]]
 name = "anchorpy-core"
-version = "0.1.2"
+version = "0.2.0"
 description = "Python bindings for Anchor Rust code"
 optional = false
 python-versions = ">=3.9"
 files = [
-    {file = "anchorpy_core-0.1.2-cp37-abi3-macosx_10_9_x86_64.macosx_11_0_arm64.macosx_10_9_universal2.whl", hash = "sha256:edb34d06c94286b2e4c4cf62e014915e2d29d18d4233902df4da781121c429c0"},
-    {file = "anchorpy_core-0.1.2-cp37-abi3-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:30ec4c762e9de1ac9447372306e45fd09816a5c453d55d928986a10ecbd1b90d"},
-    {file = "anchorpy_core-0.1.2-cp37-abi3-manylinux_2_17_armv7l.manylinux2014_armv7l.whl", hash = "sha256:0dd8d0011f00759274549aadeec00fabd1271ad1264f0fa0f65ad53b7cf46a3b"},
-    {file = "anchorpy_core-0.1.2-cp37-abi3-manylinux_2_17_ppc64.manylinux2014_ppc64.whl", hash = "sha256:550be97e24702d55a2900d02e9ce7a1875486edc8c7bfbddeb2718f7d6e7670a"},
-    {file = "anchorpy_core-0.1.2-cp37-abi3-manylinux_2_17_s390x.manylinux2014_s390x.whl", hash = "sha256:867eaa17058ae87d76dcfdd7df752ef4ec035542a0db3376de6dc3b19552e97a"},
-    {file = "anchorpy_core-0.1.2-cp37-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:f26036381e944a165696f5e4df8f6f866ef0c2981a230c9db8c8ff7fa9febdfa"},
-    {file = "anchorpy_core-0.1.2-cp37-abi3-manylinux_2_5_i686.manylinux1_i686.whl", hash = "sha256:d2e6e3e028669316d5ef01593a505cb49f76b759fb820ba1f52f7723d95ee108"},
-    {file = "anchorpy_core-0.1.2-cp37-abi3-musllinux_1_2_i686.whl", hash = "sha256:4014eb71945623665436922aadc901c9d649ffd6f8e978bfe507b3a702940338"},
-    {file = "anchorpy_core-0.1.2-cp37-abi3-musllinux_1_2_x86_64.whl", hash = "sha256:bf5ee0d6f26ba7b8d792061da045a62333a705d3a03eea1ff3df3d9f783ffb47"},
-    {file = "anchorpy_core-0.1.2-cp37-abi3-win_amd64.whl", hash = "sha256:c0e773d4f06527e31056173d4c1171f919f5b814e05d299998dd492a85a4fb90"},
-    {file = "anchorpy_core-0.1.2.tar.gz", hash = "sha256:74453e175bf41c457b01ea77118e82d1aaf850c10e4d60be823561b8a8ceee22"},
+    {file = "anchorpy_core-0.2.0-cp37-abi3-macosx_10_9_x86_64.macosx_11_0_arm64.macosx_10_9_universal2.whl", hash = "sha256:edb34d06c94286b2e4c4cf62e014915e2d29d18d4233902df4da781121c429c0"},
+    {file = "anchorpy_core-0.2.0-cp37-abi3-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:30ec4c762e9de1ac9447372306e45fd09816a5c453d55d928986a10ecbd1b90d"},
+    {file = "anchorpy_core-0.2.0-cp37-abi3-manylinux_2_17_armv7l.manylinux2014_armv7l.whl", hash = "sha256:0dd8d0011f00759274549aadeec00fabd1271ad1264f0fa0f65ad53b7cf46a3b"},
+    {file = "anchorpy_core-0.2.0-cp37-abi3-manylinux_2_17_ppc64.manylinux2014_ppc64.whl", hash = "sha256:550be97e24702d55a2900d02e9ce7a1875486edc8c7bfbddeb2718f7d6e7670a"},
+    {file = "anchorpy_core-0.2.0-cp37-abi3-manylinux_2_17_s390x.manylinux2014_s390x.whl", hash = "sha256:867eaa17058ae87d76dcfdd7df752ef4ec035542a0db3376de6dc3b19552e97a"},
+    {file = "anchorpy_core-0.2.0-cp37-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:f26036381e944a165696f5e4df8f6f866ef0c2981a230c9db8c8ff7fa9febdfa"},
+    {file = "anchorpy_core-0.2.0-cp37-abi3-manylinux_2_5_i686.manylinux1_i686.whl", hash = "sha256:d2e6e3e028669316d5ef01593a505cb49f76b759fb820ba1f52f7723d95ee108"},
+    {file = "anchorpy_core-0.2.0-cp37-abi3-musllinux_1_2_i686.whl", hash = "sha256:4014eb71945623665436922aadc901c9d649ffd6f8e978bfe507b3a702940338"},
+    {file = "anchorpy_core-0.2.0-cp37-abi3-musllinux_1_2_x86_64.whl", hash = "sha256:bf5ee0d6f26ba7b8d792061da045a62333a705d3a03eea1ff3df3d9f783ffb47"},
+    {file = "anchorpy_core-0.2.0-cp37-abi3-win_amd64.whl", hash = "sha256:c0e773d4f06527e31056173d4c1171f919f5b814e05d299998dd492a85a4fb90"},
+    {file = "anchorpy_core-0.2.0.tar.gz", hash = "sha256:74453e175bf41c457b01ea77118e82d1aaf850c10e4d60be823561b8a8ceee22"},
 ]
 
 [package.dependencies]
@@ -1864,40 +1864,40 @@ files = [
 
 [[package]]
 name = "solana"
-version = "0.30.1"
+version = "0.32.0"
 description = "Solana Python API"
 optional = false
 python-versions = ">=3.7,<4.0"
 files = [
-    {file = "solana-0.30.1-py3-none-any.whl", hash = "sha256:b5f4964ec568d118e31384c45f1ecc3e29ed09c07925944070240de3a4e85480"},
-    {file = "solana-0.30.1.tar.gz", hash = "sha256:cd72d57278772d41def5ab68c54bccea40c9df40852882b938f3279d815ab51a"},
+    {file = "solana-0.32.0-py3-none-any.whl", hash = "sha256:b5f4964ec568d118e31384c45f1ecc3e29ed09c07925944070240de3a4e85480"},
+    {file = "solana-0.32.0.tar.gz", hash = "sha256:cd72d57278772d41def5ab68c54bccea40c9df40852882b938f3279d815ab51a"},
 ]
 
 [package.dependencies]
 cachetools = ">=4.2.2,<5.0.0"
 construct-typing = ">=0.5.2,<0.6.0"
 httpx = ">=0.23.0,<0.24.0"
-solders = ">=0.17.0,<0.18.0"
+solders = ">=0.17.0,<=0.20.0"
 types-cachetools = ">=4.2.4,<5.0.0"
 typing-extensions = ">=4.2.0"
 websockets = ">=9.0,<12.0"
 
 [[package]]
 name = "solders"
-version = "0.17.0"
+version = "0.20.0"
 description = "Python bindings for Solana Rust tools"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "solders-0.17.0-cp37-abi3-macosx_10_9_x86_64.macosx_11_0_arm64.macosx_10_9_universal2.whl", hash = "sha256:2222c20300a3b339d0c30cc85a38cb76b9341529c943f8f6e84e37b6c4cf7c3f"},
-    {file = "solders-0.17.0-cp37-abi3-manylinux_2_12_i686.manylinux2010_i686.whl", hash = "sha256:af069840d7aaafecfa819ab05ba13df1d1fb718650dab0e989bbb7c34b63b839"},
-    {file = "solders-0.17.0-cp37-abi3-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:b7ba319d05bdd5802b781326d9cbe70b9af05f935714d38b6595a51154d070b2"},
-    {file = "solders-0.17.0-cp37-abi3-manylinux_2_17_armv7l.manylinux2014_armv7l.whl", hash = "sha256:eab2565dc01ac1474bcb83d43a65e4e38c16cbe762650f77d8d075fae75ee832"},
-    {file = "solders-0.17.0-cp37-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:5002c1785ad301815d49a771ebd540bba15a8b30efbcef2f43456731e36a7df1"},
-    {file = "solders-0.17.0-cp37-abi3-musllinux_1_2_i686.whl", hash = "sha256:d3d1559134569bbf69a8fe86509e8bf94e6a73c8de796d8de4b29aaae78f0a7a"},
-    {file = "solders-0.17.0-cp37-abi3-musllinux_1_2_x86_64.whl", hash = "sha256:da0d8ff4e21b3acebb4c5b3ca097659c54358cb97df087fa9fdf717710425759"},
-    {file = "solders-0.17.0-cp37-abi3-win_amd64.whl", hash = "sha256:da64d20c0eb14b1b1e39bbe82b878a03e71c076f71345ff2faf5ca87f11fa431"},
-    {file = "solders-0.17.0.tar.gz", hash = "sha256:a898804637769ec22518f2667b961230a68ff3264d6ccf90d9c94942c12a0ea1"},
+    {file = "solders-0.20.0-cp37-abi3-macosx_10_9_x86_64.macosx_11_0_arm64.macosx_10_9_universal2.whl", hash = "sha256:2222c20300a3b339d0c30cc85a38cb76b9341529c943f8f6e84e37b6c4cf7c3f"},
+    {file = "solders-0.20.0-cp37-abi3-manylinux_2_12_i686.manylinux2010_i686.whl", hash = "sha256:af069840d7aaafecfa819ab05ba13df1d1fb718650dab0e989bbb7c34b63b839"},
+    {file = "solders-0.20.0-cp37-abi3-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:b7ba319d05bdd5802b781326d9cbe70b9af05f935714d38b6595a51154d070b2"},
+    {file = "solders-0.20.0-cp37-abi3-manylinux_2_17_armv7l.manylinux2014_armv7l.whl", hash = "sha256:eab2565dc01ac1474bcb83d43a65e4e38c16cbe762650f77d8d075fae75ee832"},
+    {file = "solders-0.20.0-cp37-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:5002c1785ad301815d49a771ebd540bba15a8b30efbcef2f43456731e36a7df1"},
+    {file = "solders-0.20.0-cp37-abi3-musllinux_1_2_i686.whl", hash = "sha256:d3d1559134569bbf69a8fe86509e8bf94e6a73c8de796d8de4b29aaae78f0a7a"},
+    {file = "solders-0.20.0-cp37-abi3-musllinux_1_2_x86_64.whl", hash = "sha256:da0d8ff4e21b3acebb4c5b3ca097659c54358cb97df087fa9fdf717710425759"},
+    {file = "solders-0.20.0-cp37-abi3-win_amd64.whl", hash = "sha256:da64d20c0eb14b1b1e39bbe82b878a03e71c076f71345ff2faf5ca87f11fa431"},
+    {file = "solders-0.20.0.tar.gz", hash = "sha256:a898804637769ec22518f2667b961230a68ff3264d6ccf90d9c94942c12a0ea1"},
 ]
 
 [package.dependencies]

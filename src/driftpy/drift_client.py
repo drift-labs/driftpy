@@ -943,7 +943,7 @@ class DriftClient:
                 accounts={
                     "state": self.get_state_public_key(),
                     "user": self.get_user_account_public_key(sub_account_id),
-                    "authority": self.wallet.payer,
+                    "authority": self.wallet.payer.pubkey(),
                 },
                 remaining_accounts=remaining_accounts,
             ),
