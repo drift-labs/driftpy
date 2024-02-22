@@ -60,16 +60,10 @@ def get_auction_price_for_oracle_offset_auction(
         return oracle_price + order.auction_end_price
 
     if is_variant(order.direction, "Long"):
-        price_offset_delta = (
-            order.auction_end_price
-            - order.auction_start_price * delta_numerator // delta_denominator
-        )
+        price_offset_delta = (order.auction_end_price - order.auction_start_price) * delta_numerator // delta_denominator
     else:
-        price_offset_delta = (
-            order.auction_start_price
-            - order.auction_end_price * delta_numerator // delta_denominator
-        )
-
+        price_offset_delta = (order.auction_start_price - order.auction_end_price) * delta_numerator // delta_denominator
+        
     if is_variant(order.direction, "Long"):
         price_offset = order.auction_start_price + price_offset_delta
     else:
