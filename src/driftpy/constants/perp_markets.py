@@ -268,4 +268,11 @@ mainnet_perp_market_configs: list[PerpMarketConfig] = [
         oracle=Pubkey.from_string("g6eRCbboSwK4tSWngn773RCMexr1APQr4uA9bGZBYfo"),
         oracle_source=OracleSource.Pyth(),
     ),
+    PerpMarketConfig(
+        symbol="DYM-PERP",
+        base_asset_symbol="DYM",
+        market_index=25,
+        oracle=Pubkey.from_string("CSRRrhXa6DYu1W5jf89A7unCATdug2Z33tYyV2NXZZxa"),
+        oracle_source=OracleSource.Pyth(),
+    ),
 ]
