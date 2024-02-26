@@ -137,3 +137,11 @@ Bump `requests` and `typing-extensions` to ^ instead of pinned
 ## [0.7.24] - 2024-2-10
 
 Update `drift.json` IDL
+
+## [0.7.25] - 2024-2-20
+
+Fix bug in `decode_user()` where `remainder_base_amount` would decode incorrectly
+
+## [0.7.26] - 2024-2-26
+
+Filter out logs with errors in `websocket_log_provider.py` to avoid `EventSubscriber` returning false positive events
