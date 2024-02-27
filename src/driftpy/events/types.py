@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from abc import abstractmethod
 from solana.transaction import Signature
 from solana.rpc.commitment import Commitment, Confirmed
@@ -139,7 +139,7 @@ class EventSubscriptionOptions:
     order_dir: EventSubscriptionOrderDirection = "asc"
     commitment: Commitment = "confirmed"
     max_tx: int = 4096
-    log_provider_config: LogProviderConfig = WebsocketLogProviderConfig()
+    log_provider_config: LogProviderConfig = field(default_factory=WebsocketLogProviderConfig)
     until_tx: Signature = None
 
     @staticmethod
