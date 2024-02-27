@@ -6,13 +6,13 @@ def div_ceil(a: int, b: int) -> int:
     if b == 0:
         return a
 
-    quotient = a / b
+    quotient = a // b
     remainder = a % b
 
     if remainder > 0:
-        return int(quotient + 1)
-    else:
-        return int(quotient)
+        quotient += 1
+
+    return quotient
 
 
 def sig_num(x: int) -> int:
