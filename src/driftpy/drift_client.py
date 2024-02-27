@@ -1,4 +1,5 @@
 import json
+import os
 from deprecated import deprecated
 import requests
 from solders.pubkey import Pubkey
@@ -2524,7 +2525,7 @@ class DriftClient:
         user_account_public_key: Optional[Pubkey] = None,
     ) -> Tuple[list[Instruction], list[AddressLookupTableAccount]]:
         pre_instructions: list[Instruction] = []
-        JUPITER_URL = "https://quote-api.jup.ag/v6"
+        JUPITER_URL = os.getenv('JUPITER_URL', "https://quote-api.jup.ag/v6")
 
         out_market = self.get_spot_market_account(out_market_idx)
         in_market = self.get_spot_market_account(in_market_idx)
