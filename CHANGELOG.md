@@ -145,3 +145,7 @@ Fix bug in `decode_user()` where `remainder_base_amount` would decode incorrectl
 ## [0.7.26] - 2024-2-26
 
 Filter out logs with errors in `websocket_log_provider.py` to avoid `EventSubscriber` returning false positive events
+
+## [0.7.27] - 2024-2-27
+
+Fix bug where `MarketMap.unsubscribe()` wasn't properly awaited
