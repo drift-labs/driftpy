@@ -232,8 +232,8 @@ class PollingDriftClientAccountSubscriber(DriftClientAccountSubscriber):
                 perp_market_account.data.amm.oracle_source,
             )
             self._set_perp_oracle_map()
+            await asyncio.sleep(self.bulk_account_loader.frequency)
 
-        await asyncio.sleep(self.bulk_account_loader.frequency)
         return self.get_oracle_price_data_and_slot(perp_market_account.data.amm.oracle)
 
     async def get_oracle_price_data_and_slot_for_spot_market(
@@ -250,7 +250,6 @@ class PollingDriftClientAccountSubscriber(DriftClientAccountSubscriber):
                 spot_market_account.data.oracle, spot_market_account.data.oracle_source
             )
             self._set_spot_oracle_map()
-
-        await asyncio.sleep(self.bulk_account_loader.frequency)
+            await asyncio.sleep(self.bulk_account_loader.frequency)
 
         return self.get_oracle_price_data_and_slot(spot_market_account.data.oracle)
