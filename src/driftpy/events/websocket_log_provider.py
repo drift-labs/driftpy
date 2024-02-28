@@ -47,7 +47,7 @@ class WebsocketLogProvider(LogProvider):
                         signature = msg[0].result.value.signature
                         logs = msg[0].result.value.logs
 
-                        if any("err" in log or "error" in log for log in logs):
+                        if msg[0].result.value.err:
                             continue
 
                         callback(signature, slot, logs)
