@@ -121,4 +121,11 @@ mainnet_spot_market_configs: list[SpotMarketConfig] = [
         oracle_source=OracleSource.Pyth(),
         mint=Pubkey.from_string("JUPyiwrYJFskUPiHa7hkeR8VUtAeFoSYbKedZNsDvCN"),
     ),
+    SpotMarketConfig(
+        symbol="RNDR",
+        market_index=12,
+        oracle=Pubkey.from_string("CYGfrBJB9HgLf9iZyN4aH5HvUAi2htQ4MjPxeXMf4Egn"),
+        oracle_source=OracleSource.Pyth(),
+        mint=Pubkey.from_string("rndrizKT3MK1iimdxRdWabcF7Zg7AR5T4nud4EkHBof"),
+    ),
 ]

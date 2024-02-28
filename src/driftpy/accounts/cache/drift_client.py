@@ -96,7 +96,7 @@ class CachedDriftClientAccountSubscriber(DriftClientAccountSubscriber):
     ) -> Optional[DataAndSlot[OraclePriceData]]:
         return self.cache["oracle_price_data"][str(oracle)]
 
-    def unsubscribe(self):
+    async def unsubscribe(self):
         self.cache = None
 
     def get_market_accounts_and_slots(self) -> list[DataAndSlot[PerpMarketAccount]]:
