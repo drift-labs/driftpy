@@ -27,6 +27,10 @@ from solana.transaction import Signature
 
 from driftpy.types import *
 from driftpy.math.amm import calculate_amm_reserves_after_swap, calculate_price
+from driftpy.admin import Admin
+from driftpy.constants.numeric_constants import *
+
+NATIVE_MINT = Pubkey.from_string("So11111111111111111111111111111111111111112")
 
 
 async def adjust_oracle_pretrade(
@@ -329,3 +333,71 @@ async def mock_oracle(
         feed_data.price, price, abs_tol=0.001
     ), f"{feed_data.price} {price}"
     return price_feed_address
+
+
+async def initialize_sol_spot_market(
+    admin: Admin, sol_oracle: Pubkey, sol_mint: Pubkey = NATIVE_MINT
+):
+    optimal_utilization = SPOT_RATE_PRECISION // 2
+    optimal_rate = SPOT_RATE_PRECISION * 20
+    max_rate = SPOT_RATE_PRECISION * 50
+    initial_asset_weight = (SPOT_MARKET_WEIGHT_PRECISION * 8) // 10
+    maintenance_asset_weight = (SPOT_MARKET_WEIGHT_PRECISION * 9) // 10
+    initial_liability_weight = (SPOT_MARKET_WEIGHT_PRECISION * 12) // 10
+    maintenance_liability_weight = (SPOT_MARKET_WEIGHT_PRECISION * 11) // 10
+
+    market_index = admin.get_state_account().number_of_markets  # type: ignore
+
+    sig = await admin.initialize_spot_market(
+        sol_mint,
+        optimal_utilization,
+        optimal_rate,
+        max_rate,
+        sol_oracle,
+        OracleSource.Pyth(),
+        initial_asset_weight,
+        maintenance_asset_weight,
+        initial_liability_weight,
+        maintenance_liability_weight,
+    )
+
+    await admin.update_withdraw_guard_threshold(
+        market_index, (10**10) * QUOTE_PRECISION
+    )
+
+    return sig
+
+
+async def initialize_quote_spot_market(
+    admin: Admin,
+    usdc_mint: Pubkey,
+):
+    optimal_utilization = SPOT_RATE_PRECISION // 2
+    optimal_rate = SPOT_RATE_PRECISION
+    max_rate = SPOT_RATE_PRECISION
+    initial_asset_weight = SPOT_MARKET_WEIGHT_PRECISION
+    maintenance_asset_weight = SPOT_MARKET_WEIGHT_PRECISION
+    initial_liability_weight = SPOT_MARKET_WEIGHT_PRECISION
+    maintenance_liability_weight = SPOT_MARKET_WEIGHT_PRECISION
+    imf_factor = 0
+
+    market_index = admin.get_state_account().number_of_markets  # type: ignore
+
+    sig = await admin.initialize_spot_market(
+        usdc_mint,
+        optimal_utilization,
+        optimal_rate,
+        max_rate,
+        Pubkey.default(),
+        OracleSource.QuoteAsset(),
+        initial_asset_weight,
+        maintenance_asset_weight,
+        initial_liability_weight,
+        maintenance_liability_weight,
+        imf_factor,
+    )
+    await admin.update_withdraw_guard_threshold(
+        market_index, (10**10) * QUOTE_PRECISION
+    )
+
+    return sig
