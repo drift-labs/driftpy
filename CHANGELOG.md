@@ -149,3 +149,7 @@ Filter out logs with errors in `websocket_log_provider.py` to avoid `EventSubscr
 ## [0.7.27] - 2024-2-27
 
 Fix bug where `MarketMap.unsubscribe()` wasn't properly awaited
+
+## [0.7.29] - 2024-2-28
+
+Fix bug where `DriftClient.unsubscribe()` wasn't properly awaited
