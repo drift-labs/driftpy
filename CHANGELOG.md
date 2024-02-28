@@ -153,3 +153,9 @@ Fix bug where `MarketMap.unsubscribe()` wasn't properly awaited
 ## [0.7.29] - 2024-2-28
 
 Fix bug where `DriftClient.unsubscribe()` wasn't properly awaited
+
+## [0.7.30] - 2024-2-28
+
+Add support for hot-swapping oracles without SDK dying
+
+Add custom event parsing in `events/parse.py`
