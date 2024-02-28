@@ -1,4 +1,6 @@
+import binascii
 import re
+import base64
 
 from typing import Tuple, Optional
 from anchorpy import Program, Event
@@ -50,25 +52,29 @@ def parse_logs(program: Program, logs: list[str]) -> list[Event]:
 def handle_log(
     execution: ExecutionContext, log: str, program: Program
 ) -> Tuple[Optional[Event], Optional[str], bool]:
-    if len(execution.stack) > 0 and execution.program == DRIFT_PROGRAM_ID:
+    if len(execution.stack) > 0 and execution.program() == DRIFT_PROGRAM_ID:
         return handle_program_log(log, program)
     else:
-        return (None,) + handle_system_log(log)
+        return (None, *handle_system_log(log))
 
 
 def handle_program_log(
     log: str, program: Program
 ) -> Tuple[Optional[Event], Optional[str], bool]:
-    if log.startswith(PROGRAM_LOG):
-        log_str = log[:PROGRAM_LOG_START_INDEX]
-        event: Event = program.coder.events._decode(log_str)
-        return (event, None, False)
-    elif log.startswith(PROGRAM_DATA):
-        log_str = log[:PROGRAM_DATA_START_INDEX]
-        event: Event = program.coder.events._decode(log_str)
+    if log.startswith(PROGRAM_LOG) or log.startswith(PROGRAM_DATA):
+        log_str = (
+            log[PROGRAM_LOG_START_INDEX:]
+            if log.startswith(PROGRAM_LOG)
+            else log[PROGRAM_DATA_START_INDEX:]
+        )
+        try:
+            decoded = base64.b64decode(log_str)
+        except binascii.Error:
+            return (None, None, False)
+        event = program.coder.events.parse(decoded)
         return (event, None, False)
     else:
-        return (None,) + handle_system_log(log)
+        return (None, *handle_system_log(log))
 
 
 def handle_system_log(log: str) -> Tuple[Optional[str], bool]:
@@ -77,7 +83,7 @@ def handle_system_log(log: str) -> Tuple[Optional[str], bool]:
     if re.findall(r"Program (.*) success", log_start) != []:
         return (None, True)
     elif log_start.startswith(DRIFT_PROGRAM_START):
-        return [DRIFT_PROGRAM_ID, False]
+        return (DRIFT_PROGRAM_ID, False)
     elif "invoke" in log_start:
         return ("cpi", False)
     else:
