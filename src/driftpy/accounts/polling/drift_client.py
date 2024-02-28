@@ -231,7 +231,8 @@ class PollingDriftClientAccountSubscriber(DriftClientAccountSubscriber):
                 perp_market_account.data.amm.oracle,
                 perp_market_account.data.amm.oracle_source,
             )
-            self._set_perp_oracle_map()
+            if str(oracle) in self.bulk_account_loader.buffer_and_slot_map:
+                self._set_perp_oracle_map()
 
         return self.get_oracle_price_data_and_slot(oracle)
 
@@ -248,6 +249,7 @@ class PollingDriftClientAccountSubscriber(DriftClientAccountSubscriber):
             self.add_oracle(
                 spot_market_account.data.oracle, spot_market_account.data.oracle_source
             )
-            self._set_spot_oracle_map()
+            if str(oracle) in self.bulk_account_loader.buffer_and_slot_map:
+                self._set_spot_oracle_map()
 
         return self.get_oracle_price_data_and_slot(oracle)

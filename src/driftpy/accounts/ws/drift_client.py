@@ -193,9 +193,7 @@ class WebsocketDriftClientAccountSubscriber(DriftClientAccountSubscriber):
         )
 
         await oracle_subscriber.subscribe()
-        print(f"subscribed to oracle: {oracle_info.pubkey}")
         self.oracle_subscribers[str(oracle_info.pubkey)] = oracle_subscriber
-        print({self.oracle_subscribers[str(oracle_info.pubkey)]})
 
     def is_subscribed(self):
         return (
@@ -295,7 +293,6 @@ class WebsocketDriftClientAccountSubscriber(DriftClientAccountSubscriber):
             perp_market_account = market.data
             market_index = perp_market_account.market_index
             oracle = perp_market_account.amm.oracle
-            print(oracle)
             self.perp_market_oracle_map[market_index] = oracle
 
     def _set_spot_oracle_map(self):
