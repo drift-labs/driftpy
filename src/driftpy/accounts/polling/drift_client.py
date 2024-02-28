@@ -189,7 +189,7 @@ class PollingDriftClientAccountSubscriber(DriftClientAccountSubscriber):
 
     def get_market_accounts_and_slots(self) -> list[DataAndSlot[PerpMarketAccount]]:
         return [
-            DataAndSlot(account.data, account.slot)
+            DataAndSlot(account.slot, account.data)
             for account in self.perp_markets.values()
         ]
 
@@ -197,14 +197,14 @@ class PollingDriftClientAccountSubscriber(DriftClientAccountSubscriber):
         self,
     ) -> list[DataAndSlot[SpotMarketAccount]]:
         return [
-            DataAndSlot(account.data, account.slot)
+            DataAndSlot(account.slot, account.data)
             for account in self.spot_markets.values()
         ]
 
     def _set_perp_oracle_map(self):
         perp_markets = self.get_market_accounts_and_slots()
         for market in perp_markets:
-            market_account = market.slot
+            market_account = market.data
             market_index = market_account.market_index
             oracle = market_account.amm.oracle
             self.perp_oracle_map[market_index] = oracle
@@ -212,12 +212,12 @@ class PollingDriftClientAccountSubscriber(DriftClientAccountSubscriber):
     def _set_spot_oracle_map(self):
         spot_markets = self.get_spot_market_accounts_and_slots()
         for market in spot_markets:
-            market_account = market.slot
+            market_account = market.data
             market_index = market_account.market_index
             oracle = market_account.oracle
             self.spot_oracle_map[market_index] = oracle
 
-    async def get_oracle_price_data_and_slot_for_perp_market(
+    def get_oracle_price_data_and_slot_for_perp_market(
         self, market_index: int
     ) -> Union[DataAndSlot[OraclePriceData], None]:
         perp_market_account = self.get_perp_market_and_slot(market_index)
@@ -232,11 +232,10 @@ class PollingDriftClientAccountSubscriber(DriftClientAccountSubscriber):
                 perp_market_account.data.amm.oracle_source,
             )
             self._set_perp_oracle_map()
-            await asyncio.sleep(self.bulk_account_loader.frequency)
 
-        return self.get_oracle_price_data_and_slot(perp_market_account.data.amm.oracle)
+        return self.get_oracle_price_data_and_slot(oracle)
 
-    async def get_oracle_price_data_and_slot_for_spot_market(
+    def get_oracle_price_data_and_slot_for_spot_market(
         self, market_index: int
     ) -> Union[DataAndSlot[OraclePriceData], None]:
         spot_market_account = self.get_spot_market_and_slot(market_index)
@@ -250,6 +249,5 @@ class PollingDriftClientAccountSubscriber(DriftClientAccountSubscriber):
                 spot_market_account.data.oracle, spot_market_account.data.oracle_source
             )
             self._set_spot_oracle_map()
-            await asyncio.sleep(self.bulk_account_loader.frequency)
 
-        return self.get_oracle_price_data_and_slot(spot_market_account.data.oracle)
+        return self.get_oracle_price_data_and_slot(oracle)

@@ -14,6 +14,12 @@ from pythclient.pythaccounts import PythPriceInfo, _ACCOUNT_HEADER_BYTES, EmaTyp
 from solana.rpc.async_api import AsyncClient
 import struct
 
+file = Path(str(driftpy.__path__[0]) + "/idl/switchboard.json")
+with file.open() as f:
+    raw = file.read_text()
+IDL = Idl.from_json(raw)
+CODER = Coder(IDL)
+
 
 def convert_pyth_price(price, scale=1):
     return int(price * PRICE_PRECISION * scale)
@@ -107,13 +113,7 @@ def decode_pyth_price_info(
 
 
 def decode_swb_price_info(data: bytes):
-    file = Path(str(driftpy.__path__[0]) + "/idl/switchboard.json")
-    with file.open() as f:
-        raw = file.read_text()
-    idl = Idl.from_json(raw)
-    coder = Coder(idl)
-
-    account = coder.accounts.decode(data)
+    account = CODER.accounts.decode(data)
 
     round = account.latest_confirmed_round
 

@@ -2,6 +2,7 @@ import asyncio
 
 from solana.rpc.websocket_api import connect, SolanaWsClientProtocol
 from driftpy.dlob.client_types import SlotSource
+from driftpy.types import get_ws_url
 
 from driftpy.drift_client import DriftClient
 from events import Events as EventEmitter
@@ -35,7 +36,7 @@ class SlotSubscriber(SlotSource):
         self.current_slot = await self.connection.get_slot()
 
         endpoint = self.program.provider.connection._provider.endpoint_uri
-        ws_endpoint = endpoint.replace("https", "wss").replace("http", "ws")
+        ws_endpoint = get_ws_url(endpoint)
         while True:
             try:
                 async with connect(ws_endpoint) as ws:

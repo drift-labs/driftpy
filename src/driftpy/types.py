@@ -3,6 +3,7 @@ from solders.pubkey import Pubkey
 from borsh_construct.enum import _rust_enum
 from sumtypes import constructor
 from typing import Optional
+from urllib.parse import urlparse, urlunparse
 
 
 def is_variant(enum, type: str) -> bool:
@@ -11,6 +12,27 @@ def is_variant(enum, type: str) -> bool:
 
 def is_one_of_variant(enum, types):
     return any(type in str(enum) for type in types)
+
+
+def get_ws_url(url: str) -> str:
+    parsed = urlparse(url)
+
+    if parsed.port:
+        ws_port = parsed.port + 1
+        new_netloc = f"{parsed.hostname}:{ws_port}"
+        new_scheme = "wss" if parsed.scheme == "https" else "ws"
+        return urlunparse(
+            (
+                new_scheme,
+                new_netloc,
+                parsed.path,
+                parsed.params,
+                parsed.query,
+                parsed.fragment,
+            )
+        )
+    else:
+        return url.replace("https", "wss").replace("http", "ws")
 
 
 @_rust_enum

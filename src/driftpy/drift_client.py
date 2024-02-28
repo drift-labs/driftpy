@@ -218,10 +218,10 @@ class DriftClient:
         )
         return getattr(oracle_price_data_and_slot, "data", None)
 
-    async def get_oracle_price_data_for_perp_market(
+    def get_oracle_price_data_for_perp_market(
         self, market_index: int
     ) -> Optional[OraclePriceData]:
-        data = await self.account_subscriber.get_oracle_price_data_and_slot_for_perp_market(
+        data = self.account_subscriber.get_oracle_price_data_and_slot_for_perp_market(
             market_index
         )
         return getattr(
@@ -230,10 +230,10 @@ class DriftClient:
             None,
         )
 
-    async def get_oracle_price_data_for_spot_market(
+    def get_oracle_price_data_for_spot_market(
         self, market_index: int
     ) -> Optional[OraclePriceData]:
-        data = await self.account_subscriber.get_oracle_price_data_and_slot_for_spot_market(
+        data = self.account_subscriber.get_oracle_price_data_and_slot_for_spot_market(
             market_index
         )
         return getattr(
