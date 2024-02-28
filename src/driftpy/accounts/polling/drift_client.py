@@ -156,7 +156,7 @@ class PollingDriftClientAccountSubscriber(DriftClientAccountSubscriber):
 
         return cb
 
-    def unsubscribe(self):
+    async def unsubscribe(self):
         for pubkey_str, callback_id in self.callbacks.items():
             self.bulk_account_loader.remove_account(
                 Pubkey.from_string(pubkey_str), callback_id

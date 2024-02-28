@@ -220,12 +220,12 @@ class WebsocketDriftClientAccountSubscriber(DriftClientAccountSubscriber):
     ) -> Optional[DataAndSlot[OraclePriceData]]:
         return self.oracle_subscribers[str(oracle)].data_and_slot
 
-    def unsubscribe(self):
+    async def unsubscribe(self):
         if self.is_subscribed():
             self.state_subscriber.unsubscribe()
             if self.spot_market_map and self.perp_market_map:
-                self.spot_market_map.unsubscribe()
-                self.perp_market_map.unsubscribe()
+                await self.spot_market_map.unsubscribe()
+                await self.perp_market_map.unsubscribe()
             else:
                 for spot_market_subscriber in self.spot_market_subscribers.values():
                     spot_market_subscriber.unsubscribe()
