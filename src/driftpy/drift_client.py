@@ -218,24 +218,26 @@ class DriftClient:
         )
         return getattr(oracle_price_data_and_slot, "data", None)
 
-    def get_oracle_price_data_for_perp_market(
+    async def get_oracle_price_data_for_perp_market(
         self, market_index: int
     ) -> Optional[OraclePriceData]:
+        data = await self.account_subscriber.get_oracle_price_data_and_slot_for_perp_market(
+            market_index
+        )
         return getattr(
-            self.account_subscriber.get_oracle_price_data_and_slot_for_perp_market(
-                market_index
-            ),
+            data,
             "data",
             None,
         )
 
-    def get_oracle_price_data_for_spot_market(
+    async def get_oracle_price_data_for_spot_market(
         self, market_index: int
     ) -> Optional[OraclePriceData]:
+        data = await self.account_subscriber.get_oracle_price_data_and_slot_for_spot_market(
+            market_index
+        )
         return getattr(
-            self.account_subscriber.get_oracle_price_data_and_slot_for_spot_market(
-                market_index
-            ),
+            data,
             "data",
             None,
         )
@@ -941,7 +943,7 @@ class DriftClient:
                 accounts={
                     "state": self.get_state_public_key(),
                     "user": self.get_user_account_public_key(sub_account_id),
-                    "authority": self.wallet.payer,
+                    "authority": self.wallet.payer.pubkey(),
                 },
                 remaining_accounts=remaining_accounts,
             ),

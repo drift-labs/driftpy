@@ -14,6 +14,8 @@ from solana.rpc.websocket_api import connect
 
 from typing import cast, Generic, TypeVar, Callable
 
+from driftpy.types import PerpMarketAccount
+
 T = TypeVar("T")
 
 
