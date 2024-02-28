@@ -275,4 +275,11 @@ mainnet_perp_market_configs: list[PerpMarketConfig] = [
         oracle=Pubkey.from_string("CSRRrhXa6DYu1W5jf89A7unCATdug2Z33tYyV2NXZZxa"),
         oracle_source=OracleSource.Pyth(),
     ),
+    PerpMarketConfig(
+        symbol="TAO-PERP",
+        base_asset_symbol="TAO",
+        market_index=26,
+        oracle=Pubkey.from_string("5NxzemFgGDhimYE3S5qmb5zkjZUmiHXb4up5WGXe7NLn"),
+        oracle_source=OracleSource.Pyth(),
+    ),
 ]
