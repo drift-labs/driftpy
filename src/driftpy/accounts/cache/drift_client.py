@@ -13,6 +13,7 @@ from driftpy.accounts import (
     get_spot_market_account_and_slot,
     get_perp_market_account_and_slot,
 )
+from driftpy.constants.numeric_constants import QUOTE_SPOT_MARKET_INDEX
 from driftpy.types import (
     OracleInfo,
     PerpMarketAccount,
@@ -92,36 +93,23 @@ class CachedDriftClientAccountSubscriber(DriftClientAccountSubscriber):
 
             self.cache["oracle_price_data"] = oracle_data
         else:
+            # force quote spot market
+            if 0 not in self.spot_market_indexes:
+                self.spot_market_indexes.insert(0, 0)
+
             for market_index in self.spot_market_indexes:
                 spot_market_and_slot = await get_spot_market_account_and_slot(
                     self.program, market_index
                 )
                 spot_markets.append(spot_market_and_slot)
 
-                if any(
-                    info.pubkey == spot_market_and_slot.data.oracle
-                    for info in self.oracle_infos
-                ):
-                    oracle_price_data_and_slot = await get_oracle_price_data_and_slot(
-                        self.program.provider.connection,
-                        spot_market_and_slot.data.oracle,
-                        spot_market_and_slot.data.oracle_source,
+                if (
+                    any(
+                        info.pubkey == spot_market_and_slot.data.oracle
+                        for info in self.oracle_infos
                     )
-                    oracle_data[
-                        str(spot_market_and_slot.data.oracle)
-                    ] = oracle_price_data_and_slot
-
-            # force quote spot market
-            if 0 not in self.spot_market_indexes:
-                spot_market_and_slot = await get_spot_market_account_and_slot(
-                    self.program, market_index
-                )
-                spot_markets.append(spot_market_and_slot)
-
-                if any(
-                    info.pubkey == spot_market_and_slot.data.oracle
-                    for info in self.oracle_infos
-                ):
+                    or market_index == QUOTE_SPOT_MARKET_INDEX
+                ):  # if quote market forced, we won't have the oracle info
                     oracle_price_data_and_slot = await get_oracle_price_data_and_slot(
                         self.program.provider.connection,
                         spot_market_and_slot.data.oracle,
