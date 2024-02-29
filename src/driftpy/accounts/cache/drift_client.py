@@ -37,8 +37,8 @@ class CachedDriftClientAccountSubscriber(DriftClientAccountSubscriber):
         self.program = program
         self.commitment = commitment
         self.cache = None
-        self.perp_market_indexes = perp_market_indexes
-        self.spot_market_indexes = spot_market_indexes
+        self.perp_market_indexes = perp_market_indexes.sort()
+        self.spot_market_indexes = spot_market_indexes.sort()
         self.oracle_infos = oracle_infos
         self.should_find_all_markets_and_oracles = should_find_all_markets_and_oracles
 
@@ -177,7 +177,7 @@ class CachedDriftClientAccountSubscriber(DriftClientAccountSubscriber):
     ) -> Optional[DataAndSlot[OraclePriceData]]:
         try:
             return self.cache["oracle_price_data"][str(oracle)]
-        except IndexError:
+        except KeyError:
             print(
                 f"WARNING: Oracle {oracle} not found in cache, Location: {stack_trace()}"
             )
