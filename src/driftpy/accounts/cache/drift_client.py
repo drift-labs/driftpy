@@ -1,29 +1,45 @@
-from anchorpy import Program
-from solders.pubkey import Pubkey
-from solana.rpc.commitment import Commitment
+from typing import Optional
 
+from anchorpy import Program
+
+from solders.pubkey import Pubkey  # type: ignore
+
+from solana.rpc.commitment import Commitment, Confirmed
+
+from driftpy.accounts.oracle import get_oracle_price_data_and_slot
+from driftpy.accounts.types import DriftClientAccountSubscriber, DataAndSlot
 from driftpy.accounts import (
     get_state_account_and_slot,
     get_spot_market_account_and_slot,
     get_perp_market_account_and_slot,
 )
-from driftpy.accounts.oracle import get_oracle_price_data_and_slot
-from driftpy.accounts.types import DriftClientAccountSubscriber, DataAndSlot
-from typing import Optional
-
 from driftpy.types import (
+    OracleInfo,
     PerpMarketAccount,
     SpotMarketAccount,
     OraclePriceData,
     StateAccount,
+    stack_trace,
 )
 
 
 class CachedDriftClientAccountSubscriber(DriftClientAccountSubscriber):
-    def __init__(self, program: Program, commitment: Commitment = "confirmed"):
+    def __init__(
+        self,
+        program: Program,
+        perp_market_indexes: list[int],
+        spot_market_indexes: list[int],
+        oracle_infos: list[OracleInfo],
+        should_find_all_markets_and_oracles: bool = True,
+        commitment: Commitment = Confirmed,
+    ):
         self.program = program
         self.commitment = commitment
         self.cache = None
+        self.perp_market_indexes = perp_market_indexes
+        self.spot_market_indexes = spot_market_indexes
+        self.oracle_infos = oracle_infos
+        self.should_find_all_markets_and_oracles = should_find_all_markets_and_oracles
 
     async def subscribe(self):
         await self.update_cache()
@@ -36,44 +52,89 @@ class CachedDriftClientAccountSubscriber(DriftClientAccountSubscriber):
         self.cache["state"] = state_and_slot
 
         oracle_data = {}
-
         spot_markets = []
-        for i in range(state_and_slot.data.number_of_spot_markets):
-            spot_market_and_slot = await get_spot_market_account_and_slot(
-                self.program, i
-            )
-            spot_markets.append(spot_market_and_slot)
-
-            oracle_price_data_and_slot = await get_oracle_price_data_and_slot(
-                self.program.provider.connection,
-                spot_market_and_slot.data.oracle,
-                spot_market_and_slot.data.oracle_source,
-            )
-            oracle_data[
-                str(spot_market_and_slot.data.oracle)
-            ] = oracle_price_data_and_slot
-
-        self.cache["spot_markets"] = spot_markets
-
         perp_markets = []
-        for i in range(state_and_slot.data.number_of_markets):
-            perp_market_and_slot = await get_perp_market_account_and_slot(
-                self.program, i
-            )
-            perp_markets.append(perp_market_and_slot)
 
-            oracle_price_data_and_slot = await get_oracle_price_data_and_slot(
-                self.program.provider.connection,
-                perp_market_and_slot.data.amm.oracle,
-                perp_market_and_slot.data.amm.oracle_source,
-            )
-            oracle_data[
-                str(perp_market_and_slot.data.amm.oracle)
-            ] = oracle_price_data_and_slot
+        if self.should_find_all_markets_and_oracles:
+            for i in range(state_and_slot.data.number_of_spot_markets):
+                spot_market_and_slot = await get_spot_market_account_and_slot(
+                    self.program, i
+                )
+                spot_markets.append(spot_market_and_slot)
 
-        self.cache["perp_markets"] = perp_markets
+                oracle_price_data_and_slot = await get_oracle_price_data_and_slot(
+                    self.program.provider.connection,
+                    spot_market_and_slot.data.oracle,
+                    spot_market_and_slot.data.oracle_source,
+                )
+                oracle_data[
+                    str(spot_market_and_slot.data.oracle)
+                ] = oracle_price_data_and_slot
 
-        self.cache["oracle_price_data"] = oracle_data
+            self.cache["spot_markets"] = spot_markets
+
+            for i in range(state_and_slot.data.number_of_markets):
+                perp_market_and_slot = await get_perp_market_account_and_slot(
+                    self.program, i
+                )
+                perp_markets.append(perp_market_and_slot)
+
+                oracle_price_data_and_slot = await get_oracle_price_data_and_slot(
+                    self.program.provider.connection,
+                    perp_market_and_slot.data.amm.oracle,
+                    perp_market_and_slot.data.amm.oracle_source,
+                )
+                oracle_data[
+                    str(perp_market_and_slot.data.amm.oracle)
+                ] = oracle_price_data_and_slot
+
+            self.cache["perp_markets"] = perp_markets
+
+            self.cache["oracle_price_data"] = oracle_data
+        else:
+            for market_index in self.spot_market_indexes:
+                spot_market_and_slot = await get_spot_market_account_and_slot(
+                    self.program, market_index
+                )
+                spot_markets.append(spot_market_and_slot)
+
+                if any(
+                    info.pubkey == spot_market_and_slot.data.oracle
+                    for info in self.oracle_infos
+                ):
+                    oracle_price_data_and_slot = await get_oracle_price_data_and_slot(
+                        self.program.provider.connection,
+                        spot_market_and_slot.data.oracle,
+                        spot_market_and_slot.data.oracle_source,
+                    )
+                    oracle_data[
+                        str(spot_market_and_slot.data.oracle)
+                    ] = oracle_price_data_and_slot
+
+            self.cache["spot_markets"] = spot_markets
+
+            for market_index in self.perp_market_indexes:
+                perp_market_and_slot = await get_perp_market_account_and_slot(
+                    self.program, market_index
+                )
+                perp_markets.append(perp_market_and_slot)
+
+                if any(
+                    info.pubkey == perp_market_and_slot.data.amm.oracle
+                    for info in self.oracle_infos
+                ):
+                    oracle_price_data_and_slot = await get_oracle_price_data_and_slot(
+                        self.program.provider.connection,
+                        perp_market_and_slot.data.amm.oracle,
+                        perp_market_and_slot.data.amm.oracle_source,
+                    )
+                    oracle_data[
+                        str(perp_market_and_slot.data.amm.oracle)
+                    ] = oracle_price_data_and_slot
+
+            self.cache["perp_markets"] = perp_markets
+
+            self.cache["oracle_price_data"] = oracle_data
 
     async def fetch(self):
         await self.update_cache()
@@ -84,17 +145,53 @@ class CachedDriftClientAccountSubscriber(DriftClientAccountSubscriber):
     def get_perp_market_and_slot(
         self, market_index: int
     ) -> Optional[DataAndSlot[PerpMarketAccount]]:
-        return self.cache["perp_markets"][market_index]
+        try:
+            return self.cache["perp_markets"][market_index]
+        except IndexError:
+            print(
+                f"WARNING: Perp market {market_index} not found in cache, Location: {stack_trace()}"
+            )
+            return None
 
     def get_spot_market_and_slot(
         self, market_index: int
     ) -> Optional[DataAndSlot[SpotMarketAccount]]:
-        return self.cache["spot_markets"][market_index]
+        try:
+            return self.cache["spot_markets"][market_index]
+        except IndexError:
+            print(
+                f"WARNING: Spot market {market_index} not found in cache Location: {stack_trace()}"
+            )
+            return None
 
     def get_oracle_price_data_and_slot(
         self, oracle: Pubkey
     ) -> Optional[DataAndSlot[OraclePriceData]]:
-        return self.cache["oracle_price_data"][str(oracle)]
+        try:
+            return self.cache["oracle_price_data"][str(oracle)]
+        except IndexError:
+            print(
+                f"WARNING: Oracle {oracle} not found in cache, Location: {stack_trace()}"
+            )
+            return None
+
+    def get_oracle_price_data_and_slot_for_perp_market(
+        self, market_index: int
+    ) -> Optional[OraclePriceData]:
+        perp_market = self.get_perp_market_and_slot(market_index)
+        if perp_market:
+            oracle = perp_market.data.amm.oracle
+            return self.get_oracle_price_data_and_slot(oracle)
+        return None
+
+    def get_oracle_price_data_and_slot_for_spot_market(
+        self, market_index: int
+    ) -> Optional[OraclePriceData]:
+        spot_market = self.get_spot_market_and_slot(market_index)
+        if spot_market:
+            oracle = spot_market.data.oracle
+            return self.get_oracle_price_data_and_slot(oracle)
+        return None
 
     async def unsubscribe(self):
         self.cache = None

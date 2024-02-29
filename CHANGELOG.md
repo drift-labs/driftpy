@@ -163,3 +163,11 @@ Add custom event parsing in events/parse.py
 ## [0.7.31] - 2024-2-28
 
 Fix bug where `DriftClient.unsubscribe()` scheduled tasks on an already-running event loop
+
+## [0.7.32] - 2024-2-29
+
+Add guardrails to avoid `CachedDriftClientAccountSubscriber` panicking on cache fetch `IndexError`s
+
+Add `perp_market_indexes`, `spot_market_indexes`, `oracle_infos`, `should_find_all_markets_and_oracles` to `CachedDriftClientAccountSubscriber`
+
+Add `stack_trace()` utility function
