@@ -111,6 +111,26 @@ class CachedDriftClientAccountSubscriber(DriftClientAccountSubscriber):
                         str(spot_market_and_slot.data.oracle)
                     ] = oracle_price_data_and_slot
 
+            # force quote spot market
+            if 0 not in self.spot_market_indexes:
+                spot_market_and_slot = await get_spot_market_account_and_slot(
+                    self.program, market_index
+                )
+                spot_markets.append(spot_market_and_slot)
+
+                if any(
+                    info.pubkey == spot_market_and_slot.data.oracle
+                    for info in self.oracle_infos
+                ):
+                    oracle_price_data_and_slot = await get_oracle_price_data_and_slot(
+                        self.program.provider.connection,
+                        spot_market_and_slot.data.oracle,
+                        spot_market_and_slot.data.oracle_source,
+                    )
+                    oracle_data[
+                        str(spot_market_and_slot.data.oracle)
+                    ] = oracle_price_data_and_slot
+
             self.cache["spot_markets"] = spot_markets
 
             for market_index in self.perp_market_indexes:
