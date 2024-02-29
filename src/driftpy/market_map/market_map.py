@@ -53,9 +53,8 @@ class MarketMap:
         await self.subscription.subscribe()
         self.is_subscribed = True
 
-    def unsubscribe(self):
-        loop = asyncio.get_event_loop()
-        loop.run_until_complete(self.subscription.unsubscribe())
+    async def unsubscribe(self):
+        await self.subscription.unsubscribe()
 
         for key in list(self.market_map.keys()):
             del self.market_map[key]

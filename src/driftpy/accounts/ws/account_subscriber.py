@@ -94,10 +94,10 @@ class WebsocketAccountSubscriber(UserAccountSubscriber, Generic[T]):
         if self.data_and_slot is None or new_data.slot >= self.data_and_slot.slot:
             self.data_and_slot = new_data
 
-    def unsubscribe(self):
+    async def unsubscribe(self):
         if self.task:
             self.task.cancel()
             self.task = None
         if self.ws:
-            self.ws.close()
+            await self.ws.close()
             self.ws = None

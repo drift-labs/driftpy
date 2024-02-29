@@ -252,17 +252,17 @@ class WebsocketDriftClientAccountSubscriber(DriftClientAccountSubscriber):
 
     async def unsubscribe(self):
         if self.is_subscribed():
-            self.state_subscriber.unsubscribe()
+            await self.state_subscriber.unsubscribe()
             if self.spot_market_map and self.perp_market_map:
                 await self.spot_market_map.unsubscribe()
                 await self.perp_market_map.unsubscribe()
             else:
                 for spot_market_subscriber in self.spot_market_subscribers.values():
-                    spot_market_subscriber.unsubscribe()
+                    await spot_market_subscriber.unsubscribe()
                 for perp_market_subscriber in self.perp_market_subscribers.values():
-                    perp_market_subscriber.unsubscribe()
+                    await perp_market_subscriber.unsubscribe()
             for oracle_subscriber in self.oracle_subscribers.values():
-                oracle_subscriber.unsubscribe()
+                await oracle_subscriber.unsubscribe()
 
     def get_market_accounts_and_slots(self) -> list[DataAndSlot[PerpMarketAccount]]:
         if self.perp_market_map:
