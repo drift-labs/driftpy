@@ -158,4 +158,8 @@ Fix bug where `DriftClient.unsubscribe()` wasn't properly awaited
 
 Add support for hot-swapping oracles without SDK dying
 
-Add custom event parsing in `events/parse.py`
+Add custom event parsing in events/parse.py
+
+## [0.7.31] - 2024-2-28
+
+Fix bug where `DriftClient.unsubscribe()` scheduled tasks on an already-running event loop
