@@ -97,7 +97,7 @@ class CachedDriftClientAccountSubscriber(DriftClientAccountSubscriber):
             if 0 not in self.spot_market_indexes:
                 self.spot_market_indexes.insert(0, 0)
 
-            for market_index in self.spot_market_indexes:
+            for market_index in sorted(self.spot_market_indexes):
                 spot_market_and_slot = await get_spot_market_account_and_slot(
                     self.program, market_index
                 )
@@ -121,7 +121,7 @@ class CachedDriftClientAccountSubscriber(DriftClientAccountSubscriber):
 
             self.cache["spot_markets"] = spot_markets
 
-            for market_index in self.perp_market_indexes:
+            for market_index in sorted(self.perp_market_indexes):
                 perp_market_and_slot = await get_perp_market_account_and_slot(
                     self.program, market_index
                 )
@@ -177,7 +177,7 @@ class CachedDriftClientAccountSubscriber(DriftClientAccountSubscriber):
     ) -> Optional[DataAndSlot[OraclePriceData]]:
         try:
             return self.cache["oracle_price_data"][str(oracle)]
-        except IndexError:
+        except KeyError:
             print(
                 f"WARNING: Oracle {oracle} not found in cache, Location: {stack_trace()}"
             )

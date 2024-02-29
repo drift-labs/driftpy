@@ -171,3 +171,13 @@ Add guardrails to avoid `CachedDriftClientAccountSubscriber` panicking on cache 
 Add `perp_market_indexes`, `spot_market_indexes`, `oracle_infos`, `should_find_all_markets_and_oracles` to `CachedDriftClientAccountSubscriber`
 
 Add `stack_trace()` utility function
+
+## [0.7.33] - 2024-2-29
+
+Fix `IndexError` vs `KeyError` bug in `CachedDriftClientAccountSubscriber.get_oracle_price_data_and_slot()`
+
+Sort market indexes in `CachedDriftClientAccountSubscriber` before populating cache
+
+Merge PR #116: Update div_ceil to use integer division isntead of float division
+
+Merge PR #117: Allows for the Jupiter V6 Swap API url to be configured
