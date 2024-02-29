@@ -1,9 +1,12 @@
+import inspect
+
 from dataclasses import dataclass, field
-from solders.pubkey import Pubkey
 from borsh_construct.enum import _rust_enum
 from sumtypes import constructor
 from typing import Optional
 from urllib.parse import urlparse, urlunparse
+
+from solders.pubkey import Pubkey  # type: ignore
 
 
 def is_variant(enum, type: str) -> bool:
@@ -33,6 +36,16 @@ def get_ws_url(url: str) -> str:
         )
     else:
         return url.replace("https", "wss").replace("http", "ws")
+
+
+def stack_trace():
+    caller_frame = inspect.stack()[1]
+    frame_info = inspect.getframeinfo(caller_frame[0])
+
+    file_name = frame_info.filename
+    line_number = frame_info.lineno
+
+    return f"{file_name}:{line_number}"
 
 
 @_rust_enum
