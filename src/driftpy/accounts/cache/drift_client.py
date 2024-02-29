@@ -37,8 +37,8 @@ class CachedDriftClientAccountSubscriber(DriftClientAccountSubscriber):
         self.program = program
         self.commitment = commitment
         self.cache = None
-        self.perp_market_indexes = perp_market_indexes.sort()
-        self.spot_market_indexes = spot_market_indexes.sort()
+        self.perp_market_indexes = perp_market_indexes
+        self.spot_market_indexes = spot_market_indexes
         self.oracle_infos = oracle_infos
         self.should_find_all_markets_and_oracles = should_find_all_markets_and_oracles
 
@@ -97,7 +97,7 @@ class CachedDriftClientAccountSubscriber(DriftClientAccountSubscriber):
             if 0 not in self.spot_market_indexes:
                 self.spot_market_indexes.insert(0, 0)
 
-            for market_index in self.spot_market_indexes:
+            for market_index in sorted(self.spot_market_indexes):
                 spot_market_and_slot = await get_spot_market_account_and_slot(
                     self.program, market_index
                 )
@@ -121,7 +121,7 @@ class CachedDriftClientAccountSubscriber(DriftClientAccountSubscriber):
 
             self.cache["spot_markets"] = spot_markets
 
-            for market_index in self.perp_market_indexes:
+            for market_index in sorted(self.perp_market_indexes):
                 perp_market_and_slot = await get_perp_market_account_and_slot(
                     self.program, market_index
                 )
