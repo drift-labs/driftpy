@@ -92,7 +92,7 @@ def decode_pyth_price_info(
 
     raw_price_scaler = abs(exponent) - 6
 
-    raw_price_to_price_precision = pyth_price_info.raw_price // (
+    raw_price_to_price_precision = pyth_price_info.raw_price / (
         10**raw_price_scaler
     )  # exponent decimals from oracle to PRICE_PRECISION of 6
 
@@ -103,7 +103,7 @@ def decode_pyth_price_info(
         raw_price_to_price_precision *= 1e6
 
     return OraclePriceData(
-        price=raw_price_to_price_precision,
+        price=int(raw_price_to_price_precision),
         slot=pyth_price_info.pub_slot,
         confidence=convert_pyth_price(pyth_price_info.confidence_interval, scale),
         twap=convert_pyth_price(twap, scale),
