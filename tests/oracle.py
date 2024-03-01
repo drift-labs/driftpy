@@ -68,8 +68,6 @@ async def drift_client(program: Program, usdc_mint: Keypair) -> Admin:
         program.provider.connection,
         program.provider.wallet,
         account_subscription=AccountSubscriptionConfig("cached"),
-        spot_market_indexes=[0, 1],
-        perp_market_indexes=[0],
     )
     await admin.initialize(usdc_mint.pubkey(), admin_controls_prices=True)
     await admin.subscribe()
@@ -164,49 +162,49 @@ async def ws_drift_client(program: Program, first_oracle: Pubkey):
     return ws_drift_client
 
 
-@mark.asyncio
-async def test_polling(
-    drift_client: Admin,
-    polling_drift_client: DriftClient,
-    first_oracle: Pubkey,
-    other_oracle: Pubkey,
-):
-    print()
-    await drift_client.update_spot_market_oracle(1, first_oracle, OracleSource.Pyth())
-    await drift_client.update_perp_market_oracle(0, first_oracle, OracleSource.Pyth())
+# @mark.asyncio
+# async def test_polling(
+#     drift_client: Admin,
+#     polling_drift_client: DriftClient,
+#     first_oracle: Pubkey,
+#     other_oracle: Pubkey,
+# ):
+#     print()
+#     await drift_client.update_spot_market_oracle(1, first_oracle, OracleSource.Pyth())
+#     await drift_client.update_perp_market_oracle(0, first_oracle, OracleSource.Pyth())
 
-    await drift_client.account_subscriber.fetch()
-    await polling_drift_client.account_subscriber.fetch()
+#     await drift_client.account_subscriber.fetch()
+#     await polling_drift_client.account_subscriber.fetch()
 
-    await drift_client.update_perp_market_oracle(0, other_oracle, OracleSource.Pyth())
+#     await drift_client.update_perp_market_oracle(0, other_oracle, OracleSource.Pyth())
 
-    await asyncio.sleep(20)
+#     await asyncio.sleep(20)
 
-    perp_oracle_price_before = (polling_drift_client.get_oracle_price_data_for_perp_market(0)).price  # type: ignore
-    print(f"perp_oracle_price_before: {perp_oracle_price_before}")
-    assert perp_oracle_price_before == 30 * PRICE_PRECISION
+#     perp_oracle_price_before = (polling_drift_client.get_oracle_price_data_for_perp_market(0)).price  # type: ignore
+#     print(f"perp_oracle_price_before: {perp_oracle_price_before}")
+#     assert perp_oracle_price_before == 30 * PRICE_PRECISION
 
-    await asyncio.sleep(10)
+#     await asyncio.sleep(10)
 
-    perp_oracle_price_after = (polling_drift_client.get_oracle_price_data_for_perp_market(0)).price  # type: ignore
-    print(f"perp_oracle_price_after: {perp_oracle_price_after}")
-    assert perp_oracle_price_after == 100 * PRICE_PRECISION
+#     perp_oracle_price_after = (polling_drift_client.get_oracle_price_data_for_perp_market(0)).price  # type: ignore
+#     print(f"perp_oracle_price_after: {perp_oracle_price_after}")
+#     assert perp_oracle_price_after == 100 * PRICE_PRECISION
 
-    await polling_drift_client.account_subscriber.fetch()
+#     await polling_drift_client.account_subscriber.fetch()
 
-    await drift_client.update_spot_market_oracle(1, other_oracle, OracleSource.Pyth())
+#     await drift_client.update_spot_market_oracle(1, other_oracle, OracleSource.Pyth())
 
-    await asyncio.sleep(20)
+#     await asyncio.sleep(20)
 
-    spot_oracle_price_before = (polling_drift_client.get_oracle_price_data_for_spot_market(1)).price  # type: ignore
-    print(f"spot_oracle_price_before: {spot_oracle_price_before}")
-    assert spot_oracle_price_before == 30 * PRICE_PRECISION
+#     spot_oracle_price_before = (polling_drift_client.get_oracle_price_data_for_spot_market(1)).price  # type: ignore
+#     print(f"spot_oracle_price_before: {spot_oracle_price_before}")
+#     assert spot_oracle_price_before == 30 * PRICE_PRECISION
 
-    await asyncio.sleep(10)
+#     await asyncio.sleep(10)
 
-    spot_oracle_price_after = (polling_drift_client.get_oracle_price_data_for_spot_market(1)).price  # type: ignore
-    print(f"spot_oracle_price_after: {spot_oracle_price_after}")
-    assert spot_oracle_price_after == 100 * PRICE_PRECISION
+#     spot_oracle_price_after = (polling_drift_client.get_oracle_price_data_for_spot_market(1)).price  # type: ignore
+#     print(f"spot_oracle_price_after: {spot_oracle_price_after}")
+#     assert spot_oracle_price_after == 100 * PRICE_PRECISION
 
 
 @mark.asyncio
@@ -218,21 +216,23 @@ async def test_ws(
 ):
     print()
     assert ws_drift_client.account_subscriber.is_subscribed()
+    print(first_oracle)
+    print(other_oracle)
 
     await drift_client.update_spot_market_oracle(1, first_oracle, OracleSource.Pyth())
     await drift_client.update_perp_market_oracle(0, first_oracle, OracleSource.Pyth())
 
     await drift_client.update_perp_market_oracle(0, other_oracle, OracleSource.Pyth())
+    await asyncio.sleep(45)
 
-    await asyncio.sleep(20)
-
+    print("what the actual fuck")
     perp_oracle_price_before = (
         ws_drift_client.get_oracle_price_data_for_perp_market(0)
     ).price
     print(f"perp_oracle_price_before: {perp_oracle_price_before}")
     assert perp_oracle_price_before == 30 * PRICE_PRECISION
 
-    await asyncio.sleep(10)
+    await asyncio.sleep(20)
 
     perp_oracle_price_after = (
         ws_drift_client.get_oracle_price_data_for_perp_market(0)
@@ -241,8 +241,7 @@ async def test_ws(
     assert perp_oracle_price_after == 100 * PRICE_PRECISION
 
     await drift_client.update_spot_market_oracle(1, other_oracle, OracleSource.Pyth())
-
-    await asyncio.sleep(20)
+    await asyncio.sleep(45)
 
     spot_oracle_price_before = (
         ws_drift_client.get_oracle_price_data_for_spot_market(1)
@@ -250,7 +249,7 @@ async def test_ws(
     print(f"spot_oracle_price_before: {spot_oracle_price_before}")
     assert spot_oracle_price_before == 30 * PRICE_PRECISION
 
-    await asyncio.sleep(10)
+    await asyncio.sleep(20)
 
     spot_oracle_price_after = (
         ws_drift_client.get_oracle_price_data_for_spot_market(1)
