@@ -266,3 +266,109 @@ def get_markets_and_oracles(
             )
 
     return spot_market_oracle_infos, perp_market_oracle_infos, spot_market_indexes
+
+
+def get_oracle_source_for_oracle(
+    oracle: Pubkey, env: DriftEnv = "mainnet"
+) -> OracleSource:
+    markets = None
+    match env:
+        case "mainnet":
+            markets = mainnet_perp_market_configs + mainnet_spot_market_configs
+        case "devnet":
+            markets = devnet_perp_market_configs + devnet_spot_market_configs
+        case _:
+            raise NotImplementedError(f"Unsupported environment: {env}")
+
+    oracle_source = next(
+        (market.oracle_source for market in markets if market.oracle == oracle), None
+    )
+
+    if oracle_source is None:
+        raise ValueError(f"Oracle {oracle} not found in perp markets")
+
+    return oracle_source
+
+
+def get_spot_market_indexes_for_oracle(
+    oracle: Pubkey, env: DriftEnv = "mainnet"
+) -> list[int]:
+    markets = None
+    match env:
+        case "mainnet":
+            markets = mainnet_spot_market_configs
+        case "devnet":
+            markets = devnet_spot_market_configs
+        case _:
+            raise NotImplementedError(f"Unsupported environment: {env}")
+
+    market_indexes = [
+        market.market_index for market in markets if market.oracle == oracle
+    ]
+
+    return market_indexes
+
+
+def get_perp_market_indexes_for_oracle(
+    oracle: Pubkey, env: DriftEnv = "mainnet"
+) -> list[int]:
+    markets = None
+    match env:
+        case "mainnet":
+            markets = mainnet_perp_market_configs
+        case "devnet":
+            markets = devnet_perp_market_configs
+        case _:
+            raise NotImplementedError(f"Unsupported environment: {env}")
+
+    market_indexes = [
+        market.market_index for market in markets if market.oracle == oracle
+    ]
+
+    return market_indexes
+
+
+def get_oracle_for_spot_market_index(
+    market_index: int, env: DriftEnv = "mainnet"
+) -> Pubkey:
+    markets = None
+    match env:
+        case "mainnet":
+            markets = mainnet_spot_market_configs
+        case "devnet":
+            markets = devnet_spot_market_configs
+        case _:
+            raise NotImplementedError(f"Unsupported environment: {env}")
+
+    oracle = next(
+        (market.oracle for market in markets if market.market_index == market_index),
+        None,
+    )
+
+    if oracle is None:
+        raise ValueError(f"Market index {market_index} not found in spot markets")
+
+    return oracle
+
+
+def get_oracle_for_perp_market_index(
+    market_index: int, env: DriftEnv = "mainnet"
+) -> Pubkey:
+    markets = None
+    match env:
+        case "mainnet":
+            markets = mainnet_perp_market_configs
+        case "devnet":
+            markets = devnet_perp_market_configs
+        case _:
+            raise NotImplementedError(f"Unsupported environment: {env}")
+
+    oracle = next(
+        (market.oracle for market in markets if market.market_index == market_index),
+        None,
+    )
+
+    if oracle is None:
+        raise ValueError(f"Market index {market_index} not found in perp markets")
+
+    return oracle

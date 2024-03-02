@@ -100,7 +100,7 @@ async def get_all_perp_market_accounts(program: Program) -> list[ProgramAccount]
 
 async def get_spot_market_account_and_slot(
     program: Program, spot_market_index: int
-) -> DataAndSlot[SpotMarketAccount]:
+) -> Optional[DataAndSlot[SpotMarketAccount]]:
     spot_market_public_key = get_spot_market_public_key(
         program.program_id, spot_market_index
     )

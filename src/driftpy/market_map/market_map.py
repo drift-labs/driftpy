@@ -13,9 +13,12 @@ from driftpy.decode.utils import decode_name
 from driftpy.market_map.market_map_config import MarketMapConfig
 from driftpy.market_map.websocket_sub import WebsocketSubscription
 from driftpy.memcmp import get_market_type_filter
-from driftpy.types import PerpMarketAccount, SpotMarketAccount, is_variant
-
-GenericMarketType = Union[SpotMarketAccount, PerpMarketAccount]
+from driftpy.types import (
+    PerpMarketAccount,
+    SpotMarketAccount,
+    is_variant,
+    GenericMarketType,
+)
 
 
 class MarketMap:
