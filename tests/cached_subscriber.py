@@ -140,3 +140,9 @@ async def test_cached():
     spot_market_100 = drift_client.get_spot_market_account(100)
     assert not spot_market_100
     print("20: spot market 100 was no-op")
+
+    spot_markets = drift_client.get_spot_market_accounts()
+    assert isinstance(spot_markets, list)
+
+    perp_markets = drift_client.get_perp_market_accounts()
+    assert isinstance(perp_markets, list)
