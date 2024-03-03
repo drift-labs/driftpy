@@ -12,6 +12,7 @@ from driftpy.types import (
     UserAccount,
     OraclePriceData,
     StateAccount,
+    UserStatsAccount,
 )
 
 T = TypeVar("T")
@@ -114,4 +115,24 @@ class UserAccountSubscriber:
 
     @abstractmethod
     def get_user_account_and_slot(self) -> Optional[DataAndSlot[UserAccount]]:
+        pass
+
+
+class UserStatsAccountSubscriber:
+    @abstractmethod
+    async def subscribe(self):
+        pass
+
+    @abstractmethod
+    def unsubscribe(self):
+        pass
+
+    @abstractmethod
+    async def fetch(self):
+        pass
+
+    @abstractmethod
+    def get_user_stats_account_and_slot(
+        self,
+    ) -> Optional[DataAndSlot[UserStatsAccount]]:
         pass

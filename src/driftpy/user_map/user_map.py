@@ -14,7 +14,7 @@ from driftpy.drift_client import DriftClient
 from driftpy.drift_user import DriftUser
 from driftpy.account_subscription_config import AccountSubscriptionConfig
 
-from driftpy.types import UserAccount
+from driftpy.types import OrderRecord, UserAccount
 
 from driftpy.user_map.user_map_config import UserMapConfig, PollingConfig
 from driftpy.user_map.websocket_sub import WebsocketSubscription
@@ -127,6 +127,9 @@ class UserMap(UserMapInterface, DLOBSource):
 
         self.user_map[str(user_account_public_key)] = user
 
+    async def update_with_order_record(self, record: OrderRecord):
+        self.must_get(str(record.user))
+
     async def sync(self) -> None:
         async with self.sync_lock:
             try:
@@ -199,7 +202,6 @@ class UserMap(UserMapInterface, DLOBSource):
 
             except Exception as e:
                 print(f"Error in UserMap.sync(): {e}")
-                traceback.print_exc()
 
     # this is used as a callback for ws subscriptions to update data as its streamed
     async def update_user_account(self, key: str, data: DataAndSlot[UserAccount]):

@@ -26,3 +26,7 @@ def get_market_type_filter(market_type: MarketType) -> MemcmpOpts:
         return MemcmpOpts(
             0, base58.b58encode(_account_discriminator("SpotMarket")).decode()
         )
+
+
+def get_user_stats_filter() -> MemcmpOpts:
+    return MemcmpOpts(0, base58.b58encode(_account_discriminator("UserStats")).decode())

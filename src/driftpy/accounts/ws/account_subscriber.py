@@ -6,7 +6,11 @@ from solders.pubkey import Pubkey
 from solana.rpc.commitment import Commitment
 
 from driftpy.accounts import get_account_data_and_slot
-from driftpy.accounts import UserAccountSubscriber, DataAndSlot
+from driftpy.accounts import (
+    UserAccountSubscriber,
+    DataAndSlot,
+    UserStatsAccountSubscriber,
+)
 
 import websockets
 import websockets.exceptions  # force eager imports
@@ -19,7 +23,9 @@ from driftpy.types import PerpMarketAccount, get_ws_url
 T = TypeVar("T")
 
 
-class WebsocketAccountSubscriber(UserAccountSubscriber, Generic[T]):
+class WebsocketAccountSubscriber(
+    UserAccountSubscriber, UserStatsAccountSubscriber, Generic[T]
+):
     def __init__(
         self,
         pubkey: Pubkey,
