@@ -194,6 +194,42 @@ class Admin(DriftClient):
             ),
         )
 
+    async def update_perp_market_oracle(
+        self, market_index: int, oracle: Pubkey, oracle_source: OracleSource
+    ):
+        return await self.program.rpc["update_perp_market_oracle"](
+            oracle,
+            oracle_source,
+            ctx=Context(
+                accounts={
+                    "admin": self.authority,
+                    "state": get_state_public_key(self.program_id),
+                    "perp_market": get_perp_market_public_key(
+                        self.program_id, market_index
+                    ),
+                    "oracle": oracle,
+                }
+            ),
+        )
+
+    async def update_spot_market_oracle(
+        self, market_index: int, oracle: Pubkey, oracle_source: OracleSource
+    ):
+        return await self.program.rpc["update_spot_market_oracle"](
+            oracle,
+            oracle_source,
+            ctx=Context(
+                accounts={
+                    "admin": self.authority,
+                    "state": get_state_public_key(self.program_id),
+                    "spot_market": get_spot_market_public_key(
+                        self.program_id, market_index
+                    ),
+                    "oracle": oracle,
+                }
+            ),
+        )
+
     async def update_perp_market_max_fill_reserve_fraction(
         self,
         market_index: int,

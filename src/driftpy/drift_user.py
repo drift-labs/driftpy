@@ -1,3 +1,4 @@
+import math
 import time
 import copy
 
@@ -180,12 +181,18 @@ class DriftUser:
             total_liability_value += base_value
         return total_liability_value
 
+    def is_being_liquidated(self) -> bool:
+        user_account = self.get_user_account()
+        return (
+            user_account.status & (UserStatus.BEING_LIQUIDATED | UserStatus.BANKRUPT)
+        ) > 0
+
     def can_be_liquidated(self) -> bool:
         total_collateral = self.get_total_collateral()
 
         user = self.get_user_account()
         liquidation_buffer = None
-        if "BeingLiquidated" in user.status:
+        if self.is_being_liquidated():
             liquidation_buffer = (
                 self.drift_client.get_state_account()
             ).liquidation_margin_buffer_ratio
@@ -395,11 +402,28 @@ class DriftUser:
 
         return position
 
+    def get_health(self) -> int:
+        if self.is_being_liquidated():
+            return 0
+
+        total_collateral = self.get_total_collateral(MarginCategory.MAINTENANCE)
+        maintenance_margin_req = self.get_margin_requirement(MarginCategory.MAINTENANCE)
+
+        if maintenance_margin_req == 0 and total_collateral >= 0:
+            return 100
+        elif total_collateral <= 0:
+            return 0
+        else:
+            return round(
+                min(100, max(0, (1 - maintenance_margin_req / total_collateral) * 100))
+            )
+
     def get_unrealized_pnl(
         self,
         with_funding: bool = False,
         market_index: int = None,
         with_weight_margin_category: Optional[MarginCategory] = None,
+        strict: bool = False,
     ):
         user = self.get_user_account()
         quote_spot_market = self.drift_client.get_spot_market_account(
@@ -413,27 +437,52 @@ class DriftUser:
 
             market = self.drift_client.get_perp_market_account(position.market_index)
 
-            oracle_data = self.drift_client.get_oracle_price_data(market.amm.oracle)
-            position_unrealized_pnl = calculate_position_pnl_with_oracle(
-                market, position, oracle_data, with_funding
+            oracle_price_data = self.get_oracle_data_for_perp_market(
+                market.market_index
             )
 
-            if with_weight_margin_category is not None:
-                if position_unrealized_pnl > 0:
-                    unrealized_asset_weight = calculate_unrealized_asset_weight(
-                        market,
-                        quote_spot_market,
-                        position_unrealized_pnl,
-                        with_weight_margin_category,
-                        oracle_data,
-                    )
-                    position_unrealized_pnl = (
-                        position_unrealized_pnl
-                        * unrealized_asset_weight
-                        / SPOT_WEIGHT_PRECISION
-                    )
+            quote_oracle_price_data = self.get_oracle_data_for_spot_market(
+                quote_spot_market.market_index
+            )
 
-            unrealized_pnl += position_unrealized_pnl
+            if position.lp_shares > 0:
+                position = self.get_perp_position_with_lp_settle(
+                    position.market_index, None, bool(with_weight_margin_category)
+                )[0]
+
+            position_upnl = calculate_position_pnl(
+                market, position, oracle_price_data, with_funding
+            )
+
+            if strict and position_upnl > 0:
+                quote_price = min(
+                    quote_oracle_price_data.price,
+                    quote_spot_market.historical_oracle_data.last_oracle_price_twap5min,
+                )
+            elif strict and position_upnl < 0:
+                quote_price = max(
+                    quote_oracle_price_data.price,
+                    quote_spot_market.historical_oracle_data.last_oracle_price_twap5min,
+                )
+            else:
+                quote_price = quote_oracle_price_data.price
+
+            position_upnl = (position_upnl * quote_price) // PRICE_PRECISION
+
+            if with_weight_margin_category:
+                if position_upnl > 0:
+                    position_upnl = position_upnl * (
+                        calculate_unrealized_asset_weight(
+                            market,
+                            quote_spot_market,
+                            position_upnl,
+                            with_weight_margin_category,
+                            oracle_price_data,
+                        )
+                    )
+                    position_upnl = position_upnl // SPOT_MARKET_WEIGHT_PRECISION
+
+            unrealized_pnl += position_upnl
 
         return unrealized_pnl
 
@@ -754,6 +803,106 @@ class DriftUser:
 
         return (total_liability_value * 10_000) // net_asset_value
 
+    def get_leverage_components(
+        self,
+        include_open_orders: bool = True,
+        margin_category: Optional[MarginCategory] = None,
+    ):
+        perp_liability = self.get_total_perp_position_value(
+            margin_category, None, include_open_orders
+        )
+
+        perp_pnl = self.get_unrealized_pnl(True, None, margin_category)
+
+        (
+            spot_asset_value,
+            spot_liability_value,
+        ) = self.get_spot_market_asset_and_liability_value(
+            None, margin_category, None, include_open_orders
+        )
+
+        return perp_liability, perp_pnl, spot_asset_value, spot_liability_value
+
+    def get_max_leverage_for_perp(
+        self,
+        perp_market_index: int,
+        margin_category: MarginCategory = MarginCategory.INITIAL,
+        is_lp: bool = False,
+    ):
+        market = self.drift_client.get_perp_market_account(perp_market_index)
+        market_price = self.drift_client.get_oracle_price_data_for_perp_market(
+            perp_market_index
+        ).price
+
+        perp_liab, perp_pnl, spot_asset, spot_liab = self.get_leverage_components()
+
+        total_assets = spot_asset + perp_pnl
+
+        net_assets = total_assets - spot_liab
+
+        if net_assets == 0:
+            return 0
+
+        total_liabs = perp_liab + spot_liab
+
+        lp_buffer = (
+            math.ceil(market_price * market.amm.order_step_size / AMM_RESERVE_PRECISION)
+            if is_lp
+            else 0
+        )
+
+        free_collateral = self.get_free_collateral() - lp_buffer
+
+        match margin_category:
+            case MarginCategory.INITIAL:
+                raw_margin_ratio = max(
+                    market.margin_ratio_initial,
+                    self.get_user_account().max_margin_ratio,
+                )
+            case MarginCategory.MAINTENANCE:
+                raw_margin_ratio = market.margin_ratio_maintenance
+            case _:
+                raw_margin_ratio = market.margin_ratio_initial
+
+        # upper bound for feasible sizing
+        rhs = (
+            math.ceil(
+                ((free_collateral * MARGIN_PRECISION) / raw_margin_ratio)
+                * PRICE_PRECISION
+            )
+        ) / market_price
+        max_size = max(0, rhs)
+
+        # accounting for max size
+        margin_ratio = calculate_market_margin_ratio(
+            market, max_size, margin_category, self.get_user_account().max_margin_ratio
+        )
+
+        attempts = 0
+        while margin_ratio > (raw_margin_ratio + 1e-4) and attempts < 10:
+            rhs = math.ceil(
+                (
+                    ((free_collateral * MARGIN_PRECISION) / margin_ratio)
+                    * PRICE_PRECISION
+                )
+                / market_price
+            )
+
+            target_size = max(0, rhs)
+
+            margin_ratio = calculate_market_margin_ratio(
+                market,
+                target_size,
+                margin_category,
+                self.get_user_account().max_margin_ratio,
+            )
+
+            attempts += 1
+
+        additional_liab = math.ceil((free_collateral * MARGIN_PRECISION) / margin_ratio)
+
+        return math.ceil(((total_liabs + additional_liab) * 10_000) / net_assets)
+
     def calculate_free_collateral_delta_for_perp(
         self,
         market: PerpMarketAccount,
@@ -957,9 +1106,9 @@ class DriftUser:
     def get_perp_position_with_lp_settle(
         self,
         market_index: int,
-        originalPosition: PerpPosition = None,
-        burnLpShares: bool = False,
-        includeRemainderInBaseAmount: bool = False,
+        original_position: PerpPosition = None,
+        burn_lp_shares: bool = False,
+        include_remainder_in_base_amount: bool = False,
     ) -> Tuple[PerpPosition, int, int]:
         class UpdateType(Enum):
             OPEN = "open"
@@ -968,139 +1117,139 @@ class DriftUser:
             CLOSE = "close"
             FLIP = "flip"
 
-        originalPosition = (
-            originalPosition
+        original_position = (
+            original_position
             or self.get_perp_position(market_index)
             or self.get_empty_position(market_index)
         )
 
-        if originalPosition.lp_shares == 0:
-            return originalPosition, 0, 0
+        if original_position.lp_shares == 0:
+            return original_position, 0, 0
 
-        position = copy.deepcopy(originalPosition)
+        position = copy.deepcopy(original_position)
         market = self.drift_client.get_perp_market_account(position.market_index)
 
         if market.amm.per_lp_base != position.per_lp_base:
-            expoDiff = market.amm.per_lp_base - position.per_lp_base
-            marketPerLpRebaseScalar = 10 ** abs(expoDiff)
+            expo_diff = market.amm.per_lp_base - position.per_lp_base
+            market_per_lp_rebase_scalar = 10 ** abs(expo_diff)
 
-            if expoDiff > 0:
-                position.lastbase_asset_amount_per_lp *= marketPerLpRebaseScalar
-                position.lastquote_asset_amount_per_lp *= marketPerLpRebaseScalar
+            if expo_diff > 0:
+                position.last_base_asset_amount_per_lp *= market_per_lp_rebase_scalar
+                position.last_quote_asset_amount_per_lp *= market_per_lp_rebase_scalar
             else:
-                position.lastbase_asset_amount_per_lp //= marketPerLpRebaseScalar
-                position.lastquote_asset_amount_per_lp //= marketPerLpRebaseScalar
+                position.last_base_asset_amount_per_lp //= market_per_lp_rebase_scalar
+                position.last_quote_asset_amount_per_lp //= market_per_lp_rebase_scalar
 
-            position.per_lp_base += expoDiff
+            position.per_lp_base += expo_diff
 
-        nShares = position.lp_shares
+        n_shares = position.lp_shares
 
-        quoteFundingPnl = calculate_position_funding_pnl(market, position)
+        quote_funding_pnl = calculate_position_funding_pnl(market, position)
 
-        baseUnit = int(AMM_RESERVE_PRECISION)
+        base_unit = int(AMM_RESERVE_PRECISION)
         if market.amm.per_lp_base == position.per_lp_base:
             if 0 <= position.per_lp_base <= 9:
-                marketPerLpRebase = 10**market.amm.per_lp_base
-                baseUnit *= marketPerLpRebase
+                market_per_lp_rebase = 10**market.amm.per_lp_base
+                base_unit *= market_per_lp_rebase
             elif position.per_lp_base < 0 and position.per_lp_base >= -9:
-                marketPerLpRebase = 10 ** abs(position.per_lp_base)
-                baseUnit //= marketPerLpRebase
+                market_per_lp_rebase = 10 ** abs(position.per_lp_base)
+                base_unit //= market_per_lp_rebase
             else:
                 raise ValueError("cannot calc")
         else:
-            raise ValueError("market.amm.perLpBase != position.perLpBase")
+            raise ValueError("market.amm.per_lp_base != position.per_lp_base")
 
-        deltaBaa = (
+        delta_baa = (
             (
                 market.amm.base_asset_amount_per_lp
                 - position.last_base_asset_amount_per_lp
             )
-            * nShares
-            // baseUnit
+            * n_shares
+            // base_unit
         )
-        deltaQaa = (
+        delta_qaa = (
             (
                 market.amm.quote_asset_amount_per_lp
                 - position.last_quote_asset_amount_per_lp
             )
-            * nShares
-            // baseUnit
+            * n_shares
+            // base_unit
         )
 
         def sign(v: int) -> int:
             return -1 if v < 0 else 1
 
-        def standardize(amount: int, stepSize: int) -> Tuple[int, int]:
-            remainder = abs(amount) % stepSize * sign(amount)
-            standardizedAmount = amount - remainder
-            return standardizedAmount, remainder
+        def standardize(amount: int, step_size: int) -> Tuple[int, int]:
+            remainder = abs(amount) % step_size * sign(amount)
+            standardized_amount = amount - remainder
+            return standardized_amount, remainder
 
-        standardizedBaa, remainderBaa = standardize(
-            deltaBaa, market.amm.order_step_size
+        standardized_baa, remainder_baa = standardize(
+            delta_baa, market.amm.order_step_size
         )
 
-        position.remainder_base_asset_amount += remainderBaa
+        position.remainder_base_asset_amount += remainder_baa
 
         if abs(position.remainder_base_asset_amount) > market.amm.order_step_size:
-            newStandardizedBaa, newRemainderBaa = standardize(
+            new_standardized_baa, new_remainder_baa = standardize(
                 position.remainder_base_asset_amount, market.amm.order_step_size
             )
-            position.base_asset_amount += newStandardizedBaa
-            position.remainder_base_asset_amount = newRemainderBaa
+            position.base_asset_amount += new_standardized_baa
+            position.remainder_base_asset_amount = new_remainder_baa
 
-        dustBaseAssetValue = 0
-        if burnLpShares and position.remainder_base_asset_amount != 0:
-            oraclePriceData = self.drift_client.get_oracle_data_for_perp_market(
+        dust_base_asset_value = 0
+        if burn_lp_shares and position.remainder_base_asset_amount != 0:
+            oracle_price_data = self.drift_client.get_oracle_price_data_for_perp_market(
                 position.market_index
             )
-            dustBaseAssetValue = (
+            dust_base_asset_value = (
                 abs(position.remainder_base_asset_amount)
-                * oraclePriceData.price
+                * oracle_price_data.price
                 // AMM_RESERVE_PRECISION
                 + 1
             )
 
         if position.base_asset_amount == 0:
-            updateType = UpdateType.OPEN
-        elif sign(position.base_asset_amount) == sign(deltaBaa):
-            updateType = UpdateType.INCREASE
-        elif abs(position.base_asset_amount) > abs(deltaBaa):
-            updateType = UpdateType.REDUCE
-        elif abs(position.base_asset_amount) == abs(deltaBaa):
-            updateType = UpdateType.CLOSE
+            update_type = UpdateType.OPEN
+        elif sign(position.base_asset_amount) == sign(delta_baa):
+            update_type = UpdateType.INCREASE
+        elif abs(position.base_asset_amount) > abs(delta_baa):
+            update_type = UpdateType.REDUCE
+        elif abs(position.base_asset_amount) == abs(delta_baa):
+            update_type = UpdateType.CLOSE
         else:
-            updateType = UpdateType.FLIP
+            update_type = UpdateType.FLIP
 
-        if updateType in [UpdateType.OPEN, UpdateType.INCREASE]:
-            newQuoteEntry = position.quote_entry_amount + deltaQaa
+        if update_type in [UpdateType.OPEN, UpdateType.INCREASE]:
+            new_quote_entry = position.quote_entry_amount + delta_qaa
             pnl = 0
-        elif updateType in [UpdateType.REDUCE, UpdateType.CLOSE]:
-            newQuoteEntry = (
+        elif update_type in [UpdateType.REDUCE, UpdateType.CLOSE]:
+            new_quote_entry = (
                 position.quote_entry_amount
                 - position.quote_entry_amount
-                * abs(deltaBaa)
+                * abs(delta_baa)
                 // abs(position.base_asset_amount)
             )
-            pnl = position.quote_entry_amount - newQuoteEntry + deltaQaa
+            pnl = position.quote_entry_amount - new_quote_entry + delta_qaa
         else:
-            newQuoteEntry = deltaQaa - deltaQaa * abs(
+            new_quote_entry = delta_qaa - delta_qaa * abs(
                 position.base_asset_amount
-            ) // abs(deltaBaa)
-            pnl = position.quote_entry_amount + deltaQaa - newQuoteEntry
+            ) // abs(delta_baa)
+            pnl = position.quote_entry_amount + delta_qaa - new_quote_entry
 
-        position.quote_entry_amount = newQuoteEntry
-        position.base_asset_amount += standardizedBaa
+        position.quote_entry_amount = new_quote_entry
+        position.base_asset_amount += standardized_baa
         position.quote_asset_amount = (
             position.quote_asset_amount
-            + deltaQaa
-            + quoteFundingPnl
-            - dustBaseAssetValue
+            + delta_qaa
+            + quote_funding_pnl
+            - dust_base_asset_value
         )
         position.quote_break_even_amount = (
             position.quote_break_even_amount
-            + deltaQaa
-            + quoteFundingPnl
-            - dustBaseAssetValue
+            + delta_qaa
+            + quote_funding_pnl
+            - dust_base_asset_value
         )
 
         market_open_bids, market_open_asks = calculate_market_open_bid_ask(
@@ -1127,7 +1276,7 @@ class DriftUser:
 
         remainder_before_removal = position.remainder_base_asset_amount
 
-        if includeRemainderInBaseAmount:
+        if include_remainder_in_base_amount:
             position.base_asset_amount += remainder_before_removal
             position.remainder_base_asset_amount = 0
 

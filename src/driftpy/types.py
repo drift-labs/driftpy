@@ -1,8 +1,12 @@
+import inspect
+
 from dataclasses import dataclass, field
-from solders.pubkey import Pubkey
 from borsh_construct.enum import _rust_enum
 from sumtypes import constructor
 from typing import Optional
+from urllib.parse import urlparse, urlunparse
+
+from solders.pubkey import Pubkey  # type: ignore
 
 
 def is_variant(enum, type: str) -> bool:
@@ -11,6 +15,37 @@ def is_variant(enum, type: str) -> bool:
 
 def is_one_of_variant(enum, types):
     return any(type in str(enum) for type in types)
+
+
+def get_ws_url(url: str) -> str:
+    parsed = urlparse(url)
+
+    if parsed.port:
+        ws_port = parsed.port + 1
+        new_netloc = f"{parsed.hostname}:{ws_port}"
+        new_scheme = "wss" if parsed.scheme == "https" else "ws"
+        return urlunparse(
+            (
+                new_scheme,
+                new_netloc,
+                parsed.path,
+                parsed.params,
+                parsed.query,
+                parsed.fragment,
+            )
+        )
+    else:
+        return url.replace("https", "wss").replace("http", "ws")
+
+
+def stack_trace():
+    caller_frame = inspect.stack()[1]
+    frame_info = inspect.getframeinfo(caller_frame[0])
+
+    file_name = frame_info.filename
+    line_number = frame_info.lineno
+
+    return f"{file_name}:{line_number}"
 
 
 @_rust_enum
@@ -283,11 +318,10 @@ class ExchangeStatus:
     SettlePnlPaused = constructor()
 
 
-@_rust_enum
 class UserStatus:
-    BEING_LIQUIDATED = constructor()
-    BANKRUPT = constructor()
-    REDUCE_ONLY = constructor()
+    BEING_LIQUIDATED = 1
+    BANKRUPT = 2
+    REDUCE_ONLY = 4
 
 
 @_rust_enum
@@ -402,7 +436,7 @@ class HistoricalOracleData:
 class PoolBalance:
     scaled_balance: int
     market_index: int
-    padding: list[int]
+    padding: list[int] = field(default_factory=lambda: [0] * 6)
 
 
 @dataclass
@@ -484,10 +518,10 @@ class AMM:
     last_oracle_valid: bool
     target_base_asset_amount_per_lp: int
     per_lp_base: int
-    padding1: int
-    padding2: int
-    total_fee_earned_per_lp: int
-    padding: list[int]
+    padding1: int = 0
+    padding2: int = 0
+    total_fee_earned_per_lp: Optional[int] = None
+    padding: list[int] = field(default_factory=lambda: [0] * 12)
 
 
 @dataclass
@@ -546,7 +580,7 @@ class SpotPosition:
     market_index: int
     balance_type: SpotBalanceType
     open_orders: int
-    padding: list[int]
+    padding: list[int] = field(default_factory=lambda: [0] * 4)
 
 
 @dataclass
@@ -574,7 +608,7 @@ class Order:
     immediate_or_cancel: bool
     trigger_condition: OrderTriggerCondition
     auction_duration: int
-    padding: list[int]
+    padding: list[int] = field(default_factory=lambda: [0] * 3)
 
 
 @dataclass
@@ -588,7 +622,7 @@ class PhoenixV1FulfillmentConfigAccount:
     market_index: int
     fulfillment_type: SpotFulfillmentType
     status: SpotFulfillmentConfigStatus
-    padding: list[int]
+    padding: list[int] = field(default_factory=lambda: [0] * 4)
 
 
 @dataclass
@@ -607,7 +641,7 @@ class SerumV3FulfillmentConfigAccount:
     market_index: int
     fulfillment_type: SpotFulfillmentType
     status: SpotFulfillmentConfigStatus
-    padding: list[int]
+    padding: list[int] = field(default_factory=lambda: [0] * 4)
 
 
 @dataclass
@@ -646,10 +680,10 @@ class PerpMarketAccount:
     status: MarketStatus
     contract_type: ContractType
     contract_tier: ContractTier
-    padding1: int
-    quote_spot_market_index: int
-    fee_adjustment: int
-    padding: list[int]
+    padding1: int = 0
+    quote_spot_market_index: Optional[int] = None
+    fee_adjustment: Optional[int] = None
+    padding: list[int] = field(default_factory=lambda: [0] * 46)
 
 
 @dataclass
@@ -723,12 +757,12 @@ class SpotMarketAccount:
     oracle_source: OracleSource
     status: MarketStatus
     asset_tier: AssetTier
-    padding1: list[int]
-    flash_loan_amount: int
-    flash_loan_initial_token_amount: int
-    total_swap_fee: int
-    scale_initial_asset_weight_start: int
-    padding: list[int]
+    padding1: list[int] = field(default_factory=lambda: [0] * 6)
+    flash_loan_amount: Optional[int] = None
+    flash_loan_initial_token_amount: Optional[int] = None
+    total_swap_fee: Optional[int] = None
+    scale_initial_asset_weight_start: Optional[int] = None
+    padding: list[int] = field(default_factory=lambda: [0] * 48)
 
 
 @dataclass
@@ -756,7 +790,7 @@ class StateAccount:
     liquidation_duration: int
     initial_pct_to_liquidate: int
     max_number_of_sub_accounts: int
-    padding: list[int]
+    padding: list[int] = field(default_factory=lambda: [0] * 10)
 
 
 @dataclass
@@ -806,7 +840,7 @@ class UserAccount:
     has_open_order: bool
     open_auctions: int
     has_open_auction: bool
-    padding: list[int]
+    padding: list[int] = field(default_factory=lambda: [0] * 21)
 
 
 @dataclass
@@ -836,7 +870,7 @@ class UserStatsAccount:
     number_of_sub_accounts_created: int
     is_referrer: bool
     disable_update_perp_bid_ask_twap: bool
-    padding: list[int]
+    padding: list[int] = field(default_factory=lambda: [0] * 50)
 
 
 @dataclass
@@ -913,7 +947,7 @@ class InsuranceFundStakeAccount:
     last_withdraw_request_ts: int
     cost_basis: int
     market_index: int
-    padding: list[int]
+    padding: list[int] = field(default_factory=lambda: [0] * 14)
 
 
 @dataclass
@@ -922,7 +956,7 @@ class ProtocolIfSharesTransferConfigAccount:
     max_transfer_per_epoch: int
     current_epoch_transfer: int
     next_epoch_ts: int
-    padding: list[int]
+    padding: list[int] = field(default_factory=lambda: [0] * 8)
 
 
 @dataclass
@@ -940,7 +974,18 @@ class OraclePriceData:
     confidence: int
     twap: int
     twap_confidence: int
-    has_sufficient_number_of_datapoints: bool
+    has_sufficient_number_of_data_points: bool
+
+    @staticmethod
+    def default():
+        return OraclePriceData(
+            price=0,
+            slot=0,
+            confidence=0,
+            twap=0,
+            twap_confidence=0,
+            has_sufficient_number_of_data_points=False,
+        )
 
 
 @dataclass

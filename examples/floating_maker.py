@@ -2,26 +2,28 @@ import os
 import json
 import copy
 
+from borsh_construct.enum import _rust_enum
+from sumtypes import constructor
+
 from anchorpy import Wallet
-from anchorpy import Provider
-from solana.keypair import Keypair
+
+from solders.keypair import Keypair  # type: ignore
+from solders.pubkey import Pubkey  # type: ignore
+
 from solana.rpc.async_api import AsyncClient
 
-from driftpy.constants.config import configs
-from driftpy.types import *
-
-# MarketType, OrderType, OrderParams, PositionDirection, OrderTriggerCondition
-
+from driftpy.account_subscription_config import AccountSubscriptionConfig
+from driftpy.constants.config import configs, get_markets_and_oracles
+from driftpy.types import (
+    MarketType,
+    OrderType,
+    OrderParams,
+    PositionDirection,
+    OrderTriggerCondition,
+    PostOnlyParams,
+)
 from driftpy.drift_client import DriftClient
 from driftpy.constants.numeric_constants import BASE_PRECISION, PRICE_PRECISION
-from borsh_construct.enum import _rust_enum
-
-
-@_rust_enum
-class PostOnlyParams:
-    NONE = constructor()
-    TRY_POST_ONLY = constructor()
-    MUST_POST_ONLY = constructor()
 
 
 def order_print(orders: list[OrderParams], market_str=None):
@@ -58,24 +60,37 @@ async def main(
 ):
     with open(os.path.expanduser(keypath), "r") as f:
         secret = json.load(f)
-    kp = Keypair.from_secret_key(bytes(secret))
-    print("using public key:", kp.public_key, "subaccount=", subaccount_id)
+    kp = Keypair.from_bytes(bytes(secret))
+    print("using public key:", kp.pubkey(), "subaccount=", subaccount_id)
     config = configs[env]
     wallet = Wallet(kp)
+
     connection = AsyncClient(url)
-    provider = Provider(connection, wallet)
-    drift_acct = DriftClient.from_config(config, provider)
+    market_index = -1
+    for perp_market_config in config.perp_markets:
+        if perp_market_config.symbol == market_name:
+            market_index = perp_market_config.market_index
+    for spot_market_config in config.spot_markets:
+        if spot_market_config.symbol == market_name:
+            market_index = spot_market_config.market_index
+
+    if market_index == -1:
+        print("INVALID MARKET")
+        return
+    markets = [market_index]
 
     is_perp = "PERP" in market_name.upper()
     market_type = MarketType.Perp() if is_perp else MarketType.Spot()
 
-    market_index = -1
-    for perp_market_config in config.markets:
-        if perp_market_config.symbol == market_name:
-            market_index = perp_market_config.market_index
-    for spot_market_config in config.banks:
-        if spot_market_config.symbol == market_name:
-            market_index = spot_market_config.bank_index
+    drift_client = DriftClient(
+        connection,
+        wallet,
+        str(env),
+        account_subscription=AccountSubscriptionConfig("websocket"),
+    )
+
+    await drift_client.add_user(10)
+    await drift_client.subscribe()
 
     default_order_params = OrderParams(
         order_type=OrderType.Limit(),
@@ -111,18 +126,18 @@ async def main(
     spot_orders_ix = []
     if is_perp:
         perp_orders_ix = [
-            await drift_acct.get_place_perp_order_ix(bid_order_params, subaccount_id),
-            await drift_acct.get_place_perp_order_ix(ask_order_params, subaccount_id),
+            drift_client.get_place_perp_order_ix(bid_order_params, 10),
+            drift_client.get_place_perp_order_ix(ask_order_params, 10),
         ]
     else:
         spot_orders_ix = [
-            await drift_acct.get_place_spot_order_ix(bid_order_params, subaccount_id),
-            await drift_acct.get_place_spot_order_ix(ask_order_params, subaccount_id),
+            drift_client.get_place_spot_order_ix(bid_order_params, 10),
+            drift_client.get_place_spot_order_ix(ask_order_params, 10),
         ]
 
-    await drift_acct.send_ixs(
+    await drift_client.send_ixs(
         [
-            await drift_acct.get_cancel_orders_ix(sub_account_id=subaccount_id),
+            drift_client.get_cancel_orders_ix(sub_account_id=10),
         ]
         + perp_orders_ix
         + spot_orders_ix
@@ -136,7 +151,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--keypath", type=str, required=False, default=os.environ.get("ANCHOR_WALLET")
     )
-    parser.add_argument("--env", type=str, default="devnet")
+    parser.add_argument("--env", type=str, default="mainnet")
     parser.add_argument("--amount", type=float, required=True)
     parser.add_argument("--market", type=str, required=True)
     parser.add_argument("--subaccount", type=int, required=False, default=0)
@@ -155,9 +170,9 @@ if __name__ == "__main__":
             args.keypath = os.environ["ANCHOR_WALLET"]
 
     if args.env == "devnet":
-        url = "https://api.devnet.solana.com"
+        url = "https://devnet.helius-rpc.com/?api-key=3a1ca16d-e181-4755-9fe7-eac27579b48c"
     elif args.env == "mainnet":
-        url = "https://api.mainnet-beta.solana.com"
+        url = "https://mainnet.helius-rpc.com/?api-key=3a1ca16d-e181-4755-9fe7-eac27579b48c"
     else:
         raise NotImplementedError("only devnet/mainnet env supported")
 

@@ -1,4 +1,5 @@
-from typing import Optional, Sequence
+import asyncio
+from typing import Optional, Sequence, Union
 
 from driftpy.accounts import DriftClientAccountSubscriber, DataAndSlot
 
@@ -20,6 +21,7 @@ from driftpy.types import (
     StateAccount,
     OracleSource,
     OracleInfo,
+    stack_trace,
 )
 
 
@@ -47,6 +49,8 @@ class PollingDriftClientAccountSubscriber(DriftClientAccountSubscriber):
         self.perp_markets = {}
         self.spot_markets = {}
         self.oracle = {}
+        self.perp_oracle_map: dict[int, Pubkey] = {}
+        self.spot_oracle_map: dict[int, Pubkey] = {}
 
     async def subscribe(self):
         if len(self.callbacks) != 0:
@@ -66,6 +70,9 @@ class PollingDriftClientAccountSubscriber(DriftClientAccountSubscriber):
 
         while self.accounts_ready() is False:
             await self.bulk_account_loader.load()
+
+        await self._set_perp_oracle_map()
+        await self._set_spot_oracle_map()
 
     async def fetch(self):
         await self.bulk_account_loader.load()
@@ -131,18 +138,32 @@ class PollingDriftClientAccountSubscriber(DriftClientAccountSubscriber):
 
         return cb
 
-    def add_oracle(self, oracle: Pubkey, oracle_source: OracleSource):
-        if oracle == Pubkey.default():
-            return
+    async def add_oracle(self, oracle: Pubkey, oracle_source: OracleSource):
+        if oracle == Pubkey.default() or oracle in self.oracle:
+            return True
 
         oracle_str = str(oracle)
         if oracle_str in self.callbacks:
-            return
+            return True
 
         callback_id = self.bulk_account_loader.add_account(
             oracle, self._get_oracle_callback(oracle_str, oracle_source)
         )
         self.callbacks[oracle_str] = callback_id
+
+        await self._wait_for_oracle(3, oracle_str)
+
+        return True
+
+    async def _wait_for_oracle(self, tries: int, oracle: str):
+        while tries > 0:
+            await asyncio.sleep(self.bulk_account_loader.frequency)
+            if oracle in self.bulk_account_loader.buffer_and_slot_map:
+                return
+            tries -= 1
+        print(
+            f"WARNING: Oracle: {oracle} not found after {tries * self.bulk_account_loader.frequency} seconds, Location: {stack_trace()}"
+        )
 
     def _get_oracle_callback(self, oracle_str: str, oracle_source: OracleSource):
         decode = get_oracle_decode_fn(oracle_source)
@@ -156,7 +177,7 @@ class PollingDriftClientAccountSubscriber(DriftClientAccountSubscriber):
 
         return cb
 
-    def unsubscribe(self):
+    async def unsubscribe(self):
         for pubkey_str, callback_id in self.callbacks.items():
             self.bulk_account_loader.remove_account(
                 Pubkey.from_string(pubkey_str), callback_id
@@ -182,9 +203,63 @@ class PollingDriftClientAccountSubscriber(DriftClientAccountSubscriber):
         return self.oracle.get(str(oracle))
 
     def get_market_accounts_and_slots(self) -> list[DataAndSlot[PerpMarketAccount]]:
-        return [self.perp_markets.values()]
+        return [
+            DataAndSlot(account.slot, account.data)
+            for account in self.perp_markets.values()
+        ]
 
     def get_spot_market_accounts_and_slots(
         self,
     ) -> list[DataAndSlot[SpotMarketAccount]]:
-        return [self.spot_markets.values()]
+        return [
+            DataAndSlot(account.slot, account.data)
+            for account in self.spot_markets.values()
+        ]
+
+    async def _set_perp_oracle_map(self):
+        perp_markets = self.get_market_accounts_and_slots()
+        for market in perp_markets:
+            market_account = market.data
+            market_index = market_account.market_index
+            oracle = market_account.amm.oracle
+            if not oracle in self.oracle:
+                await self.add_oracle(oracle, market_account.amm.oracle_source)
+            self.perp_oracle_map[market_index] = oracle
+
+    async def _set_spot_oracle_map(self):
+        spot_markets = self.get_spot_market_accounts_and_slots()
+        for market in spot_markets:
+            market_account = market.data
+            market_index = market_account.market_index
+            oracle = market_account.oracle
+            if not oracle in self.oracle:
+                await self.add_oracle(oracle, market_account.oracle_source)
+            self.spot_oracle_map[market_index] = oracle
+
+    def get_oracle_price_data_and_slot_for_perp_market(
+        self, market_index: int
+    ) -> Union[DataAndSlot[OraclePriceData], None]:
+        perp_market_account = self.get_perp_market_and_slot(market_index)
+        oracle = self.perp_oracle_map.get(market_index)
+
+        if not perp_market_account or not oracle:
+            return None
+
+        if str(perp_market_account.data.amm.oracle) != str(oracle):
+            asyncio.create_task(self._set_perp_oracle_map())
+
+        return self.get_oracle_price_data_and_slot(oracle)
+
+    def get_oracle_price_data_and_slot_for_spot_market(
+        self, market_index: int
+    ) -> Union[DataAndSlot[OraclePriceData], None]:
+        spot_market_account = self.get_spot_market_and_slot(market_index)
+        oracle = self.spot_oracle_map.get(market_index)
+
+        if not spot_market_account or not oracle:
+            return None
+
+        if str(spot_market_account.data.oracle) != str(oracle):
+            asyncio.create_task(self._set_spot_oracle_map())
+
+        return self.get_oracle_price_data_and_slot(oracle)

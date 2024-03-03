@@ -5,16 +5,23 @@ import pprint
 sys.path.append("../src/")
 
 from anchorpy import Wallet
-from anchorpy import Provider
 
-from solana.rpc.async_api import AsyncClient
-from solana.keypair import Keypair
+from solders.keypair import Keypair  # type: ignore
+from solders.instruction import Instruction  # type: ignore
+
 from solana.rpc import commitment
+from solana.rpc.async_api import AsyncClient
+from solana.transaction import AccountMeta
 
+from spl.token.instructions import get_associated_token_address
+from spl.token.instructions import create_associated_token_account
+from spl.token.constants import TOKEN_PROGRAM_ID
+
+from driftpy.account_subscription_config import AccountSubscriptionConfig
 from driftpy.constants.config import configs
 from driftpy.drift_client import DriftClient
 from driftpy.accounts import *
-from driftpy.drift_user import DriftUser
+from driftpy.constants.numeric_constants import QUOTE_PRECISION
 
 
 async def view_logs(sig: str, connection: AsyncClient):
@@ -45,22 +52,21 @@ async def main(
 ):
     with open(keypath, "r") as f:
         secret = json.load(f)
-    kp = Keypair.from_secret_key(bytes(secret))
-    print("using public key:", kp.public_key)
+    kp = Keypair.from_bytes(bytes(secret))
+    print("using public key:", kp.pubkey())
     print("spot market:", spot_market_index)
 
-    config = configs[env]
     wallet = Wallet(kp)
     connection = AsyncClient(url)
-    provider = Provider(connection, wallet)
 
-    from driftpy.constants.numeric_constants import QUOTE_PRECISION
+    dc = DriftClient(
+        connection,
+        wallet,
+        str(env),
+        account_subscription=AccountSubscriptionConfig("websocket"),
+    )
 
-    dc = DriftClient.from_config(config, provider)
-    drift_user = User(dc)
     print(dc.program_id)
-
-    from spl.token.instructions import get_associated_token_address
 
     spot_market = await get_spot_market_account(dc.program, spot_market_index)
     spot_mint = spot_market.mint
@@ -73,9 +79,7 @@ async def main(
 
     if operation == "add" or operation == "remove" and spot_market_index == 1:
         ata = get_associated_token_address(dc.authority, spot_market.mint)
-        if not does_account_exist(connection, ata):
-            from spl.token.instructions import create_associated_token_account
-
+        if not await does_account_exist(connection, ata):
             ix = create_associated_token_account(
                 dc.authority, dc.authority, spot_market.mint
             )
@@ -92,7 +96,7 @@ async def main(
         ]
         data = int.to_bytes(17, 1, "little")
         program_id = TOKEN_PROGRAM_ID
-        ix = TransactionInstruction(keys=keys, program_id=program_id, data=data)
+        ix = Instruction(accounts=keys, program_id=program_id, data=data)
         await dc.send_ixs(ix)
 
     spot = await get_spot_market_account(dc.program, spot_market_index)
@@ -111,7 +115,7 @@ async def main(
         if_addr = get_insurance_fund_stake_public_key(
             dc.program_id, kp.public_key, spot_market_index
         )
-        if not does_account_exist(connection, if_addr):
+        if not await does_account_exist(connection, if_addr):
             print("initializing stake account...")
             sig = await dc.initialize_insurance_fund_stake(spot_market_index)
             print(sig)

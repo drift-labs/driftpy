@@ -1,3 +1,9 @@
+import asyncio
+from pathlib import Path
+
+from anchorpy import Coder, Idl, Program
+
+import driftpy
 from .types import DataAndSlot
 from driftpy.constants.numeric_constants import *
 from driftpy.types import OracleSource, OraclePriceData, is_variant
@@ -8,9 +14,20 @@ from pythclient.pythaccounts import PythPriceInfo, _ACCOUNT_HEADER_BYTES, EmaTyp
 from solana.rpc.async_api import AsyncClient
 import struct
 
+file = Path(str(driftpy.__path__[0]) + "/idl/switchboard.json")
+with file.open() as f:
+    raw = file.read_text()
+IDL = Idl.from_json(raw)
+CODER = Coder(IDL)
+
 
 def convert_pyth_price(price, scale=1):
     return int(price * PRICE_PRECISION * scale)
+
+
+def convert_switchboard_decimal(mantissa: int, scale: int = 1):
+    swb_precision = 10**scale
+    return int((mantissa * PRICE_PRECISION) // swb_precision)
 
 
 async def get_oracle_price_data_and_slot(
@@ -75,7 +92,7 @@ def decode_pyth_price_info(
 
     raw_price_scaler = abs(exponent) - 6
 
-    raw_price_to_price_precision = pyth_price_info.raw_price // (
+    raw_price_to_price_precision = pyth_price_info.raw_price / (
         10**raw_price_scaler
     )  # exponent decimals from oracle to PRICE_PRECISION of 6
 
@@ -86,17 +103,50 @@ def decode_pyth_price_info(
         raw_price_to_price_precision *= 1e6
 
     return OraclePriceData(
-        price=raw_price_to_price_precision,
+        price=int(raw_price_to_price_precision),
         slot=pyth_price_info.pub_slot,
         confidence=convert_pyth_price(pyth_price_info.confidence_interval, scale),
         twap=convert_pyth_price(twap, scale),
         twap_confidence=convert_pyth_price(twac, scale),
-        has_sufficient_number_of_datapoints=True,
+        has_sufficient_number_of_data_points=True,
     )
+
+
+def decode_swb_price_info(data: bytes):
+    account = CODER.accounts.decode(data)
+
+    round = account.latest_confirmed_round
+
+    price = convert_switchboard_decimal(round.result.mantissa, round.result.scale)
+
+    conf = convert_switchboard_decimal(
+        round.std_deviation.mantissa, round.std_deviation.scale
+    )
+
+    has_sufficient_number_of_data_points = (
+        round.num_success >= account.min_oracle_results
+    )
+
+    slot = round.round_open_slot
+
+    return OraclePriceData(
+        price, slot, conf, 1, 1, has_sufficient_number_of_data_points
+    )
+
+
+def decode_oracle(oracle_ai: bytes, oracle_source: OracleSource):
+    if "Pyth" in str(oracle_source):
+        return decode_pyth_price_info(oracle_ai, oracle_source)
+    elif "Switchboard" in str(oracle_source):
+        return decode_swb_price_info(oracle_ai)
+    else:
+        raise Exception("Unknown oracle source")
 
 
 def get_oracle_decode_fn(oracle_source: OracleSource):
     if "Pyth" in str(oracle_source):
         return lambda data: decode_pyth_price_info(data, oracle_source)
+    elif "Switchboard" in str(oracle_source):
+        return lambda data: decode_swb_price_info(data)
     else:
         raise Exception("Unknown oracle source")

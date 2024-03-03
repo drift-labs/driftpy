@@ -75,7 +75,6 @@ class DemoDriftClientAccountSubscriber(DriftClientAccountSubscriber):
             perp_markets.append(perp_market_and_slot)
 
         oracle_pubkeys = [oracle.pubkey for oracle in self.oracle_infos]
-
         oracle_accounts = await self.program.provider.connection.get_multiple_accounts(
             oracle_pubkeys
         )
@@ -115,7 +114,7 @@ class DemoDriftClientAccountSubscriber(DriftClientAccountSubscriber):
     ) -> Optional[DataAndSlot[OraclePriceData]]:
         return self.cache["oracle_price_data"][str(oracle)]
 
-    def unsubscribe(self):
+    async def unsubscribe(self):
         self.cache = None
 
     def get_market_accounts_and_slots(self) -> list[DataAndSlot[PerpMarketAccount]]:

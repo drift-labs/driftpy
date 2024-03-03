@@ -122,7 +122,7 @@ mainnet_perp_market_configs: list[PerpMarketConfig] = [
         oracle_source=OracleSource.Pyth(),
     ),
     PerpMarketConfig(
-        symbol="1MBONK",
+        symbol="1MBONK-PERP",
         base_asset_symbol="1MBONK",
         market_index=4,
         oracle=Pubkey.from_string("8ihFLu5FimgTQ1Unh4dVyEHUGodJ5gJQCrQf4KUVB9bN"),
@@ -252,6 +252,34 @@ mainnet_perp_market_configs: list[PerpMarketConfig] = [
         base_asset_symbol="AVAX",
         market_index=22,
         oracle=Pubkey.from_string("Ax9ujW5B9oqcv59N8m6f1BpTBq2rGeGaBcpKjC5UYsXU"),
+        oracle_source=OracleSource.Pyth(),
+    ),
+    PerpMarketConfig(
+        symbol="WIF-PERP",
+        base_asset_symbol="WIF",
+        market_index=23,
+        oracle=Pubkey.from_string("6ABgrEZk8urs6kJ1JNdC1sspH5zKXRqxy8sg3ZG2cQps"),
+        oracle_source=OracleSource.Pyth(),
+    ),
+    PerpMarketConfig(
+        symbol="JUP-PERP",
+        base_asset_symbol="JUP",
+        market_index=24,
+        oracle=Pubkey.from_string("g6eRCbboSwK4tSWngn773RCMexr1APQr4uA9bGZBYfo"),
+        oracle_source=OracleSource.Pyth(),
+    ),
+    PerpMarketConfig(
+        symbol="DYM-PERP",
+        base_asset_symbol="DYM",
+        market_index=25,
+        oracle=Pubkey.from_string("CSRRrhXa6DYu1W5jf89A7unCATdug2Z33tYyV2NXZZxa"),
+        oracle_source=OracleSource.Pyth(),
+    ),
+    PerpMarketConfig(
+        symbol="TAO-PERP",
+        base_asset_symbol="TAO",
+        market_index=26,
+        oracle=Pubkey.from_string("5NxzemFgGDhimYE3S5qmb5zkjZUmiHXb4up5WGXe7NLn"),
         oracle_source=OracleSource.Pyth(),
     ),
 ]

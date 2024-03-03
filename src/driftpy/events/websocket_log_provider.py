@@ -46,6 +46,10 @@ class WebsocketLogProvider(LogProvider):
                         slot = msg[0].result.context.slot
                         signature = msg[0].result.value.signature
                         logs = msg[0].result.value.logs
+
+                        if msg[0].result.value.err:
+                            continue
+
                         callback(signature, slot, logs)
                     except Exception as e:
                         print(f"Error processing event data", e)

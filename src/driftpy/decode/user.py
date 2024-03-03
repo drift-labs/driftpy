@@ -85,7 +85,7 @@ def decode_user(buffer: bytes) -> UserAccount:
         offset += 8
         last_quote_asset_amount_per_lp = read_bigint64le(buffer, offset, True)
         offset += 8
-        remainder_base_asset_amount = read_int32_le(buffer, offset, False)
+        remainder_base_asset_amount = read_int32_le(buffer, offset, True)
         offset += 4
         market_index = read_uint16_le(buffer, offset)
         offset += 3

@@ -11,6 +11,7 @@ from driftpy.events.event_list import EventList
 from driftpy.events.sort import get_sort_fn
 from driftpy.events.tx_event_cache import TxEventCache
 from driftpy.events.types import WrappedEvent, EventType, EventSubscriptionOptions
+from driftpy.events.parse import parse_logs
 
 
 class EventSubscriber:
@@ -53,9 +54,6 @@ class EventSubscriber:
         if self.tx_event_cache.has(str(tx_sig)):
             return
 
-        events = []
-        self.event_parser.parse_logs(logs, events.append)
-
         wrapped_events = self.parse_events_from_logs(tx_sig, slot, logs)
         for wrapped_event in wrapped_events:
             self.event_list_map.get(wrapped_event.event_type).insert(wrapped_event)
@@ -68,8 +66,7 @@ class EventSubscriber:
     def parse_events_from_logs(self, tx_sig: Signature, slot: int, logs: list[str]):
         wrapped_events = []
 
-        events = []
-        self.event_parser.parse_logs(logs, events.append)
+        events = parse_logs(self.program, logs)
 
         for index, event in enumerate(events):
             if event.name in self.event_list_map:

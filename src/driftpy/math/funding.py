@@ -3,9 +3,11 @@ import time
 from typing import Optional, Tuple
 from driftpy.math.amm import calculate_bid_ask_price
 from driftpy.math.oracles import calculate_live_oracle_twap
+from driftpy.math.utils import clamp_num
 from driftpy.types import (
     OraclePriceData,
     PerpMarketAccount,
+    is_one_of_variant,
     is_variant,
 )
 
@@ -60,8 +62,6 @@ def calculate_live_mark_twap(
 
     if not mark_price:
         bid, ask = calculate_bid_ask_price(market.amm, oracle_price_data)
-        print(f"bid {bid}")
-        print(f"ask {ask}")
         mark_price = (bid + ask) // 2
 
     mark_twap_with_mantissa = (
@@ -163,7 +163,13 @@ async def calculate_all_estimated_funding_rate(
         abs(oracle_twap) // FUNDING_RATE_OFFSET_DENOMINATOR
     )
 
-    twap_spread_pct = (twap_spread_with_offset * PRICE_PRECISION * 100) // oracle_twap
+    max_spread = get_max_price_divergence_for_funding_rate(market, oracle_twap)
+
+    clamped_spread_with_offset = clamp_num(
+        twap_spread_with_offset, (max_spread * -1), max_spread
+    )
+
+    twap_spread_pct = (clamped_spread_with_offset * PRICE_PRECISION * 100) / oracle_twap
 
     seconds_in_hour = 3600
     hours_in_day = 24
@@ -178,7 +184,7 @@ async def calculate_all_estimated_funding_rate(
         // seconds_in_hour
         // hours_in_day
     )
-    interp_est = twap_spread_pct // hours_in_day
+    interp_est = int(twap_spread_pct / hours_in_day)
     interp_rate_quote = (
         twap_spread_pct // hours_in_day // (PRICE_PRECISION // QUOTE_PRECISION)
     )
@@ -214,6 +220,23 @@ async def calculate_all_estimated_funding_rate(
         capped_alt_est = interp_est
 
     return mark_twap, oracle_twap, lowerbound_est, capped_alt_est, interp_est
+
+
+def get_max_price_divergence_for_funding_rate(
+    market: PerpMarketAccount, oracle_twap: int
+) -> int:
+    if str(market.contract_tier) == "ContractTier.A()":
+        return oracle_twap // 33
+    elif str(market.contract_tier) == "ContractTier.B()":
+        return oracle_twap // 33
+    elif str(market.contract_tier) == "ContractTier.C()":
+        return oracle_twap // 20
+    elif str(market.contract_tier) == "ContractTier.Speculative()":
+        return oracle_twap // 10
+    elif str(market.contract_tier) == "ContractTier.Isolated()":
+        return oracle_twap // 10
+    else:
+        return oracle_twap // 10
 
 
 async def calculate_long_short_funding_and_live_twaps(
