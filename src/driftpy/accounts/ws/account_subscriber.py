@@ -1,22 +1,23 @@
 import asyncio
-from typing import Optional
+import random
+
+from typing import Optional, cast, Generic, TypeVar, Callable
 
 from anchorpy import Program
-from solders.pubkey import Pubkey
+
+from solders.pubkey import Pubkey  # type: ignore
+
 from solana.rpc.commitment import Commitment
+from solana.rpc.websocket_api import connect, SolanaWsClientProtocol
 
 from driftpy.accounts import get_account_data_and_slot
 from driftpy.accounts import UserAccountSubscriber, DataAndSlot
-
-import websockets
-import websockets.exceptions  # force eager imports
-from solana.rpc.websocket_api import connect
-
-from typing import cast, Generic, TypeVar, Callable
-
-from driftpy.types import PerpMarketAccount, get_ws_url
+from driftpy.types import get_ws_url
 
 T = TypeVar("T")
+
+MAX_FAILURES = 10
+MAX_DELAY = 16
 
 
 class WebsocketAccountSubscriber(UserAccountSubscriber, Generic[T]):
@@ -51,20 +52,21 @@ class WebsocketAccountSubscriber(UserAccountSubscriber, Generic[T]):
     async def subscribe_ws(self):
         endpoint = self.program.provider.connection._provider.endpoint_uri
         ws_endpoint = get_ws_url(endpoint)
-
-        async for ws in connect(ws_endpoint):
+        num_failures = 0
+        delay = 1
+        while True:
             try:
-                self.ws = ws
-                await ws.account_subscribe(
-                    self.pubkey,
-                    commitment=self.commitment,
-                    encoding="base64",
-                )
-                first_resp = await ws.recv()
-                subscription_id = cast(int, first_resp[0].result)
+                async with connect(ws_endpoint) as ws:
+                    self.ws = ws
+                    ws: SolanaWsClientProtocol
 
-                async for msg in ws:
-                    try:
+                    await ws.account_subscribe(
+                        self.pubkey, commitment=self.commitment, encoding="base64"
+                    )
+
+                    await ws.recv()
+
+                    async for msg in ws:
                         slot = int(msg[0].result.context.slot)  # type: ignore
 
                         if msg[0].result.value is None:
@@ -73,13 +75,23 @@ class WebsocketAccountSubscriber(UserAccountSubscriber, Generic[T]):
                         account_bytes = cast(bytes, msg[0].result.value.data)  # type: ignore
                         decoded_data = self.decode(account_bytes)
                         self.update_data(DataAndSlot(slot, decoded_data))
-                    except Exception:
-                        print(f"Error processing account data")
-                        break
-                await ws.account_unsubscribe(subscription_id)
-            except websockets.exceptions.ConnectionClosed:
-                print("Websocket closed, reconnecting...")
-                continue
+            except Exception as e:
+                print(f"Error in websocket subscription: {e}")
+                num_failures += 1
+                if num_failures > MAX_FAILURES:
+                    print(
+                        f"Max failures reached for subscription: {self.pubkey}, unsubscribing"
+                    )
+                    await self.unsubscribe()
+                    break
+                if self.ws:
+                    await self.ws.close()
+                    self.ws = None
+                await asyncio.sleep(
+                    delay
+                )  # wait a second before we retry, exponential backoff
+                delay = min(delay * 2, MAX_DELAY)
+                delay += delay * random.uniform(-0.1, 0.1)  # add some jitter
 
     async def fetch(self):
         new_data = await get_account_data_and_slot(
