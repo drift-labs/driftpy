@@ -1,18 +1,23 @@
-import base64
-from typing import cast, Optional, Callable
-from solders.pubkey import Pubkey
-from anchorpy import Program, ProgramAccount
-from solana.rpc.commitment import Commitment
+import asyncio
 
-from driftpy.types import *
+from typing import cast, Optional, Callable
+
+
+from anchorpy import Program, ProgramAccount
+
+from solders.pubkey import Pubkey  # type: ignore
+
+from solana.rpc.commitment import Commitment, Processed
+
 from driftpy.addresses import *
+from driftpy.types import *
 from .types import DataAndSlot, T
 
 
 async def get_account_data_and_slot(
     address: Pubkey,
     program: Program,
-    commitment: Commitment = "processed",
+    commitment: Commitment = Processed,
     decode: Optional[Callable[[bytes], T]] = None,
 ) -> Optional[DataAndSlot[T]]:
     account_info = await program.provider.connection.get_account_info(
@@ -34,13 +39,36 @@ async def get_account_data_and_slot(
     return DataAndSlot(slot, decoded_data)
 
 
-async def get_state_account_and_slot(program: Program) -> DataAndSlot[StateAccount]:
+async def get_account_data_and_slot_with_retry(
+    address: Pubkey,
+    program: Program,
+    commitment: Commitment = Processed,
+    decode: Optional[Callable[[bytes], T]] = None,
+    max_retries: int = 3,
+    initial_delay: float = 1.0,
+) -> Optional[DataAndSlot[T]]:
+    retries = max_retries
+    delay = initial_delay
+    while retries > 0:
+        result = await get_account_data_and_slot(address, program, commitment, decode)
+        if result:
+            return result
+        await asyncio.sleep(delay)
+        delay *= 2
+        retries -= 1
+    return None
+
+
+async def get_state_account_and_slot(
+    program: Program,
+) -> Optional[DataAndSlot[StateAccount]]:
     state_public_key = get_state_public_key(program.program_id)
-    return await get_account_data_and_slot(state_public_key, program)
+    return await get_account_data_and_slot_with_retry(state_public_key, program)
 
 
-async def get_state_account(program: Program) -> StateAccount:
-    return (await get_state_account_and_slot(program)).data
+async def get_state_account(program: Program) -> Optional[StateAccount]:
+    state_account = await get_account_data_and_slot(program)
+    return getattr(state_account, "data", None)
 
 
 async def get_if_stake_account(
@@ -68,15 +96,16 @@ async def get_user_stats_account(
 async def get_user_account_and_slot(
     program: Program,
     user_public_key: Pubkey,
-) -> DataAndSlot[UserAccount]:
-    return await get_account_data_and_slot(user_public_key, program)
+) -> Optional[DataAndSlot[UserAccount]]:
+    return await get_account_data_and_slot_with_retry(user_public_key, program)
 
 
 async def get_user_account(
     program: Program,
     user_public_key: Pubkey,
-) -> UserAccount:
-    return (await get_user_account_and_slot(program, user_public_key)).data
+) -> Optional[UserAccount]:
+    user_account = await get_user_account_and_slot(program, user_public_key)
+    return getattr(user_account, "data", None)
 
 
 async def get_perp_market_account_and_slot(
@@ -85,13 +114,14 @@ async def get_perp_market_account_and_slot(
     perp_market_public_key = get_perp_market_public_key(
         program.program_id, market_index
     )
-    return await get_account_data_and_slot(perp_market_public_key, program)
+    return await get_account_data_and_slot_with_retry(perp_market_public_key, program)
 
 
 async def get_perp_market_account(
     program: Program, market_index: int
-) -> PerpMarketAccount:
-    return (await get_perp_market_account_and_slot(program, market_index)).data
+) -> Optional[PerpMarketAccount]:
+    perp_market = await get_perp_market_account_and_slot(program, market_index)
+    return getattr(perp_market, "data", None)
 
 
 async def get_all_perp_market_accounts(program: Program) -> list[ProgramAccount]:
@@ -100,17 +130,18 @@ async def get_all_perp_market_accounts(program: Program) -> list[ProgramAccount]
 
 async def get_spot_market_account_and_slot(
     program: Program, spot_market_index: int
-) -> DataAndSlot[SpotMarketAccount]:
+) -> Optional[DataAndSlot[SpotMarketAccount]]:
     spot_market_public_key = get_spot_market_public_key(
         program.program_id, spot_market_index
     )
-    return await get_account_data_and_slot(spot_market_public_key, program)
+    return await get_account_data_and_slot_with_retry(spot_market_public_key, program)
 
 
 async def get_spot_market_account(
     program: Program, spot_market_index: int
-) -> SpotMarketAccount:
-    return (await get_spot_market_account_and_slot(program, spot_market_index)).data
+) -> Optional[SpotMarketAccount]:
+    spot_market = await get_spot_market_account_and_slot(program, spot_market_index)
+    return getattr(spot_market, "data", None)
 
 
 async def get_all_spot_market_accounts(program: Program) -> list[ProgramAccount]:

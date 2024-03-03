@@ -37,5 +37,7 @@ class TxSender:
         pass
 
     @abstractmethod
-    async def send(self, tx: Union[Transaction, VersionedTransaction]) -> TxSigAndSlot:
+    async def send(
+        self, tx: Union[Transaction, VersionedTransaction]
+    ) -> Optional[TxSigAndSlot]:
         pass

@@ -75,16 +75,52 @@ class StandardTxSender(TxSender):
 
         return VersionedTransaction(msg, signers)
 
-    async def send(self, tx: Union[Transaction, VersionedTransaction]) -> TxSigAndSlot:
+    async def send(
+        self,
+        tx: Union[Transaction, VersionedTransaction],
+        commitment: Optional[Commitment] = None,
+    ) -> Optional[TxSigAndSlot]:
         raw = tx.serialize() if isinstance(tx, Transaction) else bytes(tx)
 
         body = self.connection._send_raw_transaction_body(raw, self.opts)
         resp = await self.connection._provider.make_request(body, SendTransactionResp)
-        sig = resp.value
+        sig = getattr(resp, "value", None)
 
-        sig_status = await self.connection.confirm_transaction(
-            sig, self.opts.preflight_commitment
-        )
+        if not sig:
+            return None
+
+        commitment = commitment or self.opts.preflight_commitment
+        sig_status = await self.connection.confirm_transaction(sig, commitment)
         slot = sig_status.context.slot
 
         return TxSigAndSlot(sig, slot)
+
+    async def send_without_confirming(
+        self, tx: Union[Transaction, VersionedTransaction]
+    ) -> Optional[str]:
+        raw = tx.serialize() if isinstance(tx, Transaction) else bytes(tx)
+
+        body = self.connection._send_raw_transaction_body(raw, self.opts)
+        resp = await self.connection._provider.make_request(body, SendTransactionResp)
+        sig = getattr(resp, "value", None)
+
+        if not sig:
+            return None
+
+        return sig
+
+    async def send_no_preflight(
+        self, tx: Union[Transaction, VersionedTransaction]
+    ) -> Optional[TxSigAndSlot]:
+        raw = tx.serialize() if isinstance(tx, Transaction) else bytes(tx)
+
+        opts = self.opts._replace(skip_preflight=True)
+
+        body = self.connection._send_raw_transaction_body(raw, opts)
+        resp = await self.connection._provider.make_request(body, SendTransactionResp)
+        sig = getattr(resp, "value", None)
+
+        if not sig:
+            return None
+
+        return TxSigAndSlot(sig, None)
