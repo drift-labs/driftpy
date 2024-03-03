@@ -1,3 +1,4 @@
+import base64
 import json
 import os
 from deprecated import deprecated
@@ -1391,8 +1392,9 @@ class DriftClient:
         market_index: int,
         sub_account_id: Optional[int] = None,
     ) -> Optional[SpotPosition]:
+        if self.inspect_mode:
+            raise InspectMode()
         sub_account_id = self.get_sub_account_id_for_ix(sub_account_id)
-
         return self.get_user(sub_account_id).get_spot_position(market_index)
 
     def get_perp_position(
@@ -1400,6 +1402,8 @@ class DriftClient:
         market_index: int,
         sub_account_id: Optional[int] = None,
     ) -> Optional[PerpPosition]:
+        if self.inspect_mode:
+            raise InspectMode()
         sub_account_id = self.get_sub_account_id_for_ix(sub_account_id)
         return self.get_user(sub_account_id).get_perp_position(market_index)
 
