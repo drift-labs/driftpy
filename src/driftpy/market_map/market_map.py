@@ -71,8 +71,7 @@ class MarketMap:
         self, key: int, data: DataAndSlot[GenericMarketType]
     ) -> Optional[GenericMarketType]:
         if not self.has(key):
-            pubkey = Pubkey.from_string(key, data)
-            await self.add_pubkey(pubkey)
+            await self.add_market(key, data)
         return self.get(key)
 
     def size(self) -> int:
