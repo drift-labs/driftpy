@@ -181,3 +181,9 @@ Sort market indexes in `CachedDriftClientAccountSubscriber` before populating ca
 Merge PR #116: Update div_ceil to use integer division isntead of float division
 
 Merge PR #117: Allows for the Jupiter V6 Swap API url to be configured
+
+## [0.7.34] - 2024-3-4
+
+Refactor oracle switching & tests
+
+Fix bug in `MarketMap` where a subscription would not be properly established
