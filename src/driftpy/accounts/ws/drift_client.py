@@ -82,7 +82,6 @@ class WebsocketDriftClientAccountSubscriber(DriftClientAccountSubscriber):
                 MarketType.Spot(),
                 WebsocketConfig(),
                 self.program.provider.connection,
-                False,
             )
 
             perp_market_config = MarketMapConfig(
@@ -90,7 +89,6 @@ class WebsocketDriftClientAccountSubscriber(DriftClientAccountSubscriber):
                 MarketType.Perp(),
                 WebsocketConfig(),
                 self.program.provider.connection,
-                False,
             )
 
             spot_market_map = MarketMap(spot_market_config)
@@ -99,14 +97,14 @@ class WebsocketDriftClientAccountSubscriber(DriftClientAccountSubscriber):
             spot_market_map.init(spot_ds)
             perp_market_map.init(perp_ds)
 
-            await spot_market_map.subscribe()
-            await perp_market_map.subscribe()
-
             self.spot_market_map = spot_market_map
             self.perp_market_map = perp_market_map
 
             for full_oracle_wrapper in self.full_oracle_wrappers:
                 await self.subscribe_to_oracle(full_oracle_wrapper)
+
+            await spot_market_map.subscribe()
+            await perp_market_map.subscribe()
 
         else:
             for market_index in self.perp_market_indexes:
