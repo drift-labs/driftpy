@@ -6,9 +6,7 @@ from typing import Dict, Optional, Union
 import jsonrpcclient
 
 from solana.rpc.commitment import Confirmed
-from solders.pubkey import Pubkey
 from driftpy.accounts.types import DataAndSlot
-from driftpy.decode.utils import decode_name
 
 from driftpy.market_map.market_map_config import MarketMapConfig
 from driftpy.market_map.websocket_sub import WebsocketSubscription
@@ -47,7 +45,7 @@ class MarketMap:
             self.market_map[data_and_slot.data.market_index] = data_and_slot
 
     async def subscribe(self):
-        if self.size() > 0:
+        if self.is_subscribed:
             return
 
         await self.subscription.subscribe()
