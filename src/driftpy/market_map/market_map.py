@@ -32,7 +32,6 @@ class MarketMap:
             self,
             self.commitment,
             self.update_market,
-            config.skip_initial_load,
             config.subscription_config.resub_timeout_ms,
             config.program.coder.accounts.decode,
         )
@@ -48,7 +47,7 @@ class MarketMap:
         if self.is_subscribed:
             return
 
-        await self.subscription.subscribe()
+        asyncio.create_task(self.subscription.subscribe())
         self.is_subscribed = True
 
     async def unsubscribe(self):
@@ -82,70 +81,6 @@ class MarketMap:
         self, market_index: int, data: DataAndSlot[GenericMarketType]
     ) -> None:
         self.market_map[market_index] = data
-
-    async def sync(self) -> None:
-        async with self.sync_lock:
-            try:
-                memcmp_opts = get_market_type_filter(self.market_type)
-                filters = [{"memcmp": {"offset": 0, "bytes": f"{memcmp_opts.bytes}"}}]
-
-                rpc_request = jsonrpcclient.request(
-                    "getProgramAccounts",
-                    [
-                        str(self.program.program_id),
-                        {"filters": filters, "encoding": "base64", "withContext": True},
-                    ],
-                )
-
-                post = self.connection._provider.session.post(
-                    self.connection._provider.endpoint_uri,
-                    json=rpc_request,
-                    headers={"content-encoding": "gzip"},
-                )
-
-                resp = await asyncio.wait_for(post, timeout=10)
-
-                parsed_resp = jsonrpcclient.parse(resp.json())
-
-                slot = int(parsed_resp.result["context"]["slot"])
-
-                self.latest_slot = slot
-
-                rpc_response_values = parsed_resp.result["value"]
-
-                program_account_buffer_map: Dict[str, GenericMarketType] = {}
-
-                # parse the gPA data before inserting
-                for program_account in rpc_response_values:
-                    pubkey = program_account["pubkey"]
-                    buffer = base64.b64decode(program_account["account"]["data"][0])
-                    data = self.program.coder.accounts.decode(buffer)
-                    program_account_buffer_map[str(pubkey)] = data
-
-                # "idempotent" insert into marketmap
-                for pubkey in program_account_buffer_map.keys():
-                    data = program_account_buffer_map.get(pubkey)
-                    if pubkey not in self.market_map:
-                        await self.add_market(
-                            data.market_index, DataAndSlot(slot, data)
-                        )
-                    else:
-                        self.update_market(pubkey, DataAndSlot(slot, data))
-
-                    await asyncio.sleep(0)
-
-                keys_to_delete = []
-                for key in list(self.market_map.keys()):
-                    if key not in program_account_buffer_map:
-                        keys_to_delete.append(key)
-                    await asyncio.sleep(0)
-
-                for key in keys_to_delete:
-                    del self.market_map[key]
-
-            except Exception as e:
-                print(f"Error in MarketMap.sync(): {e}")
-                traceback.print_exc()
 
     async def update_market(
         self, _key: str, data: DataAndSlot[GenericMarketType]
