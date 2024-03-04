@@ -106,7 +106,7 @@ class PollingDriftClientAccountSubscriber(DriftClientAccountSubscriber):
             self.callbacks[str(pubkey)] = callback_id
 
         for oracle_info in self.oracle_infos:
-            self.add_oracle(oracle_info.pubkey, oracle_info.source)
+            await self.add_oracle(oracle_info.pubkey, oracle_info.source)
 
     def _get_state_callback(self):
         def cb(buffer: bytes, slot: int):
