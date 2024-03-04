@@ -223,9 +223,9 @@ async def test_ws(
     await drift_client.update_perp_market_oracle(0, first_oracle, OracleSource.Pyth())
 
     await drift_client.update_perp_market_oracle(0, other_oracle, OracleSource.Pyth())
-    await asyncio.sleep(45)
 
-    print("what the actual fuck")
+    await asyncio.sleep(30)
+
     perp_oracle_price_before = (
         ws_drift_client.get_oracle_price_data_for_perp_market(0)
     ).price
@@ -241,7 +241,7 @@ async def test_ws(
     assert perp_oracle_price_after == 100 * PRICE_PRECISION
 
     await drift_client.update_spot_market_oracle(1, other_oracle, OracleSource.Pyth())
-    await asyncio.sleep(45)
+    await asyncio.sleep(30)
 
     spot_oracle_price_before = (
         ws_drift_client.get_oracle_price_data_for_spot_market(1)
