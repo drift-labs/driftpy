@@ -123,7 +123,7 @@ def decode_swb_price_info(data: bytes):
         convert_switchboard_decimal(
             round.std_deviation.mantissa, round.std_deviation.scale
         ),
-        1_000,
+        (price // 1_000),
     )
 
     has_sufficient_number_of_data_points = (
