@@ -119,8 +119,11 @@ def decode_swb_price_info(data: bytes):
 
     price = convert_switchboard_decimal(round.result.mantissa, round.result.scale)
 
-    conf = convert_switchboard_decimal(
-        round.std_deviation.mantissa, round.std_deviation.scale
+    conf = max(
+        convert_switchboard_decimal(
+            round.std_deviation.mantissa, round.std_deviation.scale
+        ),
+        (price // 1_000),
     )
 
     has_sufficient_number_of_data_points = (
@@ -130,7 +133,7 @@ def decode_swb_price_info(data: bytes):
     slot = round.round_open_slot
 
     return OraclePriceData(
-        price, slot, conf, 1, 1, has_sufficient_number_of_data_points
+        price, slot, conf, None, None, has_sufficient_number_of_data_points
     )
 
 
