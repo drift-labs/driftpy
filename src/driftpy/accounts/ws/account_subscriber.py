@@ -1,20 +1,19 @@
 import asyncio
-from typing import Optional
-
-from anchorpy import Program
-from solders.pubkey import Pubkey
-from solana.rpc.commitment import Commitment
-
-from driftpy.accounts import get_account_data_and_slot
-from driftpy.accounts import UserAccountSubscriber, DataAndSlot
-
 import websockets
 import websockets.exceptions  # force eager imports
+
+from typing import cast, Optional, Generic, TypeVar, Callable
+
+from anchorpy import Program
+
+from solders.pubkey import Pubkey
+
+from solana.rpc.commitment import Commitment
 from solana.rpc.websocket_api import connect
 
-from typing import cast, Generic, TypeVar, Callable
-
-from driftpy.types import PerpMarketAccount, get_ws_url
+from driftpy.accounts import get_account_data_and_slot_with_retry
+from driftpy.accounts import UserAccountSubscriber, DataAndSlot
+from driftpy.types import get_ws_url
 
 T = TypeVar("T")
 
@@ -82,7 +81,7 @@ class WebsocketAccountSubscriber(UserAccountSubscriber, Generic[T]):
                 continue
 
     async def fetch(self):
-        new_data = await get_account_data_and_slot(
+        new_data = await get_account_data_and_slot_with_retry(
             self.pubkey, self.program, self.commitment, self.decode
         )
         self.update_data(new_data)

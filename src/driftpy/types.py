@@ -1305,3 +1305,22 @@ class SwapRecord:
     out_oracle_price: int
     in_oracle_price: int
     fee: int
+
+
+class SubscriptionException(Exception):
+    """Exception raised when an operation requires a prior subscription."""
+
+    def __init__(self, message="You must call subscribe before this function."):
+        self.message = message
+        super().__init__(self.message)
+
+
+class InspectMode(Exception):
+    """Exception raised when an operation requires a prior user account."""
+
+    def __init__(
+        self,
+        message="The client is in inspect mode as provided in the constructor.  This operation is not allowed.",
+    ):
+        self.message = message
+        super().__init__(self.message)

@@ -1,14 +1,19 @@
+from typing import Optional
+
 from solana.rpc.async_api import AsyncClient
-from solders.pubkey import Pubkey
-from solders.address_lookup_table_account import AddressLookupTableAccount
+
+from solders.pubkey import Pubkey  # type: ignore
+from solders.address_lookup_table_account import AddressLookupTableAccount  # type: ignore
 
 LOOKUP_TABLE_META_SIZE = 56
 
 
 async def get_address_lookup_table(
     connection: AsyncClient, pubkey: Pubkey
-) -> AddressLookupTableAccount:
+) -> Optional[AddressLookupTableAccount]:
     account_info = await connection.get_account_info(pubkey)
+    if not account_info.value:
+        return None
     return decode_address_lookup_table(pubkey, account_info.value.data)
 
 

@@ -5,21 +5,20 @@ import copy
 from typing import Tuple
 
 from driftpy.account_subscription_config import AccountSubscriptionConfig
+from driftpy.accounts.oracle import *
 from driftpy.math.amm import calculate_market_open_bid_ask
-from driftpy.math.conversion import convert_to_number
 from driftpy.math.oracles import calculate_live_oracle_twap
 from driftpy.math.perp_position import *
 from driftpy.math.margin import *
 from driftpy.math.spot_balance import get_strict_token_value
 from driftpy.math.spot_market import *
-from driftpy.accounts.oracle import *
 from driftpy.math.spot_position import (
     get_worst_case_token_amounts,
     is_spot_position_available,
 )
 from driftpy.math.amm import calculate_market_open_bid_ask
 from driftpy.oracles.strict_oracle_price import StrictOraclePrice
-from driftpy.types import OraclePriceData
+from driftpy.types import OraclePriceData, SubscriptionException
 
 
 class DriftUser:
@@ -40,9 +39,8 @@ class DriftUser:
             user_public_key (Pubkey): pubkey for user account
             account_subscription (Optional[AccountSubscriptionConfig], optional): method of receiving account updates
         """
-        from driftpy.drift_client import DriftClient
 
-        self.drift_client: DriftClient = drift_client
+        self.drift_client = drift_client
         self.program = drift_client.program
         self.oracle_program = drift_client
         self.connection = self.program.provider.connection
@@ -53,11 +51,22 @@ class DriftUser:
             self.program, self.user_public_key
         )
 
+        self.initial_data = None
+
+        self.is_subscribed = False
+
     async def subscribe(self):
+        data = await get_account_data_and_slot_with_retry(
+            self.user_public_key, self.program
+        )
+        if data:
+            self.initial_data = data
         await self.account_subscriber.subscribe()
+        self.subscribed = True
 
     def unsubscribe(self):
         self.account_subscriber.unsubscribe()
+        self.subscribed = False
 
     def get_oracle_data_for_spot_market(
         self, market_index: int
@@ -69,17 +78,22 @@ class DriftUser:
     ) -> Optional[OraclePriceData]:
         return self.drift_client.get_oracle_price_data_for_perp_market(market_index)
 
-    def get_perp_market_account(self, market_index: int) -> PerpMarketAccount:
+    def get_perp_market_account(self, market_index: int) -> Optional[PerpMarketAccount]:
         return self.drift_client.get_perp_market_account(market_index)
 
-    def get_spot_market_account(self, market_index: int) -> SpotMarketAccount:
+    def get_spot_market_account(self, market_index: int) -> Optional[SpotMarketAccount]:
         return self.drift_client.get_spot_market_account(market_index)
 
     def get_user_account_and_slot(self) -> DataAndSlot[UserAccount]:
-        return self.account_subscriber.get_user_account_and_slot()
+        if not self.subscribed:
+            raise SubscriptionException()
+        user_account = self.account_subscriber.get_user_account_and_slot()
+        if not user_account:
+            return self.initial_data
+        return user_account
 
-    def get_user_account(self) -> UserAccount:
-        return self.account_subscriber.get_user_account_and_slot().data
+    def get_user_account(self) -> Optional[UserAccount]:
+        return getattr(self.get_user_account_and_slot(), "data", None)
 
     def get_token_amount(self, market_index: int) -> int:
         spot_position = self.get_spot_position(market_index)
@@ -93,45 +107,62 @@ class DriftUser:
         return get_signed_token_amount(token_amount, spot_position.balance_type)
 
     def get_order(self, order_id: int) -> Optional[Order]:
-        for order in self.get_user_account().orders:
-            if order.order_id == order_id:
-                return order
+        user = self.get_user_account()
 
-        return None
+        order = next(
+            (order for order in user.orders if order.order_id == order_id), None
+        )
 
-    def get_order_by_user_order_id(self, user_order_id: int):
-        for order in self.get_user_account().orders:
-            if order.user_order_id == user_order_id:
-                return order
+        return order
 
-        return None
+    def get_order_by_user_order_id(self, user_order_id: int) -> Optional[Order]:
+        user = self.get_user_account()
+
+        order = next(
+            (order for order in user.orders if order.user_order_id == user_order_id),
+            None,
+        )
+
+        return order
 
     def get_open_orders(
         self,
     ):
         return list(
             filter(
-                lambda order: "Open" in str(order.status),
+                lambda order: is_variant(order.status, "Open"),
                 self.get_user_account().orders,
             )
         )
 
     def get_perp_position(self, market_index: int) -> Optional[PerpPosition]:
-        for position in self.get_user_account().perp_positions:
-            if position.market_index == market_index and not is_available(position):
-                return position
+        user = self.get_user_account()
 
-        return None
+        perp_position = next(
+            (
+                position
+                for position in user.perp_positions
+                if position.market_index == market_index and not is_available(position)
+            ),
+            None,
+        )
+
+        return perp_position
 
     def get_spot_position(self, market_index: int) -> Optional[SpotPosition]:
-        for position in self.get_user_account().spot_positions:
-            if (
-                position.market_index == market_index
-                and not is_spot_position_available(position)
-            ):
-                return position
+        user = self.get_user_account()
 
-        return None
+        spot_position = next(
+            (
+                position
+                for position in user.spot_positions
+                if position.market_index == market_index
+                and not is_spot_position_available(position)
+            ),
+            None,
+        )
+
+        return spot_position
 
     def get_perp_market_liability(
         self,
@@ -190,7 +221,6 @@ class DriftUser:
     def can_be_liquidated(self) -> bool:
         total_collateral = self.get_total_collateral()
 
-        user = self.get_user_account()
         liquidation_buffer = None
         if self.is_being_liquidated():
             liquidation_buffer = (
@@ -365,42 +395,8 @@ class DriftUser:
         free_collateral = max(0, free_collateral)
         return free_collateral
 
-    def get_user_spot_position(
-        self,
-        market_index: int,
-    ) -> Optional[SpotPosition]:
-        user = self.get_user_account()
-
-        found = False
-        for position in user.spot_positions:
-            if (
-                position.market_index == market_index
-                and not is_spot_position_available(position)
-            ):
-                found = True
-                break
-
-        if not found:
-            return None
-
-        return position
-
-    def get_user_position(
-        self,
-        market_index: int,
-    ) -> Optional[PerpPosition]:
-        user = self.get_user_account()
-
-        found = False
-        for position in user.perp_positions:
-            if position.market_index == market_index and not is_available(position):
-                found = True
-                break
-
-        if not found:
-            return None
-
-        return position
+    def get_empty_position(self, market_index: int) -> PerpPosition:
+        return PerpPosition(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, market_index, 0, 0)
 
     def get_health(self) -> int:
         if self.is_being_liquidated():
@@ -513,7 +509,7 @@ class DriftUser:
         include_open_orders: bool = True,
         strict: bool = False,
         now: Optional[int] = None,
-    ) -> (int, int):
+    ) -> Tuple[int, int]:
         now = now or int(time.time())
         net_quote_value = 0
         total_asset_value = 0
@@ -908,7 +904,7 @@ class DriftUser:
         market: PerpMarketAccount,
         perp_position: PerpPosition,
         position_base_size_change: int,
-    ) -> Union[int, None]:
+    ) -> Optional[int]:
         current_base_asset_amt = perp_position.base_asset_amount
 
         worst_case_base_asset_amt = calculate_worst_case_base_asset_amount(
@@ -1052,7 +1048,7 @@ class DriftUser:
         self,
         spot_market_index: int,
     ) -> Optional[int]:
-        position = self.get_user_spot_position(spot_market_index)
+        position = self.get_spot_position(spot_market_index)
         if position is None:
             return None
 
@@ -1099,9 +1095,6 @@ class DriftUser:
             return None
 
         return liq_price
-
-    def get_empty_position(self, market_index: int) -> PerpPosition:
-        return PerpPosition(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, market_index, 0, 0)
 
     def get_perp_position_with_lp_settle(
         self,
