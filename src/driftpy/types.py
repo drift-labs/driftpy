@@ -1,12 +1,17 @@
 import inspect
+import logging
 
 from dataclasses import dataclass, field
 from borsh_construct.enum import _rust_enum
 from sumtypes import constructor
-from typing import Optional
+from typing import Optional, Union
 from urllib.parse import urlparse, urlunparse
 
 from solders.pubkey import Pubkey  # type: ignore
+
+
+logger: logging.Logger = logging.getLogger(__name__)
+logger.setLevel(logging.WARNING)
 
 
 def is_variant(enum, type: str) -> bool:
@@ -1305,3 +1310,6 @@ class SwapRecord:
     out_oracle_price: int
     in_oracle_price: int
     fee: int
+
+
+GenericMarketType = Union[SpotMarketAccount, PerpMarketAccount]
