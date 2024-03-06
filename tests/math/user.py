@@ -71,7 +71,7 @@ async def test_unsettled_pnl():
     upnl = user.get_unrealized_pnl()
     assert upnl == 10_000_000
 
-    liq = user.can_be_liquidated()
+    liq, _, _ = user.can_be_liquidated()
     assert not liq
 
     assert user.get_health() == 100
@@ -102,7 +102,7 @@ async def test_liquidatable_long():
     assert user.get_free_collateral() == 0
     assert user.get_unrealized_pnl(True, 0) == 10_000_000
 
-    liq = user.can_be_liquidated()
+    liq, _, _ = user.can_be_liquidated()
     assert liq
 
     assert user.get_health() == 0
@@ -147,7 +147,7 @@ async def test_large_usdc():
 
     assert user.get_unrealized_pnl(True, 0) == 0
 
-    liq = user.can_be_liquidated()
+    liq, _, _ = user.can_be_liquidated()
     assert not liq
 
     assert user.get_health() == 100
