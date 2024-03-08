@@ -23,7 +23,7 @@ file = Path(str(driftpy.__path__[0]) + "/idl/drift.json")
 with file.open() as f:
     raw = file.read_text()
 DRIFT_IDL = Idl.from_json(raw)
-DRIFT_CODER = CODER(DRIFT_IDL)
+DRIFT_CODER = Coder(DRIFT_IDL)
 
 
 def convert_pyth_price(price, scale=1):
@@ -143,7 +143,7 @@ def decode_swb_price_info(data: bytes):
 
 
 def decode_prelaunch_price_info(data: bytes):
-    prelaunch_oracle = DRIFT_CODER.coder.accounts.decode(data)
+    prelaunch_oracle = DRIFT_CODER.accounts.decode(data)
 
     return OraclePriceData(
         price=prelaunch_oracle.price,
