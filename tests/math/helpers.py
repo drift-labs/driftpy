@@ -1,3 +1,4 @@
+import asyncio
 from copy import deepcopy
 
 from solders.pubkey import Pubkey  # type: ignore
@@ -188,3 +189,14 @@ async def make_mock_user(
     )
 
     return muser
+
+
+async def looper(condition):
+    tries = 0
+    while tries < 50:
+        if condition():
+            return True
+        print("Retrying")
+        await asyncio.sleep(1)
+        tries += 1
+    return False
