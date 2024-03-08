@@ -2736,3 +2736,31 @@ class DriftClient:
             ]
         ).tx_sig
         return tx_sig
+
+    async def update_prelaunch_oracle(
+        self,
+        market_index: int,
+    ):
+        return (
+            await self.send_ixs(
+                self.get_update_prelaunch_oracle_ix(
+                    market_index,
+                ),
+            )
+        ).tx_sig
+
+    def get_update_prelaunch_oracle_ix(self, market_index: int):
+        perp_market = self.get_perp_market_account(market_index)
+
+        if not is_variant(perp_market.amm.oracle_source, "Prelaunch"):
+            raise ValueError(f"wrong oracle source: {perp_market.amm.oracle_source}")
+
+        return self.program.instruction["update_prelaunch_oracle"](
+            ctx=Context(
+                accounts={
+                    "state": self.get_state_public_key(),
+                    "perp_market": perp_market.pubkey,
+                    "oracle": perp_market.amm.oracle,
+                }
+            )
+        )

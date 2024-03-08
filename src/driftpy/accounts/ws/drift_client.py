@@ -316,7 +316,7 @@ class WebsocketDriftClientAccountSubscriber(DriftClientAccountSubscriber):
         self, market_index: int
     ) -> Union[DataAndSlot[OraclePriceData], None]:
         perp_market_account = self.get_perp_market_and_slot(market_index)
-        print(perp_market_account is not None)
+        oracle = self.perp_market_oracle_map.get(market_index)
 
         if not perp_market_account or not oracle:
             return None
@@ -324,7 +324,6 @@ class WebsocketDriftClientAccountSubscriber(DriftClientAccountSubscriber):
         if perp_market_account.data.amm.oracle != oracle:
             asyncio.create_task(self._set_perp_oracle_map())
 
-        print(self.get_oracle_price_data_and_slot(oracle))
         return self.get_oracle_price_data_and_slot(oracle)
 
     def get_oracle_price_data_and_slot_for_spot_market(

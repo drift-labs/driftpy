@@ -178,7 +178,7 @@ async def test_trade(admin: Admin, usdc_mint: Keypair):
         None,
     )
 
-    await admin.update_prelaunch_oracle_params(0)
+    await drift_client.update_prelaunch_oracle(0)
 
     tries = 0
     while tries < 50:
@@ -186,7 +186,7 @@ async def test_trade(admin: Admin, usdc_mint: Keypair):
             oracle_price_data_after_buy = (
                 drift_client.get_oracle_price_data_for_perp_market(0)
             )
-            if oracle_price_data_after_buy.price == 32_000_000:
+            if oracle_price_data_after_buy.price > 32_000_000:
                 break
         print("retrying")
         await asyncio.sleep(1)
@@ -224,7 +224,7 @@ async def test_trade(admin: Admin, usdc_mint: Keypair):
         None,
     )
 
-    await admin.update_prelaunch_oracle_params(0)
+    await drift_client.update_prelaunch_oracle(0)
 
     while tries < 15000:
         if drift_client.get_oracle_price_data_for_perp_market(0):
