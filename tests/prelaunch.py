@@ -226,7 +226,7 @@ async def test_trade(admin: Admin, usdc_mint: Keypair):
 
     await drift_client.update_prelaunch_oracle(0)
 
-    while tries < 15000:
+    while tries < 50:
         if drift_client.get_oracle_price_data_for_perp_market(0):
             oracle_price_data_after_sell = (
                 drift_client.get_oracle_price_data_for_perp_market(0)
