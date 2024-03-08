@@ -187,3 +187,7 @@ Merge PR #117: Allows for the Jupiter V6 Swap API url to be configured
 Refactor oracle switching & tests
 
 Fix bug in `MarketMap` where a subscription would not be properly established
+
+## [0.7.36] - 2024-3-8
+
+Add support for prelisting oracles
