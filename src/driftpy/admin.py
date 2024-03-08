@@ -1,3 +1,4 @@
+from typing import Optional
 from solders.pubkey import Pubkey
 from solders.signature import Signature
 from solders.keypair import Keypair
@@ -10,7 +11,7 @@ from driftpy.drift_client import (
     DriftClient,
 )
 from driftpy.constants.numeric_constants import PEG_PRECISION
-from driftpy.types import OracleGuardRails, OracleSource
+from driftpy.types import OracleGuardRails, OracleSource, PrelaunchOracleParams
 from driftpy.addresses import *
 from driftpy.accounts import get_state_account
 from driftpy.constants.config import Config
@@ -584,4 +585,48 @@ class Admin(DriftClient):
         return await self.program.rpc["update_initial_pct_to_liquidate"](
             initial_percent_to_liquidate,
             ctx=Context(accounts={"admin": self.authority, "state": state_public_key}),
+        )
+
+    async def initialize_prelaunch_oracle(
+        self,
+        perp_market_index: int,
+        price: Optional[int] = None,
+        max_price: Optional[int] = None,
+    ):
+        params = PrelaunchOracleParams(perp_market_index, price, max_price)
+
+        return await self.program.rpc["initialize_prelaunch_oracle"](
+            params,
+            ctx=Context(
+                accounts={
+                    "admin": self.authority,
+                    "state": get_state_public_key(self.program_id),
+                    "prelaunch_oracle": get_prelaunch_oracle_public_key(
+                        self.program_id, perp_market_index
+                    ),
+                    "rent": RENT,
+                    "system_program": ID,
+                }
+            ),
+        )
+
+    async def update_prelaunch_oracle_params(
+        self,
+        perp_market_index: int,
+        price: Optional[int] = None,
+        max_price: Optional[int] = None,
+    ):
+        params = PrelaunchOracleParams(perp_market_index, price, max_price)
+
+        return await self.program.rpc["update_prelaunch_oracle_params"](
+            params,
+            ctx=Context(
+                accounts={
+                    "admin": self.authority,
+                    "state": get_state_public_key(self.program_id),
+                    "prelaunch_oracle": get_prelaunch_oracle_public_key(
+                        self.program_id, perp_market_index
+                    ),
+                }
+            ),
         )

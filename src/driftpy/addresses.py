@@ -90,6 +90,12 @@ def get_user_account_public_key(
     )[0]
 
 
+def get_prelaunch_oracle_public_key(program_id: Pubkey, market_index: int) -> Pubkey:
+    return Pubkey.find_program_address(
+        [b"prelaunch_oracle", int_to_le_bytes(market_index)], program_id
+    )[0]
+
+
 # program = Pubkey("9jwr5nC2f9yAraXrg4UzHXmCX3vi9FQkjD6p9e8bRqNa")
 # auth = Pubkey("D78cqss3dbU1aJAs5qeuhLi8Rqa2CL4Kzkr3VzdgN5F6")
 # == EjQ8rFmR4hd9faX1TYLkqCTsAkyjJ4qUKBuagtmVG3cP
