@@ -1,5 +1,5 @@
 import asyncio
-from typing import Mapping, Callable, List, Optional
+from typing import Callable, List, Optional
 from dataclasses import dataclass
 import jsonrpcclient
 from base64 import b64decode

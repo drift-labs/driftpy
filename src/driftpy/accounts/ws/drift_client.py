@@ -1,30 +1,29 @@
 import asyncio
 
+from typing import Optional, Sequence, Union
+
 from anchorpy import Program
 from solana.rpc.commitment import Commitment
-
-from driftpy.accounts.types import (
-    DriftClientAccountSubscriber,
-    DataAndSlot,
-    FullOracleWrapper,
-)
-from typing import Optional, Sequence
 
 from driftpy.accounts.ws.account_subscriber import WebsocketAccountSubscriber
 from driftpy.constants.config import find_all_market_and_oracles
 from driftpy.market_map.market_map import MarketMap
+from driftpy.addresses import *
+from driftpy.accounts.oracle import get_oracle_decode_fn
 from driftpy.market_map.market_map_config import MarketMapConfig, WebsocketConfig
 from driftpy.types import (
     MarketType,
+    OracleInfo,
     PerpMarketAccount,
     SpotMarketAccount,
     OraclePriceData,
     StateAccount,
 )
-
-from driftpy.addresses import *
-
-from driftpy.accounts.oracle import get_oracle_decode_fn
+from driftpy.accounts.types import (
+    DriftClientAccountSubscriber,
+    DataAndSlot,
+    FullOracleWrapper,
+)
 
 
 class WebsocketDriftClientAccountSubscriber(DriftClientAccountSubscriber):
@@ -51,6 +50,8 @@ class WebsocketDriftClientAccountSubscriber(DriftClientAccountSubscriber):
         self.oracle_subscribers = {}
         self.spot_market_map = None
         self.perp_market_map = None
+        self.spot_market_oracle_map: dict[int, Pubkey] = {}
+        self.perp_market_oracle_map: dict[int, Pubkey] = {}
 
     async def subscribe(self):
         if self.is_subscribed():
@@ -81,7 +82,6 @@ class WebsocketDriftClientAccountSubscriber(DriftClientAccountSubscriber):
                 MarketType.Spot(),
                 WebsocketConfig(),
                 self.program.provider.connection,
-                False,
             )
 
             perp_market_config = MarketMapConfig(
@@ -89,7 +89,6 @@ class WebsocketDriftClientAccountSubscriber(DriftClientAccountSubscriber):
                 MarketType.Perp(),
                 WebsocketConfig(),
                 self.program.provider.connection,
-                False,
             )
 
             spot_market_map = MarketMap(spot_market_config)
@@ -98,14 +97,14 @@ class WebsocketDriftClientAccountSubscriber(DriftClientAccountSubscriber):
             spot_market_map.init(spot_ds)
             perp_market_map.init(perp_ds)
 
-            await spot_market_map.subscribe()
-            await perp_market_map.subscribe()
-
             self.spot_market_map = spot_market_map
             self.perp_market_map = perp_market_map
 
             for full_oracle_wrapper in self.full_oracle_wrappers:
                 await self.subscribe_to_oracle(full_oracle_wrapper)
+
+            await spot_market_map.subscribe()
+            await perp_market_map.subscribe()
 
         else:
             for market_index in self.perp_market_indexes:
@@ -115,7 +114,10 @@ class WebsocketDriftClientAccountSubscriber(DriftClientAccountSubscriber):
                 await self.subscribe_to_spot_market(market_index)
 
             for full_oracle_wrapper in self.full_oracle_wrappers:
-                await self.subscribe_to_oracle(full_oracle_wrapper)
+                await self.subscribe_to_oracle_info(full_oracle_wrapper)
+
+        await self._set_perp_oracle_map()
+        await self._set_spot_oracle_map()
 
     async def subscribe_to_spot_market(
         self,
@@ -174,6 +176,23 @@ class WebsocketDriftClientAccountSubscriber(DriftClientAccountSubscriber):
         await oracle_subscriber.subscribe()
         self.oracle_subscribers[str(full_oracle_wrapper.pubkey)] = oracle_subscriber
 
+    async def subscribe_to_oracle_info(self, oracle_info: OracleInfo):
+        if oracle_info.pubkey == Pubkey.default():
+            return
+
+        if str(oracle_info.pubkey) in self.oracle_subscribers:
+            return
+
+        oracle_subscriber = WebsocketAccountSubscriber[OraclePriceData](
+            oracle_info.pubkey,
+            self.program,
+            self.commitment,
+            get_oracle_decode_fn(oracle_info.source),
+        )
+
+        await oracle_subscriber.subscribe()
+        self.oracle_subscribers[str(oracle_info.pubkey)] = oracle_subscriber
+
     def is_subscribed(self):
         return (
             self.state_subscriber is not None and self.state_subscriber.is_subscribed()
@@ -195,6 +214,15 @@ class WebsocketDriftClientAccountSubscriber(DriftClientAccountSubscriber):
             tasks.append(oracle_subscriber.fetch())
 
         await asyncio.gather(*tasks)
+
+    async def add_oracle(self, oracle_info: OracleInfo):
+        if str(oracle_info.pubkey) in self.oracle_subscribers:
+            return True
+
+        if oracle_info.pubkey == Pubkey.default():
+            return True
+
+        return await self.subscribe_to_oracle_info(oracle_info)
 
     def get_state_account_and_slot(self) -> Optional[DataAndSlot[StateAccount]]:
         return self.state_subscriber.data_and_slot
@@ -220,19 +248,19 @@ class WebsocketDriftClientAccountSubscriber(DriftClientAccountSubscriber):
     ) -> Optional[DataAndSlot[OraclePriceData]]:
         return self.oracle_subscribers[str(oracle)].data_and_slot
 
-    def unsubscribe(self):
+    async def unsubscribe(self):
         if self.is_subscribed():
-            self.state_subscriber.unsubscribe()
+            await self.state_subscriber.unsubscribe()
             if self.spot_market_map and self.perp_market_map:
-                self.spot_market_map.unsubscribe()
-                self.perp_market_map.unsubscribe()
+                await self.spot_market_map.unsubscribe()
+                await self.perp_market_map.unsubscribe()
             else:
                 for spot_market_subscriber in self.spot_market_subscribers.values():
-                    spot_market_subscriber.unsubscribe()
+                    await spot_market_subscriber.unsubscribe()
                 for perp_market_subscriber in self.perp_market_subscribers.values():
-                    perp_market_subscriber.unsubscribe()
+                    await perp_market_subscriber.unsubscribe()
             for oracle_subscriber in self.oracle_subscribers.values():
-                oracle_subscriber.unsubscribe()
+                await oracle_subscriber.unsubscribe()
 
     def get_market_accounts_and_slots(self) -> list[DataAndSlot[PerpMarketAccount]]:
         if self.perp_market_map:
@@ -253,3 +281,61 @@ class WebsocketDriftClientAccountSubscriber(DriftClientAccountSubscriber):
                 subscriber.data_and_slot
                 for subscriber in self.spot_market_subscribers.values()
             ]
+
+    async def _set_perp_oracle_map(self):
+        perp_markets = self.get_market_accounts_and_slots()
+        for market in perp_markets:
+            if not market:
+                continue
+
+            perp_market_account = market.data
+            market_index = perp_market_account.market_index
+            oracle = perp_market_account.amm.oracle
+            if oracle not in self.oracle_subscribers:
+                await self.add_oracle(
+                    OracleInfo(oracle, perp_market_account.amm.oracle_source)
+                )
+            self.perp_market_oracle_map[market_index] = oracle
+
+    async def _set_spot_oracle_map(self):
+        spot_markets = self.get_spot_market_accounts_and_slots()
+        for market in spot_markets:
+            if not market:
+                continue
+
+            spot_market_account = market.data
+            market_index = spot_market_account.market_index
+            oracle = spot_market_account.oracle
+            if oracle not in self.oracle_subscribers:
+                await self.add_oracle(
+                    OracleInfo(oracle, spot_market_account.oracle_source)
+                )
+            self.spot_market_oracle_map[market_index] = oracle
+
+    def get_oracle_price_data_and_slot_for_perp_market(
+        self, market_index: int
+    ) -> Union[DataAndSlot[OraclePriceData], None]:
+        perp_market_account = self.get_perp_market_and_slot(market_index)
+        oracle = self.perp_market_oracle_map.get(market_index)
+
+        if not perp_market_account or not oracle:
+            return None
+
+        if perp_market_account.data.amm.oracle != oracle:
+            asyncio.create_task(self._set_perp_oracle_map())
+
+        return self.get_oracle_price_data_and_slot(oracle)
+
+    def get_oracle_price_data_and_slot_for_spot_market(
+        self, market_index: int
+    ) -> Union[DataAndSlot[OraclePriceData], None]:
+        spot_market_account = self.get_spot_market_and_slot(market_index)
+        oracle = self.spot_market_oracle_map.get(market_index)
+
+        if not spot_market_account or not oracle:
+            return None
+
+        if spot_market_account.data.oracle != oracle:
+            asyncio.create_task(self._set_spot_oracle_map())
+
+        return self.get_oracle_price_data_and_slot(oracle)

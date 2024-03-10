@@ -149,3 +149,45 @@ Filter out logs with errors in `websocket_log_provider.py` to avoid `EventSubscr
 ## [0.7.27] - 2024-2-27
 
 Fix bug where `MarketMap.unsubscribe()` wasn't properly awaited
+
+## [0.7.29] - 2024-2-28
+
+Fix bug where `DriftClient.unsubscribe()` wasn't properly awaited
+
+## [0.7.30] - 2024-2-28
+
+Add support for hot-swapping oracles without SDK dying
+
+Add custom event parsing in events/parse.py
+
+## [0.7.31] - 2024-2-28
+
+Fix bug where `DriftClient.unsubscribe()` scheduled tasks on an already-running event loop
+
+## [0.7.32] - 2024-2-29
+
+Add guardrails to avoid `CachedDriftClientAccountSubscriber` panicking on cache fetch `IndexError`s
+
+Add `perp_market_indexes`, `spot_market_indexes`, `oracle_infos`, `should_find_all_markets_and_oracles` to `CachedDriftClientAccountSubscriber`
+
+Add `stack_trace()` utility function
+
+## [0.7.33] - 2024-2-29
+
+Fix `IndexError` vs `KeyError` bug in `CachedDriftClientAccountSubscriber.get_oracle_price_data_and_slot()`
+
+Sort market indexes in `CachedDriftClientAccountSubscriber` before populating cache
+
+Merge PR #116: Update div_ceil to use integer division isntead of float division
+
+Merge PR #117: Allows for the Jupiter V6 Swap API url to be configured
+
+## [0.7.34] - 2024-3-4
+
+Refactor oracle switching & tests
+
+Fix bug in `MarketMap` where a subscription would not be properly established
+
+## [0.7.36] - 2024-3-8
+
+Add support for prelisting oracles

@@ -1,3 +1,4 @@
+import asyncio
 from copy import deepcopy
 
 from solders.pubkey import Pubkey  # type: ignore
@@ -168,9 +169,34 @@ async def make_mock_user(
             has_sufficient_number_of_data_points=True,
         )
 
+    def get_oracle_price_data_for_perp_market(market_index):
+        market = get_perp(market_index)
+        return get_oracle(market.amm.oracle)
+
+    def get_oracle_price_data_for_spot_market(market_index):
+        market = get_spot(market_index)
+        return get_oracle(market.oracle)
+
     muser.get_user_account = get_user
     muser.drift_client.get_perp_market_account = get_perp
     muser.drift_client.get_spot_market_account = get_spot
     muser.drift_client.get_oracle_price_data = get_oracle
+    muser.drift_client.get_oracle_price_data_for_perp_market = (
+        get_oracle_price_data_for_perp_market
+    )
+    muser.drift_client.get_oracle_price_data_for_spot_market = (
+        get_oracle_price_data_for_spot_market
+    )
 
     return muser
+
+
+async def looper(condition):
+    tries = 0
+    while tries < 50:
+        if condition():
+            return True
+        print("Retrying")
+        await asyncio.sleep(1)
+        tries += 1
+    return False

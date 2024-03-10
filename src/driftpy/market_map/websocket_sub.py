@@ -18,14 +18,12 @@ class WebsocketSubscription:
         market_map,
         commitment: Commitment,
         on_update: MarketUpdateCallback,
-        skip_initial_load: bool = False,
         resub_timeout_ms: Optional[int] = None,
         decode: Optional[Callable[[bytes], T]] = None,
     ):
         self.market_map = market_map
         self.commitment = commitment
         self.on_update = on_update
-        self.skip_initial_load = skip_initial_load
         self.resub_timeout_ms = resub_timeout_ms
         self.subscriber = None
         self.decode = decode
@@ -43,9 +41,6 @@ class WebsocketSubscription:
             )
 
         await self.subscriber.subscribe()
-
-        if not self.skip_initial_load:
-            await self.market_map.sync()
 
     async def unsubscribe(self):
         if not self.subscriber:
