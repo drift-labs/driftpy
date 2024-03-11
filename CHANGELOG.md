@@ -195,3 +195,7 @@ Add support for prelisting oracles
 ## [0.7.37] - 2024-3-11
 
 Fix bug where prelisting & switchboard oracles weren't properly decoded for cached drift client subscriptions
+
+## [0.7.38] - 2024-3-11
+
+Add max confidence interval multiplier to oracle validity calculations
