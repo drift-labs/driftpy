@@ -702,35 +702,37 @@ async def test_live_update_functions():
     )
 
     # good oracle
-    assert is_oracle_valid(amm, oracle_price_data, oracle_guard_rails, slot + 5)
+    assert is_oracle_valid(perp_market, oracle_price_data, oracle_guard_rails, slot + 5)
 
     # too confident
     oracle_price_data.confidence = int(13.553 * PRICE_PRECISION * 0.021)
-    assert not is_oracle_valid(amm, oracle_price_data, oracle_guard_rails, slot)
+    assert not is_oracle_valid(perp_market, oracle_price_data, oracle_guard_rails, slot)
 
     # not enough data points
     oracle_price_data.confidence = 1
     oracle_price_data.has_sufficient_number_of_data_points = False
-    assert not is_oracle_valid(amm, oracle_price_data, oracle_guard_rails, slot)
+    assert not is_oracle_valid(perp_market, oracle_price_data, oracle_guard_rails, slot)
 
     # negative oracle price
     oracle_price_data.has_sufficient_number_of_data_points = True
     oracle_price_data.price = -1 * PRICE_PRECISION
-    assert not is_oracle_valid(amm, oracle_price_data, oracle_guard_rails, slot)
+    assert not is_oracle_valid(perp_market, oracle_price_data, oracle_guard_rails, slot)
 
     # too delayed for amm
     oracle_price_data.price = int(13.553 * PRICE_PRECISION)
-    assert not is_oracle_valid(amm, oracle_price_data, oracle_guard_rails, slot + 100)
+    assert not is_oracle_valid(
+        perp_market, oracle_price_data, oracle_guard_rails, slot + 100
+    )
 
     # oracle slot is stale (should be valid)
     oracle_price_data.slot += 100
-    assert is_oracle_valid(amm, oracle_price_data, oracle_guard_rails, slot)
+    assert is_oracle_valid(perp_market, oracle_price_data, oracle_guard_rails, slot)
 
     # too volatile (>5x higher)
     oracle_price_data.slot = slot + 5
     oracle_price_data.price = int(113.553 * PRICE_PRECISION)
-    assert not is_oracle_valid(amm, oracle_price_data, oracle_guard_rails, slot)
+    assert not is_oracle_valid(perp_market, oracle_price_data, oracle_guard_rails, slot)
 
     # too volatile (>5x lower)
     oracle_price_data.price = int(0.553 * PRICE_PRECISION)
-    assert not is_oracle_valid(amm, oracle_price_data, oracle_guard_rails, slot)
+    assert not is_oracle_valid(perp_market, oracle_price_data, oracle_guard_rails, slot)

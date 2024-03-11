@@ -1,5 +1,12 @@
 from driftpy.constants.numeric_constants import BID_ASK_SPREAD_PRECISION, FIVE_MINUTE
-from driftpy.types import AMM, HistoricalOracleData, OracleGuardRails, OraclePriceData
+from driftpy.types import (
+    AMM,
+    ContractTier,
+    HistoricalOracleData,
+    OracleGuardRails,
+    OraclePriceData,
+    PerpMarketAccount,
+)
 
 
 def calculate_live_oracle_twap(
@@ -77,12 +84,14 @@ def get_new_oracle_conf_pct(
 
 
 def is_oracle_valid(
-    amm: AMM,
+    market: PerpMarketAccount,
     oracle_price_data: OraclePriceData,
     oracle_guard_rails: OracleGuardRails,
     slot: int,
 ) -> bool:
     is_oracle_price_non_positive = oracle_price_data.price <= 0
+
+    amm = market.amm
 
     lhs = (
         oracle_price_data.price
@@ -95,10 +104,15 @@ def is_oracle_valid(
 
     is_oracle_price_too_volatile = lhs or rhs
 
+    max_confidence_multiplier = get_max_confidence_interval_multiplier(market)
+
     is_confidence_too_large = (
         (max(1, oracle_price_data.confidence) * BID_ASK_SPREAD_PRECISION)
         // oracle_price_data.price
-    ) > oracle_guard_rails.validity.confidence_interval_max_size
+    ) > (
+        oracle_guard_rails.validity.confidence_interval_max_size
+        * max_confidence_multiplier
+    )
 
     is_oracle_stale = (
         slot - oracle_price_data.slot
@@ -111,3 +125,17 @@ def is_oracle_valid(
         or is_oracle_price_too_volatile
         or is_confidence_too_large
     )
+
+
+def get_max_confidence_interval_multiplier(market: PerpMarketAccount) -> int:
+    match market.contract_tier:
+        case ContractTier.A():
+            return 1
+        case ContractTier.B():
+            return 1
+        case ContractTier.C():
+            return 2
+        case ContractTier.Speculative():
+            return 10
+        case ContractTier.Isolated():
+            return 50
