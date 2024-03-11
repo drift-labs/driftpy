@@ -191,3 +191,7 @@ Fix bug in `MarketMap` where a subscription would not be properly established
 ## [0.7.36] - 2024-3-8
 
 Add support for prelisting oracles
+
+## [0.7.37] - 2024-3-11
+
+Fix bug where prelisting & switchboard oracles weren't properly decoded for cached drift client subscriptions

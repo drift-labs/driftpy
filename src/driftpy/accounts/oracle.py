@@ -51,6 +51,20 @@ async def get_oracle_price_data_and_slot(
         return DataAndSlot(
             data=OraclePriceData(PRICE_PRECISION, 0, 1, 1, 0, True), slot=0
         )
+    elif is_variant(oracle_source, "Switchboard"):
+        rpc_reponse = await connection.get_account_info(address)
+        rpc_response_slot = rpc_reponse.context.slot
+
+        oracle_price_data = decode_swb_price_info(rpc_reponse.value.data)
+
+        return DataAndSlot(data=oracle_price_data, slot=rpc_response_slot)
+    elif is_variant(oracle_source, "Prelaunch"):
+        rpc_reponse = await connection.get_account_info(address)
+        rpc_response_slot = rpc_reponse.context.slot
+
+        oracle_price_data = decode_prelaunch_price_info(rpc_reponse.value.data)
+
+        return DataAndSlot(data=oracle_price_data, slot=rpc_response_slot)
     else:
         raise NotImplementedError("Unsupported Oracle Source", str(oracle_source))
 
