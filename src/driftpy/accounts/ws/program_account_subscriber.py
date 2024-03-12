@@ -1,17 +1,25 @@
 import asyncio
-import traceback
+import random
+
 from typing import Dict, Optional, TypeVar, Callable
+
 from anchorpy import Program
+
+from solana.rpc.websocket_api import connect, SolanaWsClientProtocol
+
+from solders.pubkey import Pubkey  # type: ignore
+
 from driftpy.accounts.types import (
     DataAndSlot,
     UpdateCallback,
     WebsocketProgramAccountOptions,
 )
-from solana.rpc.websocket_api import connect, SolanaWsClientProtocol
-from solders.pubkey import Pubkey
 from driftpy.types import get_ws_url
 
 T = TypeVar("T")
+
+MAX_FAILURES = 10
+MAX_DELAY = 16
 
 
 class WebSocketProgramAccountSubscriber:
@@ -53,6 +61,8 @@ class WebSocketProgramAccountSubscriber:
     async def subscribe_ws(self):
         endpoint = self.program.provider.connection._provider.endpoint_uri
         ws_endpoint = get_ws_url(endpoint)
+        num_failures = 0
+        delay = 1
         while True:
             try:
                 async with connect(ws_endpoint) as ws:
@@ -88,9 +98,21 @@ class WebSocketProgramAccountSubscriber:
                                 self.receiving_data = False
             except Exception as e:
                 print(f"Error in subscription {self.subscription_name}: {e}")
-                await self.ws.close()
-                self.ws = None
-                await asyncio.sleep(5)  # wait a second before we retry
+                num_failures += 1
+                if num_failures >= MAX_FAILURES:
+                    print(
+                        f"Max failures reached for subscription: {self.subscription_name}, unsubscribing"
+                    )
+                    await self.unsubscribe()
+                    break
+                if self.ws:
+                    await self.ws.close()
+                    self.ws = None
+                await asyncio.sleep(
+                    delay
+                )  # wait a second before we retry, exponential backoff
+                delay = min(delay * 2, MAX_DELAY)
+                delay += delay * random.uniform(-0.1, 0.1)  # add some jitter
 
     async def _process_message(self, msg):
         for item in msg:
@@ -112,14 +134,14 @@ class WebSocketProgramAccountSubscriber:
             return
         self.subscribed_accounts[account] = new_data
 
-    def unsubscribe(self):
+    async def unsubscribe(self):
         self.is_unsubscribing = True
         self.receiving_data = False
         if self.task:
             self.task.cancel()
             self.task = None
         if self.ws:
-            self.ws.close()
+            await self.ws.close()
             self.ws = None
         self.is_unsubscribing = False
         self.subscribed = False

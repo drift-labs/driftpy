@@ -1,4 +1,5 @@
 import asyncio
+import random
 
 from solana.rpc.websocket_api import connect, SolanaWsClientProtocol
 from driftpy.dlob.client_types import SlotSource
@@ -6,6 +7,9 @@ from driftpy.types import get_ws_url
 
 from driftpy.drift_client import DriftClient
 from events import Events as EventEmitter
+
+MAX_FAILURES = 10
+MAX_DELAY = 16
 
 
 class SlotSubscriber(SlotSource):
@@ -37,6 +41,8 @@ class SlotSubscriber(SlotSource):
 
         endpoint = self.program.provider.connection._provider.endpoint_uri
         ws_endpoint = get_ws_url(endpoint)
+        num_failures = 0
+        delay = 1
         while True:
             try:
                 async with connect(ws_endpoint) as ws:
@@ -52,15 +58,25 @@ class SlotSubscriber(SlotSource):
 
             except Exception as e:
                 print(f"Error in SlotSubscriber: {e}")
-                await self.ws.close()
-                self.ws = None
-                await asyncio.sleep(5)  # wait a second before we retry
+                num_failures += 1
+                if num_failures >= MAX_FAILURES:
+                    print(f"Max failures reached for SlotSubscriber, unsubscribing")
+                    await self.unsubscribe()
+                    break
+                if self.ws:
+                    await self.ws.close()
+                    self.ws = None
+                await asyncio.sleep(
+                    delay
+                )  # wait a second before we retry, exponential backoff
+                delay = min(delay * 2, MAX_DELAY)
+                delay += delay * random.uniform(-0.1, 0.1)  # add some jitter
 
     def get_slot(self) -> int:
         return self.current_slot
 
     async def unsubscribe(self):
         if self.ws:
-            self.ws.close()
+            await self.ws.close()
             self.ws = None
         self.subscribed = False
