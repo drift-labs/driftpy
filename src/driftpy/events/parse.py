@@ -71,6 +71,8 @@ def handle_program_log(
             decoded = base64.b64decode(log_str)
         except binascii.Error:
             return (None, None, False)
+        if len(decoded) < 8:
+            return (None, None, False)
         event = program.coder.events.parse(decoded)
         return (event, None, False)
     else:
