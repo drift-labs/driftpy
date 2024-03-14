@@ -199,3 +199,7 @@ Fix bug where prelisting & switchboard oracles weren't properly decoded for cach
 ## [0.7.38] - 2024-3-11
 
 Add max confidence interval multiplier to oracle validity calculations
+
+## [0.7.39] - 2024-3-13
+
+Fix events archiver bug with logs less than 8 bytes
