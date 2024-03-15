@@ -104,7 +104,11 @@ def is_oracle_valid(
 
     is_oracle_price_too_volatile = lhs or rhs
 
+    print(market.contract_tier)
     max_confidence_multiplier = get_max_confidence_interval_multiplier(market)
+
+    print(oracle_guard_rails.validity.confidence_interval_max_size)
+    print(max_confidence_multiplier)
 
     is_confidence_too_large = (
         (max(1, oracle_price_data.confidence) * BID_ASK_SPREAD_PRECISION)
@@ -128,14 +132,13 @@ def is_oracle_valid(
 
 
 def get_max_confidence_interval_multiplier(market: PerpMarketAccount) -> int:
-    match market.contract_tier:
-        case ContractTier.A():
-            return 1
-        case ContractTier.B():
-            return 1
-        case ContractTier.C():
-            return 2
-        case ContractTier.Speculative():
-            return 10
-        case ContractTier.Isolated():
-            return 50
+    if str(market.contract_tier) == "ContractTier.A()":
+        return 1
+    elif str(market.contract_tier) == "ContractTier.B()":
+        return 1
+    elif str(market.contract_tier) == "ContractTier.C()":
+        return 2
+    elif str(market.contract_tier) == "ContractTier.Speculative()":
+        return 10
+    elif str(market.contract_tier) == "ContractTier.Isolated()":
+        return 50

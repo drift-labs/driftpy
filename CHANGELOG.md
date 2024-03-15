@@ -203,3 +203,9 @@ Add max confidence interval multiplier to oracle validity calculations
 ## [0.7.39] - 2024-3-13
 
 Fix events archiver bug with logs less than 8 bytes
+
+## [0.7.40] - 2024-3-14
+
+Update `drift.json` IDL
+
+Fix enum interpretaton bug in `get_max_confidence_interval_multiplier`
