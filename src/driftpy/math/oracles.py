@@ -104,11 +104,7 @@ def is_oracle_valid(
 
     is_oracle_price_too_volatile = lhs or rhs
 
-    print(market.contract_tier)
     max_confidence_multiplier = get_max_confidence_interval_multiplier(market)
-
-    print(oracle_guard_rails.validity.confidence_interval_max_size)
-    print(max_confidence_multiplier)
 
     is_confidence_too_large = (
         (max(1, oracle_price_data.confidence) * BID_ASK_SPREAD_PRECISION)
