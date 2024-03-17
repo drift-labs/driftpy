@@ -51,7 +51,7 @@ class SlotSubscriber(SlotSource):
                         await self.on_slot_change(msg[0].result)
 
             except Exception as e:
-                print(f"Error in SlotSubscriber: {e}")
+                # print(f"Error in SlotSubscriber: {e}")
                 await self.ws.close()
                 self.ws = None
                 await asyncio.sleep(5)  # wait a second before we retry
