@@ -102,12 +102,10 @@ class WhileValidTxSender(TxSender):
             last_valid_blockheight: int = self.blockhash_to_blockheight[
                 str(tx.recent_blockhash)
             ]
-            print(last_valid_blockheight)
         else:
             last_valid_blockheight: int = self.blockhash_to_blockheight[
                 str(tx.message.recent_blockhash)
             ]
-            print(last_valid_blockheight)
 
         async def retry_send_and_confirm():
             while not flag.is_set():
