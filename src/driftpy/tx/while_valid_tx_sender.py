@@ -121,12 +121,11 @@ class WhileValidTxSender(TxSender):
                     sig_status = await self.connection.confirm_transaction(
                         sig, self.opts.preflight_commitment
                     )
-                    print(sig_status)
                     if sig_status is not None:
                         slot = sig_status.context.slot
                         return TxSigAndSlot(sig, slot)
                 except Exception as e:
-                    print(e)
+                    print(f"Error confirming transaction: {e}")
                 await asyncio.sleep(self.retry_interval)
                 counter += 1
             raise Exception("Transaction expired before confirmation")
