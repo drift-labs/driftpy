@@ -209,3 +209,7 @@ Fix events archiver bug with logs less than 8 bytes
 Update `drift.json` IDL
 
 Fix enum interpretaton bug in `get_max_confidence_interval_multiplier`
+
+## [0.7.42] - 2024-3-18
+
+Add W-PERP to `constants/perp_markets.py`
