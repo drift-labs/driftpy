@@ -9,6 +9,7 @@ homepage = "https://github.com/drift-labs/driftpy"
 documentation = "https://drift-labs.github.io/driftpy/"
 
 [tool.poetry.dependencies]
+jito-searcher-client = {git = "https://github.com/soundsonacid/jito-python.git", subdirectory = "jito_searcher_client"}
 python = "^3.10" 
 anchorpy = "0.17.1"
 solana = "0.30.1"
