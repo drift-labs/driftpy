@@ -48,6 +48,15 @@ DEFAULT_USER_NAME = "Main Account"
 DEFAULT_TX_OPTIONS = TxOpts(skip_confirmation=False, preflight_commitment=Processed)
 
 
+@dataclass
+class JitoParams:
+    jito_keypair: Keypair
+    block_engine_url: str
+    blockhash_refresh_rate: Optional[int] = None
+    leader_refresh_rate: Optional[int] = None
+    tip_amount: Optional[int] = None
+
+
 class DriftClient:
     """This class is the main way to interact with Drift Protocol including
     depositing, opening new positions, closing positions, placing orders, etc.
@@ -72,6 +81,7 @@ class DriftClient:
         active_sub_account_id: Optional[int] = None,
         sub_account_ids: Optional[list[int]] = None,
         market_lookup_table: Optional[Pubkey] = None,
+        jito_params: Optional[JitoParams] = None,
     ):
         """Initializes the drift client object
 
@@ -135,9 +145,23 @@ class DriftClient:
 
         self.tx_version = tx_version if tx_version is not None else Legacy
 
-        self.tx_sender = (
-            StandardTxSender(self.connection, opts) if tx_sender is None else tx_sender
-        )
+        if jito_params is not None:
+            from driftpy.tx.jito_tx_sender import JitoTxSender
+
+            self.tx_sender = JitoTxSender(
+                self,
+                opts,
+                jito_params.block_engine_url,
+                jito_params.jito_keypair,
+                blockhash_refresh_interval_secs=jito_params.blockhash_refresh_rate,
+                tip_amount=jito_params.tip_amount,
+            )
+        else:
+            self.tx_sender = (
+                StandardTxSender(self.connection, opts)
+                if tx_sender is None
+                else tx_sender
+            )
 
     async def subscribe(self):
         await self.account_subscriber.subscribe()
@@ -815,7 +839,7 @@ class DriftClient:
         self.last_perp_market_seen_cache[
             order_params.market_index
         ] = tx_sig_and_slot.slot
-        return tx_sig_and_slot.tx_sig
+        return tx_sig_and_slot
 
     def get_place_perp_order_ix(
         self,
@@ -1007,13 +1031,11 @@ class DriftClient:
         Returns:
             str: tx sig
         """
-        return (
-            await self.send_ixs(
-                self.get_cancel_orders_ix(
-                    market_type, market_index, direction, sub_account_id
-                )
+        return await self.send_ixs(
+            self.get_cancel_orders_ix(
+                market_type, market_index, direction, sub_account_id
             )
-        ).tx_sig
+        )
 
     def get_cancel_orders_ix(
         self,
