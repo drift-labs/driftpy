@@ -88,3 +88,14 @@ class StandardTxSender(TxSender):
         slot = sig_status.context.slot
 
         return TxSigAndSlot(sig, slot)
+
+    async def send_no_confirm(
+        self, tx: Union[Transaction, VersionedTransaction]
+    ) -> TxSigAndSlot:
+        raw = tx.serialize() if isinstance(tx, Transaction) else bytes(tx)
+
+        body = self.connection._send_raw_transaction_body(raw, self.opts)
+        resp = await self.connection._provider.make_request(body, SendTransactionResp)
+        sig = resp.value
+
+        return TxSigAndSlot(sig, 0)

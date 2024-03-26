@@ -8,6 +8,7 @@ from solana.rpc.commitment import Commitment, Confirmed
 
 from solders.keypair import Keypair  # type: ignore
 from solders.transaction import VersionedTransaction  # type: ignore
+from solders.signature import Signature  # type: ignore
 
 from driftpy.drift_client import DriftClient
 from driftpy.slot.slot_subscriber import SlotSubscriber
@@ -56,12 +57,17 @@ class JitoTxSender(FastTxSender):
         asyncio.create_task(super().subscribe_blockhash())
 
     async def send(self, tx: Union[Transaction, VersionedTransaction]) -> TxSigAndSlot:
-        if self.jito_subscriber.send_to_jito(self.slot_subscriber.get_slot()):
+        res, next = self.jito_subscriber.send_to_jito(self.slot_subscriber.get_slot())
+        print("next jito slot", next)
+        if res:
             print("sending to jito")
             searcher_client = self.jito_subscriber.searcher_client
             tip_packet = versioned_tx_to_protobuf_packet(
                 await super().get_versioned_tx(
-                    [self.jito_subscriber.get_tip_ix(self.payer)], self.payer, [], []
+                    [self.jito_subscriber.get_tip_ix(self.payer.pubkey())],
+                    self.payer,
+                    [],
+                    [],
                 )
             )
             if isinstance(tx, Transaction):
@@ -74,6 +80,7 @@ class JitoTxSender(FastTxSender):
                     SendBundleRequest(bundle=bundle)
                 )
                 uuid = result.uuid
+                print(f"uuid: {uuid}")
                 bundle_result = await self.jito_subscriber.process_bundle_result(uuid)
                 match bundle_result:
                     case True:
@@ -87,4 +94,5 @@ class JitoTxSender(FastTxSender):
             except:
                 pass
         else:
-            return await super().send(tx)
+            return TxSigAndSlot(Signature.default(), 0)
+            # return await super().send_no_confirm(tx)
