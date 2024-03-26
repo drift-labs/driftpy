@@ -1,7 +1,7 @@
 import asyncio
 import random
 
-from typing import Optional
+from typing import Optional, Tuple, Union
 
 from solders.keypair import Keypair  # type: ignore
 from solders.pubkey import Pubkey  # type: ignore
@@ -9,11 +9,7 @@ from solders.pubkey import Pubkey  # type: ignore
 from solana.rpc.async_api import AsyncClient
 from solana.rpc.commitment import Confirmed
 
-from spl.token.instructions import (
-    transfer as transfer_ix,
-    TransferParams,
-    TOKEN_PROGRAM_ID,
-)
+from solders.system_program import TransferParams, transfer
 
 from jito_searcher_client.async_searcher import get_async_searcher_client  # type: ignore
 from jito_searcher_client.generated.searcher_pb2_grpc import SearcherServiceStub  # type: ignore
@@ -68,56 +64,31 @@ class JitoSubscriber:
                 await self._subscribe()
             await asyncio.sleep(self.refresh_rate)
 
-    # def send_to_jito(self, current_slot: int) -> bool:
-    #     print("checking?")
-    #     for slot in range(current_slot - 5, current_slot + 5):
-    #         print(slot)
-    #         if slot in self.cache:
-    #             print('sending to jito')
-    #             return True
-    #     return False
-
-    def send_to_jito(self, current_slot: int) -> tuple[bool, int]:
-        closest_slot = None
-        min_distance = float("inf")
-        jito = False
-
-        print(len(self.cache))
-        print(self.cache[-1])
-        print(current_slot > self.cache[-1])
-        # Iterate through the cache to find the closest future slot
-        for slot in self.cache:
-            # Only consider slots greater than the current slot
-            if slot > current_slot:
-                distance = slot - current_slot
-                if distance < min_distance:
-                    min_distance = distance
-                    closest_slot = slot
-
-        print("Closest future slot:", closest_slot, "Current slot:", current_slot)
-
-        # Check if a closest future slot exists and is within 5 slots from the current
-        if closest_slot is not None and min_distance <= 5:
-            jito = True
-
-        # If no closest future slot is found, the function behaves as if it's sending to JITO with the current slot.
-        # If closest_slot remains None, it means no future slots were found.
-        # Depending on your use case, you might need to adjust this behavior.
-        return jito, closest_slot if closest_slot is not None else 0
+    def send_to_jito(self, current_slot: int) -> bool:
+        for slot in range(current_slot - 5, current_slot + 5):
+            if slot in self.cache:
+                return True
+        return False
 
     def get_tip_ix(self, signer: Pubkey, tip_amount: int = 1_000_000):
         tip_account = random.choice(self.tip_accounts)
         transfer_params = TransferParams(
-            TOKEN_PROGRAM_ID, signer, tip_account, signer, tip_amount, [signer]
+            from_pubkey=signer, to_pubkey=tip_account, lamports=tip_amount
         )
-        return transfer_ix(transfer_params)
+        return transfer(transfer_params)
 
-    async def process_bundle_result(self, uuid: str) -> bool:
+    async def process_bundle_result(self, uuid: str) -> Tuple[bool, Union[int, str]]:
         while True:
             bundle_result = await self.bundle_subscription.read()  # type: ignore
-            print(bundle_result)
             if bundle_result.bundle_id == uuid:
                 if bundle_result.HasField("accepted"):
-                    return True
+                    slot = getattr(getattr(bundle_result, "accepted"), "slot")
+                    return True, slot or 0
                 elif bundle_result.HasField("rejected"):
-                    return False
+                    msg = getattr(
+                        getattr(
+                            getattr(bundle_result, "rejected"), "simulation_failure"
+                        ),
+                        "msg",
+                    )
+                    return False, msg or ""

@@ -8,7 +8,6 @@ from solana.rpc.commitment import Commitment, Confirmed
 
 from solders.keypair import Keypair  # type: ignore
 from solders.transaction import VersionedTransaction  # type: ignore
-from solders.signature import Signature  # type: ignore
 
 from driftpy.drift_client import DriftClient
 from driftpy.slot.slot_subscriber import SlotSubscriber
@@ -57,10 +56,8 @@ class JitoTxSender(FastTxSender):
         asyncio.create_task(super().subscribe_blockhash())
 
     async def send(self, tx: Union[Transaction, VersionedTransaction]) -> TxSigAndSlot:
-        res, next = self.jito_subscriber.send_to_jito(self.slot_subscriber.get_slot())
-        print("next jito slot", next)
-        if res:
-            print("sending to jito")
+        slot = self.slot_subscriber.get_slot()
+        if self.jito_subscriber.send_to_jito(slot):
             searcher_client = self.jito_subscriber.searcher_client
             tip_packet = versioned_tx_to_protobuf_packet(
                 await super().get_versioned_tx(
@@ -80,19 +77,15 @@ class JitoTxSender(FastTxSender):
                     SendBundleRequest(bundle=bundle)
                 )
                 uuid = result.uuid
-                print(f"uuid: {uuid}")
                 bundle_result = await self.jito_subscriber.process_bundle_result(uuid)
-                match bundle_result:
+                match bundle_result[0]:
                     case True:
-                        return TxSigAndSlot(
-                            uuid, -1
-                        )  # -1 slot indicates confirmed jito uuid, not signature
+                        return TxSigAndSlot(tx.signatures[0], bundle_result[1])
                     case False:
-                        return TxSigAndSlot(
-                            uuid, -2
-                        )  # -2 slot indicates bundle send failure
-            except:
-                pass
+                        raise ValueError(
+                            f"Bundle was not processed: {bundle_result[1]}"
+                        )
+            except Exception as e:
+                raise ValueError(f"Error sending bundle: {e}")
         else:
-            return TxSigAndSlot(Signature.default(), 0)
-            # return await super().send_no_confirm(tx)
+            return await super().send(tx)

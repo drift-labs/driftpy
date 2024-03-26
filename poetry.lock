@@ -924,25 +924,20 @@ i18n = ["Babel (>=2.7)"]
 
 [[package]]
 name = "jito-searcher-client"
-version = "0.1.2"
+version = "0.1.3"
 description = "Jito Labs Python Searcher Client"
 optional = false
-python-versions = "^3.10"
-files = []
-develop = false
+python-versions = "<4.0,>=3.10"
+files = [
+    {file = "jito_searcher_client-0.1.3-py3-none-any.whl", hash = "sha256:edc88ff179259860903d83fe26a4425380ae15be691b1b6650563a446e164ecf"},
+    {file = "jito_searcher_client-0.1.3.tar.gz", hash = "sha256:0b2b5f10d0d558c4ac31eaefdb49282077faf4b3af425dd14274e91db054184c"},
+]
 
 [package.dependencies]
-click = "^8.1.3"
-grpcio = "^1.62.1"
-protobuf = "^4.25.3"
+click = ">=8.1.3,<9.0.0"
+grpcio = ">=1.62.1,<2.0.0"
+protobuf = ">=4.25.3,<5.0.0"
 solana = "0.30.1"
-
-[package.source]
-type = "git"
-url = "https://github.com/soundsonacid/jito-python.git"
-reference = "HEAD"
-resolved_reference = "44a751fa5b431b2ff2835bb4fb347f2dabae63c1"
-subdirectory = "jito_searcher_client"
 
 [[package]]
 name = "jsonalias"
@@ -2481,4 +2476,4 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "162b9065c53865fe2e5a756d975f9d600c2219cf5b97332a51bc4c6fea3922c0"
+content-hash = "d1d8f5b6bf350c38e2969c58883a5491fd8ace5ca1df05994d128305553c9ed8"
