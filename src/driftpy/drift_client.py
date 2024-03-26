@@ -839,7 +839,7 @@ class DriftClient:
         self.last_perp_market_seen_cache[
             order_params.market_index
         ] = tx_sig_and_slot.slot
-        return tx_sig_and_slot
+        return tx_sig_and_slot.tx_sig
 
     def get_place_perp_order_ix(
         self,
@@ -1035,7 +1035,7 @@ class DriftClient:
             self.get_cancel_orders_ix(
                 market_type, market_index, direction, sub_account_id
             )
-        )
+        ).tx_sig
 
     def get_cancel_orders_ix(
         self,
