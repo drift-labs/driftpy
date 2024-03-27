@@ -136,5 +136,7 @@ def get_max_confidence_interval_multiplier(market: PerpMarketAccount) -> int:
         return 2
     elif str(market.contract_tier) == "ContractTier.Speculative()":
         return 10
+    elif str(market.contract_tier) == "ContractTier.HighlySpeculative()":
+        return 50
     elif str(market.contract_tier) == "ContractTier.Isolated()":
         return 50
