@@ -213,3 +213,9 @@ Fix enum interpretaton bug in `get_max_confidence_interval_multiplier`
 ## [0.7.42] - 2024-3-18
 
 Add W-PERP to `constants/perp_markets.py`
+
+## [0.7.44] - 2024-3-27
+
+Add `JitoTxSender`
+
+Update `drift.json` IDL
