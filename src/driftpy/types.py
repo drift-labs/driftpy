@@ -276,6 +276,7 @@ class ContractTier:
     B = constructor()
     C = constructor()
     Speculative = constructor()
+    HighlySpeculative = constructor()
     Isolated = constructor()
 
 
