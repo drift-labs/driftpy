@@ -217,3 +217,9 @@ Add W-PERP to `constants/perp_markets.py`
 ## [0.7.43] - 2024-3-21
 
 Fix minor bugs in `DriftUser` math functions
+
+## [0.7.44] - 2024-3-27
+
+Add `JitoTxSender`
+
+Update `drift.json` IDL
