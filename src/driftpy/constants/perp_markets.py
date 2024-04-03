@@ -286,7 +286,7 @@ mainnet_perp_market_configs: list[PerpMarketConfig] = [
         symbol="W-PERP",
         base_asset_symbol="W",
         market_index=27,
-        oracle=Pubkey.from_string("GU6CA7a2KCyhpfqZNb36UAfc9uzKBM8jHjGdt245QhYX"),
-        oracle_source=OracleSource.Prelaunch(),
+        oracle=Pubkey.from_string("H9j8CT1bFiWHaZUPMooEaxMRHdWdJ5T9CzFn41z96JHW"),
+        oracle_source=OracleSource.Pyth(),
     ),
 ]
