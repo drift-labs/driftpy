@@ -289,4 +289,11 @@ mainnet_perp_market_configs: list[PerpMarketConfig] = [
         oracle=Pubkey.from_string("H9j8CT1bFiWHaZUPMooEaxMRHdWdJ5T9CzFn41z96JHW"),
         oracle_source=OracleSource.Pyth(),
     ),
+     PerpMarketConfig(
+        symbol="KMNO-PERP",
+        base_asset_symbol="KMNO",
+        market_index=28,
+        oracle=Pubkey.from_string("sDAQaZQJQ4RXAxH3x526mbEXyQZT15ktkL84d7hmk7M"),
+        oracle_source=OracleSource.Prelaunch(),
+    ),
 ]
