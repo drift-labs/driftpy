@@ -223,3 +223,11 @@ Fix minor bugs in `DriftUser` math functions
 Add `JitoTxSender`
 
 Update `drift.json` IDL
+
+## [0.7.45] - 2024-4-5
+
+Update `perp_market_constants.py`
+
+## [0.7.46] - 2024-4-5
+
+Fix bug where `DriftClient.send_ixs` wasn't properly awaited 

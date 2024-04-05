@@ -1031,9 +1031,11 @@ class DriftClient:
         Returns:
             str: tx sig
         """
-        return await self.send_ixs(
-            self.get_cancel_orders_ix(
-                market_type, market_index, direction, sub_account_id
+        return (
+            await self.send_ixs(
+                self.get_cancel_orders_ix(
+                    market_type, market_index, direction, sub_account_id
+                )
             )
         ).tx_sig
 
