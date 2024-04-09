@@ -815,7 +815,7 @@ class PerpPosition:
 
 
 @dataclass
-class UserAccount:
+class esrrAccount:
     authority: Pubkey
     delegate: Pubkey
     name: list[int]

@@ -201,6 +201,13 @@ class DriftClient:
     def get_state_public_key(self):
         return get_state_public_key(self.program_id)
 
+    def get_signer_public_key(self) -> Pubkey:
+        if self.signer_public_key:
+            return self.signer_public_key
+
+        self.signer_public_key = get_drift_client_signer_public_key(self.program_id)
+        return self.signer_public_key
+
     def get_user_account_public_key(self, sub_account_id=None) -> Pubkey:
         sub_account_id = self.get_sub_account_id_for_ix(sub_account_id)
         return get_user_account_public_key(
@@ -214,6 +221,7 @@ class DriftClient:
         spot_market = self.get_spot_market_account(market_index)
         mint = spot_market.mint
         return get_associated_token_address(self.wallet.public_key, mint)
+
 
     def get_state_account(self) -> Optional[StateAccount]:
         state_and_slot = self.account_subscriber.get_state_account_and_slot()
@@ -461,6 +469,68 @@ class DriftClient:
 
         return oracle_map, spot_market_map, perp_market_map
 
+    def add_spot_fulfillment_accounts(
+        self,
+        market_index: int,
+        remaining_accounts: list[AccountMeta],
+        fulfillment_config: Optional[Union[SerumV3FulfillmentConfigAccount, PhoenixV1FulfillmentConfigAccount]] = None,
+    ) -> None:
+        if fulfillment_config is not None:
+            if hasattr(fulfillment_config, "serum_program_id"):
+                self.add_serum_remaining_accounts(market_index, remaining_accounts, fulfillment_config)
+            elif hasattr(fulfillment_config, "phoenix_program_id"):
+                self.add_phoenix_remaining_accounts(market_index, remaining_accounts, fulfillment_config)
+            else:
+                raise Exception(f"unknown fulfillment config: {type(fulfillment_config)}")
+        else:
+            remaining_accounts.append(AccountMeta(self.get_spot_market_account(market_index).vault, is_writable=False, is_signer=False))
+            remaining_accounts.append(AccountMeta(self.get_spot_market_account(QUOTE_SPOT_MARKET_INDEX).vault, is_writable=False, is_signer=False))
+
+    def add_serum_remaining_accounts(
+        self,
+        market_index: int,
+        remaining_accounts: list[AccountMeta],
+        fulfillment_config: SerumV3FulfillmentConfigAccount,
+    ) -> None:
+        remaining_accounts.append(AccountMeta(fulfillment_config.pubkey, is_writable=False, is_signer=False))
+        remaining_accounts.append(AccountMeta(fulfillment_config.serum_program_id, is_writable=False, is_signer=False))
+        remaining_accounts.append(AccountMeta(fulfillment_config.serum_market, is_writable=True, is_signer=False))
+        remaining_accounts.append(AccountMeta(fulfillment_config.serum_request_queue, is_writable=True, is_signer=False))
+        remaining_accounts.append(AccountMeta(fulfillment_config.serum_event_queue, is_writable=True, is_signer=False))
+        remaining_accounts.append(AccountMeta(fulfillment_config.serum_bids, is_writable=True, is_signer=False))
+        remaining_accounts.append(AccountMeta(fulfillment_config.serum_asks, is_writable=True, is_signer=False))
+        remaining_accounts.append(AccountMeta(fulfillment_config.serum_base_vault, is_writable=True, is_signer=False))
+        remaining_accounts.append(AccountMeta(fulfillment_config.serum_quote_vault, is_writable=True, is_signer=False))
+        remaining_accounts.append(AccountMeta(fulfillment_config.serum_open_orders, is_writable=True, is_signer=False))
+        serum_signer_key = get_serum_signer_public_key(
+            fulfillment_config.serum_program_id,
+            fulfillment_config.serum_market,
+            fulfillment_config.serum_signer_nonce)
+        remaining_accounts.append(AccountMeta(serum_signer_key, is_writable=False, is_signer=False))
+        remaining_accounts.append(AccountMeta(self.get_signer_public_key(), is_writable=False, is_signer=False))
+        remaining_accounts.append(AccountMeta(TOKEN_PROGRAM_ID, is_writable=False, is_signer=False))
+        remaining_accounts.append(AccountMeta(self.get_spot_market_account(market_index).vault, is_writable=True, is_signer=False))
+        remaining_accounts.append(AccountMeta(self.get_spot_market_account(QUOTE_SPOT_MARKET_INDEX).vault, is_writable=True, is_signer=False))
+        remaining_accounts.append(AccountMeta(self.get_state_account().srm_vault, is_writable=False, is_signer=False))
+
+    def add_phoenix_remaining_accounts(
+        self,
+        market_index: int,
+        remaining_accounts: list[AccountMeta],
+        fulfillment_config: PhoenixV1FulfillmentConfigAccount,
+    ) -> None:
+        remaining_accounts.append(AccountMeta(fulfillment_config.pubkey, is_writable=False, is_signer=False))
+        remaining_accounts.append(AccountMeta(fulfillment_config.phoenix_program_id, is_writable=False, is_signer=False))
+        remaining_accounts.append(AccountMeta(fulfillment_config.phoenix_log_authority, is_writable=False, is_signer=False))
+        remaining_accounts.append(AccountMeta(fulfillment_config.phoenix_market, is_writable=True, is_signer=False))
+        remaining_accounts.append(AccountMeta(self.get_signer_public_key(), is_writable=False, is_signer=False))
+        remaining_accounts.append(AccountMeta(fulfillment_config.phoenix_base_vault, is_writable=True, is_signer=False))
+        remaining_accounts.append(AccountMeta(fulfillment_config.phoenix_quote_vault, is_writable=True, is_signer=False))
+        remaining_accounts.append(AccountMeta(self.get_spot_market_account(market_index).vault, is_writable=True, is_signer=False))
+        remaining_accounts.append(AccountMeta(self.get_spot_market_account(QUOTE_SPOT_MARKET_INDEX).vault, is_writable=True, is_signer=False))
+        remaining_accounts.append(AccountMeta(TOKEN_PROGRAM_ID, is_writable=False, is_signer=False))
+
+
     async def initialize_user(
         self,
         sub_account_id: int = 0,
@@ -685,7 +755,7 @@ class DriftClient:
             user_accounts=[self.get_user_account(sub_account_id)],
             writable_spot_market_indexes=[market_index],
         )
-        dc_signer = get_drift_client_signer_public_key(self.program_id)
+        dc_signer = self.get_signer_public_key(self.program_id)
 
         return self.program.instruction["withdraw"](
             market_index,
@@ -1199,13 +1269,14 @@ class DriftClient:
     async def place_and_take_perp_order(
         self,
         order_params: OrderParams,
-        maker_info: MakerInfo = None,
+        maker_info: Union[MakerInfo, List[MakerInfo]] = None,
+        referrer_info: ReferrerInfo = None,
         sub_account_id: int = None,
     ):
         tx_sig_and_slot = await self.send_ixs(
             [
                 self.get_place_and_take_perp_order_ix(
-                    order_params, maker_info, sub_account_id
+                    order_params, maker_info, referrer_info, sub_account_id
                 ),
             ]
         )
@@ -1217,7 +1288,8 @@ class DriftClient:
     def get_place_and_take_perp_order_ix(
         self,
         order_params: OrderParams,
-        maker_info: MakerInfo = None,
+        maker_info: Union[MakerInfo, List[MakerInfo]] = None,
+        referrer_info: ReferrerInfo = None,
         sub_account_id: int = None,
     ):
         sub_account_id = self.get_sub_account_id_for_ix(sub_account_id)
@@ -1226,20 +1298,120 @@ class DriftClient:
 
         user_account_public_key = self.get_user_account_public_key(sub_account_id)
 
+        maker_infos = maker_info if isinstance(maker_info, list) else [maker_info] if maker_info else []
+
+        user_accounts = [self.get_user_account(sub_account_id)]
+        for maker_info in maker_infos:
+            user_accounts.append(maker_info.maker_user_account)
+
         remaining_accounts = self.get_remaining_accounts(
             writable_perp_market_indexes=[order_params.market_index],
-            user_accounts=[self.get_user_account(sub_account_id)],
+            user_accounts=user_accounts,
+        )
+
+        for maker_info in maker_infos:
+            remaining_accounts.append(
+                AccountMeta(pubkey=maker_info.maker, is_signer=False, is_writable=True)
+            )
+            remaining_accounts.append(
+                AccountMeta(pubkey=maker_info.maker_stats, is_signer=False, is_writable=True)
+            )
+
+        if referrer_info is not None:
+            referrer_is_maker = referrer_info.referrer in [maker_info.maker for maker_info in maker_infos]
+            if not referrer_is_maker:
+                remaining_accounts.append(
+                    AccountMeta(pubkey=referrer_info.referrer, is_signer=False, is_writable=True)
+                )
+                remaining_accounts.append(
+                    AccountMeta(pubkey=referrer_info.referrer_stats, is_signer=False, is_writable=True)
+                )
+
+        return self.program.instruction["place_and_take_perp_order"](
+            order_params,
+            None,
+            ctx=Context(
+                accounts={
+                    "state": self.get_state_public_key(),
+                    "user": user_account_public_key,
+                    "user_stats": self.get_user_stats_public_key(),
+                    "authority": self.wallet.payer.pubkey(),
+                },
+                remaining_accounts=remaining_accounts,
+            ),
+        )
+
+    async def place_and_take_spot_order(
+        self,
+        order_params: OrderParams,
+        fulfillment_config: Optional[Union[SerumV3FulfillmentConfigAccount, PhoenixV1FulfillmentConfigAccount]] = None,
+        maker_info: Optional[MakerInfo] = None,
+        referrer_info: ReferrerInfo = None,
+        sub_account_id: int = None,
+    ):
+        tx_sig_and_slot = await self.send_ixs(
+            [
+                self.get_place_and_take_spot_order_ix(
+                    order_params, fulfillment_config, maker_info, referrer_info, sub_account_id
+                ),
+            ]
+        )
+        self.last_spot_market_seen_cache[
+            order_params.market_index
+        ] = tx_sig_and_slot.slot
+        return tx_sig_and_slot.tx_sig
+
+    def get_place_and_take_spot_order_ix(
+        self,
+        order_params: OrderParams,
+        fulfillment_config: Optional[Union[SerumV3FulfillmentConfigAccount, PhoenixV1FulfillmentConfigAccount]] = None,
+        maker_info: Optional[MakerInfo] = None,
+        referrer_info: ReferrerInfo = None,
+        sub_account_id: int = None,
+    ):
+        sub_account_id = self.get_sub_account_id_for_ix(sub_account_id)
+
+        order_params.set_spot()
+
+        user_account_public_key = self.get_user_account_public_key(sub_account_id)
+
+        user_accounts = [self.get_user_account(sub_account_id)]
+        if maker_info:
+            user_accounts.append(maker_info.maker_user_account)
+
+        remaining_accounts = self.get_remaining_accounts(
+            user_accounts=user_accounts,
+            writable_spot_market_indexes=[
+                order_params.market_index,
+                QUOTE_SPOT_MARKET_INDEX,
+            ],
         )
 
         maker_order_id = None
-        if maker_info is not None:
+        if maker_info:
             maker_order_id = maker_info.order.order_id
             remaining_accounts.append(
                 AccountMeta(pubkey=maker_info.maker, is_signer=False, is_writable=True)
             )
+            remaining_accounts.append(
+                AccountMeta(pubkey=maker_info.maker_stats, is_signer=False, is_writable=True)
+            )
 
-        return self.program.instruction["place_and_take_perp_order"](
+        if referrer_info is not None:
+            referrer_is_maker = referrer_info.referrer == maker_info.maker if maker_info else False
+            if not referrer_is_maker:
+                remaining_accounts.append(
+                    AccountMeta(pubkey=referrer_info.referrer, is_signer=False, is_writable=True)
+                )
+                remaining_accounts.append(
+                    AccountMeta(pubkey=referrer_info.referrer_stats, is_signer=False, is_writable=True)
+                )
+
+        self.add_spot_fulfillment_accounts(order_params.market_index, remaining_accounts, fulfillment_config)
+
+        return self.program.instruction["place_and_take_spot_order"](
             order_params,
+            fulfillment_config,
             maker_order_id,
             ctx=Context(
                 accounts={
@@ -1723,7 +1895,7 @@ class DriftClient:
         spot_vault = get_spot_market_vault_public_key(
             self.program_id, spot_market_index
         )
-        dc_signer = get_drift_client_signer_public_key(self.program_id)
+        dc_signer = self.get_signer_public_key(self.program_id)
 
         return self.program.instruction["resolve_spot_bankruptcy"](
             spot_market_index,
@@ -1793,7 +1965,7 @@ class DriftClient:
 
         if_vault = get_insurance_fund_vault_public_key(self.program_id, market_index)
         spot_vault = get_spot_market_vault_public_key(self.program_id, market_index)
-        dc_signer = get_drift_client_signer_public_key(self.program_id)
+        dc_signer = self.get_signer_public_key(self.program_id)
 
         return self.program.instruction["resolve_perp_bankruptcy"](
             QUOTE_SPOT_MARKET_INDEX,
@@ -1999,7 +2171,7 @@ class DriftClient:
                     "insurance_fund_vault": get_insurance_fund_vault_public_key(
                         self.program_id, spot_market_index
                     ),
-                    "drift_signer": get_drift_client_signer_public_key(self.program_id),
+                    "drift_signer": self.get_signer_public_key(self.program_id),
                     "user_token_account": user_token_account,
                     "token_program": TOKEN_PROGRAM_ID,
                 },
@@ -2053,7 +2225,7 @@ class DriftClient:
                     "insurance_fund_vault": get_insurance_fund_vault_public_key(
                         self.program_id, spot_market_index
                     ),
-                    "drift_signer": get_drift_client_signer_public_key(self.program_id),
+                    "drift_signer": self.get_signer_public_key(self.program_id),
                     "user_token_account": user_token_account,
                     "token_program": TOKEN_PROGRAM_ID,
                 },
@@ -2338,7 +2510,8 @@ class DriftClient:
         )
 
         ix = self.get_place_and_take_perp_order_ix(
-            order_params, sub_account_id=sub_account_id
+            order_params,
+            sub_account_id=sub_account_id
         )
         return ix
 
@@ -2435,7 +2608,7 @@ class DriftClient:
                     "spot_market_vault": get_spot_market_vault_public_key(
                         self.program_id, spot_market_index
                     ),
-                    "drift_signer": get_drift_client_signer_public_key(self.program_id),
+                    "drift_signer": self.get_signer_public_key(self.program_id),
                     "insurance_fund_vault": get_insurance_fund_vault_public_key(
                         self.program_id,
                         spot_market_index,
