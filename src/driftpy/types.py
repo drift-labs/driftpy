@@ -815,7 +815,7 @@ class PerpPosition:
 
 
 @dataclass
-class esrrAccount:
+class UserAccount:
     authority: Pubkey
     delegate: Pubkey
     name: list[int]
@@ -1007,7 +1007,7 @@ class MakerInfo:
     maker: Pubkey
     maker_stats: Pubkey
     maker_user_account: UserAccount
-    order: Order
+    order: Optional[Order]
 
 
 @dataclass

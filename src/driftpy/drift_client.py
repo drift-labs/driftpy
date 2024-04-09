@@ -34,6 +34,7 @@ from driftpy.accounts import *
 from driftpy.constants.config import DriftEnv, DRIFT_PROGRAM_ID, configs
 
 from typing import Tuple, Union, Optional, List
+from driftpy.drift_user_stats import DriftUserStats, UserStatsSubscriptionConfig
 from driftpy.math.perp_position import is_available
 from driftpy.math.spot_position import is_spot_position_available
 from driftpy.math.spot_market import cast_to_spot_precision
@@ -82,6 +83,7 @@ class DriftClient:
         sub_account_ids: Optional[list[int]] = None,
         market_lookup_table: Optional[Pubkey] = None,
         jito_params: Optional[JitoParams] = None,
+        tx_sender_blockhash_commitment: Optional[Commitment] = None,
     ):
         """Initializes the drift client object
 
@@ -122,6 +124,7 @@ class DriftClient:
             else [self.active_sub_account_id]
         )
         self.users = {}
+        self.user_stats = {}
 
         self.last_perp_market_seen_cache = {}
         self.last_spot_market_seen_cache = {}
@@ -143,7 +146,7 @@ class DriftClient:
 
         self.tx_params = tx_params
 
-        self.tx_version = tx_version if tx_version is not None else Legacy
+        self.tx_version = tx_version if tx_version is not None else 0
 
         if jito_params is not None:
             from driftpy.tx.jito_tx_sender import JitoTxSender
@@ -158,7 +161,10 @@ class DriftClient:
             )
         else:
             self.tx_sender = (
-                StandardTxSender(self.connection, opts)
+                StandardTxSender(
+                    self.connection,
+                    opts,
+                    blockhash_commitment=tx_sender_blockhash_commitment if tx_sender_blockhash_commitment is not None else 'finalized')
                 if tx_sender is None
                 else tx_sender
             )
@@ -167,6 +173,7 @@ class DriftClient:
         await self.account_subscriber.subscribe()
         for sub_account_id in self.sub_account_ids:
             await self.add_user(sub_account_id)
+        await self.add_user_stats(self.authority)
 
     async def add_user(self, sub_account_id: int):
         if sub_account_id in self.users:
@@ -180,6 +187,17 @@ class DriftClient:
         await user.subscribe()
         self.users[sub_account_id] = user
 
+    async def add_user_stats(self, authority: Pubkey):
+        if authority in self.user_stats:
+            return
+
+        self.user_stats[authority] = DriftUserStats(self, self.get_user_stats_public_key(), UserStatsSubscriptionConfig(
+            "confirmed"
+        ))
+
+        # don't subscribe because up to date UserStats is not required
+        await self.user_stats[authority].fetch_accounts()
+
     async def unsubscribe(self):
         await self.account_subscriber.unsubscribe()
 
@@ -187,13 +205,25 @@ class DriftClient:
         sub_account_id = (
             sub_account_id if sub_account_id is not None else self.active_sub_account_id
         )
+        if sub_account_id not in self.sub_account_ids:
+            raise KeyError(f"No sub account id {sub_account_id} found, need to include in `sub_account_ids` when initializing DriftClient")
+
         if sub_account_id not in self.users:
-            raise KeyError(f"No sub account id {sub_account_id} found")
+            raise KeyError(f"No sub account id {sub_account_id} found, need to call `await DriftClient.subscribe()` first")
 
         return self.users[sub_account_id]
 
-    def get_user_account(self, sub_account_id=0) -> UserAccount:
+    def get_user_account(self, sub_account_id=None) -> UserAccount:
         return self.get_user(sub_account_id).get_user_account()
+
+    def get_user_stats(self, authority=None) -> DriftUserStats:
+        if authority is None:
+            authority = self.authority
+
+        if authority not in self.user_stats:
+            raise KeyError(f"No UserStats for {authority} found, need to call `await DriftClient.subscribe()` first")
+
+        return self.user_stats[authority]
 
     def switch_active_user(self, sub_account_id: int):
         self.active_sub_account_id = sub_account_id
@@ -476,9 +506,9 @@ class DriftClient:
         fulfillment_config: Optional[Union[SerumV3FulfillmentConfigAccount, PhoenixV1FulfillmentConfigAccount]] = None,
     ) -> None:
         if fulfillment_config is not None:
-            if hasattr(fulfillment_config, "serum_program_id"):
+            if isinstance(fulfillment_config, SerumV3FulfillmentConfigAccount):
                 self.add_serum_remaining_accounts(market_index, remaining_accounts, fulfillment_config)
-            elif hasattr(fulfillment_config, "phoenix_program_id"):
+            elif isinstance(fulfillment_config, PhoenixV1FulfillmentConfigAccount):
                 self.add_phoenix_remaining_accounts(market_index, remaining_accounts, fulfillment_config)
             else:
                 raise Exception(f"unknown fulfillment config: {type(fulfillment_config)}")
@@ -1345,7 +1375,7 @@ class DriftClient:
         self,
         order_params: OrderParams,
         fulfillment_config: Optional[Union[SerumV3FulfillmentConfigAccount, PhoenixV1FulfillmentConfigAccount]] = None,
-        maker_info: Optional[MakerInfo] = None,
+        maker_info: Union[MakerInfo, List[MakerInfo]] = None,
         referrer_info: ReferrerInfo = None,
         sub_account_id: int = None,
     ):
@@ -1365,7 +1395,7 @@ class DriftClient:
         self,
         order_params: OrderParams,
         fulfillment_config: Optional[Union[SerumV3FulfillmentConfigAccount, PhoenixV1FulfillmentConfigAccount]] = None,
-        maker_info: Optional[MakerInfo] = None,
+        maker_info: Union[MakerInfo, List[MakerInfo]] = None,
         referrer_info: ReferrerInfo = None,
         sub_account_id: int = None,
     ):
@@ -1376,7 +1406,8 @@ class DriftClient:
         user_account_public_key = self.get_user_account_public_key(sub_account_id)
 
         user_accounts = [self.get_user_account(sub_account_id)]
-        if maker_info:
+        maker_infos = maker_info if isinstance(maker_info, list) else [maker_info] if maker_info else []
+        for maker_info in maker_infos:
             user_accounts.append(maker_info.maker_user_account)
 
         remaining_accounts = self.get_remaining_accounts(
@@ -1387,9 +1418,7 @@ class DriftClient:
             ],
         )
 
-        maker_order_id = None
-        if maker_info:
-            maker_order_id = maker_info.order.order_id
+        for maker_info in maker_infos:
             remaining_accounts.append(
                 AccountMeta(pubkey=maker_info.maker, is_signer=False, is_writable=True)
             )
@@ -1412,7 +1441,7 @@ class DriftClient:
         return self.program.instruction["place_and_take_spot_order"](
             order_params,
             fulfillment_config,
-            maker_order_id,
+            None,
             ctx=Context(
                 accounts={
                     "state": self.get_state_public_key(),
