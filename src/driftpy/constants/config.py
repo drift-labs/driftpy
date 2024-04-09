@@ -3,7 +3,7 @@ from base64 import b64decode
 from typing import Literal, Optional, Sequence, Tuple, Union
 
 import jsonrpcclient
-from driftpy.accounts.oracle import decode_pyth_price_info
+from driftpy.accounts.oracle import decode_oracle, decode_pyth_price_info
 from driftpy.accounts.types import DataAndSlot, FullOracleWrapper
 
 from driftpy.constants.spot_markets import (
@@ -191,7 +191,7 @@ async def find_all_market_and_oracles(
         oracle_slot = oracle_ais.context.slot
 
         oracle_price_datas = [
-            decode_pyth_price_info(account.data, oracle_infos[oracle_keys[i]])
+            decode_oracle(account.data, oracle_infos[oracle_keys[i]])
             for i, account in enumerate(oracle_ais.value)
             if account is not None
         ]

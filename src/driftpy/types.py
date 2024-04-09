@@ -1,8 +1,12 @@
+import inspect
+
 from dataclasses import dataclass, field
-from solders.pubkey import Pubkey
 from borsh_construct.enum import _rust_enum
 from sumtypes import constructor
 from typing import Optional
+from urllib.parse import urlparse, urlunparse
+
+from solders.pubkey import Pubkey  # type: ignore
 
 
 def is_variant(enum, type: str) -> bool:
@@ -11,6 +15,37 @@ def is_variant(enum, type: str) -> bool:
 
 def is_one_of_variant(enum, types):
     return any(type in str(enum) for type in types)
+
+
+def get_ws_url(url: str) -> str:
+    parsed = urlparse(url)
+
+    if parsed.port:
+        ws_port = parsed.port + 1
+        new_netloc = f"{parsed.hostname}:{ws_port}"
+        new_scheme = "wss" if parsed.scheme == "https" else "ws"
+        return urlunparse(
+            (
+                new_scheme,
+                new_netloc,
+                parsed.path,
+                parsed.params,
+                parsed.query,
+                parsed.fragment,
+            )
+        )
+    else:
+        return url.replace("https", "wss").replace("http", "ws")
+
+
+def stack_trace():
+    caller_frame = inspect.stack()[1]
+    frame_info = inspect.getframeinfo(caller_frame[0])
+
+    file_name = frame_info.filename
+    line_number = frame_info.lineno
+
+    return f"{file_name}:{line_number}"
 
 
 @_rust_enum
@@ -199,6 +234,7 @@ class OracleSource:
     Pyth1K = constructor()
     Pyth1M = constructor()
     PythStableCoin = constructor()
+    Prelaunch = constructor()
 
 
 @_rust_enum
@@ -240,6 +276,7 @@ class ContractTier:
     B = constructor()
     C = constructor()
     Speculative = constructor()
+    HighlySpeculative = constructor()
     Isolated = constructor()
 
 
@@ -1270,3 +1307,20 @@ class SwapRecord:
     out_oracle_price: int
     in_oracle_price: int
     fee: int
+
+
+@dataclass
+class PrelaunchOracleParams:
+    perp_market_index: int
+    price: Optional[int]
+    max_price: Optional[int]
+
+
+@dataclass
+class PrelaunchOracle:
+    price: int
+    max_price: int
+    confidence: int
+    amm_last_update_slot: int
+    last_update_slot: int
+    perp_market_index: int

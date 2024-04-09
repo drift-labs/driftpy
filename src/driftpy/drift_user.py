@@ -153,7 +153,7 @@ class DriftUser:
 
             market = self.drift_client.get_perp_market_account(position.market_index)
 
-            price = self.drift_client.get_oracle_price_data(market.amm.oracle).price
+            price = (self.get_oracle_data_for_perp_market(position.market_index)).price
             base_asset_amount = (
                 calculate_worst_case_base_asset_amount(position)
                 if include_open_orders
@@ -288,8 +288,8 @@ class DriftUser:
                 market.quote_spot_market_index
             )
 
-            quote_oracle_price_data = self.drift_client.get_oracle_price_data(
-                quote_spot_market.oracle
+            quote_oracle_price_data = self.get_oracle_data_for_spot_market(
+                QUOTE_SPOT_MARKET_INDEX
             )
 
             if strict:
@@ -536,8 +536,8 @@ class DriftUser:
             spot_market_account = self.drift_client.get_spot_market_account(
                 spot_position.market_index
             )
-            oracle_price_data = self.drift_client.get_oracle_price_data(
-                spot_market_account.oracle
+            oracle_price_data = self.get_oracle_data_for_spot_market(
+                spot_position.market_index
             )
 
             twap_5m = None
@@ -963,7 +963,7 @@ class DriftUser:
         if signed_token_amount > 0:
             asset_weight = calculate_asset_weight(
                 signed_token_amount,
-                self.drift_client.get_oracle_price_data(market.oracle).price,
+                self.get_oracle_data_for_spot_market(market.market_index).price,
                 market,
                 MarginCategory.MAINTENANCE,
             )
@@ -1057,9 +1057,7 @@ class DriftUser:
             return None
 
         total_collateral = self.get_total_collateral(MarginCategory.MAINTENANCE)
-        margin_req = self.get_margin_requirement(
-            MarginCategory.MAINTENANCE, None, True, False
-        )
+        margin_req = self.get_margin_requirement(MarginCategory.MAINTENANCE, None, True)
         delta_liq = total_collateral - margin_req
 
         spot_market = self.drift_client.get_spot_market_account(spot_market_index)
@@ -1091,7 +1089,7 @@ class DriftUser:
             case _:
                 raise Exception(f"Invalid balance type: {position.balance_type}")
 
-        price = self.drift_client.get_oracle_price_data(spot_market.oracle).price
+        price = self.get_oracle_data_for_spot_market(spot_market.market_index).price
         liq_price = price + liq_price_delta
         liq_price /= PRICE_PRECISION
 

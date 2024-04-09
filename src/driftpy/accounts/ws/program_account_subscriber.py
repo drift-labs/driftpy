@@ -9,6 +9,7 @@ from driftpy.accounts.types import (
 )
 from solana.rpc.websocket_api import connect, SolanaWsClientProtocol
 from solders.pubkey import Pubkey
+from driftpy.types import get_ws_url
 
 T = TypeVar("T")
 
@@ -51,7 +52,7 @@ class WebSocketProgramAccountSubscriber:
 
     async def subscribe_ws(self):
         endpoint = self.program.provider.connection._provider.endpoint_uri
-        ws_endpoint = endpoint.replace("https", "wss").replace("http", "ws")
+        ws_endpoint = get_ws_url(endpoint)
         while True:
             try:
                 async with connect(ws_endpoint) as ws:
