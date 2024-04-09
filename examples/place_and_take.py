@@ -7,7 +7,18 @@ This example demonstrates use of the `place_and_take` instruction for perp and s
 
 Set variables in `main()` to change order params.
 
-python3 examples/place_and_take.py
+To run this example, set the following variables in main() to suit your needs:
+    * sub_account_id = 2
+    * perp_market_index = 0 # SOL-PERP
+    * spot_market_index = 9 # JTO/USDC
+    * trade_amount_base = 0.1 # demo buying 0.1 SOL
+
+And then set the following environment variables:
+    * PRIVATE_KEY=<your private key> # file to, or raw string of a solana private key (numbers array or base58 string)
+    * RPC_URL=<your RPC url> # RPC endpoint, public RPC probably will not work
+
+Usage:
+    python3 examples/place_and_take.py
 '''
 import os
 import sys
