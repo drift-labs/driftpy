@@ -233,6 +233,8 @@ def get_max_price_divergence_for_funding_rate(
         return oracle_twap // 20
     elif str(market.contract_tier) == "ContractTier.Speculative()":
         return oracle_twap // 10
+    elif str(market.contract_tier) == "ContractTier.HighlySpeculative()":
+        return oracle_twap // 10
     elif str(market.contract_tier) == "ContractTier.Isolated()":
         return oracle_twap // 10
     else:

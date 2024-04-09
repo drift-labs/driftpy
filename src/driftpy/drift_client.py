@@ -48,6 +48,15 @@ DEFAULT_USER_NAME = "Main Account"
 DEFAULT_TX_OPTIONS = TxOpts(skip_confirmation=False, preflight_commitment=Processed)
 
 
+@dataclass
+class JitoParams:
+    jito_keypair: Keypair
+    block_engine_url: str
+    blockhash_refresh_rate: Optional[int] = None
+    leader_refresh_rate: Optional[int] = None
+    tip_amount: Optional[int] = None
+
+
 class DriftClient:
     """This class is the main way to interact with Drift Protocol including
     depositing, opening new positions, closing positions, placing orders, etc.
@@ -72,6 +81,7 @@ class DriftClient:
         active_sub_account_id: Optional[int] = None,
         sub_account_ids: Optional[list[int]] = None,
         market_lookup_table: Optional[Pubkey] = None,
+        jito_params: Optional[JitoParams] = None,
     ):
         """Initializes the drift client object
 
@@ -135,9 +145,23 @@ class DriftClient:
 
         self.tx_version = tx_version if tx_version is not None else Legacy
 
-        self.tx_sender = (
-            StandardTxSender(self.connection, opts) if tx_sender is None else tx_sender
-        )
+        if jito_params is not None:
+            from driftpy.tx.jito_tx_sender import JitoTxSender
+
+            self.tx_sender = JitoTxSender(
+                self,
+                opts,
+                jito_params.block_engine_url,
+                jito_params.jito_keypair,
+                blockhash_refresh_interval_secs=jito_params.blockhash_refresh_rate,
+                tip_amount=jito_params.tip_amount,
+            )
+        else:
+            self.tx_sender = (
+                StandardTxSender(self.connection, opts)
+                if tx_sender is None
+                else tx_sender
+            )
 
     async def subscribe(self):
         await self.account_subscriber.subscribe()
@@ -372,8 +396,13 @@ class DriftClient:
             pubkey=perp_market_account.pubkey, is_signer=False, is_writable=writable
         )
 
+        oracle_writable = writable and is_variant(
+            perp_market_account.amm.oracle_source, "Prelaunch"
+        )
         oracle_account_map[str(perp_market_account.amm.oracle)] = AccountMeta(
-            pubkey=perp_market_account.amm.oracle, is_signer=False, is_writable=False
+            pubkey=perp_market_account.amm.oracle,
+            is_signer=False,
+            is_writable=oracle_writable,
         )
 
         self.add_spot_market_to_remaining_account_maps(
@@ -2068,6 +2097,28 @@ class DriftClient:
             ),
         )
 
+    async def fill_perp_order(
+        self,
+        user_account_pubkey: Pubkey,
+        user_account: UserAccount,
+        order: Order,
+        maker_info: Optional[Union[MakerInfo, list[MakerInfo]]],
+        referrer_info: Optional[ReferrerInfo],
+    ):
+        return (
+            await self.send_ixs(
+                [
+                    await self.get_fill_perp_order_ix(
+                        user_account_pubkey,
+                        user_account,
+                        order,
+                        maker_info,
+                        referrer_info,
+                    )
+                ]
+            )
+        ).tx_sig
+
     async def get_fill_perp_order_ix(
         self,
         user_account_pubkey: Pubkey,
@@ -2510,7 +2561,7 @@ class DriftClient:
         user_account_public_key: Optional[Pubkey] = None,
     ) -> Tuple[list[Instruction], list[AddressLookupTableAccount]]:
         pre_instructions: list[Instruction] = []
-        JUPITER_URL = os.getenv('JUPITER_URL', "https://quote-api.jup.ag/v6")
+        JUPITER_URL = os.getenv("JUPITER_URL", "https://quote-api.jup.ag/v6")
 
         out_market = self.get_spot_market_account(out_market_idx)
         in_market = self.get_spot_market_account(in_market_idx)
@@ -2709,3 +2760,31 @@ class DriftClient:
             ]
         ).tx_sig
         return tx_sig
+
+    async def update_prelaunch_oracle(
+        self,
+        market_index: int,
+    ):
+        return (
+            await self.send_ixs(
+                self.get_update_prelaunch_oracle_ix(
+                    market_index,
+                ),
+            )
+        ).tx_sig
+
+    def get_update_prelaunch_oracle_ix(self, market_index: int):
+        perp_market = self.get_perp_market_account(market_index)
+
+        if not is_variant(perp_market.amm.oracle_source, "Prelaunch"):
+            raise ValueError(f"wrong oracle source: {perp_market.amm.oracle_source}")
+
+        return self.program.instruction["update_prelaunch_oracle"](
+            ctx=Context(
+                accounts={
+                    "state": self.get_state_public_key(),
+                    "perp_market": perp_market.pubkey,
+                    "oracle": perp_market.amm.oracle,
+                }
+            )
+        )

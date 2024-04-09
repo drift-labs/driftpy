@@ -181,3 +181,53 @@ Sort market indexes in `CachedDriftClientAccountSubscriber` before populating ca
 Merge PR #116: Update div_ceil to use integer division isntead of float division
 
 Merge PR #117: Allows for the Jupiter V6 Swap API url to be configured
+
+## [0.7.34] - 2024-3-4
+
+Refactor oracle switching & tests
+
+Fix bug in `MarketMap` where a subscription would not be properly established
+
+## [0.7.36] - 2024-3-8
+
+Add support for prelisting oracles
+
+## [0.7.37] - 2024-3-11
+
+Fix bug where prelisting & switchboard oracles weren't properly decoded for cached drift client subscriptions
+
+## [0.7.38] - 2024-3-11
+
+Add max confidence interval multiplier to oracle validity calculations
+
+## [0.7.39] - 2024-3-13
+
+Fix events archiver bug with logs less than 8 bytes
+
+## [0.7.40] - 2024-3-14
+
+Update `drift.json` IDL
+
+Fix enum interpretaton bug in `get_max_confidence_interval_multiplier`
+
+## [0.7.42] - 2024-3-18
+
+Add W-PERP to `constants/perp_markets.py`
+
+## [0.7.43] - 2024-3-21
+
+Fix minor bugs in `DriftUser` math functions
+
+## [0.7.44] - 2024-3-27
+
+Add `JitoTxSender`
+
+Update `drift.json` IDL
+
+## [0.7.45] - 2024-4-5
+
+Update `perp_market_constants.py`
+
+## [0.7.46] - 2024-4-5
+
+Fix bug where `DriftClient.send_ixs` wasn't properly awaited 

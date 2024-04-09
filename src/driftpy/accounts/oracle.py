@@ -6,7 +6,7 @@ from anchorpy import Coder, Idl, Program
 import driftpy
 from .types import DataAndSlot
 from driftpy.constants.numeric_constants import *
-from driftpy.types import OracleSource, OraclePriceData, is_variant
+from driftpy.types import OracleSource, OraclePriceData, PrelaunchOracle, is_variant
 
 from solders.pubkey import Pubkey
 from solders.account import Account
@@ -19,6 +19,11 @@ with file.open() as f:
     raw = file.read_text()
 IDL = Idl.from_json(raw)
 CODER = Coder(IDL)
+file = Path(str(driftpy.__path__[0]) + "/idl/drift.json")
+with file.open() as f:
+    raw = file.read_text()
+DRIFT_IDL = Idl.from_json(raw)
+DRIFT_CODER = Coder(DRIFT_IDL)
 
 
 def convert_pyth_price(price, scale=1):
@@ -46,6 +51,20 @@ async def get_oracle_price_data_and_slot(
         return DataAndSlot(
             data=OraclePriceData(PRICE_PRECISION, 0, 1, 1, 0, True), slot=0
         )
+    elif is_variant(oracle_source, "Switchboard"):
+        rpc_reponse = await connection.get_account_info(address)
+        rpc_response_slot = rpc_reponse.context.slot
+
+        oracle_price_data = decode_swb_price_info(rpc_reponse.value.data)
+
+        return DataAndSlot(data=oracle_price_data, slot=rpc_response_slot)
+    elif is_variant(oracle_source, "Prelaunch"):
+        rpc_reponse = await connection.get_account_info(address)
+        rpc_response_slot = rpc_reponse.context.slot
+
+        oracle_price_data = decode_prelaunch_price_info(rpc_reponse.value.data)
+
+        return DataAndSlot(data=oracle_price_data, slot=rpc_response_slot)
     else:
         raise NotImplementedError("Unsupported Oracle Source", str(oracle_source))
 
@@ -119,8 +138,11 @@ def decode_swb_price_info(data: bytes):
 
     price = convert_switchboard_decimal(round.result.mantissa, round.result.scale)
 
-    conf = convert_switchboard_decimal(
-        round.std_deviation.mantissa, round.std_deviation.scale
+    conf = max(
+        convert_switchboard_decimal(
+            round.std_deviation.mantissa, round.std_deviation.scale
+        ),
+        (price // 1_000),
     )
 
     has_sufficient_number_of_data_points = (
@@ -130,7 +152,20 @@ def decode_swb_price_info(data: bytes):
     slot = round.round_open_slot
 
     return OraclePriceData(
-        price, slot, conf, 1, 1, has_sufficient_number_of_data_points
+        price, slot, conf, None, None, has_sufficient_number_of_data_points
+    )
+
+
+def decode_prelaunch_price_info(data: bytes):
+    prelaunch_oracle = DRIFT_CODER.accounts.decode(data)
+
+    return OraclePriceData(
+        price=prelaunch_oracle.price,
+        slot=prelaunch_oracle.amm_last_update_slot,
+        confidence=prelaunch_oracle.confidence,
+        has_sufficient_number_of_data_points=True,
+        twap=None,
+        twap_confidence=None,
     )
 
 
@@ -139,6 +174,8 @@ def decode_oracle(oracle_ai: bytes, oracle_source: OracleSource):
         return decode_pyth_price_info(oracle_ai, oracle_source)
     elif "Switchboard" in str(oracle_source):
         return decode_swb_price_info(oracle_ai)
+    elif "Prelaunch" in str(oracle_source):
+        return decode_prelaunch_price_info(oracle_ai)
     else:
         raise Exception("Unknown oracle source")
 
@@ -148,5 +185,7 @@ def get_oracle_decode_fn(oracle_source: OracleSource):
         return lambda data: decode_pyth_price_info(data, oracle_source)
     elif "Switchboard" in str(oracle_source):
         return lambda data: decode_swb_price_info(data)
+    elif "Prelaunch" in str(oracle_source):
+        return lambda data: decode_prelaunch_price_info(data)
     else:
         raise Exception("Unknown oracle source")

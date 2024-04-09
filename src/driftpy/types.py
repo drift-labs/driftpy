@@ -234,6 +234,7 @@ class OracleSource:
     Pyth1K = constructor()
     Pyth1M = constructor()
     PythStableCoin = constructor()
+    Prelaunch = constructor()
 
 
 @_rust_enum
@@ -275,6 +276,7 @@ class ContractTier:
     B = constructor()
     C = constructor()
     Speculative = constructor()
+    HighlySpeculative = constructor()
     Isolated = constructor()
 
 
@@ -1305,3 +1307,20 @@ class SwapRecord:
     out_oracle_price: int
     in_oracle_price: int
     fee: int
+
+
+@dataclass
+class PrelaunchOracleParams:
+    perp_market_index: int
+    price: Optional[int]
+    max_price: Optional[int]
+
+
+@dataclass
+class PrelaunchOracle:
+    price: int
+    max_price: int
+    confidence: int
+    amm_last_update_slot: int
+    last_update_slot: int
+    perp_market_index: int
