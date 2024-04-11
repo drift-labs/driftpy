@@ -296,4 +296,11 @@ mainnet_perp_market_configs: list[PerpMarketConfig] = [
         oracle=Pubkey.from_string("sDAQaZQJQ4RXAxH3x526mbEXyQZT15ktkL84d7hmk7M"),
         oracle_source=OracleSource.Prelaunch(),
     ),
+     PerpMarketConfig(
+        symbol="TNSR-PERP",
+        base_asset_symbol="TNSR",
+        market_index=29,
+        oracle=Pubkey.from_string("7Cfyymx49ipGsgEsCA2XygAB2DUsan4C6Cyb5c8oR5st"),
+        oracle_source=OracleSource.Switchboard(),
+    ),
 ]
