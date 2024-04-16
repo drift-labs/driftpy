@@ -346,18 +346,12 @@ class DriftClient:
                             self.priority_fee_subscriber.get_latest_priority_fee()
                         ),
                     )
-                    print(
-                        f"pf subscriber latest: {self.priority_fee_subscriber.get_latest_priority_fee()}"
-                    )
                 case "average":
                     ixs.insert(
                         1,
                         set_compute_unit_price(
                             self.priority_fee_subscriber.get_avg_priority_fee()
                         ),
-                    )
-                    print(
-                        f"pf subscriber avg: {self.priority_fee_subscriber.get_avg_priority_fee()}"
                     )
                 case "max":
                     ixs.insert(
@@ -366,13 +360,8 @@ class DriftClient:
                             self.priority_fee_subscriber.get_max_priority_fee()
                         ),
                     )
-                    print(
-                        f"pf subscriber max: {self.priority_fee_subscriber.get_max_priority_fee()}"
-                    )
         elif self.tx_params.compute_units_price is not None:
             ixs.insert(1, set_compute_unit_price(self.tx_params.compute_units_price))
-            print(f"tx params: {self.tx_params.compute_units_price}")
-        os._exit(0)
 
         if tx_version == Legacy:
             tx = await self.tx_sender.get_legacy_tx(ixs, self.wallet.payer, signers)
