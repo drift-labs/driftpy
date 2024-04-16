@@ -66,18 +66,19 @@ class JitoParams:
 DynamicTxParamsStrategy = Literal["latest", "average", "max"]
 
 
-# SOL-PERP & Openbook SOL/USDC
-def default_addresses():
+def sol_perp_and_openbook_sol_usdc():
     return [
-        "8BnEgHoWFysVcuFFX7QztDmzuH8r5ZFvyP3sYwn1XTh6",
-        "8UJgxaiQx5nTrdDgph5FiahMmzduuLTLf5WmsPegYA6W",
+        "8BnEgHoWFysVcuFFX7QztDmzuH8r5ZFvyP3sYwn1XTh6",  # openbook SOL/USDC
+        "8UJgxaiQx5nTrdDgph5FiahMmzduuLTLf5WmsPegYA6W",  # SOL-PERP
     ]
 
 
 @dataclass
 class DynamicTxParamsConfig:
     strategy: DynamicTxParamsStrategy
-    addresses_to_monitor: List[str] = field(default_factory=default_addresses)
+    addresses_to_monitor: List[str] = field(
+        default_factory=sol_perp_and_openbook_sol_usdc
+    )
     frequency: int = 5
     slots_to_check: int = 10
 
