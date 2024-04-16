@@ -33,11 +33,15 @@ from driftpy.accounts import *
 
 from driftpy.constants.config import DriftEnv, DRIFT_PROGRAM_ID, configs
 
-from typing import Tuple, Union, Optional, List
+from typing import Literal, Tuple, Union, Optional, List
 from driftpy.math.perp_position import is_available
 from driftpy.math.spot_position import is_spot_position_available
 from driftpy.math.spot_market import cast_to_spot_precision
 from driftpy.name import encode_name
+from driftpy.priority_fees.priority_fee_subscriber import (
+    PriorityFeeConfig,
+    PriorityFeeSubscriber,
+)
 from driftpy.tx.standard_tx_sender import StandardTxSender
 from driftpy.tx.types import TxSender, TxSigAndSlot
 from spl.token.constants import ASSOCIATED_TOKEN_PROGRAM_ID
@@ -47,6 +51,8 @@ DEFAULT_USER_NAME = "Main Account"
 
 DEFAULT_TX_OPTIONS = TxOpts(skip_confirmation=False, preflight_commitment=Processed)
 
+DEFAULT_TX_PARAMS = TxParams(600_000, 0)
+
 
 @dataclass
 class JitoParams:
@@ -55,6 +61,17 @@ class JitoParams:
     blockhash_refresh_rate: Optional[int] = None
     leader_refresh_rate: Optional[int] = None
     tip_amount: Optional[int] = None
+
+
+DynamicTxParamsStrategy = Literal["latest", "average", "max"]
+
+
+@dataclass
+class DynamicTxParamsConfig:
+    strategy: DynamicTxParamsStrategy
+    addresses_to_monitor: list[str]
+    frequency: int = 5
+    slots_to_check: int = 10
 
 
 class DriftClient:
@@ -82,6 +99,7 @@ class DriftClient:
         sub_account_ids: Optional[list[int]] = None,
         market_lookup_table: Optional[Pubkey] = None,
         jito_params: Optional[JitoParams] = None,
+        dynamic_tx_params_config: Optional[DynamicTxParamsConfig] = None,
     ):
         """Initializes the drift client object
 
@@ -138,10 +156,20 @@ class DriftClient:
         )
         self.market_lookup_table_account: Optional[AddressLookupTableAccount] = None
 
-        if tx_params is None:
-            tx_params = TxParams(600_000, 0)
+        self.tx_params = tx_params or DEFAULT_TX_PARAMS
 
-        self.tx_params = tx_params
+        self.dynamic_tx_params_config = dynamic_tx_params_config
+        if self.dynamic_tx_params_config:
+            self.priority_fee_subscriber = PriorityFeeSubscriber(
+                PriorityFeeConfig(
+                    self.connection,
+                    self.dynamic_tx_params_config.frequency,
+                    self.dynamic_tx_params_config.addresses_to_monitor,
+                    self.dynamic_tx_params_config.slots_to_check,
+                )
+            )
+        else:
+            self.priority_fee_subscriber = None
 
         self.tx_version = tx_version if tx_version is not None else Legacy
 
@@ -165,6 +193,8 @@ class DriftClient:
 
     async def subscribe(self):
         await self.account_subscriber.subscribe()
+        if self.priority_fee_subscriber:
+            await self.priority_fee_subscriber.subscribe()
         for sub_account_id in self.sub_account_ids:
             await self.add_user(sub_account_id)
 
@@ -307,8 +337,42 @@ class DriftClient:
         if self.tx_params.compute_units is not None:
             ixs.insert(0, set_compute_unit_limit(self.tx_params.compute_units))
 
-        if self.tx_params.compute_units_price is not None:
+        if self.dynamic_tx_params_config is not None:
+            match self.dynamic_tx_params_config.strategy:
+                case "latest":
+                    ixs.insert(
+                        1,
+                        set_compute_unit_price(
+                            self.priority_fee_subscriber.get_latest_priority_fee()
+                        ),
+                    )
+                    print(
+                        f"pf subscriber latest: {self.priority_fee_subscriber.get_latest_priority_fee()}"
+                    )
+                case "average":
+                    ixs.insert(
+                        1,
+                        set_compute_unit_price(
+                            self.priority_fee_subscriber.get_avg_priority_fee()
+                        ),
+                    )
+                    print(
+                        f"pf subscriber avg: {self.priority_fee_subscriber.get_avg_priority_fee()}"
+                    )
+                case "max":
+                    ixs.insert(
+                        1,
+                        set_compute_unit_price(
+                            self.priority_fee_subscriber.get_max_priority_fee()
+                        ),
+                    )
+                    print(
+                        f"pf subscriber max: {self.priority_fee_subscriber.get_max_priority_fee()}"
+                    )
+        elif self.tx_params.compute_units_price is not None:
             ixs.insert(1, set_compute_unit_price(self.tx_params.compute_units_price))
+            print(f"tx params: {self.tx_params.compute_units_price}")
+        os._exit(0)
 
         if tx_version == Legacy:
             tx = await self.tx_sender.get_legacy_tx(ixs, self.wallet.payer, signers)

@@ -18,7 +18,7 @@ class PriorityFeeConfig:
 class PriorityFeeSubscriber:
     def __init__(self, config: PriorityFeeConfig):
         self.connection = config.connection
-        self.frequency_ms = config.frequency_secs
+        self.frequency_secs = config.frequency_secs
         self.addresses = config.addresses
         self.slots_to_check = config.slots_to_check
 
@@ -39,7 +39,7 @@ class PriorityFeeSubscriber:
     async def poll(self):
         while self.subscribed:
             asyncio.create_task(self.load())
-            await asyncio.sleep(self.frequency_ms)
+            await asyncio.sleep(self.frequency_secs)
 
     async def load(self):
         rpc_request = jsonrpcclient.request(
@@ -71,6 +71,15 @@ class PriorityFeeSubscriber:
             item["prioritizationFee"] for item in desc_results
         ) / len(desc_results)
         self.max_priority_fee = max(item["prioritizationFee"] for item in desc_results)
+
+    def get_latest_priority_fee(self) -> int:
+        return int(self.latest_priority_fee)
+
+    def get_avg_priority_fee(self) -> int:
+        return int(self.avg_priority_fee)
+
+    def get_max_priority_fee(self) -> int:
+        return int(self.max_priority_fee)
 
     async def unsubscribe(self):
         if self.subscribed:
