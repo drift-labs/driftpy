@@ -1,3 +1,5 @@
+import asyncio
+
 from typing import Optional
 
 from driftpy.accounts import DataAndSlot
@@ -11,4 +13,8 @@ class WebsocketUserAccountSubscriber(
     WebsocketAccountSubscriber[UserAccount], UserAccountSubscriber
 ):
     def get_user_account_and_slot(self) -> Optional[DataAndSlot[UserAccount]]:
-        return self.data_and_slot
+        data_and_slot = self.data_and_slot
+        while data_and_slot is None:
+            asyncio.create_task(self.fetch())
+            data_and_slot = self.data_and_slot
+        return data_and_slot

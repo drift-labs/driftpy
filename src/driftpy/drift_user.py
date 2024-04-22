@@ -6,7 +6,6 @@ from typing import Tuple
 
 from driftpy.account_subscription_config import AccountSubscriptionConfig
 from driftpy.math.amm import calculate_market_open_bid_ask
-from driftpy.math.conversion import convert_to_number
 from driftpy.math.oracles import calculate_live_oracle_twap
 from driftpy.math.perp_position import *
 from driftpy.math.margin import *
