@@ -235,3 +235,7 @@ Fix bug where `DriftClient.send_ixs` wasn't properly awaited
 ## [0.7.47] - 2024-4-9
 
 Add `UserStatsMap`
+
+## [0.7.49] - 2024-5-15
+
+Update `anchorpy`, `anchorpy-core`, `solana`, `jito-searcher-client` to latest versions
