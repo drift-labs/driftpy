@@ -139,7 +139,14 @@ mainnet_spot_market_configs: list[SpotMarketConfig] = [
         symbol="TNSR",
         market_index=14,
         oracle=Pubkey.from_string("7Cfyymx49ipGsgEsCA2XygAB2DUsan4C6Cyb5c8oR5st"),
-        oracle_source=OracleSource.Pyth(),
+        oracle_source=OracleSource.Switchboard(),
         mint=Pubkey.from_string("TNSRxcUxoT9xBG3de7PiJyTDYu7kskLqcpddxnEJAS6"),
+    ),
+    SpotMarketConfig(
+        symbol="DRIFT",
+        market_index=15,
+        oracle=Pubkey.from_string("PeNpQeGEm9UEFJ6MBCMauY4WW4h3YxoESPWbsqVKucE"),
+        oracle_source=OracleSource.Switchboard(),
+        mint=Pubkey.from_string("DriFtupJYLTosbwoN8koMbEYSx54aFAVLddWsbksjwg7"),
     ),
 ]
