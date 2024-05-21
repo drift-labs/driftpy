@@ -2886,8 +2886,6 @@ class DriftClient:
             print(
                 f"WARNING: sequence number {sequence_number} < last used {self.sequence_number - 1}"
             )
-        else:
-            print(f"sequence number: {sequence_number}")
 
         ix = self.sequence_enforcer_program.instruction[
             "check_and_set_sequence_number"
