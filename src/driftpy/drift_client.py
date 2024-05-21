@@ -31,7 +31,13 @@ from driftpy.decode.utils import decode_name
 from driftpy.drift_user import DriftUser
 from driftpy.accounts import *
 
-from driftpy.constants.config import DriftEnv, DRIFT_PROGRAM_ID, configs
+from driftpy.constants.config import (
+    DriftEnv,
+    DRIFT_PROGRAM_ID,
+    configs,
+    SEQUENCER_PROGRAM_ID,
+    DEVNET_SEQUENCER_PROGRAM_ID,
+)
 
 from typing import Tuple, Union, Optional, List
 from driftpy.math.perp_position import is_available
@@ -40,6 +46,7 @@ from driftpy.math.spot_market import cast_to_spot_precision
 from driftpy.name import encode_name
 from driftpy.tx.standard_tx_sender import StandardTxSender
 from driftpy.tx.types import TxSender, TxSigAndSlot
+from driftpy.addresses import get_sequencer_public_key_and_bump
 from spl.token.constants import ASSOCIATED_TOKEN_PROGRAM_ID
 from solders.system_program import ID as SYS_PROGRAM_ID
 
@@ -82,6 +89,7 @@ class DriftClient:
         sub_account_ids: Optional[list[int]] = None,
         market_lookup_table: Optional[Pubkey] = None,
         jito_params: Optional[JitoParams] = None,
+        enforce_tx_sequencing: bool = False,
     ):
         """Initializes the drift client object
 
@@ -144,6 +152,32 @@ class DriftClient:
         self.tx_params = tx_params
 
         self.tx_version = tx_version if tx_version is not None else Legacy
+
+        self.enforce_tx_sequencing = enforce_tx_sequencing
+        if self.enforce_tx_sequencing is True:
+            file = Path(str(driftpy.__path__[0]) + "/idl/sequence_enforcer.json")
+            with file.open() as f:
+                raw = file.read_text()
+            idl = Idl.from_json(raw)
+
+            provider = Provider(connection, wallet, opts)
+            self.sequence_enforcer_pid = (
+                SEQUENCER_PROGRAM_ID
+                if env == "mainnet"
+                else DEVNET_SEQUENCER_PROGRAM_ID
+            )
+            self.sequence_enforcer_program = Program(
+                idl,
+                self.sequence_enforcer_pid,
+                provider,
+            )
+            sequence_account, sequence_account_bump = get_sequencer_public_key_and_bump(
+                self.sequence_enforcer_pid, self.wallet.payer.pubkey()
+            )
+            self.sequence_account = sequence_account
+            self.sequence_account_bump = sequence_account_bump
+            self.sequence_number = 1
+            self.sequence_initialized = False
 
         if jito_params is not None:
             from driftpy.tx.jito_tx_sender import JitoTxSender
@@ -304,11 +338,24 @@ class DriftClient:
         if not tx_version:
             tx_version = self.tx_version
 
+        compute_unit_instructions = []
         if self.tx_params.compute_units is not None:
-            ixs.insert(0, set_compute_unit_limit(self.tx_params.compute_units))
+            compute_unit_instructions.append(
+                set_compute_unit_limit(self.tx_params.compute_units)
+            )
 
         if self.tx_params.compute_units_price is not None:
-            ixs.insert(1, set_compute_unit_price(self.tx_params.compute_units_price))
+            compute_unit_instructions.append(
+                set_compute_unit_price(self.tx_params.compute_units_price)
+            )
+
+        ixs[0:0] = compute_unit_instructions
+
+        if self.enforce_tx_sequencing and self.sequence_initialized:
+            sequence_instruction = self.get_check_and_set_sequence_number_ix(
+                self.sequence_number
+            )
+            ixs.insert(len(compute_unit_instructions), sequence_instruction)
 
         if tx_version == Legacy:
             tx = await self.tx_sender.get_legacy_tx(ixs, self.wallet.payer, signers)
@@ -2788,3 +2835,71 @@ class DriftClient:
                 }
             )
         )
+
+    async def init_sequence(self) -> Signature:
+        try:
+            sig = (await self.send_ixs([self.get_sequence_init_ix()])).tx_sig
+            self.sequence_initialized = True
+            return sig
+        except Exception as e:
+            print(f"WARNING: failed to initialize sequence: {e}")
+
+    def get_sequence_init_ix(self) -> Instruction:
+        return self.sequence_enforcer_program.instruction["initialize"](
+            self.sequence_account_bump,
+            SEQUENCER_SYM,
+            ctx=Context(
+                accounts={
+                    "sequence_account": self.sequence_account,
+                    "authority": self.wallet.payer.pubkey(),
+                    "system_program": ID,
+                }
+            ),
+        )
+
+    async def reset_sequence_number(self, sequence_number: int = 0) -> Signature:
+        sig = (
+            await self.send_ixs(self.get_reset_sequence_number_ix(sequence_number))
+        ).tx_sig
+        self.sequence_number = sequence_number
+        return sig
+
+    def get_reset_sequence_number_ix(self, sequence_number: int):
+        return self.sequence_enforcer_program.instruction["reset_sequence_number"](
+            sequence_number,
+            ctx=Context(
+                accounts={
+                    "sequence_account": self.sequence_account,
+                    "authority": self.wallet.payer.pubkey(),
+                }
+            ),
+        )
+
+    def get_check_and_set_sequence_number_ix(
+        self, sequence_number: Optional[int] = None
+    ):
+        sequence_number = sequence_number or self.sequence_number
+
+        if (
+            sequence_number < self.sequence_number - 1
+        ):  # we increment after creating the ix, so we check - 1
+            print(
+                f"WARNING: sequence number {sequence_number} < last used {self.sequence_number - 1}"
+            )
+        else:
+            print(f"sequence number: {sequence_number}")
+
+        ix = self.sequence_enforcer_program.instruction[
+            "check_and_set_sequence_number"
+        ](
+            sequence_number,
+            ctx=Context(
+                accounts={
+                    "sequence_account": self.sequence_account,
+                    "authority": self.wallet.payer.pubkey(),
+                }
+            ),
+        )
+
+        self.sequence_number += 1
+        return ix

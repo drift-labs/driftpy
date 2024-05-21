@@ -1,4 +1,5 @@
 from solders.pubkey import Pubkey
+from driftpy.constants.config import SEQUENCER_SYM
 
 
 def int_to_le_bytes(a: int):
@@ -94,6 +95,14 @@ def get_prelaunch_oracle_public_key(program_id: Pubkey, market_index: int) -> Pu
     return Pubkey.find_program_address(
         [b"prelaunch_oracle", int_to_le_bytes(market_index)], program_id
     )[0]
+
+
+def get_sequencer_public_key_and_bump(
+    program_id: Pubkey, payer: Pubkey
+) -> tuple[Pubkey, int]:
+    return Pubkey.find_program_address(
+        [SEQUENCER_SYM.encode(), bytes(payer)], program_id
+    )
 
 
 # program = Pubkey("9jwr5nC2f9yAraXrg4UzHXmCX3vi9FQkjD6p9e8bRqNa")

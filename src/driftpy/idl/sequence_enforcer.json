@@ -1,0 +1,103 @@
+{
+    "version": "0.1.0",
+    "name": "sequence_enforcer",
+    "instructions": [
+      {
+        "name": "initialize",
+        "accounts": [
+          {
+            "name": "sequenceAccount",
+            "isMut": true,
+            "isSigner": false
+          },
+          {
+            "name": "authority",
+            "isMut": false,
+            "isSigner": true
+          },
+          {
+            "name": "systemProgram",
+            "isMut": false,
+            "isSigner": false
+          }
+        ],
+        "args": [
+          {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "sym",
+            "type": "string"
+          }
+        ]
+      },
+      {
+        "name": "resetSequenceNumber",
+        "accounts": [
+          {
+            "name": "sequenceAccount",
+            "isMut": true,
+            "isSigner": false
+          },
+          {
+            "name": "authority",
+            "isMut": false,
+            "isSigner": true
+          }
+        ],
+        "args": [
+          {
+            "name": "sequenceNum",
+            "type": "u64"
+          }
+        ]
+      },
+      {
+        "name": "checkAndSetSequenceNumber",
+        "accounts": [
+          {
+            "name": "sequenceAccount",
+            "isMut": true,
+            "isSigner": false
+          },
+          {
+            "name": "authority",
+            "isMut": false,
+            "isSigner": true
+          }
+        ],
+        "args": [
+          {
+            "name": "sequenceNum",
+            "type": "u64"
+          }
+        ]
+      }
+    ],
+    "accounts": [
+      {
+        "name": "SequenceAccount",
+        "type": {
+          "kind": "struct",
+          "fields": [
+            {
+              "name": "sequenceNum",
+              "type": "u64"
+            },
+            {
+              "name": "authority",
+              "type": "publicKey"
+            }
+          ]
+        }
+      }
+    ],
+    "errors": [
+      {
+        "code": 6000,
+        "name": "SequenceOutOfOrder",
+        "msg": "Sequence out of order"
+      }
+    ]
+  }
