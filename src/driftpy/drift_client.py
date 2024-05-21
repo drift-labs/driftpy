@@ -178,6 +178,7 @@ class DriftClient:
             self.sequence_account_bump = sequence_account_bump
             self.sequence_number = 1
             self.sequence_initialized = False
+            self.resetting_sequence = False
 
         if jito_params is not None:
             from driftpy.tx.jito_tx_sender import JitoTxSender
@@ -351,7 +352,11 @@ class DriftClient:
 
         ixs[0:0] = compute_unit_instructions
 
-        if self.enforce_tx_sequencing and self.sequence_initialized:
+        if (
+            self.enforce_tx_sequencing
+            and self.sequence_initialized
+            and not self.resetting_sequence
+        ):
             sequence_instruction = self.get_check_and_set_sequence_number_ix(
                 self.sequence_number
             )
@@ -2858,9 +2863,11 @@ class DriftClient:
         )
 
     async def reset_sequence_number(self, sequence_number: int = 0) -> Signature:
+        self.resetting_sequence = True
         sig = (
             await self.send_ixs(self.get_reset_sequence_number_ix(sequence_number))
         ).tx_sig
+        self.resetting_sequence = False
         self.sequence_number = sequence_number
         return sig
 
