@@ -2942,7 +2942,6 @@ class DriftClient:
                 self.sequence_bump_by_subaccount[subaccount] = bump
                 self.sequence_initialized_by_subaccount[subaccount] = False
                 continue
-            # sequence_account = decode_account(sequence_account_raw.value.data, self.sequence_enforcer_program)
             sequence_account = cast(SequenceAccount, sequence_account_raw)
             self.sequence_number_by_subaccount[subaccount] = (
                 sequence_account.sequence_num + 1
