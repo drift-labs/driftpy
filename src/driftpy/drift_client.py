@@ -2850,6 +2850,8 @@ class DriftClient:
             print(f"WARNING: failed to initialize sequence: {e}")
 
     def get_sequence_init_ix(self) -> Instruction:
+        if self.enforce_tx_sequencing is False:
+            raise ValueError("tx sequencing is disabled")
         return self.sequence_enforcer_program.instruction["initialize"](
             self.sequence_account_bump,
             SEQUENCER_SYM,
@@ -2863,15 +2865,19 @@ class DriftClient:
         )
 
     async def reset_sequence_number(self, sequence_number: int = 0) -> Signature:
-        self.resetting_sequence = True
-        sig = (
-            await self.send_ixs(self.get_reset_sequence_number_ix(sequence_number))
-        ).tx_sig
-        self.resetting_sequence = False
-        self.sequence_number = sequence_number
-        return sig
+        try:
+            ix = self.get_reset_sequence_number_ix(sequence_number)
+            self.resetting_sequence = True
+            sig = (await self.send_ixs(ix)).tx_sig
+            self.resetting_sequence = False
+            self.sequence_number = sequence_number
+            return sig
+        except Exception as e:
+            print(f"WARNING: failed to reset sequence number: {e}")
 
     def get_reset_sequence_number_ix(self, sequence_number: int):
+        if self.enforce_tx_sequencing is False:
+            raise ValueError("tx sequencing is disabled")
         return self.sequence_enforcer_program.instruction["reset_sequence_number"](
             sequence_number,
             ctx=Context(
@@ -2885,6 +2891,8 @@ class DriftClient:
     def get_check_and_set_sequence_number_ix(
         self, sequence_number: Optional[int] = None
     ):
+        if self.enforce_tx_sequencing is False:
+            raise ValueError("tx sequencing is disabled")
         sequence_number = sequence_number or self.sequence_number
 
         if (
