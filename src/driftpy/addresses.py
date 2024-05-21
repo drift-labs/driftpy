@@ -1,5 +1,4 @@
 from solders.pubkey import Pubkey
-from driftpy.constants.config import SEQUENCER_SYM
 
 
 def int_to_le_bytes(a: int):
