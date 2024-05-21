@@ -1,5 +1,6 @@
 import json
 import os
+import anchorpy
 from deprecated import deprecated
 import requests
 from solders.pubkey import Pubkey
@@ -37,6 +38,7 @@ from driftpy.constants.config import (
     configs,
     SEQUENCER_PROGRAM_ID,
     DEVNET_SEQUENCER_PROGRAM_ID,
+    decode_account,
 )
 
 from typing import Tuple, Union, Optional, List
@@ -171,13 +173,10 @@ class DriftClient:
                 self.sequence_enforcer_pid,
                 provider,
             )
-            sequence_account, sequence_account_bump = get_sequencer_public_key_and_bump(
-                self.sequence_enforcer_pid, self.wallet.payer.pubkey()
-            )
-            self.sequence_account = sequence_account
-            self.sequence_account_bump = sequence_account_bump
-            self.sequence_number = 1
-            self.sequence_initialized = False
+            self.sequence_number_by_subaccount = {}
+            self.sequence_bump_by_subaccount = {}
+            self.sequence_initialized_by_subaccount = {}
+            self.sequence_address_by_subaccount = {}
             self.resetting_sequence = False
 
         if jito_params is not None:
@@ -200,6 +199,8 @@ class DriftClient:
 
     async def subscribe(self):
         await self.account_subscriber.subscribe()
+        if self.enforce_tx_sequencing:
+            await self.load_sequence_info()
         for sub_account_id in self.sub_account_ids:
             await self.add_user(sub_account_id)
 
@@ -332,6 +333,7 @@ class DriftClient:
         signers=None,
         lookup_tables: list[AddressLookupTableAccount] = None,
         tx_version: Optional[Union[Legacy, int]] = None,
+        sequencer_subaccount: Optional[int] = None,
     ) -> TxSigAndSlot:
         if isinstance(ixs, Instruction):
             ixs = [ixs]
@@ -352,13 +354,15 @@ class DriftClient:
 
         ixs[0:0] = compute_unit_instructions
 
+        subaccount = sequencer_subaccount or self.active_sub_account_id
+
         if (
             self.enforce_tx_sequencing
-            and self.sequence_initialized
+            and self.sequence_initialized_by_subaccount[subaccount]
             and not self.resetting_sequence
         ):
             sequence_instruction = self.get_check_and_set_sequence_number_ix(
-                self.sequence_number
+                self.sequence_number_by_subaccount[subaccount], subaccount
             )
             ixs.insert(len(compute_unit_instructions), sequence_instruction)
 
@@ -2841,65 +2845,71 @@ class DriftClient:
             )
         )
 
-    async def init_sequence(self) -> Signature:
+    async def init_sequence(self, subaccount: int = 0) -> Signature:
         try:
-            sig = (await self.send_ixs([self.get_sequence_init_ix()])).tx_sig
-            self.sequence_initialized = True
+            sig = (await self.send_ixs([self.get_sequence_init_ix(subaccount)])).tx_sig
+            self.sequence_initialized_by_subaccount[subaccount] = True
             return sig
         except Exception as e:
             print(f"WARNING: failed to initialize sequence: {e}")
 
-    def get_sequence_init_ix(self) -> Instruction:
+    def get_sequence_init_ix(self, subaccount: int = 0) -> Instruction:
         if self.enforce_tx_sequencing is False:
             raise ValueError("tx sequencing is disabled")
         return self.sequence_enforcer_program.instruction["initialize"](
-            self.sequence_account_bump,
-            SEQUENCER_SYM,
+            self.sequence_bump_by_subaccount[subaccount],
+            str(subaccount),
             ctx=Context(
                 accounts={
-                    "sequence_account": self.sequence_account,
+                    "sequence_account": self.sequence_address_by_subaccount[subaccount],
                     "authority": self.wallet.payer.pubkey(),
                     "system_program": ID,
                 }
             ),
         )
 
-    async def reset_sequence_number(self, sequence_number: int = 0) -> Signature:
+    async def reset_sequence_number(
+        self, sequence_number: int = 0, subaccount: int = 0
+    ) -> Signature:
         try:
             ix = self.get_reset_sequence_number_ix(sequence_number)
             self.resetting_sequence = True
             sig = (await self.send_ixs(ix)).tx_sig
             self.resetting_sequence = False
-            self.sequence_number = sequence_number
+            self.sequence_number_by_subaccount[subaccount] = sequence_number
             return sig
         except Exception as e:
             print(f"WARNING: failed to reset sequence number: {e}")
 
-    def get_reset_sequence_number_ix(self, sequence_number: int):
+    def get_reset_sequence_number_ix(
+        self, sequence_number: int, subaccount: int = 0
+    ) -> Instruction:
         if self.enforce_tx_sequencing is False:
             raise ValueError("tx sequencing is disabled")
         return self.sequence_enforcer_program.instruction["reset_sequence_number"](
             sequence_number,
             ctx=Context(
                 accounts={
-                    "sequence_account": self.sequence_account,
+                    "sequence_account": self.sequence_address_by_subaccount[subaccount],
                     "authority": self.wallet.payer.pubkey(),
                 }
             ),
         )
 
     def get_check_and_set_sequence_number_ix(
-        self, sequence_number: Optional[int] = None
+        self, sequence_number: Optional[int] = None, subaccount: int = 0
     ):
         if self.enforce_tx_sequencing is False:
             raise ValueError("tx sequencing is disabled")
-        sequence_number = sequence_number or self.sequence_number
+        sequence_number = (
+            sequence_number or self.sequence_number_by_subaccount[subaccount]
+        )
 
         if (
-            sequence_number < self.sequence_number - 1
+            sequence_number < self.sequence_number_by_subaccount[subaccount] - 1
         ):  # we increment after creating the ix, so we check - 1
             print(
-                f"WARNING: sequence number {sequence_number} < last used {self.sequence_number - 1}"
+                f"WARNING: sequence number {sequence_number} < last used {self.sequence_number_by_subaccount[subaccount] - 1}"
             )
 
         ix = self.sequence_enforcer_program.instruction[
@@ -2908,11 +2918,35 @@ class DriftClient:
             sequence_number,
             ctx=Context(
                 accounts={
-                    "sequence_account": self.sequence_account,
+                    "sequence_account": self.sequence_address_by_subaccount[subaccount],
                     "authority": self.wallet.payer.pubkey(),
                 }
             ),
         )
 
-        self.sequence_number += 1
+        self.sequence_number_by_subaccount[subaccount] += 1
         return ix
+
+    async def load_sequence_info(self):
+        for subaccount in self.sub_account_ids:
+            address, bump = get_sequencer_public_key_and_bump(
+                self.sequence_enforcer_pid, self.wallet.payer.pubkey(), subaccount
+            )
+            try:
+                sequence_account_raw = await self.sequence_enforcer_program.account[
+                    "SequenceAccount"
+                ].fetch(address)
+            except anchorpy.error.AccountDoesNotExistError as e:
+                self.sequence_address_by_subaccount[subaccount] = address
+                self.sequence_number_by_subaccount[subaccount] = 1
+                self.sequence_bump_by_subaccount[subaccount] = bump
+                self.sequence_initialized_by_subaccount[subaccount] = False
+                continue
+            # sequence_account = decode_account(sequence_account_raw.value.data, self.sequence_enforcer_program)
+            sequence_account = cast(SequenceAccount, sequence_account_raw)
+            self.sequence_number_by_subaccount[subaccount] = (
+                sequence_account.sequence_num + 1
+            )
+            self.sequence_bump_by_subaccount[subaccount] = bump
+            self.sequence_initialized_by_subaccount[subaccount] = True
+            self.sequence_address_by_subaccount[subaccount] = address

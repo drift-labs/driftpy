@@ -221,7 +221,7 @@ async def find_all_market_and_oracles(
         return perp_ds, spot_ds, full_oracle_wrappers
 
 
-def decode_account(account_data: str, program: Program) -> PerpMarketAccount:
+def decode_account(account_data: str, program: Program):
     decoded_data = b64decode(account_data)
     return program.coder.accounts.decode(decoded_data)
 
