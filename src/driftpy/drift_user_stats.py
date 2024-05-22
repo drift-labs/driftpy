@@ -11,7 +11,6 @@ from driftpy.addresses import (
     get_user_account_public_key,
     get_user_stats_account_public_key,
 )
-from driftpy.drift_client import DriftClient
 
 
 @dataclass
@@ -24,10 +23,12 @@ class UserStatsSubscriptionConfig:
 class DriftUserStats:
     def __init__(
         self,
-        drift_client: DriftClient,
+        drift_client,
         user_stats_account_pubkey: Pubkey,
         config: UserStatsSubscriptionConfig,
     ):
+        from driftpy.drift_client import DriftClient
+
         self.drift_client = drift_client
         self.user_stats_account_pubkey = user_stats_account_pubkey
         self.account_subscriber = WebsocketUserStatsAccountSubscriber(
