@@ -1324,3 +1324,9 @@ class PrelaunchOracle:
     amm_last_update_slot: int
     last_update_slot: int
     perp_market_index: int
+
+
+@dataclass
+class SequenceAccount:
+    sequence_num: int
+    authority: Pubkey
