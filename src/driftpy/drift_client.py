@@ -28,6 +28,7 @@ from driftpy.constants import BASE_PRECISION, PRICE_PRECISION
 from driftpy.constants.numeric_constants import (
     QUOTE_SPOT_MARKET_INDEX,
 )
+from driftpy.enforcers.position_enforcer import PositionEnforcer
 from driftpy.enforcers.sequence_enforcer import SequenceEnforcer
 from driftpy.decode.utils import decode_name
 from driftpy.drift_user import DriftUser
@@ -93,6 +94,7 @@ class DriftClient:
         market_lookup_table: Optional[Pubkey] = None,
         jito_params: Optional[JitoParams] = None,
         enforce_tx_sequencing: bool = False,
+        enforce_position_sizing: bool = False,
     ):
         """Initializes the drift client object
 
@@ -159,6 +161,10 @@ class DriftClient:
         self.sequence_enforcer = None
         if enforce_tx_sequencing is True:
             self.sequence_enforcer = SequenceEnforcer(self.connection, self.wallet)
+
+        self.position_enforcer = None
+        if enforce_position_sizing is True:
+            self.position_enforcer = PositionEnforcer(self.connection, self.wallet)
 
         if jito_params is not None:
             from driftpy.tx.jito_tx_sender import JitoTxSender
@@ -873,6 +879,7 @@ class DriftClient:
         self,
         order_params: OrderParams,
         sub_account_id: int = None,
+        expected_size: Optional[int] = None,
     ):
         tx_sig_and_slot = await self.send_ixs(
             [
