@@ -160,7 +160,7 @@ class DriftClient:
 
         self.sequence_enforcer = None
         if enforce_tx_sequencing is True:
-            self.sequence_enforcer = SequenceEnforcer(self.connection, self.wallet)
+            self.sequence_enforcer = SequenceEnforcer(self.connection, self.wallet, env)
 
         self.position_enforcer = None
         if enforce_position_sizing is True:

@@ -10,12 +10,12 @@ from solders.system_program import ID as SystemProgram
 
 from solana.rpc.async_api import AsyncClient
 from driftpy.addresses import get_sequencer_public_key_and_bump
-from driftpy.constants.config import SEQUENCER_PROGRAM_ID
+from driftpy.constants.config import SEQUENCER_PROGRAM_ID, DEVNET_SEQUENCER_PROGRAM_ID
 from driftpy.types import SequenceAccount
 
 
 class SequenceEnforcer:
-    def __init__(self, connection: AsyncClient, wallet: Wallet):
+    def __init__(self, connection: AsyncClient, wallet: Wallet, env):
         self.sequence_number_by_subaccount = {}
         self.sequence_init_by_subaccount = {}
         self.sequence_address_by_subaccount = {}
@@ -28,7 +28,7 @@ class SequenceEnforcer:
         idl = Idl.from_json(raw)
 
         provider = Provider(connection, wallet)
-        self.sequence_enforcer_pid = SEQUENCER_PROGRAM_ID
+        self.sequence_enforcer_pid = SEQUENCER_PROGRAM_ID if env == "mainnet" else DEVNET_SEQUENCER_PROGRAM_ID
         self.sequence_enforcer_program = Program(
             idl,
             self.sequence_enforcer_pid,
