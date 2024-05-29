@@ -289,18 +289,25 @@ mainnet_perp_market_configs: list[PerpMarketConfig] = [
         oracle=Pubkey.from_string("H9j8CT1bFiWHaZUPMooEaxMRHdWdJ5T9CzFn41z96JHW"),
         oracle_source=OracleSource.Pyth(),
     ),
-     PerpMarketConfig(
+    PerpMarketConfig(
         symbol="KMNO-PERP",
         base_asset_symbol="KMNO",
         market_index=28,
         oracle=Pubkey.from_string("sDAQaZQJQ4RXAxH3x526mbEXyQZT15ktkL84d7hmk7M"),
         oracle_source=OracleSource.Prelaunch(),
     ),
-     PerpMarketConfig(
+    PerpMarketConfig(
         symbol="TNSR-PERP",
         base_asset_symbol="TNSR",
         market_index=29,
         oracle=Pubkey.from_string("7Cfyymx49ipGsgEsCA2XygAB2DUsan4C6Cyb5c8oR5st"),
+        oracle_source=OracleSource.Switchboard(),
+    ),
+    PerpMarketConfig(
+        symbol="DRIFT-PERP",
+        base_asset_symbol="DRIFT",
+        market_index=30,
+        oracle=Pubkey.from_string("PeNpQeGEm9UEFJ6MBCMauY4WW4h3YxoESPWbsqVKucE"),
         oracle_source=OracleSource.Switchboard(),
     ),
 ]
