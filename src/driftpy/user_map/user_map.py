@@ -14,7 +14,7 @@ from driftpy.drift_client import DriftClient
 from driftpy.drift_user import DriftUser
 from driftpy.account_subscription_config import AccountSubscriptionConfig
 
-from driftpy.types import OrderRecord, PickledUser, UserAccount
+from driftpy.types import OrderRecord, PickledUser, UserAccount, compress, decompress
 
 from driftpy.user_map.user_map_config import UserMapConfig, PollingConfig
 from driftpy.user_map.websocket_sub import WebsocketSubscription
@@ -238,13 +238,13 @@ class UserMap(UserMapInterface, DLOBSource):
         with open(filename, "rb") as f:
             users: list[PickledUser] = pickle.load(f)
             for user in users:
-                data = decode_user(user.data)
+                data = decode_user(decompress(user.data))
                 await self.add_pubkey(user.pubkey, DataAndSlot(slot, data))
 
     def dump(self):
         users = []
         for pubkey, user in self.raw.items():
-            users.append(PickledUser(pubkey=pubkey, data=user))
+            users.append(PickledUser(pubkey=pubkey, data=compress(user)))
         self.last_dumped_slot = self.get_slot()
         filename = f"usermap_{self.last_dumped_slot}.pkl"
         with open(filename, "wb") as f:

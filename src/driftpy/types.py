@@ -1,4 +1,4 @@
-import base64
+import zlib
 import inspect
 
 from dataclasses import dataclass, field
@@ -47,6 +47,14 @@ def stack_trace():
     line_number = frame_info.lineno
 
     return f"{file_name}:{line_number}"
+
+
+def compress(data: bytes) -> bytes:
+    return zlib.compress(data, level=9)
+
+
+def decompress(data: bytes) -> bytes:
+    return zlib.decompress(data)
 
 
 @_rust_enum
