@@ -846,6 +846,12 @@ class UserAccount:
 
 
 @dataclass
+class PickledUser:
+    pubkey: Pubkey
+    data: bytes
+
+
+@dataclass
 class UserFees:
     total_fee_paid: int
     total_fee_rebate: int
