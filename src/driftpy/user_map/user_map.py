@@ -235,7 +235,6 @@ class UserMap(UserMapInterface, DLOBSource):
         start = filename.index("_") + 1
         end = filename.index(".")
         slot = int(filename[start:end])
-        print(slot)
         with open(filename, "rb") as f:
             users: list[PickledUser] = pickle.load(f)
             for user in users:
