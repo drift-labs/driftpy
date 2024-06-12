@@ -1,3 +1,4 @@
+import zlib
 import inspect
 
 from dataclasses import dataclass, field
@@ -46,6 +47,14 @@ def stack_trace():
     line_number = frame_info.lineno
 
     return f"{file_name}:{line_number}"
+
+
+def compress(data: bytes) -> bytes:
+    return zlib.compress(data, level=9)
+
+
+def decompress(data: bytes) -> bytes:
+    return zlib.decompress(data)
 
 
 @_rust_enum
@@ -843,6 +852,12 @@ class UserAccount:
     open_auctions: int
     has_open_auction: bool
     padding: list[int] = field(default_factory=lambda: [0] * 21)
+
+
+@dataclass
+class PickledUser:
+    pubkey: Pubkey
+    data: bytes
 
 
 @dataclass

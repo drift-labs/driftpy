@@ -1,6 +1,6 @@
 import asyncio
 import jsonrpcclient
-import traceback
+import pickle
 import base64
 
 from typing import Any, Container, Optional, Dict
@@ -14,7 +14,7 @@ from driftpy.drift_client import DriftClient
 from driftpy.drift_user import DriftUser
 from driftpy.account_subscription_config import AccountSubscriptionConfig
 
-from driftpy.types import OrderRecord, UserAccount
+from driftpy.types import OrderRecord, PickledUser, UserAccount, compress, decompress
 
 from driftpy.user_map.user_map_config import UserMapConfig, PollingConfig
 from driftpy.user_map.websocket_sub import WebsocketSubscription
@@ -31,11 +31,13 @@ from driftpy.decode.user import decode_user
 class UserMap(UserMapInterface, DLOBSource):
     def __init__(self, config: UserMapConfig):
         self.user_map: Dict[str, DriftUser] = {}
+        self.raw: Dict[str, bytes] = {}
         self.last_number_of_sub_accounts = None
         self.sync_lock = asyncio.Lock()
         self.drift_client: DriftClient = config.drift_client
         self.latest_slot: int = 0
         self.is_subscribed = False
+        self.last_dumped_slot = 0
         if config.connection:
             self.connection = config.connection
         else:
@@ -94,6 +96,9 @@ class UserMap(UserMapInterface, DLOBSource):
 
     def values(self):
         return iter(self.user_map.values())
+
+    def clear(self):
+        self.user_map.clear()
 
     def get_user_authority(self, user_account_public_key: str) -> Optional[Pubkey]:
         user = self.user_map.get(user_account_public_key)
@@ -162,14 +167,17 @@ class UserMap(UserMapInterface, DLOBSource):
                 rpc_response_values = parsed_resp.result["value"]
 
                 program_account_buffer_map: Dict[str, Container[Any]] = {}
+                raw: Dict[str, bytes] = {}
 
                 # parse the gPA data before inserting
                 for program_account in rpc_response_values:
                     pubkey = program_account["pubkey"]
-                    data = decode_user(
-                        base64.b64decode(program_account["account"]["data"][0])
-                    )
+                    raw_bytes = base64.b64decode(program_account["account"]["data"][0])
+                    data = decode_user(raw_bytes)
                     program_account_buffer_map[str(pubkey)] = data
+                    raw[str(pubkey)] = raw_bytes
+
+                self.raw = raw
 
                 # "idempotent" insert into usermap
                 for pubkey in program_account_buffer_map.keys():
@@ -217,3 +225,27 @@ class UserMap(UserMapInterface, DLOBSource):
 
     def get_slot(self) -> int:
         return self.latest_slot
+
+    def get_last_dump_filepath(self) -> str:
+        return f"usermap_{self.last_dumped_slot}.pkl"
+
+    async def load(self, filename: Optional[str] = None):
+        if not filename:
+            filename = self.get_last_dump_filepath()
+        start = filename.index("_") + 1
+        end = filename.index(".")
+        slot = int(filename[start:end])
+        with open(filename, "rb") as f:
+            users: list[PickledUser] = pickle.load(f)
+            for user in users:
+                data = decode_user(decompress(user.data))
+                await self.add_pubkey(user.pubkey, DataAndSlot(slot, data))
+
+    def dump(self):
+        users = []
+        for pubkey, user in self.raw.items():
+            users.append(PickledUser(pubkey=pubkey, data=compress(user)))
+        self.last_dumped_slot = self.get_slot()
+        filename = f"usermap_{self.last_dumped_slot}.pkl"
+        with open(filename, "wb") as f:
+            pickle.dump(users, f, pickle.HIGHEST_PROTOCOL)
