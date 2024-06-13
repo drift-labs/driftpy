@@ -1,3 +1,4 @@
+import struct
 import zlib
 import inspect
 
@@ -855,7 +856,7 @@ class UserAccount:
 
 
 @dataclass
-class PickledUser:
+class PickledData:
     pubkey: Pubkey
     data: bytes
 
