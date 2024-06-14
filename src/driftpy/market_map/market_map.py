@@ -1,5 +1,6 @@
 import asyncio
 import base64
+import pickle
 import traceback
 
 from typing import Dict, Optional, Union
@@ -10,8 +11,15 @@ from driftpy.accounts.types import DataAndSlot
 
 from driftpy.market_map.market_map_config import MarketMapConfig
 from driftpy.market_map.websocket_sub import WebsocketSubscription
-from driftpy.memcmp import get_market_type_filter
-from driftpy.types import PerpMarketAccount, SpotMarketAccount, is_variant
+from driftpy.types import (
+    PerpMarketAccount,
+    PickledData,
+    SpotMarketAccount,
+    is_variant,
+    compress,
+    decompress,
+    market_type_to_string,
+)
 
 GenericMarketType = Union[SpotMarketAccount, PerpMarketAccount]
 
@@ -87,3 +95,72 @@ class MarketMap:
     ) -> None:
         await self.must_get(data.data.market_index, data)
         self.market_map[data.data.market_index] = data
+
+    def clear(self):
+        self.market_map.clear()
+
+    def get_last_dump_filepath(self) -> str:
+        return f"{market_type_to_string(self.market_type)}_{self.latest_slot}.pkl"
+
+    async def dump(self):
+        try:
+            filters = []
+            if is_variant(self.market_type, "Perp"):
+                filters.append({"memcmp": {"offset": 0, "bytes": "2pTyMkwXuti"}})
+            else:
+                filters.append({"memcmp": {"offset": 0, "bytes": "HqqNdyfVbzv"}})
+
+            rpc_request = jsonrpcclient.request(
+                "getProgramAccounts",
+                [
+                    str(self.program.program_id),
+                    {"filters": filters, "encoding": "base64", "withContext": True},
+                ],
+            )
+
+            post = self.connection._provider.session.post(
+                self.connection._provider.endpoint_uri,
+                json=rpc_request,
+                headers={"content-encoding": "gzip"},
+            )
+
+            resp = await asyncio.wait_for(post, timeout=30)
+
+            parsed_resp = jsonrpcclient.parse(resp.json())
+
+            slot = int(parsed_resp.result["context"]["slot"])
+
+            self.latest_slot = slot
+
+            rpc_response_values = parsed_resp.result["value"]
+
+            raw: Dict[str, bytes] = {}
+
+            for market in rpc_response_values:
+                pubkey = market["pubkey"]
+                raw_bytes = base64.b64decode(market["account"]["data"][0])
+                raw[str(pubkey)] = raw_bytes
+
+            markets = []
+            for pubkey, market in raw.items():
+                markets.append(PickledData(pubkey=pubkey, data=compress(market)))
+            filename = (
+                f"{market_type_to_string(self.market_type)}_{self.latest_slot}.pkl"
+            )
+            with open(filename, "wb") as f:
+                pickle.dump(markets, f)
+
+        except Exception as e:
+            print(f"error in marketmap pickle: {e}")
+
+    async def load(self, filename: Optional[str] = None):
+        if not filename:
+            filename = self.get_last_dump_filepath()
+        start = filename.index("_") + 1
+        end = filename.index(".")
+        slot = int(filename[start:end])
+        with open(filename, "rb") as f:
+            markets: list[PickledData] = pickle.load(f)
+            for market in markets:
+                data = self.program.coder.accounts.decode(decompress(market.data))
+                await self.add_market(data.market_index, DataAndSlot(slot, data))

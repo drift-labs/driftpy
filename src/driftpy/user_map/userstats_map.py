@@ -1,5 +1,6 @@
 import asyncio
 import base64
+import pickle
 import traceback
 
 from typing import Dict, Optional
@@ -18,10 +19,13 @@ from driftpy.types import (
     LPRecord,
     FundingPaymentRecord,
     LiquidationRecord,
+    PickledData,
     SettlePnlRecord,
     OrderRecord,
     OrderActionRecord,
     UserStatsAccount,
+    compress,
+    decompress,
 )
 from driftpy.events.types import WrappedEvent
 from driftpy.user_map.user_map_config import UserStatsMapConfig
@@ -33,8 +37,10 @@ class UserStatsMap:
         self.user_stats_map: Dict[str, DriftUserStats] = {}
 
         self.sync_lock = asyncio.Lock()
+        self.raw: Dict[str, bytes] = {}
         self.drift_client = config.drift_client
         self.latest_slot: int = 0
+        self.last_dumped_slot: int = 0
         self.connection = config.connection or config.drift_client.connection
 
     async def subscribe(self):
@@ -82,12 +88,16 @@ class UserStatsMap:
                 rpc_response_values = parsed_resp.result["value"]
 
                 program_account_buffer_map: Dict[str, UserStatsAccount] = {}
+                raw: Dict[str, bytes] = {}
 
                 for program_account in rpc_response_values:
                     pubkey = program_account["pubkey"]
                     buffer = base64.b64decode(program_account["account"]["data"][0])
                     data = self.drift_client.program.coder.accounts.decode(buffer)
                     program_account_buffer_map[str(pubkey)] = data
+                    raw[str(pubkey)] = buffer
+
+                self.raw = raw
 
                 for pubkey in program_account_buffer_map.keys():
                     data = program_account_buffer_map.get(pubkey)
@@ -231,3 +241,38 @@ class UserStatsMap:
         if not self.has(pubkey):
             await self.add_user_stat(Pubkey.from_string(pubkey), user_stats)
         return self.get(pubkey)
+
+    def get_last_dump_filepath(self) -> str:
+        return f"userstats_{self.last_dumped_slot}.pkl"
+
+    def clear(self):
+        self.user_stats_map.clear()
+
+    async def load(self, filename: Optional[str] = None):
+        if not filename:
+            filename = self.get_last_dump_filepath()
+        start = filename.index("_") + 1
+        end = filename.index(".")
+        slot = int(filename[start:end])
+        with open(filename, "rb") as f:
+            user_stats: list[PickledData] = pickle.load(f)
+            for user_stat in user_stats:
+                data = self.drift_client.program.coder.accounts.decode(
+                    decompress(user_stat.data)
+                )
+                await self.add_user_stat(
+                    Pubkey.from_string(str(user_stat.pubkey)), DataAndSlot(slot, data)
+                )
+
+    def dump(self):
+        user_stats = []
+        for _pubkey, user_stat in self.raw.items():
+            decoded: UserStatsAccount = self.drift_client.program.coder.accounts.decode(
+                user_stat
+            )
+            auth = decoded.authority
+            user_stats.append(PickledData(pubkey=auth, data=compress(user_stat)))
+        self.last_dumped_slot = self.latest_slot
+        filename = f"userstats_{self.last_dumped_slot}.pkl"
+        with open(filename, "wb") as f:
+            pickle.dump(user_stats, f, pickle.HIGHEST_PROTOCOL)
