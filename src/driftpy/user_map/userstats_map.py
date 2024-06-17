@@ -30,6 +30,7 @@ from driftpy.types import (
 from driftpy.events.types import WrappedEvent
 from driftpy.user_map.user_map_config import UserStatsMapConfig
 from driftpy.user_map.user_map import UserMap
+from driftpy.decode.user_stat import decode_user_stat
 
 
 class UserStatsMap:
@@ -93,7 +94,7 @@ class UserStatsMap:
                 for program_account in rpc_response_values:
                     pubkey = program_account["pubkey"]
                     buffer = base64.b64decode(program_account["account"]["data"][0])
-                    data = self.drift_client.program.coder.accounts.decode(buffer)
+                    data = decode_user_stat(buffer)
                     program_account_buffer_map[str(pubkey)] = data
                     raw[str(pubkey)] = buffer
 
@@ -257,9 +258,7 @@ class UserStatsMap:
         with open(filename, "rb") as f:
             user_stats: list[PickledData] = pickle.load(f)
             for user_stat in user_stats:
-                data = self.drift_client.program.coder.accounts.decode(
-                    decompress(user_stat.data)
-                )
+                data = decode_user_stat(decompress(user_stat.data))
                 await self.add_user_stat(
                     Pubkey.from_string(str(user_stat.pubkey)), DataAndSlot(slot, data)
                 )
@@ -267,9 +266,7 @@ class UserStatsMap:
     def dump(self):
         user_stats = []
         for _pubkey, user_stat in self.raw.items():
-            decoded: UserStatsAccount = self.drift_client.program.coder.accounts.decode(
-                user_stat
-            )
+            decoded: UserStatsAccount = decode_user_stat(user_stat)
             auth = decoded.authority
             user_stats.append(PickledData(pubkey=auth, data=compress(user_stat)))
         self.last_dumped_slot = self.latest_slot
