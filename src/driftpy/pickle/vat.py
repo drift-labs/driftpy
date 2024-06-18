@@ -1,7 +1,7 @@
 import pickle
 from driftpy.drift_client import DriftClient
 from driftpy.market_map.market_map import MarketMap
-from driftpy.types import OraclePriceData, PickledData
+from driftpy.types import PickledData
 from driftpy.user_map.user_map import UserMap
 from driftpy.user_map.userstats_map import UserStatsMap
 
@@ -22,8 +22,8 @@ class Vat:
         self.spot_markets = spot_markets
         self.perp_markets = perp_markets
         self.last_oracle_slot = 0
-        self.market_index_to_perp_price = {}
-        self.market_index_to_spot_price = {}
+        self.perp_oracles = {}
+        self.spot_oracles = {}
 
     async def pickle(self):
         await self.users.sync()
@@ -48,6 +48,9 @@ class Vat:
         await self.spot_markets.load()
         await self.perp_markets.load()
 
+        self.drift_client.resurrect(
+            self.spot_markets, self.perp_markets, self.spot_oracles, self.perp_oracles
+        )
         self.load_oracles()
 
     async def dump_oracles(self):
@@ -62,14 +65,14 @@ class Vat:
 
         spot_oracles = []
         for market in self.drift_client.get_spot_market_accounts():
-            oracle_price = self.drift_client.get_oracle_price_data_for_spot_market(
+            oracle_price_data = self.drift_client.get_oracle_price_data_for_spot_market(
                 market.market_index
             )
             spot_oracles.append(
-                PickledData(pubkey=market.market_index, data=oracle_price)
+                PickledData(pubkey=market.market_index, data=oracle_price_data)
             )
 
-        self.last_oracle_slot = await self.drift_client.connection.get_slot()
+        self.last_oracle_slot = (await self.drift_client.connection.get_slot()).value
 
         with open(f"perporacles_{self.last_oracle_slot}.pkl", "wb") as f:
             pickle.dump(perp_oracles, f)
@@ -81,9 +84,9 @@ class Vat:
         with open(f"perporacles_{self.last_oracle_slot}.pkl", "rb") as f:
             perp_oracles: list[PickledData] = pickle.load(f)
             for oracle in perp_oracles:
-                self.market_index_to_perp_price[oracle.pubkey] = oracle.data
+                self.perp_oracles[oracle.pubkey] = oracle.data
 
         with open(f"spotoracles_{self.last_oracle_slot}.pkl", "rb") as f:
             spot_oracles: list[PickledData] = pickle.load(f)
             for oracle in spot_oracles:
-                self.market_index_to_spot_price[oracle.pubkey] = oracle.data
+                self.spot_oracles[oracle.pubkey] = oracle.data
