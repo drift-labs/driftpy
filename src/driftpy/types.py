@@ -1,3 +1,4 @@
+from enum import Enum, auto
 import struct
 import zlib
 import inspect
@@ -245,6 +246,10 @@ class OracleSource:
     Pyth1M = constructor()
     PythStableCoin = constructor()
     Prelaunch = constructor()
+    PythPull = constructor()
+    PythPull1K = constructor()
+    PythPull1M = constructor()
+    PythPullStableCoin = constructor()
 
 
 @_rust_enum
@@ -1346,3 +1351,18 @@ class PrelaunchOracle:
 class SequenceAccount:
     sequence_num: int
     authority: Pubkey
+
+
+@dataclass
+class PriceFeedMessage:
+    price: int
+    conf: int
+    exponent: int
+    ema_price: int
+    ema_conf: int
+
+
+@dataclass
+class PriceUpdateV2:
+    price_message: PriceFeedMessage
+    posted_slot: int
