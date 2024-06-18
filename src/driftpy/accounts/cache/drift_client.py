@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Any, Optional
 
 from anchorpy import Program
 
@@ -14,6 +14,8 @@ from driftpy.accounts import (
     get_perp_market_account_and_slot,
 )
 from driftpy.constants.numeric_constants import QUOTE_SPOT_MARKET_INDEX
+
+# from driftpy.market_map.market_map import MarketMap
 from driftpy.types import (
     OracleInfo,
     PerpMarketAccount,
@@ -36,7 +38,7 @@ class CachedDriftClientAccountSubscriber(DriftClientAccountSubscriber):
     ):
         self.program = program
         self.commitment = commitment
-        self.cache = None
+        self.cache = {"spot_markets": {}, "perp_markets": {}, "oracle_price_data": {}}
         self.perp_market_indexes = perp_market_indexes
         self.spot_market_indexes = spot_market_indexes
         self.oracle_infos = oracle_infos
@@ -46,8 +48,13 @@ class CachedDriftClientAccountSubscriber(DriftClientAccountSubscriber):
         await self.update_cache()
 
     async def update_cache(self):
-        if self.cache is None:
-            self.cache = {}
+        is_empty = all(not d for d in self.cache.values())
+        if is_empty:
+            self.cache = {
+                "spot_markets": {},
+                "perp_markets": {},
+                "oracle_price_data": {},
+            }
 
         state_and_slot = await get_state_account_and_slot(self.program)
         self.cache["state"] = state_and_slot
@@ -146,6 +153,29 @@ class CachedDriftClientAccountSubscriber(DriftClientAccountSubscriber):
 
     async def fetch(self):
         await self.update_cache()
+
+    def resurrect(
+        self,
+        spot_markets,  # MarketMap
+        perp_markets,  # MarketMap
+        spot_oracles: dict[int, OraclePriceData],
+        perp_oracles: dict[int, OraclePriceData],
+    ):
+        sort_markets = lambda markets: sorted(
+            markets.values(), key=lambda market: market.data.market_index
+        )
+        self.cache["spot_markets"] = sort_markets(spot_markets)
+        self.cache["perp_markets"] = sort_markets(perp_markets)
+
+        for market_index, oracle_price_data in spot_oracles.items():
+            corresponding_market = self.cache["spot_markets"][market_index]
+            oracle_pubkey = corresponding_market.oracle
+            self.cache["oracle_price_data"][str(oracle_pubkey)] = oracle_price_data
+
+        for market_index, oracle_price_data in perp_oracles.items():
+            corresponding_market = self.cache["perp_markets"][market_index]
+            oracle_pubkey = corresponding_market.amm.oracle
+            self.cache["oracle_price_data"][str(oracle_pubkey)] = oracle_price_data
 
     def get_state_account_and_slot(self) -> Optional[DataAndSlot[StateAccount]]:
         return self.cache["state"]

@@ -204,6 +204,17 @@ class DriftClient:
         for sub_account_id in self.sub_account_ids:
             await self.add_user(sub_account_id)
 
+    def resurrect(self, spot_markets, perp_markets, spot_oracles, perp_oracles):
+        from driftpy.accounts.cache import CachedDriftClientAccountSubscriber
+
+        if not isinstance(self.account_subscriber, CachedDriftClientAccountSubscriber):
+            raise ValueError(
+                'You can only resurrect a DriftClient that was initialized with AccountSubscriptionConfig("cached")'
+            )
+        self.account_subscriber.resurrect(
+            spot_markets, perp_markets, spot_oracles, perp_oracles
+        )
+
     async def add_user(self, sub_account_id: int):
         if sub_account_id in self.users:
             return
