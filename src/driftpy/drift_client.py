@@ -296,11 +296,14 @@ class DriftClient:
         data = self.account_subscriber.get_oracle_price_data_and_slot_for_perp_market(
             market_index
         )
-        return getattr(
-            data,
-            "data",
-            None,
-        )
+        if isinstance(data, DataAndSlot):
+            return getattr(
+                data,
+                "data",
+                None,
+            )
+
+        return data
 
     def get_oracle_price_data_for_spot_market(
         self, market_index: int
@@ -308,11 +311,14 @@ class DriftClient:
         data = self.account_subscriber.get_oracle_price_data_and_slot_for_spot_market(
             market_index
         )
-        return getattr(
-            data,
-            "data",
-            None,
-        )
+        if isinstance(data, DataAndSlot):
+            return getattr(
+                data,
+                "data",
+                None,
+            )
+
+        return data
 
     def convert_to_spot_precision(self, amount: Union[int, float], market_index) -> int:
         spot_market = self.get_spot_market_account(market_index)

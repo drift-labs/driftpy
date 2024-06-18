@@ -1,4 +1,6 @@
 import pickle
+import os
+from typing import Optional
 from driftpy.drift_client import DriftClient
 from driftpy.market_map.market_map import MarketMap
 from driftpy.types import PickledData
@@ -37,21 +39,30 @@ class Vat:
 
         await self.dump_oracles()
 
-    async def unpickle(self):
+    async def unpickle(
+        self,
+        users_filename: Optional[str] = None,
+        user_stats_filename: Optional[str] = None,
+        spot_markets_filename: Optional[str] = None,
+        perp_markets_filename: Optional[str] = None,
+        spot_oracles_filename: Optional[str] = None,
+        perp_oracles_filename: Optional[str] = None,
+    ):
         self.users.clear()
         self.user_stats.clear()
         self.spot_markets.clear()
         self.perp_markets.clear()
 
-        await self.users.load()
-        await self.user_stats.load()
-        await self.spot_markets.load()
-        await self.perp_markets.load()
+        await self.users.load(users_filename)
+        await self.user_stats.load(user_stats_filename)
+        await self.spot_markets.load(spot_markets_filename)
+        await self.perp_markets.load(perp_markets_filename)
+
+        self.load_oracles(spot_oracles_filename, perp_oracles_filename)
 
         self.drift_client.resurrect(
             self.spot_markets, self.perp_markets, self.spot_oracles, self.perp_oracles
         )
-        self.load_oracles()
 
     async def dump_oracles(self):
         perp_oracles = []
@@ -80,13 +91,30 @@ class Vat:
         with open(f"spotoracles_{self.last_oracle_slot}.pkl", "wb") as f:
             pickle.dump(spot_oracles, f)
 
-    def load_oracles(self):
-        with open(f"perporacles_{self.last_oracle_slot}.pkl", "rb") as f:
-            perp_oracles: list[PickledData] = pickle.load(f)
-            for oracle in perp_oracles:
-                self.perp_oracles[oracle.pubkey] = oracle.data
+    def load_oracles(
+        self, spot_filename: Optional[str] = None, perp_filename: Optional[str] = None
+    ):
+        if perp_filename is None:
+            perp_filename = f"perporacles_{self.last_oracle_slot}.pkl"
+        if spot_filename is None:
+            spot_filename = f"spotoracles_{self.last_oracle_slot}.pkl"
 
-        with open(f"spotoracles_{self.last_oracle_slot}.pkl", "rb") as f:
-            spot_oracles: list[PickledData] = pickle.load(f)
-            for oracle in spot_oracles:
-                self.spot_oracles[oracle.pubkey] = oracle.data
+        if os.path.exists(perp_filename):
+            with open(perp_filename, "rb") as f:
+                perp_oracles: list[PickledData] = pickle.load(f)
+                for oracle in perp_oracles:
+                    self.perp_oracles[
+                        oracle.pubkey
+                    ] = oracle.data  # oracle.pubkey is actually a market index
+        else:
+            raise FileNotFoundError(f"File {perp_filename} not found")
+
+        if os.path.exists(spot_filename):
+            with open(spot_filename, "rb") as f:
+                spot_oracles: list[PickledData] = pickle.load(f)
+                for oracle in spot_oracles:
+                    self.spot_oracles[
+                        oracle.pubkey
+                    ] = oracle.data  # oracle.pubkey is actually a market index
+        else:
+            raise FileNotFoundError(f"File {spot_filename} not found")
