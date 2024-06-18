@@ -1,4 +1,5 @@
 import asyncio
+import os
 import jsonrpcclient
 import pickle
 import base64
@@ -232,6 +233,8 @@ class UserMap(UserMapInterface, DLOBSource):
     async def load(self, filename: Optional[str] = None):
         if not filename:
             filename = self.get_last_dump_filepath()
+        if not os.path.exists(filename):
+            raise FileNotFoundError(f"File {filename} not found")
         start = filename.index("_") + 1
         end = filename.index(".")
         slot = int(filename[start:end])

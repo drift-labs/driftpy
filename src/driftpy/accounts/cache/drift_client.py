@@ -169,12 +169,12 @@ class CachedDriftClientAccountSubscriber(DriftClientAccountSubscriber):
 
         for market_index, oracle_price_data in spot_oracles.items():
             corresponding_market = self.cache["spot_markets"][market_index]
-            oracle_pubkey = corresponding_market.oracle
+            oracle_pubkey = corresponding_market.data.oracle
             self.cache["oracle_price_data"][str(oracle_pubkey)] = oracle_price_data
 
         for market_index, oracle_price_data in perp_oracles.items():
             corresponding_market = self.cache["perp_markets"][market_index]
-            oracle_pubkey = corresponding_market.amm.oracle
+            oracle_pubkey = corresponding_market.data.amm.oracle
             self.cache["oracle_price_data"][str(oracle_pubkey)] = oracle_price_data
 
     def get_state_account_and_slot(self) -> Optional[DataAndSlot[StateAccount]]:
