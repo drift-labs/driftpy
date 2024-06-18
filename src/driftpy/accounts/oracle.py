@@ -1,17 +1,18 @@
-import asyncio
 from pathlib import Path
 
-from anchorpy import Coder, Idl, Program
+from anchorpy import Coder, Idl
 
 import driftpy
 from .types import DataAndSlot
 from driftpy.constants.numeric_constants import *
-from driftpy.types import OracleSource, OraclePriceData, PrelaunchOracle, is_variant
+from driftpy.types import OracleSource, OraclePriceData, is_variant
 
 from solders.pubkey import Pubkey
 from solders.account import Account
 from pythclient.pythaccounts import PythPriceInfo, _ACCOUNT_HEADER_BYTES, EmaType
 from solana.rpc.async_api import AsyncClient
+from driftpy.decode.pull_oracle import decode_pull_oracle
+
 import struct
 
 file = Path(str(driftpy.__path__[0]) + "/idl/switchboard.json")
@@ -113,7 +114,7 @@ def decode_pyth_price_info(
 
     raw_price_to_price_precision = pyth_price_info.raw_price / (
         10**raw_price_scaler
-    )  # exponent decimals from oracle to PRICE_PRECISION of 6
+    )  # exponent decimals from oracle to PRICE_PRECISION 1e6
 
     scale = 1
     if "1K" in str(oracle_source):
@@ -169,8 +170,36 @@ def decode_prelaunch_price_info(data: bytes):
     )
 
 
+def decode_pyth_pull_price_info(
+    data: bytes, oracle_source: OracleSource = OracleSource.PythPull()
+):
+    price_update = decode_pull_oracle(data)
+
+    raw_price_scaler = abs(price_update.price_message.exponent) - 6
+
+    raw_price_to_price_precision = price_update.price_message.price / (
+        10**raw_price_scaler
+    )  # exponent decimals from oracle to PRICE_PRECISION 1e6
+
+    if "1K" in str(oracle_source):
+        raw_price_to_price_precision *= 1e3
+    elif "1M" in str(oracle_source):
+        raw_price_to_price_precision *= 1e6
+
+    return OraclePriceData(
+        price=int(raw_price_to_price_precision),
+        slot=price_update.posted_slot,
+        confidence=price_update.price_message.conf,
+        twap=price_update.price_message.ema_price,
+        twap_confidence=price_update.price_message.ema_conf,
+        has_sufficient_number_of_data_points=True,
+    )
+
+
 def decode_oracle(oracle_ai: bytes, oracle_source: OracleSource):
-    if "Pyth" in str(oracle_source):
+    if "PythPull" in str(oracle_source):
+        return decode_pyth_pull_price_info(oracle_ai, oracle_source)
+    elif "Pyth" in str(oracle_source):
         return decode_pyth_price_info(oracle_ai, oracle_source)
     elif "Switchboard" in str(oracle_source):
         return decode_swb_price_info(oracle_ai)
@@ -181,6 +210,8 @@ def decode_oracle(oracle_ai: bytes, oracle_source: OracleSource):
 
 
 def get_oracle_decode_fn(oracle_source: OracleSource):
+    if "PythPull" in str(oracle_source):
+        return lambda data: decode_pyth_pull_price_info(data, oracle_source)
     if "Pyth" in str(oracle_source):
         return lambda data: decode_pyth_price_info(data, oracle_source)
     elif "Switchboard" in str(oracle_source):

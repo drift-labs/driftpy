@@ -1,7 +1,6 @@
 from driftpy.decode.user import (
     read_uint8,
     read_uint16_le,
-    read_int32_le,
     read_bigint64le,
 )
 from driftpy.types import UserStatsAccount, UserFees
