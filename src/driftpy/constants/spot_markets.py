@@ -163,4 +163,11 @@ mainnet_spot_market_configs: list[SpotMarketConfig] = [
         oracle_source=OracleSource.Switchboard(),
         mint=Pubkey.from_string("Dso1bDeDjCQxTrWHqUUi63oBvV7Mdm6WaobLbQ7gnPQ"),
     ),
+    SpotMarketConfig(
+        symbol="USDY",
+        market_index=18,
+        oracle=Pubkey.from_string("DiqUGbq5CV8Tjcae1whjrX97qPo6gU7BKAvKNFc2vrX8"),
+        oracle_source=OracleSource.Switchboard(),
+        mint=Pubkey.from_string("A1KLoBrKBde8Ty9qtNQUtq3C2ortoC3u7twggz7sEto6"),
+    ),
 ]
