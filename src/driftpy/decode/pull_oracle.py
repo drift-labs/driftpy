@@ -12,7 +12,6 @@ def decode_pull_oracle(buffer: bytes) -> PriceUpdateV2:
     offset += 32  # skip write_authority
 
     verification_level_flag = read_uint8(buffer, offset)
-    print(verification_level_flag)
     if verification_level_flag & 0x1:
         offset += 1  # skip verification_level Full
     else:
