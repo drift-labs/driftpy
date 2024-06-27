@@ -422,4 +422,11 @@ mainnet_perp_market_configs: list[PerpMarketConfig] = [
         oracle=Pubkey.from_string("Gcm39uDrFyRCZko4hdrKMTBQsboPJHEd4RwnWhWFKr9a"),
         oracle_source=OracleSource.Switchboard(),
     ),
+    PerpMarketConfig(
+        symbol="ZEX-PERP",
+        base_asset_symbol="ZEX",
+        market_index=33,
+        oracle=Pubkey.from_string("4gdbqxkMrF1bYVeEJKRmTqCCvJjRCZrRhxvriGY6SwLj"),
+        oracle_source=OracleSource.Switchboard(),
+    ),
 ]
