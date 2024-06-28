@@ -173,7 +173,7 @@ mainnet_spot_market_configs: list[SpotMarketConfig] = [
     SpotMarketConfig(
         symbol="JLP",
         market_index=19,
-        oracle=Pubkey.from_string("HR1mmjm2GeTRvdaN9VCy3wyx35h8Pimjv5wyzZ5NJmxE"),
+        oracle=Pubkey.from_string("pmHEXBam7kbmCCg5ED5V7RNMN8e34sKu338KeuFAGof"),
         oracle_source=OracleSource.Switchboard(),
         mint=Pubkey.from_string("27G8MtK7VtTcCHkpASjSDdkWWYfoqT6ggEuKidVJidD4"),
     ),
