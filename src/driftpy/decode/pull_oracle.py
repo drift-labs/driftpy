@@ -9,7 +9,7 @@ from driftpy.types import PriceUpdateV2, PriceFeedMessage
 def decode_pull_oracle(buffer: bytes) -> PriceUpdateV2:
     offset = 8
 
-    offset += 32  # skip write_authority
+    offset += 32  # skip 0
 
     verification_level_flag = read_uint8(buffer, offset)
     if verification_level_flag & 0x1:

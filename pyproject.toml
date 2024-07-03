@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "driftpy"
-version = "0.7.63"
+version = "0.7.64"
 description = "A Python client for the Drift DEX"
 authors = ["x19 <https://twitter.com/0xNineteen@gmail.com>", "bigz <https://twitter.com/bigz_pubkey>", "frank <https://twitter.com/soundsonacid>"]
 license = "MIT"
@@ -75,7 +75,7 @@ urllib3 = "1.26.13"
 websockets = "10.4"
 yarl = "1.8.2"
 zstandard = "0.18.0"
-jinja2 = "<3.1"
+jinja2 = "^3.1.2"
 mypy = "^1.7.0"
 deprecated = "^1.2.14"
 events = "^0.5"

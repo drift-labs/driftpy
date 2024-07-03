@@ -429,4 +429,11 @@ mainnet_perp_market_configs: list[PerpMarketConfig] = [
         oracle=Pubkey.from_string("4gdbqxkMrF1bYVeEJKRmTqCCvJjRCZrRhxvriGY6SwLj"),
         oracle_source=OracleSource.Switchboard(),
     ),
+    PerpMarketConfig(
+        symbol="POPCAT-PERP",
+        base_asset_symbol="POPCAT",
+        market_index=32,
+        oracle=Pubkey.from_string("2stQe1XLGkuTZ22gQrgZKsb93iG9mWXSLfANMPRjs5Ky"),
+        oracle_source=OracleSource.Switchboard(),
+    ),
 ]
