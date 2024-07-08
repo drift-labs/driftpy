@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "driftpy"
-version = "0.7.64"
+version = "0.7.65"
 description = "A Python client for the Drift DEX"
 authors = ["x19 <https://twitter.com/0xNineteen@gmail.com>", "bigz <https://twitter.com/bigz_pubkey>", "frank <https://twitter.com/soundsonacid>"]
 license = "MIT"
@@ -44,7 +44,7 @@ httpx = "0.23.1"
 idna = "3.4"
 iniconfig = "1.1.1"
 jsonalias = "0.1.1"
-jsonrpcclient = "4.0.2"
+jsonrpcclient = "4.0.3"
 jsonrpcserver = "5.0.9"
 jsonschema = "4.17.3"
 loguru = "0.6.0"
