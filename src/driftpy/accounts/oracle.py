@@ -39,7 +39,17 @@ def convert_switchboard_decimal(mantissa: int, scale: int = 1):
 async def get_oracle_price_data_and_slot(
     connection: AsyncClient, address: Pubkey, oracle_source=OracleSource.Pyth()
 ) -> DataAndSlot[OraclePriceData]:
-    if "Pyth" in str(oracle_source):
+    if "Pull" in str(oracle_source):
+        rpc_response = await connection.get_account_info(address)
+        rpc_response_slot = rpc_response.context.slot
+
+        oracle_price_data = decode_pyth_pull_price_info(
+            rpc_response.value.data, oracle_source
+        )
+
+        return DataAndSlot(data=oracle_price_data, slot=rpc_response_slot)
+
+    elif "Pyth" in str(oracle_source):
         rpc_reponse = await connection.get_account_info(address)
         rpc_response_slot = rpc_reponse.context.slot
 
