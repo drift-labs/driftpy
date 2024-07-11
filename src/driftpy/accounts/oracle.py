@@ -220,7 +220,7 @@ def decode_oracle(oracle_ai: bytes, oracle_source: OracleSource):
 
 
 def get_oracle_decode_fn(oracle_source: OracleSource):
-    if "PythPull" in str(oracle_source):
+    if "Pull" in str(oracle_source):
         return lambda data: decode_pyth_pull_price_info(data, oracle_source)
     if "Pyth" in str(oracle_source):
         return lambda data: decode_pyth_price_info(data, oracle_source)
