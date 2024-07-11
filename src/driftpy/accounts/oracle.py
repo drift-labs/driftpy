@@ -207,7 +207,8 @@ def decode_pyth_pull_price_info(
 
 
 def decode_oracle(oracle_ai: bytes, oracle_source: OracleSource):
-    if "PythPull" in str(oracle_source):
+    print(oracle_source)
+    if "Pull" in str(oracle_source):
         return decode_pyth_pull_price_info(oracle_ai, oracle_source)
     elif "Pyth" in str(oracle_source):
         return decode_pyth_price_info(oracle_ai, oracle_source)
