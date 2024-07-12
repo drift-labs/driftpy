@@ -1,7 +1,8 @@
-name: Push
+name: CI
 on:
   push:
-    branches: [master]
+    branches:
+      - master
   pull_request:
     branches: [master]
 
@@ -12,7 +13,7 @@ defaults:
 
 jobs:
   black:
-    runs-on: ubuntu-latest
+    runs-on: ubicloud
     steps:
       - uses: actions/checkout@v3
       - name: Set up Python 3.10
@@ -27,7 +28,7 @@ jobs:
         run: black --check .
 
   tests:
-    runs-on: ubuntu-latest
+    runs-on: ubicloud
     steps:
       - uses: actions/checkout@v3
       - name: Set up Python 3.10
@@ -47,7 +48,7 @@ jobs:
         run: bash scripts/ci.sh
 
   bump-version:
-    runs-on: ubuntu-latest
+    runs-on: ubicloud
     if: github.event_name == 'push' && github.ref == 'refs/heads/master'
     steps:
       - uses: actions/checkout@v3
@@ -72,7 +73,7 @@ jobs:
           branch: ${{ github.ref }}
 
   release:
-    runs-on: ubuntu-latest
+    runs-on: ubicloud
     needs: [black, tests, bump-version]
     if: github.event_name == 'push' && github.ref == 'refs/heads/master'
     steps:
