@@ -50,47 +50,47 @@ jobs:
         run: poetry run bash scripts/ci.sh
 
   bump-version:
-    runs-on: ubicloud
-    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
-    steps:
-      - uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-      - name: Set up Python 3.10
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.10.10'
-      - name: Run version bump script
-        run: python scripts/bump.py
-      - name: Commit changes
-        run: |
-          git config --local user.email "github-actions[bot]@users.noreply.github.com"
-          git config --local user.name "github-actions[bot]"
-          git add pyproject.toml src/driftpy/__init__.py .bumpversion.cfg
-          git commit -m "Bump version [skip ci]"
-      - name: Push changes
-        uses: ad-m/github-push-action@master
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          branch: ${{ github.ref }}
+      runs-on: ubicloud
+      if: github.event_name == 'push'
+      steps:
+        - uses: actions/checkout@v3
+          with:
+            fetch-depth: 0
+        - name: Set up Python 3.10
+          uses: actions/setup-python@v4
+          with:
+            python-version: '3.10.10'
+        - name: Run version bump script
+          run: python scripts/bump.py
+        - name: Commit changes
+          run: |
+            git config --local user.email "github-actions[bot]@users.noreply.github.com"
+            git config --local user.name "github-actions[bot]"
+            git add pyproject.toml src/driftpy/__init__.py .bumpversion.cfg
+            git commit -m "Bump version [skip ci]"
+        - name: Push changes
+          uses: ad-m/github-push-action@master
+          with:
+            github_token: ${{ secrets.GITHUB_TOKEN }}
+            branch: ${{ github.ref_name }}
 
-  release:
-    runs-on: ubicloud
-    needs: [black, tests, bump-version]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
-    steps:
-    - name: Checkout
-      uses: actions/checkout@v3
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.10.10' 
-    - name: Install and configure Poetry
-      uses: snok/install-poetry@v1.3.3
-      with:
-        version: 1.4.2
-        virtualenvs-create: true
-        virtualenvs-in-project: true
-        installer-parallel: true
-    - run: poetry build
-    - run: poetry publish --username=__token__ --password=${{ secrets.PYPI_TOKEN }}
+  # release:
+  #   runs-on: ubicloud
+  #   needs: [black, tests, bump-version]
+  #   if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+  #   steps:
+  #   - name: Checkout
+  #     uses: actions/checkout@v3
+  #   - name: Set up Python
+  #     uses: actions/setup-python@v4
+  #     with:
+  #       python-version: '3.10.10' 
+  #   - name: Install and configure Poetry
+  #     uses: snok/install-poetry@v1.3.3
+  #     with:
+  #       version: 1.4.2
+  #       virtualenvs-create: true
+  #       virtualenvs-in-project: true
+  #       installer-parallel: true
+  #   - run: poetry build
+  #   - run: poetry publish --username=__token__ --password=${{ secrets.PYPI_TOKEN }}
