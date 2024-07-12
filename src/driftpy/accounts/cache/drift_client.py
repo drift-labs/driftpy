@@ -75,9 +75,9 @@ class CachedDriftClientAccountSubscriber(DriftClientAccountSubscriber):
                     spot_market_and_slot.data.oracle,
                     spot_market_and_slot.data.oracle_source,
                 )
-                oracle_data[
-                    str(spot_market_and_slot.data.oracle)
-                ] = oracle_price_data_and_slot
+                oracle_data[str(spot_market_and_slot.data.oracle)] = (
+                    oracle_price_data_and_slot
+                )
 
             self.cache["spot_markets"] = spot_markets
 
@@ -92,9 +92,9 @@ class CachedDriftClientAccountSubscriber(DriftClientAccountSubscriber):
                     perp_market_and_slot.data.amm.oracle,
                     perp_market_and_slot.data.amm.oracle_source,
                 )
-                oracle_data[
-                    str(perp_market_and_slot.data.amm.oracle)
-                ] = oracle_price_data_and_slot
+                oracle_data[str(perp_market_and_slot.data.amm.oracle)] = (
+                    oracle_price_data_and_slot
+                )
 
             self.cache["perp_markets"] = perp_markets
 
@@ -122,9 +122,9 @@ class CachedDriftClientAccountSubscriber(DriftClientAccountSubscriber):
                         spot_market_and_slot.data.oracle,
                         spot_market_and_slot.data.oracle_source,
                     )
-                    oracle_data[
-                        str(spot_market_and_slot.data.oracle)
-                    ] = oracle_price_data_and_slot
+                    oracle_data[str(spot_market_and_slot.data.oracle)] = (
+                        oracle_price_data_and_slot
+                    )
 
             self.cache["spot_markets"] = spot_markets
 
@@ -143,9 +143,9 @@ class CachedDriftClientAccountSubscriber(DriftClientAccountSubscriber):
                         perp_market_and_slot.data.amm.oracle,
                         perp_market_and_slot.data.amm.oracle_source,
                     )
-                    oracle_data[
-                        str(perp_market_and_slot.data.amm.oracle)
-                    ] = oracle_price_data_and_slot
+                    oracle_data[str(perp_market_and_slot.data.amm.oracle)] = (
+                        oracle_price_data_and_slot
+                    )
 
             self.cache["perp_markets"] = perp_markets
 
