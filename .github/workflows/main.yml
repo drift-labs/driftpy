@@ -43,7 +43,8 @@ jobs:
           virtualenvs-in-project: true
           installer-parallel: true
       - name: Install dependencies
-        run: poetry install
+        run: poetry install 
+      - name: Install pytest
         run: poetry run pip install pytest
       - name: Run tests
         run: bash scripts/ci.sh
