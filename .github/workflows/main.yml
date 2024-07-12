@@ -47,7 +47,7 @@ jobs:
       - name: Install pytest
         run: poetry run pip install pytest
       - name: Run tests
-        run: bash scripts/ci.sh
+        run: poetry run bash scripts/ci.sh
 
   bump-version:
     runs-on: ubicloud
