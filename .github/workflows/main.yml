@@ -44,6 +44,7 @@ jobs:
           installer-parallel: true
       - name: Install dependencies
         run: poetry install
+        run: poetry run pip install pytest
       - name: Run tests
         run: bash scripts/ci.sh
 
