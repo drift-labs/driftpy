@@ -1,1 +1,0 @@
-pytest -v -s -x tests/prelaunch.py

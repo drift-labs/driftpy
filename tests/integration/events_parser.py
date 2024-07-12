@@ -1,5 +1,3 @@
-import asyncio
-import pytest
 from pytest import mark
 
 from solana.rpc.async_api import AsyncClient

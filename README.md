@@ -56,19 +56,6 @@ If you intend to use `AccountSubscriptionConfig("demo)`, you *must* call `get_ma
 
 `bash setup.sh`
 
-
-## Building the docs
-
-Local Docs: `mkdocs serve`
-
-Updating public docs: `poetry run mkdocs gh-deploy --force`
-
-## Releasing a new version of the package
-
-- `python new_release.py`
-- Create a new release at https://github.com/drift-labs/driftpy/releases.
-  - (The CI process will upload a new version of the package to [PyPI](https://pypi.org/project/driftpy/))
-
 # Development
 
 Ensure correct python version (using pyenv is recommended):
@@ -85,10 +72,7 @@ poetry install
 
 Run tests:
 ```
-poetry run bash test.sh
+poetry run bash test-scripts/integration_test.sh
+poetry run bash test-scripts/math_tests.sh
 ```
 
-Run Acceptance Tests
-```
-poetry run bash acceptance_test.sh
-```

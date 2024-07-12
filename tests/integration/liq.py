@@ -2,6 +2,7 @@ import asyncio
 from math import sqrt
 
 from pytest import fixture, mark
+import pytest
 from pytest_asyncio import fixture as async_fixture
 from solders.keypair import Keypair
 from solders.pubkey import Pubkey
@@ -33,6 +34,15 @@ N_LP_SHARES = 0
 LIQUIDATION_DEVIATION_TOLERANCE = 0.0001
 
 workspace = workspace_fixture("protocol-v2", build_cmd="anchor build", scope="session")
+
+
+@pytest.fixture(scope="session")
+def event_loop():
+    import asyncio
+
+    loop = asyncio.get_event_loop_policy().new_event_loop()
+    yield loop
+    loop.close()
 
 
 @async_fixture(scope="session")
@@ -107,7 +117,6 @@ async def initialized_market(drift_client: Admin, workspace: WorkspaceType) -> P
 @mark.asyncio
 async def test_spot(
     drift_client: Admin,
-    initialized_spot_market: Pubkey,
 ):
     program = drift_client.program
     spot_market = await get_spot_market_account(program, 0)

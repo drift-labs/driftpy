@@ -1,3 +1,4 @@
+import asyncio
 from typing import Optional
 from driftpy.accounts.types import DataAndSlot, WebsocketProgramAccountOptions
 from driftpy.accounts.ws.program_account_subscriber import (
@@ -50,4 +51,4 @@ class AuctionSubscriber:
     def unsubscribe(self):
         if self.subscriber is None:
             return
-        self.subscriber.unsubscribe()
+        asyncio.create_task(self.subscriber.unsubscribe())

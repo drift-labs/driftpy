@@ -247,9 +247,9 @@ class OracleSource:
     PythStableCoin = constructor()
     Prelaunch = constructor()
     PythPull = constructor()
-    PythPull1K = constructor()
-    PythPull1M = constructor()
-    PythPullStableCoin = constructor()
+    Pyth1KPull = constructor()
+    Pyth1MPull = constructor()
+    PythStableCoinPull = constructor()
 
 
 @_rust_enum

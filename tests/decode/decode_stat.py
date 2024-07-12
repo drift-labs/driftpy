@@ -1,14 +1,18 @@
 import base64
-from pathlib import Path
 import time
-from anchorpy import Idl, Program, Provider, WorkspaceType, workspace_fixture
+
+from pathlib import Path
 from pytest import fixture, mark
+
+from anchorpy import Idl, Program
+
+from solders.pubkey import Pubkey
 
 import driftpy
 from driftpy.types import UserStatsAccount
 from driftpy.decode.user_stat import decode_user_stat
-from stat_decode_strings import stats
-from solders.pubkey import Pubkey
+
+from tests.decode.stat_decode_strings import stats
 
 
 @fixture(scope="session")

@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from driftpy.types import OracleSource
-from solders.pubkey import Pubkey
+from solders.pubkey import Pubkey  # type: ignore
 
 
 @dataclass
@@ -12,12 +12,14 @@ class SpotMarketConfig:
     mint: Pubkey
 
 
+WRAPPED_SOL_MINT = Pubkey.from_string("So11111111111111111111111111111111111111112")
+
 devnet_spot_market_configs: list[SpotMarketConfig] = [
     SpotMarketConfig(
         symbol="USDC",
         market_index=0,
-        oracle=Pubkey.default(),
-        oracle_source=OracleSource.QuoteAsset(),
+        oracle=Pubkey.from_string("5SSkXsEKQepHHAewytPVwdej4epN1nxgLVM84L4KXgy7"),
+        oracle_source=OracleSource.PythStableCoin(),
         mint=Pubkey.from_string("8zGuJQqwhZafTah7Uc7Z4tXRnguqkn5KLFAP8oV6PHe2"),
     ),
     SpotMarketConfig(
@@ -25,7 +27,7 @@ devnet_spot_market_configs: list[SpotMarketConfig] = [
         market_index=1,
         oracle=Pubkey.from_string("J83w4HKfqxwcq3BEMMkPFSppX3gqekLyLJBexebFVkix"),
         oracle_source=OracleSource.Pyth(),
-        mint=Pubkey.from_string("So11111111111111111111111111111111111111112"),
+        mint=WRAPPED_SOL_MINT,
     ),
     SpotMarketConfig(
         symbol="BTC",
@@ -49,7 +51,7 @@ mainnet_spot_market_configs: list[SpotMarketConfig] = [
         market_index=1,
         oracle=Pubkey.from_string("H6ARHf6YXhGYeQfUzQNGk6rDNnLBQKrenN712K4AQJEG"),
         oracle_source=OracleSource.Pyth(),
-        mint=Pubkey.from_string("So11111111111111111111111111111111111111112"),
+        mint=WRAPPED_SOL_MINT,
     ),
     SpotMarketConfig(
         symbol="mSOL",
@@ -152,7 +154,7 @@ mainnet_spot_market_configs: list[SpotMarketConfig] = [
     SpotMarketConfig(
         symbol="INF",
         market_index=16,
-        oracle=Pubkey.from_string("6AQHz9mpGNjyVafcWdqzzgsJq14Cs8gG6MiQKmdAgCuP"),
+        oracle=Pubkey.from_string("81SuhCcCQri9w4yPyv56ErtpXuncVyFCDT3fYehceG1M"),
         oracle_source=OracleSource.Switchboard(),
         mint=Pubkey.from_string("5oVNBeEEQvYi1cX3ir8Dx5n1P7pdxydbGF2X4TxVusJm"),
     ),
@@ -180,7 +182,7 @@ mainnet_spot_market_configs: list[SpotMarketConfig] = [
     SpotMarketConfig(
         symbol="POPCAT",
         market_index=20,
-        oracle=Pubkey.from_string("2stQe1XLGkuTZ22gQrgZKsb93iG9mWXSLfANMPRjs5Ky"),
+        oracle=Pubkey.from_string("3GjpjC8TWsPqjyFSiR7saGxgzD8zqYJNsBnWpenZPEBy"),
         oracle_source=OracleSource.Switchboard(),
         mint=Pubkey.from_string("7GCihgDB8fe6KNjn2MYtkzZcRjQy3t9GHdC8uHYmW2hr"),
     ),
