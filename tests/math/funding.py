@@ -5,7 +5,7 @@ from driftpy.constants.numeric_constants import *
 from driftpy.types import *
 from driftpy.math.funding import calculate_long_short_funding_and_live_twaps
 
-from dlob_test_constants import mock_perp_markets, mock_spot_markets
+from tests.dlob_test_constants import mock_perp_markets, mock_spot_markets
 
 
 @mark.asyncio

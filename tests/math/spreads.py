@@ -8,7 +8,7 @@ from driftpy.constants.numeric_constants import *
 from driftpy.math.oracles import *
 from driftpy.types import *
 
-from dlob_test_constants import mock_perp_markets
+from tests.dlob_test_constants import mock_perp_markets
 
 
 @mark.asyncio

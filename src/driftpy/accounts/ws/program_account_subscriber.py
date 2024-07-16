@@ -112,14 +112,14 @@ class WebSocketProgramAccountSubscriber:
             return
         self.subscribed_accounts[account] = new_data
 
-    def unsubscribe(self):
+    async def unsubscribe(self):
         self.is_unsubscribing = True
         self.receiving_data = False
         if self.task:
             self.task.cancel()
             self.task = None
         if self.ws:
-            self.ws.close()
+            await self.ws.close()
             self.ws = None
         self.is_unsubscribing = False
         self.subscribed = False

@@ -827,10 +827,8 @@ class DLOB:
         )
         maker_node_generator_fn = self.get_resting_limit_bids
 
-        does_cross = (
-            lambda taker_price, maker_price: (
-                taker_price is None or taker_price <= maker_price
-            )
+        does_cross = lambda taker_price, maker_price: (
+            (taker_price is None or taker_price <= maker_price)
             if (
                 not is_variant(market_type, "Spot")
                 or (fallback_bid and maker_price < fallback_bid)
@@ -873,10 +871,8 @@ class DLOB:
         )
         maker_node_generator_fn = self.get_resting_limit_asks
 
-        does_cross = (
-            lambda taker_price, maker_price: (
-                taker_price is None or taker_price >= maker_price
-            )
+        does_cross = lambda taker_price, maker_price: (
+            (taker_price is None or taker_price >= maker_price)
             if (
                 not is_variant(market_type, "Spot")
                 or (fallback_bid and maker_price > fallback_bid)

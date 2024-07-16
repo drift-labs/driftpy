@@ -99,6 +99,9 @@ def decode_pyth_price_info(
     buffer: bytes,
     oracle_source=OracleSource.Pyth(),
 ) -> OraclePriceData:
+    if "Pull" in str(oracle_source):
+        raise ValueError("Use decode_pyth_pull_price_info for Pyth Pull Oracles")
+
     offset = _ACCOUNT_HEADER_BYTES
     _, exponent, _ = struct.unpack_from("<IiI", buffer, offset)
 

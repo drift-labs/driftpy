@@ -861,9 +861,9 @@ class DriftClient:
                 self.get_place_spot_order_ix(order_params, sub_account_id),
             ]
         )
-        self.last_spot_market_seen_cache[
-            order_params.market_index
-        ] = tx_sig_and_slot.slot
+        self.last_spot_market_seen_cache[order_params.market_index] = (
+            tx_sig_and_slot.slot
+        )
         self.last_spot_market_seen_cache[QUOTE_SPOT_MARKET_INDEX] = tx_sig_and_slot.slot
         return tx_sig_and_slot.tx_sig
 
@@ -909,9 +909,9 @@ class DriftClient:
                 self.get_place_perp_order_ix(order_params, sub_account_id),
             ]
         )
-        self.last_perp_market_seen_cache[
-            order_params.market_index
-        ] = tx_sig_and_slot.slot
+        self.last_perp_market_seen_cache[order_params.market_index] = (
+            tx_sig_and_slot.slot
+        )
         return tx_sig_and_slot.tx_sig
 
     def get_place_perp_order_ix(
@@ -957,13 +957,13 @@ class DriftClient:
 
         for order_param in order_params:
             if is_variant(order_param.market_type, "Perp"):
-                self.last_perp_market_seen_cache[
-                    order_param.market_index
-                ] = tx_sig_and_slot.slot
+                self.last_perp_market_seen_cache[order_param.market_index] = (
+                    tx_sig_and_slot.slot
+                )
             else:
-                self.last_spot_market_seen_cache[
-                    order_param.market_index
-                ] = tx_sig_and_slot.slot
+                self.last_spot_market_seen_cache[order_param.market_index] = (
+                    tx_sig_and_slot.slot
+                )
 
         return tx_sig_and_slot.tx_sig
 
@@ -1157,13 +1157,13 @@ class DriftClient:
 
         for order_param in place_order_params:
             if is_variant(order_param.market_type, "Perp"):
-                self.last_perp_market_seen_cache[
-                    order_param.market_index
-                ] = tx_sig_and_slot.slot
+                self.last_perp_market_seen_cache[order_param.market_index] = (
+                    tx_sig_and_slot.slot
+                )
             else:
-                self.last_spot_market_seen_cache[
-                    order_param.market_index
-                ] = tx_sig_and_slot.slot
+                self.last_spot_market_seen_cache[order_param.market_index] = (
+                    tx_sig_and_slot.slot
+                )
 
         return tx_sig_and_slot.tx_sig
 
@@ -1282,9 +1282,9 @@ class DriftClient:
                 ),
             ]
         )
-        self.last_perp_market_seen_cache[
-            order_params.market_index
-        ] = tx_sig_and_slot.slot
+        self.last_perp_market_seen_cache[order_params.market_index] = (
+            tx_sig_and_slot.slot
+        )
         return tx_sig_and_slot.tx_sig
 
     def get_place_and_take_perp_order_ix(
@@ -2223,9 +2223,7 @@ class DriftClient:
         maker_info = (
             maker_info
             if isinstance(maker_info, list)
-            else [maker_info]
-            if maker_info
-            else []
+            else [maker_info] if maker_info else []
         )
 
         user_accounts = [user_account]
@@ -2442,9 +2440,11 @@ class DriftClient:
             order_type=OrderType.Market(),
             market_index=market_index,
             base_asset_amount=abs(int(position.base_asset_amount)),
-            direction=PositionDirection.Long()
-            if position.base_asset_amount < 0
-            else PositionDirection.Short(),
+            direction=(
+                PositionDirection.Long()
+                if position.base_asset_amount < 0
+                else PositionDirection.Short()
+            ),
             price=limit_price,
             reduce_only=True,
         )

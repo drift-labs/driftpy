@@ -5,11 +5,11 @@ from driftpy.constants.numeric_constants import *
 from driftpy.math.margin import MarginCategory
 from driftpy.math.perp_position import calculate_position_pnl
 
-from dlob_test_constants import mock_perp_markets, mock_spot_markets
+from tests.dlob_test_constants import mock_perp_markets, mock_spot_markets
 from driftpy.math.spot_position import get_worst_case_token_amounts
 from driftpy.oracles.strict_oracle_price import StrictOraclePrice
 from driftpy.types import SpotBalanceType
-from helpers import make_mock_user, mock_user_account
+from .helpers import make_mock_user, mock_user_account
 
 
 @mark.asyncio

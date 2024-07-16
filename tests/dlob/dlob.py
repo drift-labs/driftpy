@@ -2,14 +2,24 @@ from dataclasses import dataclass
 from typing import Optional
 from driftpy.constants.numeric_constants import BASE_PRECISION, QUOTE_PRECISION
 from driftpy.dlob.dlob import DLOB
-from dlob_test_constants import mock_perp_markets, mock_spot_markets
+from tests.dlob_test_constants import mock_perp_markets, mock_spot_markets
 from driftpy.math.auction import is_auction_complete
 from driftpy.math.conversion import convert_to_number
 from driftpy.math.orders import is_resting_limit_order
-from driftpy.types import MarketType, OraclePriceData, OrderTriggerCondition, OrderType, PositionDirection
+from driftpy.types import (
+    MarketType,
+    OraclePriceData,
+    OrderTriggerCondition,
+    OrderType,
+    PositionDirection,
+)
 from solders.keypair import Keypair
 
-from dlob_test_helpers import insert_order_to_dlob, insert_trigger_order_to_dlob
+from tests.decode.dlob_test_helpers import (
+    insert_order_to_dlob,
+    insert_trigger_order_to_dlob,
+)
+
 
 @dataclass
 class TestCase:
@@ -35,26 +45,35 @@ def test_fresh_dlob_is_empty():
     # check perps
     for market in mock_perp_markets:
         found_asks = 0
-        for _ in dlob.get_asks(market.market_index, slot, MarketType.Perp(), oracle_price_data, v_ask):
+        for _ in dlob.get_asks(
+            market.market_index, slot, MarketType.Perp(), oracle_price_data, v_ask
+        ):
             found_asks += 1
         assert found_asks == 1
 
         found_bids = 0
-        for _ in dlob.get_bids(market.market_index, 0, MarketType.Perp(), oracle_price_data, v_bid):
+        for _ in dlob.get_bids(
+            market.market_index, 0, MarketType.Perp(), oracle_price_data, v_bid
+        ):
             found_bids += 1
         assert found_bids == 1
 
-    # check spot
+        # check spot
         for market in mock_spot_markets:
             found_asks = 0
-            for _ in dlob.get_asks(market.market_index, slot, MarketType.Spot(), oracle_price_data, None):
+            for _ in dlob.get_asks(
+                market.market_index, slot, MarketType.Spot(), oracle_price_data, None
+            ):
                 found_asks += 1
             assert found_asks == 0
 
             found_bids = 0
-            for _ in dlob.get_bids(market.market_index, 0, MarketType.Spot(), oracle_price_data, None):
+            for _ in dlob.get_bids(
+                market.market_index, 0, MarketType.Spot(), oracle_price_data, None
+            ):
                 found_bids += 1
             assert found_bids == 0
+
 
 def test_clear_dlob():
     dlob = DLOB()
@@ -80,7 +99,7 @@ def test_clear_dlob():
         BASE_PRECISION,
         PositionDirection.Long(),
         v_bid,
-        v_ask
+        v_ask,
     )
 
     insert_order_to_dlob(
@@ -94,7 +113,7 @@ def test_clear_dlob():
         BASE_PRECISION,
         PositionDirection.Long(),
         v_bid,
-        v_ask
+        v_ask,
     )
 
     insert_order_to_dlob(
@@ -108,29 +127,34 @@ def test_clear_dlob():
         BASE_PRECISION,
         PositionDirection.Long(),
         v_bid,
-        v_ask
+        v_ask,
     )
 
     bids = 0
-    for _ in dlob.get_bids(market_index, slot, MarketType.Perp(), oracle_price_data, None):
+    for _ in dlob.get_bids(
+        market_index, slot, MarketType.Perp(), oracle_price_data, None
+    ):
         bids += 1
     assert bids == 3
 
     dlob.clear()
 
-    cleared_bids = dlob.get_bids(market_index, slot, MarketType.Perp(), oracle_price_data, None)
+    cleared_bids = dlob.get_bids(
+        market_index, slot, MarketType.Perp(), oracle_price_data, None
+    )
     try:
         next(cleared_bids)
         no_bids = False
     except StopIteration:
         no_bids = True
-    assert no_bids, 'bid generator should be done' 
+    assert no_bids, "bid generator should be done"
+
 
 def test_update_resting_limit_orders_bids():
     dlob = DLOB()
     v_ask = 15
     v_bid = 10
-    
+
     slot = 1
 
     oracle_price_data = OraclePriceData((v_bid + v_ask) // 2, slot, 1, 1, 1, True)
@@ -154,7 +178,7 @@ def test_update_resting_limit_orders_bids():
         PositionDirection.Long(),
         v_bid,
         v_ask,
-        1
+        1,
     )
 
     insert_order_to_dlob(
@@ -169,7 +193,7 @@ def test_update_resting_limit_orders_bids():
         PositionDirection.Long(),
         v_bid,
         v_ask,
-        11
+        11,
     )
 
     insert_order_to_dlob(
@@ -184,56 +208,73 @@ def test_update_resting_limit_orders_bids():
         PositionDirection.Long(),
         v_bid,
         v_ask,
-        21
+        21,
     )
 
-    taking_bids = list(dlob.get_taking_bids(market_index, market_type, slot, oracle_price_data))
+    taking_bids = list(
+        dlob.get_taking_bids(market_index, market_type, slot, oracle_price_data)
+    )
     assert len(taking_bids) == 3
     assert taking_bids[0].order.order_id == 1
     assert taking_bids[1].order.order_id == 2
     assert taking_bids[2].order.order_id == 3
 
-    resting_bids = list(dlob.get_resting_limit_bids(market_index, slot, market_type, oracle_price_data))
+    resting_bids = list(
+        dlob.get_resting_limit_bids(market_index, slot, market_type, oracle_price_data)
+    )
     assert len(resting_bids) == 0
 
     slot += 11
 
-    taking_bids = list(dlob.get_taking_bids(market_index, market_type, slot, oracle_price_data))
+    taking_bids = list(
+        dlob.get_taking_bids(market_index, market_type, slot, oracle_price_data)
+    )
     assert len(taking_bids) == 2
     assert taking_bids[0].order.order_id == 2
     assert taking_bids[1].order.order_id == 3
 
-    resting_bids = list(dlob.get_resting_limit_bids(market_index, slot, market_type, oracle_price_data))
+    resting_bids = list(
+        dlob.get_resting_limit_bids(market_index, slot, market_type, oracle_price_data)
+    )
     assert len(resting_bids) == 1
     assert resting_bids[0].order.order_id == 1
 
     slot += 11
 
-    taking_bids = list(dlob.get_taking_bids(market_index, market_type, slot, oracle_price_data))
+    taking_bids = list(
+        dlob.get_taking_bids(market_index, market_type, slot, oracle_price_data)
+    )
     assert len(taking_bids) == 1
     assert taking_bids[0].order.order_id == 3
 
-    resting_bids = list(dlob.get_resting_limit_bids(market_index, slot, market_type, oracle_price_data))
+    resting_bids = list(
+        dlob.get_resting_limit_bids(market_index, slot, market_type, oracle_price_data)
+    )
     assert len(resting_bids) == 2
     assert resting_bids[0].order.order_id == 2
     assert resting_bids[1].order.order_id == 1
 
     slot += 11
 
-    taking_bids = list(dlob.get_taking_bids(market_index, market_type, slot, oracle_price_data))
+    taking_bids = list(
+        dlob.get_taking_bids(market_index, market_type, slot, oracle_price_data)
+    )
     assert len(taking_bids) == 0
 
-    resting_bids = list(dlob.get_resting_limit_bids(market_index, slot, market_type, oracle_price_data))
+    resting_bids = list(
+        dlob.get_resting_limit_bids(market_index, slot, market_type, oracle_price_data)
+    )
     assert len(resting_bids) == 3
     assert resting_bids[0].order.order_id == 3
     assert resting_bids[1].order.order_id == 2
     assert resting_bids[2].order.order_id == 1
 
+
 def test_update_resting_limit_order_asks():
     dlob = DLOB()
     v_ask = 15
     v_bid = 10
-    
+
     slot = 1
 
     oracle_price_data = OraclePriceData((v_bid + v_ask) // 2, slot, 1, 1, 1, True)
@@ -257,7 +298,7 @@ def test_update_resting_limit_order_asks():
         PositionDirection.Short(),
         v_bid,
         v_ask,
-        1
+        1,
     )
 
     insert_order_to_dlob(
@@ -272,7 +313,7 @@ def test_update_resting_limit_order_asks():
         PositionDirection.Short(),
         v_bid,
         v_ask,
-        11
+        11,
     )
 
     insert_order_to_dlob(
@@ -287,50 +328,67 @@ def test_update_resting_limit_order_asks():
         PositionDirection.Short(),
         v_bid,
         v_ask,
-        21
+        21,
     )
 
-    taking_asks = list(dlob.get_taking_asks(market_index, market_type, slot, oracle_price_data))
+    taking_asks = list(
+        dlob.get_taking_asks(market_index, market_type, slot, oracle_price_data)
+    )
     assert len(taking_asks) == 3
     assert taking_asks[0].order.order_id == 1
     assert taking_asks[1].order.order_id == 2
     assert taking_asks[2].order.order_id == 3
 
-    resting_asks = list(dlob.get_resting_limit_asks(market_index, slot, market_type, oracle_price_data))
+    resting_asks = list(
+        dlob.get_resting_limit_asks(market_index, slot, market_type, oracle_price_data)
+    )
     assert len(resting_asks) == 0
 
     slot += 11
 
-    taking_asks = list(dlob.get_taking_asks(market_index, market_type, slot, oracle_price_data))
+    taking_asks = list(
+        dlob.get_taking_asks(market_index, market_type, slot, oracle_price_data)
+    )
     assert len(taking_asks) == 2
     assert taking_asks[0].order.order_id == 2
     assert taking_asks[1].order.order_id == 3
 
-    resting_asks = list(dlob.get_resting_limit_asks(market_index, slot, market_type, oracle_price_data))
+    resting_asks = list(
+        dlob.get_resting_limit_asks(market_index, slot, market_type, oracle_price_data)
+    )
     assert len(resting_asks) == 1
     assert resting_asks[0].order.order_id == 1
 
     slot += 11
 
-    taking_asks = list(dlob.get_taking_asks(market_index, market_type, slot, oracle_price_data))
+    taking_asks = list(
+        dlob.get_taking_asks(market_index, market_type, slot, oracle_price_data)
+    )
     assert len(taking_asks) == 1
     assert taking_asks[0].order.order_id == 3
 
-    resting_asks = list(dlob.get_resting_limit_asks(market_index, slot, market_type, oracle_price_data))
+    resting_asks = list(
+        dlob.get_resting_limit_asks(market_index, slot, market_type, oracle_price_data)
+    )
     assert len(resting_asks) == 2
     assert resting_asks[0].order.order_id == 2
     assert resting_asks[1].order.order_id == 1
 
     slot += 11
 
-    taking_asks = list(dlob.get_taking_asks(market_index, market_type, slot, oracle_price_data))
+    taking_asks = list(
+        dlob.get_taking_asks(market_index, market_type, slot, oracle_price_data)
+    )
     assert len(taking_asks) == 0
 
-    resting_asks = list(dlob.get_resting_limit_asks(market_index, slot, market_type, oracle_price_data))
+    resting_asks = list(
+        dlob.get_resting_limit_asks(market_index, slot, market_type, oracle_price_data)
+    )
     assert len(resting_asks) == 3
     assert resting_asks[0].order.order_id == 3
     assert resting_asks[1].order.order_id == 2
     assert resting_asks[2].order.order_id == 1
+
 
 # DLOB PERP MARKET TESTS
 def test_dlob_proper_bids_perp():
@@ -338,20 +396,30 @@ def test_dlob_proper_bids_perp():
     v_ask = 15
     v_bid = 10
     market_index = 0
-    
+
     slot = 12
 
     oracle_price_data = OraclePriceData((v_bid + v_ask) // 2, slot, 1, 1, 1, True)
 
     testcases = [
-        TestCase(0, False, 5, 0, PositionDirection.Long(), OrderType.Market(), 0, False),
-        TestCase(1, False, 6, 0, PositionDirection.Long(), OrderType.Market(), 1, False),
-        TestCase(2, False, 7, 0, PositionDirection.Long(), OrderType.Market(), 2, False),
-        TestCase(3, False, 1, 12, PositionDirection.Long(), OrderType.Limit(), 3, False),
-        TestCase(4, False, 2, 11, PositionDirection.Long(), OrderType.Limit(), 4, False),
+        TestCase(
+            0, False, 5, 0, PositionDirection.Long(), OrderType.Market(), 0, False
+        ),
+        TestCase(
+            1, False, 6, 0, PositionDirection.Long(), OrderType.Market(), 1, False
+        ),
+        TestCase(
+            2, False, 7, 0, PositionDirection.Long(), OrderType.Market(), 2, False
+        ),
+        TestCase(
+            3, False, 1, 12, PositionDirection.Long(), OrderType.Limit(), 3, False
+        ),
+        TestCase(
+            4, False, 2, 11, PositionDirection.Long(), OrderType.Limit(), 4, False
+        ),
         TestCase(7, False, 3, 8, PositionDirection.Long(), OrderType.Limit(), 5, True),
         TestCase(5, True, None, None, None, None, None, False),
-        TestCase(6, False, 4, 9, PositionDirection.Long(), OrderType.Limit(), 6, True)
+        TestCase(6, False, 4, 9, PositionDirection.Long(), OrderType.Limit(), 6, True),
     ]
 
     for t in testcases:
@@ -373,54 +441,91 @@ def test_dlob_proper_bids_perp():
             0 if t.post_only else v_bid,
             0 if t.post_only else v_ask,
             t.slot,
-            post_only = t.post_only 
+            post_only=t.post_only,
         )
 
     expected_testcases = sorted(testcases, key=lambda tc: tc.expected_idx)
 
-    all_bids = dlob.get_bids(market_index, slot, MarketType.Perp(), oracle_price_data, v_bid)
+    all_bids = dlob.get_bids(
+        market_index, slot, MarketType.Perp(), oracle_price_data, v_bid
+    )
 
     count_bids = 0
     for bid in all_bids:
-        assert bid.is_vamm_node() == expected_testcases[count_bids].is_vamm, 'expected vamm node'
-        
+        assert (
+            bid.is_vamm_node() == expected_testcases[count_bids].is_vamm
+        ), "expected vamm node"
+
         if bid.order:
-            assert bid.order.order_id == expected_testcases[count_bids].order_id, 'expected order_id'
-            assert bid.order.price == expected_testcases[count_bids].price, 'expected price'
-            assert str(bid.order.direction) == str(expected_testcases[count_bids].direction), 'expected direction'
-            assert str(bid.order.order_type) == str(expected_testcases[count_bids].order_type), 'expected order type'
+            assert (
+                bid.order.order_id == expected_testcases[count_bids].order_id
+            ), "expected order_id"
+            assert (
+                bid.order.price == expected_testcases[count_bids].price
+            ), "expected price"
+            assert str(bid.order.direction) == str(
+                expected_testcases[count_bids].direction
+            ), "expected direction"
+            assert str(bid.order.order_type) == str(
+                expected_testcases[count_bids].order_type
+            ), "expected order type"
         count_bids += 1
     assert len(testcases) == count_bids, "expected count"
 
-    taking_bids = dlob.get_taking_bids(market_index, MarketType.Perp(), slot, oracle_price_data)
+    taking_bids = dlob.get_taking_bids(
+        market_index, MarketType.Perp(), slot, oracle_price_data
+    )
     count_bids = 0
     expected_testcases_slice = expected_testcases[:5]
     for bid in taking_bids:
-        assert bid.is_vamm_node() == expected_testcases_slice[count_bids].is_vamm, "expected vAMM node"
+        assert (
+            bid.is_vamm_node() == expected_testcases_slice[count_bids].is_vamm
+        ), "expected vAMM node"
         if bid.order:
-            assert bid.order.order_id == expected_testcases_slice[count_bids].order_id, "expected orderId"
-            assert bid.order.price == expected_testcases_slice[count_bids].price, "expected price"
-            assert bid.order.direction == expected_testcases_slice[count_bids].direction, "expected order direction"
-            assert bid.order.order_type == expected_testcases_slice[count_bids].order_type, "expected order type"
+            assert (
+                bid.order.order_id == expected_testcases_slice[count_bids].order_id
+            ), "expected orderId"
+            assert (
+                bid.order.price == expected_testcases_slice[count_bids].price
+            ), "expected price"
+            assert (
+                bid.order.direction == expected_testcases_slice[count_bids].direction
+            ), "expected order direction"
+            assert (
+                bid.order.order_type == expected_testcases_slice[count_bids].order_type
+            ), "expected order type"
         count_bids += 1
 
     assert count_bids == len(expected_testcases_slice), "expected count"
 
-    limit_bids = dlob.get_resting_limit_bids(market_index, slot, MarketType.Perp(), oracle_price_data)
+    limit_bids = dlob.get_resting_limit_bids(
+        market_index, slot, MarketType.Perp(), oracle_price_data
+    )
     count_bids = 0
     # I don't think we really care about the vAMM node, plus resting limit bids won't give it to us
     # So we will not include it in these assertions
     expected_testcases_slice = expected_testcases[6:]
     for bid in limit_bids:
-        assert bid.is_vamm_node() == expected_testcases_slice[count_bids].is_vamm, "expected vAMM node"
+        assert (
+            bid.is_vamm_node() == expected_testcases_slice[count_bids].is_vamm
+        ), "expected vAMM node"
         if bid.order:
-            assert bid.order.order_id == expected_testcases_slice[count_bids].order_id, "expected orderId"
-            assert bid.order.price == expected_testcases_slice[count_bids].price, "expected price"
-            assert bid.order.direction == expected_testcases_slice[count_bids].direction, "expected order direction"
-            assert bid.order.order_type == expected_testcases_slice[count_bids].order_type, "expected order type"
+            assert (
+                bid.order.order_id == expected_testcases_slice[count_bids].order_id
+            ), "expected orderId"
+            assert (
+                bid.order.price == expected_testcases_slice[count_bids].price
+            ), "expected price"
+            assert (
+                bid.order.direction == expected_testcases_slice[count_bids].direction
+            ), "expected order direction"
+            assert (
+                bid.order.order_type == expected_testcases_slice[count_bids].order_type
+            ), "expected order type"
         count_bids += 1
 
     assert count_bids == len(expected_testcases_slice), "expected count"
+
 
 def test_dlob_proper_asks_perp():
     dlob = DLOB()
@@ -432,14 +537,28 @@ def test_dlob_proper_asks_perp():
     oracle_price_data = OraclePriceData((v_bid + v_ask) // 2, slot, 1, 1, 1, True)
 
     testcases = [
-        TestCase(0, False, 3, 0, PositionDirection.Short(), OrderType.Market(), 0, False),
-        TestCase(1, False, 4, 0, PositionDirection.Short(), OrderType.Market(), 1, False),
-        TestCase(2, False, 5, 0, PositionDirection.Short(), OrderType.Market(), 2, False),
-        TestCase(3, False, 1, 13, PositionDirection.Short(), OrderType.Limit(), 3, False),
-        TestCase(6, False, 6, 16, PositionDirection.Short(), OrderType.Limit(), 4, True),
+        TestCase(
+            0, False, 3, 0, PositionDirection.Short(), OrderType.Market(), 0, False
+        ),
+        TestCase(
+            1, False, 4, 0, PositionDirection.Short(), OrderType.Market(), 1, False
+        ),
+        TestCase(
+            2, False, 5, 0, PositionDirection.Short(), OrderType.Market(), 2, False
+        ),
+        TestCase(
+            3, False, 1, 13, PositionDirection.Short(), OrderType.Limit(), 3, False
+        ),
+        TestCase(
+            6, False, 6, 16, PositionDirection.Short(), OrderType.Limit(), 4, True
+        ),
         TestCase(4, True, None, None, None, None, 0, False),
-        TestCase(7, False, 7, 17, PositionDirection.Short(), OrderType.Limit(), 4, True),
-        TestCase(5, False, 2, 14, PositionDirection.Short(), OrderType.Limit(), 4, True)
+        TestCase(
+            7, False, 7, 17, PositionDirection.Short(), OrderType.Limit(), 4, True
+        ),
+        TestCase(
+            5, False, 2, 14, PositionDirection.Short(), OrderType.Limit(), 4, True
+        ),
     ]
 
     for t in testcases:
@@ -461,44 +580,69 @@ def test_dlob_proper_asks_perp():
             0 if t.post_only else v_bid,
             0 if t.post_only else v_ask,
             t.slot,
-            post_only = t.post_only
+            post_only=t.post_only,
         )
 
     expected_testcases = sorted(testcases, key=lambda tc: tc.expected_idx)
 
-    taking_asks = dlob.get_taking_asks(market_index, MarketType.Perp(), slot, oracle_price_data)
+    taking_asks = dlob.get_taking_asks(
+        market_index, MarketType.Perp(), slot, oracle_price_data
+    )
     count_asks = 0
     expected_testcases_slice = expected_testcases[:4]
     for ask in taking_asks:
-        assert ask.is_vamm_node() == expected_testcases_slice[count_asks].is_vamm, "expected vAMM node"
+        assert (
+            ask.is_vamm_node() == expected_testcases_slice[count_asks].is_vamm
+        ), "expected vAMM node"
         if ask.order:
-            assert ask.order.order_id == expected_testcases_slice[count_asks].order_id, "expected orderId"
-            assert ask.order.price == expected_testcases_slice[count_asks].price, "expected price"
-            assert ask.order.direction == expected_testcases_slice[count_asks].direction, "expected order direction"
-            assert ask.order.order_type == expected_testcases_slice[count_asks].order_type, "expected order type"
+            assert (
+                ask.order.order_id == expected_testcases_slice[count_asks].order_id
+            ), "expected orderId"
+            assert (
+                ask.order.price == expected_testcases_slice[count_asks].price
+            ), "expected price"
+            assert (
+                ask.order.direction == expected_testcases_slice[count_asks].direction
+            ), "expected order direction"
+            assert (
+                ask.order.order_type == expected_testcases_slice[count_asks].order_type
+            ), "expected order type"
         count_asks += 1
 
     assert count_asks == len(expected_testcases_slice), "expected count"
-    
-    limit_asks = dlob.get_resting_limit_asks(market_index, slot, MarketType.Perp(),oracle_price_data)
+
+    limit_asks = dlob.get_resting_limit_asks(
+        market_index, slot, MarketType.Perp(), oracle_price_data
+    )
     count_asks = 0
     expected_testcases_slice = expected_testcases[5:]
     for ask in limit_asks:
-        assert ask.is_vamm_node() == expected_testcases_slice[count_asks].is_vamm, "expected vAMM node"
+        assert (
+            ask.is_vamm_node() == expected_testcases_slice[count_asks].is_vamm
+        ), "expected vAMM node"
         if ask.order:
-            assert ask.order.order_id == expected_testcases_slice[count_asks].order_id, "expected orderId"
-            assert ask.order.price == expected_testcases_slice[count_asks].price, "expected price"
-            assert ask.order.direction == expected_testcases_slice[count_asks].direction, "expected order direction"
-            assert ask.order.order_type == expected_testcases_slice[count_asks].order_type, "expected order type"
+            assert (
+                ask.order.order_id == expected_testcases_slice[count_asks].order_id
+            ), "expected orderId"
+            assert (
+                ask.order.price == expected_testcases_slice[count_asks].price
+            ), "expected price"
+            assert (
+                ask.order.direction == expected_testcases_slice[count_asks].direction
+            ), "expected order direction"
+            assert (
+                ask.order.order_type == expected_testcases_slice[count_asks].order_type
+            ), "expected order type"
         count_asks += 1
 
     assert count_asks == len(expected_testcases_slice), "expected count"
+
 
 def test_trigger_limit_isnt_maker():
     dlob = DLOB()
     v_ask = 15
     v_bid = 8
-    
+
     user0 = Keypair()
     market_index = 0
 
@@ -519,21 +663,28 @@ def test_trigger_limit_isnt_maker():
         OrderTriggerCondition.TriggeredAbove(),
         v_bid,
         v_ask,
-        1
+        1,
     )
 
-    resting_limit_bids = list(dlob.get_resting_limit_bids(market_index, slot, MarketType.Perp(), oracle_price_data))
+    resting_limit_bids = list(
+        dlob.get_resting_limit_bids(
+            market_index, slot, MarketType.Perp(), oracle_price_data
+        )
+    )
 
     assert len(resting_limit_bids) == 0
 
-    taking_bids = list(dlob.get_taking_bids(market_index, MarketType.Perp(), slot, oracle_price_data))
+    taking_bids = list(
+        dlob.get_taking_bids(market_index, MarketType.Perp(), slot, oracle_price_data)
+    )
     assert len(taking_bids) == 1
 
     trigger_limit_bid = taking_bids[0]
     assert trigger_limit_bid is not None
     assert is_auction_complete(trigger_limit_bid.order, slot)
     assert not is_resting_limit_order(trigger_limit_bid.order, slot)
-    
+
+
 # SPOT MARKET TESTS
 def test_dlob_estimate_fill_exact_base_amount_spot_buy():
     dlob = DLOB()
@@ -563,7 +714,7 @@ def test_dlob_estimate_fill_exact_base_amount_spot_buy():
         PositionDirection.Short(),
         v_ask,
         v_bid,
-        1
+        1,
     )
 
     b2 = BASE_PRECISION * 2
@@ -579,7 +730,7 @@ def test_dlob_estimate_fill_exact_base_amount_spot_buy():
         PositionDirection.Short(),
         v_ask,
         v_bid,
-        1
+        1,
     )
 
     b3 = BASE_PRECISION * 3
@@ -594,22 +745,32 @@ def test_dlob_estimate_fill_exact_base_amount_spot_buy():
         b3,
         PositionDirection.Short(),
         v_ask,
-        v_bid, 
-        1
+        v_bid,
+        1,
     )
 
     slot += 11
 
-    resting_asks = list(dlob.get_resting_limit_asks(market_index, slot, market_type, oracle_price_data))
+    resting_asks = list(
+        dlob.get_resting_limit_asks(market_index, slot, market_type, oracle_price_data)
+    )
 
     assert len(resting_asks) == 3
 
     base_amount = 4 * BASE_PRECISION
-    out = dlob.estimate_fill_with_exact_base_amount(market_index, market_type, base_amount, PositionDirection.Long(), slot, oracle_price_data)
+    out = dlob.estimate_fill_with_exact_base_amount(
+        market_index,
+        market_type,
+        base_amount,
+        PositionDirection.Long(),
+        slot,
+        oracle_price_data,
+    )
     quote_amt_out = convert_to_number(out, QUOTE_PRECISION)
 
     # (1 * 20.69) + (2 * 20.70) + (1 * 20.71) = 82.8
     assert quote_amt_out == 82.8
+
 
 def test_dlob_estimate_fill_exact_base_amount_spot_sell():
     dlob = DLOB()
@@ -639,7 +800,7 @@ def test_dlob_estimate_fill_exact_base_amount_spot_sell():
         PositionDirection.Long(),
         v_bid,
         v_ask,
-        1
+        1,
     )
 
     b2 = 2 * BASE_PRECISION
@@ -655,7 +816,7 @@ def test_dlob_estimate_fill_exact_base_amount_spot_sell():
         PositionDirection.Long(),
         v_bid,
         v_ask,
-        1
+        1,
     )
 
     b3 = 3 * BASE_PRECISION
@@ -671,17 +832,26 @@ def test_dlob_estimate_fill_exact_base_amount_spot_sell():
         PositionDirection.Long(),
         v_bid,
         v_ask,
-        1
+        1,
     )
 
     slot += 11
 
-    resting_bids = list(dlob.get_resting_limit_bids(market_index, slot, market_type, oracle_price_data))
+    resting_bids = list(
+        dlob.get_resting_limit_bids(market_index, slot, market_type, oracle_price_data)
+    )
 
     assert len(resting_bids) == 3
 
     base_amount = 4 * BASE_PRECISION
-    out = dlob.estimate_fill_with_exact_base_amount(market_index, market_type, base_amount, PositionDirection.Short(), slot, oracle_price_data)
+    out = dlob.estimate_fill_with_exact_base_amount(
+        market_index,
+        market_type,
+        base_amount,
+        PositionDirection.Short(),
+        slot,
+        oracle_price_data,
+    )
     quote_amt_out = convert_to_number(out, QUOTE_PRECISION)
 
     # 1 * 20.69 + 2 * 20.68 + 1 * 20.67 = 82.72

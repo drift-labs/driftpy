@@ -5,7 +5,7 @@ from copy import deepcopy
 from driftpy.math.margin import calculate_size_premium_liability_weight
 from driftpy.constants.numeric_constants import *
 
-from dlob_test_constants import mock_spot_markets
+from tests.dlob_test_constants import mock_spot_markets
 from driftpy.math.spot_balance import (
     calculate_borrow_rate,
     calculate_deposit_rate,

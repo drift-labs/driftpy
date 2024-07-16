@@ -139,7 +139,9 @@ class EventSubscriptionOptions:
     order_dir: EventSubscriptionOrderDirection = "asc"
     commitment: Commitment = "confirmed"
     max_tx: int = 4096
-    log_provider_config: LogProviderConfig = field(default_factory=WebsocketLogProviderConfig)
+    log_provider_config: LogProviderConfig = field(
+        default_factory=WebsocketLogProviderConfig
+    )
     until_tx: Signature = None
 
     @staticmethod

@@ -4,8 +4,8 @@ from solders.pubkey import Pubkey
 from typing import Optional
 from enum import Enum
 
-class UserMapInterface(ABC):
 
+class UserMapInterface(ABC):
     @abstractmethod
     async def subscribe(self) -> None:
         pass
@@ -38,8 +38,10 @@ class UserMapInterface(ABC):
     def values(self):
         pass
 
+
 class Subscription(ABC):
     pass
+
 
 class ConfigType(Enum):
     CACHED = "cached"

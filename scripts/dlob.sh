@@ -1,0 +1,1 @@
+pytest -v -s -x tests/dlob/dlob.py

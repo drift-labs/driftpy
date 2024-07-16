@@ -103,9 +103,9 @@ class Vat:
             with open(perp_filename, "rb") as f:
                 perp_oracles: list[PickledData] = pickle.load(f)
                 for oracle in perp_oracles:
-                    self.perp_oracles[
-                        oracle.pubkey
-                    ] = oracle.data  # oracle.pubkey is actually a market index
+                    self.perp_oracles[oracle.pubkey] = (
+                        oracle.data
+                    )  # oracle.pubkey is actually a market index
         else:
             raise FileNotFoundError(f"File {perp_filename} not found")
 
@@ -113,8 +113,8 @@ class Vat:
             with open(spot_filename, "rb") as f:
                 spot_oracles: list[PickledData] = pickle.load(f)
                 for oracle in spot_oracles:
-                    self.spot_oracles[
-                        oracle.pubkey
-                    ] = oracle.data  # oracle.pubkey is actually a market index
+                    self.spot_oracles[oracle.pubkey] = (
+                        oracle.data
+                    )  # oracle.pubkey is actually a market index
         else:
             raise FileNotFoundError(f"File {spot_filename} not found")
