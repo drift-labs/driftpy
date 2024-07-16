@@ -46,13 +46,13 @@ async def test_devnet_constants(rpc_url: str):
     for expected, received in zip(expected_perp_markets, received_perp_markets):
         assert (
             expected.market_index == received.market_index
-        ), f"Perp: Expected market index {expected.market_index}, got {received.market_index} Market: {received.pubkey}"
+        ), f"Devnet Perp: Expected market index {expected.market_index}, got {received.market_index} Market: {received.pubkey}"
         assert str(expected.oracle) == str(
             received.amm.oracle
-        ), f"Perp: Expected oracle {expected.oracle}, got {received.amm.oracle} Market: {received.pubkey} Market Index: {received.market_index}"
+        ), f"Devnet Perp: Expected oracle {expected.oracle}, got {received.amm.oracle} Market: {received.pubkey} Market Index: {received.market_index}"
         assert str(expected.oracle_source) == str(
             received.amm.oracle_source
-        ), f"Perp: Expected oracle source {expected.oracle_source}, got {received.amm.oracle_source} Market: {received.pubkey} Market Index: {received.market_index}"
+        ), f"Devnet Perp: Expected oracle source {expected.oracle_source}, got {received.amm.oracle_source} Market: {received.pubkey} Market Index: {received.market_index}"
 
     expected_spot_markets = sorted(
         devnet_spot_market_configs, key=lambda market: market.market_index
@@ -64,13 +64,13 @@ async def test_devnet_constants(rpc_url: str):
     for expected, received in zip(expected_spot_markets, received_spot_markets):
         assert (
             expected.market_index == received.market_index
-        ), f"Spot: Expected market index {expected.market_index}, got {received.market_index} Market: {received.pubkey}"
+        ), f"Devnet Spot: Expected market index {expected.market_index}, got {received.market_index} Market: {received.pubkey}"
         assert str(expected.oracle) == str(
             received.oracle
-        ), f"Spot: Expected oracle {expected.oracle}, got {received.oracle} Market: {received.pubkey} Market Index: {received.market_index}"
+        ), f"Devnet Spot: Expected oracle {expected.oracle}, got {received.oracle} Market: {received.pubkey} Market Index: {received.market_index}"
         assert str(expected.oracle_source) == str(
             received.oracle_source
-        ), f"Spot: Expected oracle source {expected.oracle_source}, got {received.oracle_source} Market: {received.pubkey} Market Index: {received.market_index}"
+        ), f"Devnet Spot: Expected oracle source {expected.oracle_source}, got {received.oracle_source} Market: {received.pubkey} Market Index: {received.market_index}"
 
 
 @mark.asyncio
