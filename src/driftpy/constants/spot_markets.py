@@ -186,4 +186,11 @@ mainnet_spot_market_configs: list[SpotMarketConfig] = [
         oracle_source=OracleSource.Switchboard(),
         mint=Pubkey.from_string("7GCihgDB8fe6KNjn2MYtkzZcRjQy3t9GHdC8uHYmW2hr"),
     ),
+    SpotMarketConfig(
+        symbol="CLOUD",
+        market_index=21,
+        oracle=Pubkey.from_string("4FG7UyPkszGvcSVCCKaLSZsArGjyxitwhJeQhYu2bFTS"),
+        oracle_source=OracleSource.Switchboard(),
+        mint=Pubkey.from_string("CLoUDKc4Ane7HeQcPpE3YHnznRxhMimJ4MyaUqyHFzAu"),
+    ),
 ]
