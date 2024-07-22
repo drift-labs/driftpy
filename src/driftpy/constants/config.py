@@ -32,6 +32,12 @@ from driftpy.types import (
 DriftEnv = Literal["devnet", "mainnet"]
 
 DRIFT_PROGRAM_ID = Pubkey.from_string("dRiftyHA39MWEi3m9aunc5MzRF1JYuBsbn6VPcn33UH")
+SEQUENCER_PROGRAM_ID = Pubkey.from_string(
+    "GDDMwNyyx8uB6zrqwBFHjLLG3TBYk2F8Az4yrQC5RzMp"
+)
+DEVNET_SEQUENCER_PROGRAM_ID = Pubkey.from_string(
+    "FBngRHN4s5cmHagqy3Zd6xcK3zPJBeX5DixtHFbBhyCn"
+)
 
 
 @dataclass
@@ -214,7 +220,7 @@ async def find_all_market_and_oracles(
         return perp_ds, spot_ds, full_oracle_wrappers
 
 
-def decode_account(account_data: str, program: Program) -> PerpMarketAccount:
+def decode_account(account_data: str, program: Program):
     decoded_data = b64decode(account_data)
     return program.coder.accounts.decode(decoded_data)
 

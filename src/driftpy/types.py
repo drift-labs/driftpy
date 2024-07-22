@@ -1,3 +1,6 @@
+from enum import Enum, auto
+import struct
+import zlib
 import inspect
 
 from dataclasses import dataclass, field
@@ -46,6 +49,14 @@ def stack_trace():
     line_number = frame_info.lineno
 
     return f"{file_name}:{line_number}"
+
+
+def compress(data: bytes) -> bytes:
+    return zlib.compress(data, level=9)
+
+
+def decompress(data: bytes) -> bytes:
+    return zlib.decompress(data)
 
 
 @_rust_enum
@@ -235,6 +246,10 @@ class OracleSource:
     Pyth1M = constructor()
     PythStableCoin = constructor()
     Prelaunch = constructor()
+    PythPull = constructor()
+    Pyth1KPull = constructor()
+    Pyth1MPull = constructor()
+    PythStableCoinPull = constructor()
 
 
 @_rust_enum
@@ -846,6 +861,12 @@ class UserAccount:
 
 
 @dataclass
+class PickledData:
+    pubkey: Pubkey
+    data: bytes
+
+
+@dataclass
 class UserFees:
     total_fee_paid: int
     total_fee_rebate: int
@@ -1324,3 +1345,24 @@ class PrelaunchOracle:
     amm_last_update_slot: int
     last_update_slot: int
     perp_market_index: int
+
+
+@dataclass
+class SequenceAccount:
+    sequence_num: int
+    authority: Pubkey
+
+
+@dataclass
+class PriceFeedMessage:
+    price: int
+    conf: int
+    exponent: int
+    ema_price: int
+    ema_conf: int
+
+
+@dataclass
+class PriceUpdateV2:
+    price_message: PriceFeedMessage
+    posted_slot: int

@@ -45,5 +45,5 @@ class WebsocketSubscription:
     async def unsubscribe(self):
         if not self.subscriber:
             return
-        self.subscriber.unsubscribe()
+        await self.subscriber.unsubscribe()
         self.subscriber = None

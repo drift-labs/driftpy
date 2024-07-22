@@ -1,5 +1,6 @@
 import json
 import os
+import anchorpy
 from deprecated import deprecated
 import requests
 from solders.pubkey import Pubkey
@@ -31,7 +32,14 @@ from driftpy.decode.utils import decode_name
 from driftpy.drift_user import DriftUser
 from driftpy.accounts import *
 
-from driftpy.constants.config import DriftEnv, DRIFT_PROGRAM_ID, configs
+from driftpy.constants.config import (
+    DriftEnv,
+    DRIFT_PROGRAM_ID,
+    configs,
+    SEQUENCER_PROGRAM_ID,
+    DEVNET_SEQUENCER_PROGRAM_ID,
+    decode_account,
+)
 
 from typing import Tuple, Union, Optional, List
 from driftpy.drift_user_stats import DriftUserStats, UserStatsSubscriptionConfig
@@ -41,6 +49,7 @@ from driftpy.math.spot_market import cast_to_spot_precision
 from driftpy.name import encode_name
 from driftpy.tx.standard_tx_sender import StandardTxSender
 from driftpy.tx.types import TxSender, TxSigAndSlot
+from driftpy.addresses import get_sequencer_public_key_and_bump
 from spl.token.constants import ASSOCIATED_TOKEN_PROGRAM_ID
 from solders.system_program import ID as SYS_PROGRAM_ID
 
@@ -84,6 +93,7 @@ class DriftClient:
         market_lookup_table: Optional[Pubkey] = None,
         jito_params: Optional[JitoParams] = None,
         tx_sender_blockhash_commitment: Optional[Commitment] = None,
+        enforce_tx_sequencing: bool = False,
     ):
         """Initializes the drift client object
 
@@ -148,6 +158,30 @@ class DriftClient:
 
         self.tx_version = tx_version if tx_version is not None else 0
 
+        self.enforce_tx_sequencing = enforce_tx_sequencing
+        if self.enforce_tx_sequencing is True:
+            file = Path(str(driftpy.__path__[0]) + "/idl/sequence_enforcer.json")
+            with file.open() as f:
+                raw = file.read_text()
+            idl = Idl.from_json(raw)
+
+            provider = Provider(connection, wallet, opts)
+            self.sequence_enforcer_pid = (
+                SEQUENCER_PROGRAM_ID
+                if env == "mainnet"
+                else DEVNET_SEQUENCER_PROGRAM_ID
+            )
+            self.sequence_enforcer_program = Program(
+                idl,
+                self.sequence_enforcer_pid,
+                provider,
+            )
+            self.sequence_number_by_subaccount = {}
+            self.sequence_bump_by_subaccount = {}
+            self.sequence_initialized_by_subaccount = {}
+            self.sequence_address_by_subaccount = {}
+            self.resetting_sequence = False
+
         if jito_params is not None:
             from driftpy.tx.jito_tx_sender import JitoTxSender
 
@@ -171,9 +205,22 @@ class DriftClient:
 
     async def subscribe(self):
         await self.account_subscriber.subscribe()
+        if self.enforce_tx_sequencing:
+            await self.load_sequence_info()
         for sub_account_id in self.sub_account_ids:
             await self.add_user(sub_account_id)
         await self.add_user_stats(self.authority)
+
+    def resurrect(self, spot_markets, perp_markets, spot_oracles, perp_oracles):
+        from driftpy.accounts.cache import CachedDriftClientAccountSubscriber
+
+        if not isinstance(self.account_subscriber, CachedDriftClientAccountSubscriber):
+            raise ValueError(
+                'You can only resurrect a DriftClient that was initialized with AccountSubscriptionConfig("cached")'
+            )
+        self.account_subscriber.resurrect(
+            spot_markets, perp_markets, spot_oracles, perp_oracles
+        )
 
     async def add_user(self, sub_account_id: int):
         if sub_account_id in self.users:
@@ -287,11 +334,14 @@ class DriftClient:
         data = self.account_subscriber.get_oracle_price_data_and_slot_for_perp_market(
             market_index
         )
-        return getattr(
-            data,
-            "data",
-            None,
-        )
+        if isinstance(data, DataAndSlot):
+            return getattr(
+                data,
+                "data",
+                None,
+            )
+
+        return data
 
     def get_oracle_price_data_for_spot_market(
         self, market_index: int
@@ -299,11 +349,14 @@ class DriftClient:
         data = self.account_subscriber.get_oracle_price_data_and_slot_for_spot_market(
             market_index
         )
-        return getattr(
-            data,
-            "data",
-            None,
-        )
+        if isinstance(data, DataAndSlot):
+            return getattr(
+                data,
+                "data",
+                None,
+            )
+
+        return data
 
     def convert_to_spot_precision(self, amount: Union[int, float], market_index) -> int:
         spot_market = self.get_spot_market_account(market_index)
@@ -335,6 +388,7 @@ class DriftClient:
         signers=None,
         lookup_tables: list[AddressLookupTableAccount] = None,
         tx_version: Optional[Union[Legacy, int]] = None,
+        sequencer_subaccount: Optional[int] = None,
     ) -> TxSigAndSlot:
         if isinstance(ixs, Instruction):
             ixs = [ixs]
@@ -342,11 +396,30 @@ class DriftClient:
         if not tx_version:
             tx_version = self.tx_version
 
+        compute_unit_instructions = []
         if self.tx_params.compute_units is not None:
-            ixs.insert(0, set_compute_unit_limit(self.tx_params.compute_units))
+            compute_unit_instructions.append(
+                set_compute_unit_limit(self.tx_params.compute_units)
+            )
 
         if self.tx_params.compute_units_price is not None:
-            ixs.insert(1, set_compute_unit_price(self.tx_params.compute_units_price))
+            compute_unit_instructions.append(
+                set_compute_unit_price(self.tx_params.compute_units_price)
+            )
+
+        ixs[0:0] = compute_unit_instructions
+
+        subaccount = sequencer_subaccount or self.active_sub_account_id
+
+        if (
+            self.enforce_tx_sequencing
+            and self.sequence_initialized_by_subaccount[subaccount]
+            and not self.resetting_sequence
+        ):
+            sequence_instruction = self.get_check_and_set_sequence_number_ix(
+                self.sequence_number_by_subaccount[subaccount], subaccount
+            )
+            ixs.insert(len(compute_unit_instructions), sequence_instruction)
 
         if tx_version == Legacy:
             tx = await self.tx_sender.get_legacy_tx(ixs, self.wallet.payer, signers)
@@ -888,9 +961,9 @@ class DriftClient:
                 self.get_place_spot_order_ix(order_params, sub_account_id),
             ]
         )
-        self.last_spot_market_seen_cache[
-            order_params.market_index
-        ] = tx_sig_and_slot.slot
+        self.last_spot_market_seen_cache[order_params.market_index] = (
+            tx_sig_and_slot.slot
+        )
         self.last_spot_market_seen_cache[QUOTE_SPOT_MARKET_INDEX] = tx_sig_and_slot.slot
         return tx_sig_and_slot.tx_sig
 
@@ -936,9 +1009,9 @@ class DriftClient:
                 self.get_place_perp_order_ix(order_params, sub_account_id),
             ]
         )
-        self.last_perp_market_seen_cache[
-            order_params.market_index
-        ] = tx_sig_and_slot.slot
+        self.last_perp_market_seen_cache[order_params.market_index] = (
+            tx_sig_and_slot.slot
+        )
         return tx_sig_and_slot.tx_sig
 
     def get_place_perp_order_ix(
@@ -984,13 +1057,13 @@ class DriftClient:
 
         for order_param in order_params:
             if is_variant(order_param.market_type, "Perp"):
-                self.last_perp_market_seen_cache[
-                    order_param.market_index
-                ] = tx_sig_and_slot.slot
+                self.last_perp_market_seen_cache[order_param.market_index] = (
+                    tx_sig_and_slot.slot
+                )
             else:
-                self.last_spot_market_seen_cache[
-                    order_param.market_index
-                ] = tx_sig_and_slot.slot
+                self.last_spot_market_seen_cache[order_param.market_index] = (
+                    tx_sig_and_slot.slot
+                )
 
         return tx_sig_and_slot.tx_sig
 
@@ -1184,13 +1257,13 @@ class DriftClient:
 
         for order_param in place_order_params:
             if is_variant(order_param.market_type, "Perp"):
-                self.last_perp_market_seen_cache[
-                    order_param.market_index
-                ] = tx_sig_and_slot.slot
+                self.last_perp_market_seen_cache[order_param.market_index] = (
+                    tx_sig_and_slot.slot
+                )
             else:
-                self.last_spot_market_seen_cache[
-                    order_param.market_index
-                ] = tx_sig_and_slot.slot
+                self.last_spot_market_seen_cache[order_param.market_index] = (
+                    tx_sig_and_slot.slot
+                )
 
         return tx_sig_and_slot.tx_sig
 
@@ -1310,9 +1383,9 @@ class DriftClient:
                 ),
             ]
         )
-        self.last_perp_market_seen_cache[
-            order_params.market_index
-        ] = tx_sig_and_slot.slot
+        self.last_perp_market_seen_cache[order_params.market_index] = (
+            tx_sig_and_slot.slot
+        )
         return tx_sig_and_slot.tx_sig
 
     def get_place_and_take_perp_order_ix(
@@ -2351,9 +2424,7 @@ class DriftClient:
         maker_info = (
             maker_info
             if isinstance(maker_info, list)
-            else [maker_info]
-            if maker_info
-            else []
+            else [maker_info] if maker_info else []
         )
 
         user_accounts = [user_account]
@@ -2571,9 +2642,11 @@ class DriftClient:
             order_type=OrderType.Market(),
             market_index=market_index,
             base_asset_amount=abs(int(position.base_asset_amount)),
-            direction=PositionDirection.Long()
-            if position.base_asset_amount < 0
-            else PositionDirection.Short(),
+            direction=(
+                PositionDirection.Long()
+                if position.base_asset_amount < 0
+                else PositionDirection.Short()
+            ),
             price=limit_price,
             reduce_only=True,
         )
@@ -2990,3 +3063,108 @@ class DriftClient:
                 }
             )
         )
+
+    async def init_sequence(self, subaccount: int = 0) -> Signature:
+        try:
+            sig = (await self.send_ixs([self.get_sequence_init_ix(subaccount)])).tx_sig
+            self.sequence_initialized_by_subaccount[subaccount] = True
+            return sig
+        except Exception as e:
+            print(f"WARNING: failed to initialize sequence: {e}")
+
+    def get_sequence_init_ix(self, subaccount: int = 0) -> Instruction:
+        if self.enforce_tx_sequencing is False:
+            raise ValueError("tx sequencing is disabled")
+        return self.sequence_enforcer_program.instruction["initialize"](
+            self.sequence_bump_by_subaccount[subaccount],
+            str(subaccount),
+            ctx=Context(
+                accounts={
+                    "sequence_account": self.sequence_address_by_subaccount[subaccount],
+                    "authority": self.wallet.payer.pubkey(),
+                    "system_program": ID,
+                }
+            ),
+        )
+
+    async def reset_sequence_number(
+        self, sequence_number: int = 0, subaccount: int = 0
+    ) -> Signature:
+        try:
+            ix = self.get_reset_sequence_number_ix(sequence_number)
+            self.resetting_sequence = True
+            sig = (await self.send_ixs(ix)).tx_sig
+            self.resetting_sequence = False
+            self.sequence_number_by_subaccount[subaccount] = sequence_number
+            return sig
+        except Exception as e:
+            print(f"WARNING: failed to reset sequence number: {e}")
+
+    def get_reset_sequence_number_ix(
+        self, sequence_number: int, subaccount: int = 0
+    ) -> Instruction:
+        if self.enforce_tx_sequencing is False:
+            raise ValueError("tx sequencing is disabled")
+        return self.sequence_enforcer_program.instruction["reset_sequence_number"](
+            sequence_number,
+            ctx=Context(
+                accounts={
+                    "sequence_account": self.sequence_address_by_subaccount[subaccount],
+                    "authority": self.wallet.payer.pubkey(),
+                }
+            ),
+        )
+
+    def get_check_and_set_sequence_number_ix(
+        self, sequence_number: Optional[int] = None, subaccount: int = 0
+    ):
+        if self.enforce_tx_sequencing is False:
+            raise ValueError("tx sequencing is disabled")
+        sequence_number = (
+            sequence_number or self.sequence_number_by_subaccount[subaccount]
+        )
+
+        if (
+            sequence_number < self.sequence_number_by_subaccount[subaccount] - 1
+        ):  # we increment after creating the ix, so we check - 1
+            print(
+                f"WARNING: sequence number {sequence_number} < last used {self.sequence_number_by_subaccount[subaccount] - 1}"
+            )
+
+        ix = self.sequence_enforcer_program.instruction[
+            "check_and_set_sequence_number"
+        ](
+            sequence_number,
+            ctx=Context(
+                accounts={
+                    "sequence_account": self.sequence_address_by_subaccount[subaccount],
+                    "authority": self.wallet.payer.pubkey(),
+                }
+            ),
+        )
+
+        self.sequence_number_by_subaccount[subaccount] += 1
+        return ix
+
+    async def load_sequence_info(self):
+        for subaccount in self.sub_account_ids:
+            address, bump = get_sequencer_public_key_and_bump(
+                self.sequence_enforcer_pid, self.wallet.payer.pubkey(), subaccount
+            )
+            try:
+                sequence_account_raw = await self.sequence_enforcer_program.account[
+                    "SequenceAccount"
+                ].fetch(address)
+            except anchorpy.error.AccountDoesNotExistError as e:
+                self.sequence_address_by_subaccount[subaccount] = address
+                self.sequence_number_by_subaccount[subaccount] = 1
+                self.sequence_bump_by_subaccount[subaccount] = bump
+                self.sequence_initialized_by_subaccount[subaccount] = False
+                continue
+            sequence_account = cast(SequenceAccount, sequence_account_raw)
+            self.sequence_number_by_subaccount[subaccount] = (
+                sequence_account.sequence_num + 1
+            )
+            self.sequence_bump_by_subaccount[subaccount] = bump
+            self.sequence_initialized_by_subaccount[subaccount] = True
+            self.sequence_address_by_subaccount[subaccount] = address

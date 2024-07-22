@@ -9,7 +9,7 @@ from driftpy.constants.numeric_constants import (
 from driftpy.dlob.orderbook_levels import get_vamm_l2_generator
 from driftpy.math.amm import calculate_market_open_bid_ask, calculate_updated_amm
 from driftpy.types import OraclePriceData
-from dlob_test_constants import mock_perp_markets
+from tests.dlob_test_constants import mock_perp_markets
 
 
 @pytest.mark.asyncio
