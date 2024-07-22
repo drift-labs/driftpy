@@ -95,6 +95,7 @@ def get_prelaunch_oracle_public_key(program_id: Pubkey, market_index: int) -> Pu
         [b"prelaunch_oracle", int_to_le_bytes(market_index)], program_id
     )[0]
 
+
 def get_serum_open_orders_public_key(
     program_id: Pubkey,
     market: Pubkey,
@@ -103,14 +104,16 @@ def get_serum_open_orders_public_key(
         [b"serum_open_orders", bytes(market)], program_id
     )[0]
 
+
 def get_serum_signer_public_key(
-        program_id: Pubkey,
-        market: Pubkey,
-        nonce: int,
+    program_id: Pubkey,
+    market: Pubkey,
+    nonce: int,
 ) -> Pubkey:
     return Pubkey.create_program_address(
         [bytes(market), int_to_le_bytes(nonce)], program_id
     )
+
 
 def get_serum_fulfillment_config_public_key(
     program_id: Pubkey,
@@ -119,6 +122,7 @@ def get_serum_fulfillment_config_public_key(
     return Pubkey.find_program_address(
         [b"serum_fulfillment_config", bytes(market)], program_id
     )[0]
+
 
 def get_phoenix_fulfillment_config_public_key(
     program_id: Pubkey,
