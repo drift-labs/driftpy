@@ -263,7 +263,6 @@ async def main():
 
     await demo_perp_place_and_take(
         drift_client=drift_client,
-        user_map=user_map,
         perp_market_index=perp_market_index,
         perp_trade_direction=PositionDirection.Long(),
         perp_base_amount=trade_amount_base,

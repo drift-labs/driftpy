@@ -349,11 +349,8 @@ class DriftUser:
         asset_value = self.get_spot_market_asset_value(
             margin_category=margin_category, include_open_orders=True, strict=strict
         )
-        print(f"ASSET VALUE: {asset_value}")
         pnl = self.get_unrealized_pnl(True, with_weight_margin_category=margin_category)
-        print(f"PNL: {pnl}")
         total_collateral = asset_value + pnl
-        print(f"TOTAL COLLATERAL: {total_collateral}")
         return total_collateral
 
     def get_free_collateral(
@@ -1002,8 +999,6 @@ class DriftUser:
             market, current_perp_pos, position_base_size_change
         )
 
-        print(f"PERP DELTA: {free_collateral_delta}")
-
         if not free_collateral_delta:
             return -1
 
@@ -1033,8 +1028,6 @@ class DriftUser:
                     )
                 )
 
-                print(f"SPOT DELTA: {spot_free_collateral_delta}")
-
                 free_collateral_delta = (
                     free_collateral_delta + spot_free_collateral_delta
                 )
@@ -1046,11 +1039,7 @@ class DriftUser:
             perp_market_index
         ).price
 
-        print(f"DELTA: {free_collateral_delta}")
-        print(f"FREE COLLATERAL: {free_collateral}")
-        print(f"ORACLE PRICE: {oracle_price}")
         liq_price_delta = (free_collateral * QUOTE_PRECISION) // free_collateral_delta
-        print(f"LIQ PRICE DELTA: {liq_price_delta}")
         liq_price = oracle_price - liq_price_delta
 
         if liq_price < 0:
