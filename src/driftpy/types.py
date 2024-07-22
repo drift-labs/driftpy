@@ -1028,7 +1028,7 @@ class MakerInfo:
     maker: Pubkey
     maker_stats: Pubkey
     maker_user_account: UserAccount
-    order: Order
+    order: Optional[Order] = None
 
 
 @dataclass

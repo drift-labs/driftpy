@@ -61,7 +61,7 @@ class StandardTxSender(TxSender):
         ixs: Sequence[Instruction],
         payer: Keypair,
         lookup_tables: Sequence[AddressLookupTableAccount],
-        additional_signers: Optional[Sequence[Keypair]],
+        additional_signers: Optional[Sequence[Keypair]] = None,
     ) -> VersionedTransaction:
         latest_blockhash = await self.fetch_latest_blockhash()
 
@@ -80,7 +80,11 @@ class StandardTxSender(TxSender):
 
         body = self.connection._send_raw_transaction_body(raw, self.opts)
         resp = await self.connection._provider.make_request(body, SendTransactionResp)
-        sig = resp.value
+
+        if not isinstance(resp, SendTransactionResp):
+            raise Exception(f"Unexpected response from send transaction: {resp}")
+
+        sig = resp.result
 
         sig_status = await self.connection.confirm_transaction(
             sig, self.opts.preflight_commitment

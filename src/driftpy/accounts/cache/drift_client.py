@@ -38,7 +38,12 @@ class CachedDriftClientAccountSubscriber(DriftClientAccountSubscriber):
     ):
         self.program = program
         self.commitment = commitment
-        self.cache = {"spot_markets": {}, "perp_markets": {}, "oracle_price_data": {}}
+        self.cache = {
+            "spot_markets": [],
+            "perp_markets": [],
+            "oracle_price_data": {},
+            "state": None,
+        }
         self.perp_market_indexes = perp_market_indexes
         self.spot_market_indexes = spot_market_indexes
         self.oracle_infos = oracle_infos
@@ -51,9 +56,10 @@ class CachedDriftClientAccountSubscriber(DriftClientAccountSubscriber):
         is_empty = all(not d for d in self.cache.values())
         if is_empty:
             self.cache = {
-                "spot_markets": {},
-                "perp_markets": {},
+                "spot_markets": [],
+                "perp_markets": [],
                 "oracle_price_data": {},
+                "state": None,
             }
 
         state_and_slot = await get_state_account_and_slot(self.program)
@@ -232,7 +238,12 @@ class CachedDriftClientAccountSubscriber(DriftClientAccountSubscriber):
         return None
 
     async def unsubscribe(self):
-        self.cache = None
+        self.cache = {
+            "spot_markets": [],
+            "perp_markets": [],
+            "oracle_price_data": {},
+            "state": None,
+        }
 
     def get_market_accounts_and_slots(self) -> list[DataAndSlot[PerpMarketAccount]]:
         return self.cache["perp_markets"]

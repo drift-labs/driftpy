@@ -1040,7 +1040,6 @@ class DriftUser:
         ).price
 
         liq_price_delta = (free_collateral * QUOTE_PRECISION) // free_collateral_delta
-
         liq_price = oracle_price - liq_price_delta
 
         if liq_price < 0:
