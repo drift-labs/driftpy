@@ -700,7 +700,10 @@ class PerpMarketAccount:
     padding1: int = 0
     quote_spot_market_index: Optional[int] = None
     fee_adjustment: Optional[int] = None
-    padding: list[int] = field(default_factory=lambda: [0] * 46)
+    fuel_boost_position: Optional[int] = None
+    fuel_boost_taker: Optional[int] = None
+    fuel_boost_maker: Optional[int] = None
+    padding: list[int] = field(default_factory=lambda: [0] * 43)
 
 
 @dataclass
@@ -774,12 +777,22 @@ class SpotMarketAccount:
     oracle_source: OracleSource
     status: MarketStatus
     asset_tier: AssetTier
-    padding1: list[int] = field(default_factory=lambda: [0] * 6)
+    paused_operations: int
+    if_paused_operations: int
+    fee_adjustment: int
+    max_token_borrows_fraction: int
     flash_loan_amount: Optional[int] = None
     flash_loan_initial_token_amount: Optional[int] = None
     total_swap_fee: Optional[int] = None
     scale_initial_asset_weight_start: Optional[int] = None
-    padding: list[int] = field(default_factory=lambda: [0] * 48)
+    min_borrow_rate: Optional[int] = None
+    fuel_boost_deposits: Optional[int] = None
+    fuel_boost_borrows: Optional[int] = None
+    fuel_boost_taker: Optional[int] = None
+    min_borrow_rate: Optional[int] = None
+    fuel_boost_maker: Optional[int] = None
+    fuel_boost_insurance: Optional[int] = None
+    padding: list[int] = field(default_factory=lambda: [0] * 42)
 
 
 @dataclass
@@ -893,7 +906,16 @@ class UserStatsAccount:
     number_of_sub_accounts_created: int
     is_referrer: bool
     disable_update_perp_bid_ask_twap: bool
-    padding: list[int] = field(default_factory=lambda: [0] * 50)
+    padding1: list[int] = field(default_factory=lambda: [0] * 2),
+    fuel_insurance: int
+    fuel_deposits: int
+    fuel_borrows: int
+    fuel_positions: int
+    fuel_taker: int
+    fuel_maker: int
+    if_staked_gov_token_amount: int
+    last_fuel_if_bonus_update_ts: int
+    padding: list[int] = field(default_factory=lambda: [0] * 12)
 
 
 @dataclass
