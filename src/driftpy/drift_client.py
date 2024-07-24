@@ -1103,9 +1103,9 @@ class DriftClient:
                 self.get_place_spot_order_ix(order_params, sub_account_id),
             ]
         )
-        self.last_spot_market_seen_cache[order_params.market_index] = (
-            tx_sig_and_slot.slot
-        )
+        self.last_spot_market_seen_cache[
+            order_params.market_index
+        ] = tx_sig_and_slot.slot
         self.last_spot_market_seen_cache[QUOTE_SPOT_MARKET_INDEX] = tx_sig_and_slot.slot
         return tx_sig_and_slot.tx_sig
 
@@ -1151,9 +1151,9 @@ class DriftClient:
                 self.get_place_perp_order_ix(order_params, sub_account_id),
             ]
         )
-        self.last_perp_market_seen_cache[order_params.market_index] = (
-            tx_sig_and_slot.slot
-        )
+        self.last_perp_market_seen_cache[
+            order_params.market_index
+        ] = tx_sig_and_slot.slot
         return tx_sig_and_slot.tx_sig
 
     def get_place_perp_order_ix(
@@ -1199,13 +1199,13 @@ class DriftClient:
 
         for order_param in order_params:
             if is_variant(order_param.market_type, "Perp"):
-                self.last_perp_market_seen_cache[order_param.market_index] = (
-                    tx_sig_and_slot.slot
-                )
+                self.last_perp_market_seen_cache[
+                    order_param.market_index
+                ] = tx_sig_and_slot.slot
             else:
-                self.last_spot_market_seen_cache[order_param.market_index] = (
-                    tx_sig_and_slot.slot
-                )
+                self.last_spot_market_seen_cache[
+                    order_param.market_index
+                ] = tx_sig_and_slot.slot
 
         return tx_sig_and_slot.tx_sig
 
@@ -1399,13 +1399,13 @@ class DriftClient:
 
         for order_param in place_order_params:
             if is_variant(order_param.market_type, "Perp"):
-                self.last_perp_market_seen_cache[order_param.market_index] = (
-                    tx_sig_and_slot.slot
-                )
+                self.last_perp_market_seen_cache[
+                    order_param.market_index
+                ] = tx_sig_and_slot.slot
             else:
-                self.last_spot_market_seen_cache[order_param.market_index] = (
-                    tx_sig_and_slot.slot
-                )
+                self.last_spot_market_seen_cache[
+                    order_param.market_index
+                ] = tx_sig_and_slot.slot
 
         return tx_sig_and_slot.tx_sig
 
@@ -1525,9 +1525,9 @@ class DriftClient:
                 ),
             ]
         )
-        self.last_perp_market_seen_cache[order_params.market_index] = (
-            tx_sig_and_slot.slot
-        )
+        self.last_perp_market_seen_cache[
+            order_params.market_index
+        ] = tx_sig_and_slot.slot
         return tx_sig_and_slot.tx_sig
 
     def get_place_and_take_perp_order_ix(
@@ -1546,7 +1546,9 @@ class DriftClient:
         maker_infos = (
             maker_info
             if isinstance(maker_info, list)
-            else [maker_info] if maker_info else []
+            else [maker_info]
+            if maker_info
+            else []
         )
 
         user_accounts = [self.get_user_account(sub_account_id)]
@@ -1621,9 +1623,9 @@ class DriftClient:
                 ),
             ]
         )
-        self.last_spot_market_seen_cache[order_params.market_index] = (
-            tx_sig_and_slot.slot
-        )
+        self.last_spot_market_seen_cache[
+            order_params.market_index
+        ] = tx_sig_and_slot.slot
         return tx_sig_and_slot.tx_sig
 
     def get_place_and_take_spot_order_ix(
@@ -1646,7 +1648,9 @@ class DriftClient:
         maker_infos = (
             maker_info
             if isinstance(maker_info, list)
-            else [maker_info] if maker_info else []
+            else [maker_info]
+            if maker_info
+            else []
         )
         for maker_info in maker_infos:
             user_accounts.append(maker_info.maker_user_account)
@@ -2604,7 +2608,9 @@ class DriftClient:
         maker_info = (
             maker_info
             if isinstance(maker_info, list)
-            else [maker_info] if maker_info else []
+            else [maker_info]
+            if maker_info
+            else []
         )
 
         user_accounts = [user_account]

@@ -286,7 +286,7 @@ mainnet_perp_market_configs: list[PerpMarketConfig] = [
         symbol="RNDR-PERP",
         base_asset_symbol="RNDR",
         market_index=12,
-        oracle=Pubkey.from_string("F3mPHRtJqqq57JPDBmUwUVhpyPLmjE5dAzDfpVgpFkug"),
+        oracle=Pubkey.from_string("8TQztfGcNjHGRusX4ejQQtPZs3Ypczt9jWF6pkgQMqUX"),
         oracle_source=OracleSource.PythPull(),
     ),
     PerpMarketConfig(
