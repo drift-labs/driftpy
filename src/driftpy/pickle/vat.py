@@ -1,5 +1,6 @@
 import pickle
 import os
+from dataclasses import dataclass
 from typing import Optional
 from driftpy.drift_client import DriftClient
 from driftpy.market_map.market_map import MarketMap
@@ -14,7 +15,7 @@ class Vat:
         self,
         drift_client: DriftClient,
         users: UserMap,
-        user_stats: UserStatsMap,
+        user_stats: Optional[UserStatsMap],
         spot_markets: MarketMap,
         perp_markets: MarketMap,
     ):
@@ -31,8 +32,9 @@ class Vat:
         await self.users.sync()
         self.users.dump()
 
-        await self.user_stats.sync()
-        self.user_stats.dump()
+        if self.user_stats is not None:
+            await self.user_stats.sync()
+            self.user_stats.dump()
 
         await self.spot_markets.dump()
         await self.perp_markets.dump()
@@ -54,7 +56,8 @@ class Vat:
         self.perp_markets.clear()
 
         await self.users.load(users_filename)
-        await self.user_stats.load(user_stats_filename)
+        if self.user_stats is not None:
+            await self.user_stats.load(user_stats_filename)
         await self.spot_markets.load(spot_markets_filename)
         await self.perp_markets.load(perp_markets_filename)
 

@@ -244,11 +244,11 @@ class UserMap(UserMapInterface, DLOBSource):
                 data = decode_user(decompress(user.data))
                 await self.add_pubkey(user.pubkey, DataAndSlot(slot, data))
 
-    def dump(self):
+    def dump(self, filename: Optional[str] = None):
         users = []
         for pubkey, user in self.raw.items():
             users.append(PickledData(pubkey=pubkey, data=compress(user)))
         self.last_dumped_slot = self.get_slot()
-        filename = f"usermap_{self.last_dumped_slot}.pkl"
+        filename = filename or f"usermap_{self.last_dumped_slot}.pkl"
         with open(filename, "wb") as f:
             pickle.dump(users, f, pickle.HIGHEST_PROTOCOL)
