@@ -243,6 +243,7 @@ class MarginCalculationMode:
 class OracleSource:
     Pyth = constructor()
     Switchboard = constructor()
+    SwitchboardOnDemand = constructor()
     QuoteAsset = constructor()
     Pyth1K = constructor()
     Pyth1M = constructor()
