@@ -174,7 +174,7 @@ def decode_swb_on_demand_price_info(data: bytes):
     return OraclePriceData(
         price=int(price),
         slot=slot,
-        confidence=conf,
+        confidence=int(conf),
         twap=None,
         twap_confidence=None,
         has_sufficient_number_of_data_points=True,
