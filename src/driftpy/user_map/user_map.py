@@ -249,6 +249,6 @@ class UserMap(UserMapInterface, DLOBSource):
         for pubkey, user in self.raw.items():
             users.append(PickledData(pubkey=pubkey, data=compress(user)))
         self.last_dumped_slot = self.get_slot()
-        filename = filename or f"usermap_{self.last_dumped_slot}.pkl"
-        with open(filename, "wb") as f:
+        path = filename or f"usermap_{self.last_dumped_slot}.pkl"
+        with open(path, "wb") as f:
             pickle.dump(users, f, pickle.HIGHEST_PROTOCOL)
