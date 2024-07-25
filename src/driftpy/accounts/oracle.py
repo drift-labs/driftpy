@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Optional
 
 from anchorpy import Coder, Idl
 
@@ -19,12 +20,17 @@ file = Path(str(driftpy.__path__[0]) + "/idl/switchboard.json")
 with file.open() as f:
     raw = file.read_text()
 IDL = Idl.from_json(raw)
-CODER = Coder(IDL)
+SWB_CODER = Coder(IDL)
 file = Path(str(driftpy.__path__[0]) + "/idl/drift.json")
 with file.open() as f:
     raw = file.read_text()
 DRIFT_IDL = Idl.from_json(raw)
 DRIFT_CODER = Coder(DRIFT_IDL)
+file = Path(str(driftpy.__path__[0]) + "/idl/switchboard_on_demand.json")
+with file.open() as f:
+    raw = file.read_text()
+SWB_ON_DEMAND_IDL = Idl.from_json(raw)
+SWB_ON_DEMAND_CODER = Coder(SWB_ON_DEMAND_IDL)
 
 
 def convert_pyth_price(price, scale=1):
@@ -36,54 +42,65 @@ def convert_switchboard_decimal(mantissa: int, scale: int = 1):
     return int((mantissa * PRICE_PRECISION) // swb_precision)
 
 
+def is_pyth_pull_oracle(oracle_source: OracleSource):
+    return (
+        is_variant(oracle_source, "PythPull")
+        or is_variant(oracle_source, "Pyth1KPull")
+        or is_variant(oracle_source, "Pyth1MPull")
+        or is_variant(oracle_source, "PythStableCoinPull")
+    )
+
+
+def is_pyth_legacy_oracle(oracle_source: OracleSource):
+    return (
+        is_variant(oracle_source, "Pyth")
+        or is_variant(oracle_source, "Pyth1K")
+        or is_variant(oracle_source, "Pyth1M")
+        or is_variant(oracle_source, "PythStableCoin")
+    )
+
+
 async def get_oracle_price_data_and_slot(
     connection: AsyncClient, address: Pubkey, oracle_source=OracleSource.Pyth()
 ) -> DataAndSlot[OraclePriceData]:
-    if "Pull" in str(oracle_source):
-        rpc_response = await connection.get_account_info(address)
-        rpc_response_slot = rpc_response.context.slot
-
-        oracle_price_data = decode_pyth_pull_price_info(
-            rpc_response.value.data, oracle_source
-        )
-
-        return DataAndSlot(data=oracle_price_data, slot=rpc_response_slot)
-
-    elif "Pyth" in str(oracle_source):
-        rpc_reponse = await connection.get_account_info(address)
-        rpc_response_slot = rpc_reponse.context.slot
-
-        oracle_price_data = decode_pyth_price_info(
-            rpc_reponse.value.data, oracle_source
-        )
-
-        return DataAndSlot(data=oracle_price_data, slot=rpc_response_slot)
-    elif is_variant(oracle_source, "QuoteAsset"):
+    if is_variant(oracle_source, "QuoteAsset"):
         return DataAndSlot(
             data=OraclePriceData(PRICE_PRECISION, 0, 1, 1, 0, True), slot=0
         )
+
+    resp = await connection.get_account_info(address)
+    slot = resp.context.slot
+    oracle_raw = resp.value.data
+
+    data_and_slot: Optional[DataAndSlot[OraclePriceData]] = None
+    if is_pyth_pull_oracle(oracle_source):
+        oracle_price_data = decode_pyth_pull_price_info(oracle_raw, oracle_source)
+        data_and_slot = DataAndSlot(data=oracle_price_data, slot=slot)
+    elif is_pyth_legacy_oracle(oracle_source):
+        oracle_price_data = decode_pyth_price_info(oracle_raw, oracle_source)
+        data_and_slot = DataAndSlot(data=oracle_price_data, slot=slot)
+    elif is_variant(oracle_source, "SwitchboardOnDemand"):
+        oracle_price_data = decode_swb_on_demand_price_info(oracle_raw)
+        data_and_slot = DataAndSlot(data=oracle_price_data, slot=slot)
     elif is_variant(oracle_source, "Switchboard"):
-        rpc_reponse = await connection.get_account_info(address)
-        rpc_response_slot = rpc_reponse.context.slot
-
-        oracle_price_data = decode_swb_price_info(rpc_reponse.value.data)
-
-        return DataAndSlot(data=oracle_price_data, slot=rpc_response_slot)
+        oracle_price_data = decode_swb_price_info(oracle_raw)
+        data_and_slot = DataAndSlot(data=oracle_price_data, slot=slot)
     elif is_variant(oracle_source, "Prelaunch"):
-        rpc_reponse = await connection.get_account_info(address)
-        rpc_response_slot = rpc_reponse.context.slot
+        oracle_price_data = decode_prelaunch_price_info(oracle_raw)
+        data_and_slot = DataAndSlot(data=oracle_price_data, slot=slot)
 
-        oracle_price_data = decode_prelaunch_price_info(rpc_reponse.value.data)
+    if data_and_slot:
+        return data_and_slot
 
-        return DataAndSlot(data=oracle_price_data, slot=rpc_response_slot)
-    else:
-        raise NotImplementedError("Unsupported Oracle Source", str(oracle_source))
+    raise NotImplementedError(
+        f"Received unexpected oracle source: {str(oracle_source)}"
+    )
 
 
 def oracle_ai_to_oracle_price_data(
     oracle_ai: Account, oracle_source=OracleSource.Pyth()
 ) -> DataAndSlot[OraclePriceData]:
-    if "Pyth" in str(oracle_source):
+    if is_pyth_legacy_oracle(oracle_source):
         oracle_price_data = decode_pyth_price_info(oracle_ai.data, oracle_source)
 
         return DataAndSlot(oracle_price_data.slot, oracle_price_data)
@@ -99,7 +116,7 @@ def decode_pyth_price_info(
     buffer: bytes,
     oracle_source=OracleSource.Pyth(),
 ) -> OraclePriceData:
-    if "Pull" in str(oracle_source):
+    if is_pyth_pull_oracle(oracle_source):
         raise ValueError("Use decode_pyth_pull_price_info for Pyth Pull Oracles")
 
     offset = _ACCOUNT_HEADER_BYTES
@@ -145,8 +162,27 @@ def decode_pyth_price_info(
     )
 
 
+def decode_swb_on_demand_price_info(data: bytes):
+    account = SWB_ON_DEMAND_CODER.accounts.decode(data)
+
+    oracle_raw = account.result
+
+    price = oracle_raw.value // SWB_PRECISION
+    slot = oracle_raw.slot
+    conf = oracle_raw.range // SWB_PRECISION
+
+    return OraclePriceData(
+        price=int(price),
+        slot=slot,
+        confidence=int(conf),
+        twap=None,
+        twap_confidence=None,
+        has_sufficient_number_of_data_points=True,
+    )
+
+
 def decode_swb_price_info(data: bytes):
-    account = CODER.accounts.decode(data)
+    account = SWB_CODER.accounts.decode(data)
 
     round = account.latest_confirmed_round
 
@@ -210,26 +246,34 @@ def decode_pyth_pull_price_info(
 
 
 def decode_oracle(oracle_ai: bytes, oracle_source: OracleSource):
-    if "Pull" in str(oracle_source):
+    if is_pyth_pull_oracle(oracle_source):
         return decode_pyth_pull_price_info(oracle_ai, oracle_source)
-    elif "Pyth" in str(oracle_source):
+    elif is_pyth_legacy_oracle(oracle_source):
         return decode_pyth_price_info(oracle_ai, oracle_source)
-    elif "Switchboard" in str(oracle_source):
+    elif is_variant(oracle_source, "SwitchboardOnDemand"):
+        return decode_swb_on_demand_price_info(oracle_ai)
+    elif is_variant(oracle_source, "Switchboard"):
         return decode_swb_price_info(oracle_ai)
-    elif "Prelaunch" in str(oracle_source):
+    elif is_variant(oracle_source, "Prelaunch"):
         return decode_prelaunch_price_info(oracle_ai)
     else:
-        raise Exception("Unknown oracle source")
+        raise NotImplementedError(
+            f"Received unexpected oracle source: {str(oracle_source)}"
+        )
 
 
 def get_oracle_decode_fn(oracle_source: OracleSource):
-    if "Pull" in str(oracle_source):
+    if is_pyth_pull_oracle(oracle_source):
         return lambda data: decode_pyth_pull_price_info(data, oracle_source)
-    if "Pyth" in str(oracle_source):
+    if is_pyth_legacy_oracle(oracle_source):
         return lambda data: decode_pyth_price_info(data, oracle_source)
-    elif "Switchboard" in str(oracle_source):
+    elif is_variant(oracle_source, "SwitchboardOnDemand"):
+        return lambda data: decode_swb_on_demand_price_info(data)
+    elif is_variant(oracle_source, "Switchboard"):
         return lambda data: decode_swb_price_info(data)
-    elif "Prelaunch" in str(oracle_source):
+    elif is_variant(oracle_source, "Prelaunch"):
         return lambda data: decode_prelaunch_price_info(data)
     else:
-        raise Exception("Unknown oracle source")
+        raise NotImplementedError(
+            f"Received unexpected oracle source: {str(oracle_source)}"
+        )
