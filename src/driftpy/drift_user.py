@@ -12,6 +12,11 @@ from driftpy.math.perp_position import *
 from driftpy.math.margin import *
 from driftpy.math.spot_balance import get_strict_token_value
 from driftpy.math.spot_market import *
+from driftpy.math.fuel import (
+    calculate_spot_fuel_bonus,
+    calculate_perp_fuel_bonus,
+    calculate_insurance_fuel_bonus,
+)
 from driftpy.accounts.oracle import *
 from driftpy.math.spot_position import (
     get_worst_case_token_amounts,
@@ -1290,3 +1295,107 @@ class DriftUser:
         )
 
         return total_asset_value - total_liability_value
+
+    def get_fuel_bonus(
+        self, now: int, include_settled: bool = True, include_unsettled: bool = True
+    ) -> dict[str, int]:
+        user_account = self.get_user_account()
+        total_fuel = {
+            "insurance_fuel": 0,
+            "taker_fuel": 0,
+            "maker_fuel": 0,
+            "deposit_fuel": 0,
+            "borrow_fuel": 0,
+            "position_fuel": 0,
+        }
+
+        if include_settled:
+            user_stats = self.drift_client.get_user_stats().get_account()
+            total_fuel["taker_fuel"] += user_stats.fuel_taker
+            total_fuel["maker_fuel"] += user_stats.fuel_maker
+            total_fuel["deposit_fuel"] += user_stats.fuel_deposits
+            total_fuel["borrow_fuel"] += user_stats.fuel_borrows
+            total_fuel["position_fuel"] += user_stats.fuel_positions
+
+        if include_unsettled:
+            # fuel bonus numerator is the time since the last fuel bonus update, capped at the start of the fuel program
+            fuel_bonus_numerator = max(
+                now - max(user_account.last_fuel_bonus_update_ts, FUEL_START_TS), 0
+            )
+            if fuel_bonus_numerator > 0:
+                for spot_position in self.get_active_spot_positions():
+                    spot_market_account = self.drift_client.get_spot_market_account(
+                        spot_position.market_index
+                    )
+                    token_amount = self.get_token_amount(spot_position.market_index)
+                    oracle_price_data = self.get_oracle_data_for_spot_market(
+                        spot_position.market_index
+                    )
+                    twap_5min = calculate_live_oracle_twap(
+                        spot_market_account.historical_oracle_data,
+                        oracle_price_data,
+                        now,
+                        FIVE_MINUTE,
+                    )
+                    strict_oracle_price = StrictOraclePrice(
+                        oracle_price_data.price, twap_5min
+                    )
+                    signed_token_value = get_strict_token_value(
+                        token_amount, spot_market_account.decimals, strict_oracle_price
+                    )
+                    spot_fuel = calculate_spot_fuel_bonus(
+                        spot_market_account, signed_token_value, fuel_bonus_numerator
+                    )
+                    if signed_token_value > 0:
+                        total_fuel["deposit_fuel"] += spot_fuel
+                    else:
+                        total_fuel["borrow_fuel"] += spot_fuel
+
+                for perp_position in self.get_active_perp_positions():
+                    oracle_price_data = self.get_oracle_data_for_perp_market(
+                        perp_position.market_index
+                    )
+                    perp_market_account = self.drift_client.get_perp_market_account(
+                        perp_position.market_index
+                    )
+                    base_asset_value = self.get_perp_position_value(
+                        perp_position.market_index, oracle_price_data, False
+                    )
+                    total_fuel["position_fuel"] += calculate_perp_fuel_bonus(
+                        perp_market_account, base_asset_value, fuel_bonus_numerator
+                    )
+
+            user_stats = self.drift_client.get_user_stats().get_account()
+
+            if user_stats.if_staked_gov_token_amount > 0:
+                spot_market_account = self.drift_client.get_spot_market_account(
+                    GOV_SPOT_MARKET_INDEX
+                )
+                fuel_bonus_numerator_user_stats = (
+                    now - user_stats.last_fuel_bonus_update_ts
+                )
+                total_fuel["insurance_fuel"] += calculate_insurance_fuel_bonus(
+                    spot_market_account,
+                    user_stats.if_staked_gov_token_amount,
+                    fuel_bonus_numerator_user_stats,
+                )
+
+        return total_fuel
+
+    def get_perp_position_value(
+        self,
+        market_index: int,
+        oracle_price_data: OraclePriceData,
+        include_open_orders: bool = False,
+    ):
+        perp_position = self.get_perp_position_with_lp_settle(market_index)[
+            0
+        ] or self.get_empty_position(market_index)
+
+        market = self.drift_client.get_perp_market_account(perp_position.market_index)
+
+        perp_position_value = calculate_base_asset_value_with_oracle(
+            market, perp_position, oracle_price_data, include_open_orders
+        )
+
+        return perp_position_value

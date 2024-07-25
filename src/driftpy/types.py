@@ -700,9 +700,9 @@ class PerpMarketAccount:
     padding1: int = 0
     quote_spot_market_index: Optional[int] = None
     fee_adjustment: Optional[int] = None
-    fuel_boost_position: Optional[int] = None
     fuel_boost_taker: Optional[int] = None
     fuel_boost_maker: Optional[int] = None
+    fuel_boost_position: Optional[int] = None
     padding: list[int] = field(default_factory=lambda: [0] * 43)
 
 
@@ -789,7 +789,6 @@ class SpotMarketAccount:
     fuel_boost_deposits: Optional[int] = None
     fuel_boost_borrows: Optional[int] = None
     fuel_boost_taker: Optional[int] = None
-    min_borrow_rate: Optional[int] = None
     fuel_boost_maker: Optional[int] = None
     fuel_boost_insurance: Optional[int] = None
     padding: list[int] = field(default_factory=lambda: [0] * 42)
@@ -870,6 +869,7 @@ class UserAccount:
     has_open_order: bool
     open_auctions: int
     has_open_auction: bool
+    last_fuel_bonus_update_ts: int
     padding: list[int] = field(default_factory=lambda: [0] * 21)
 
 
@@ -906,15 +906,15 @@ class UserStatsAccount:
     number_of_sub_accounts_created: int
     is_referrer: bool
     disable_update_perp_bid_ask_twap: bool
-    padding1: list[int] = field(default_factory=lambda: [0] * 2),
-    fuel_insurance: int
-    fuel_deposits: int
-    fuel_borrows: int
-    fuel_positions: int
-    fuel_taker: int
-    fuel_maker: int
-    if_staked_gov_token_amount: int
-    last_fuel_if_bonus_update_ts: int
+    padding1: list[int] = (field(default_factory=lambda: [0] * 2),)
+    last_fuel_bonus_update_ts: int = (0,)
+    fuel_insurance: int = (0,)
+    fuel_deposits: int = (0,)
+    fuel_borrows: int = (0,)
+    fuel_positions: int = (0,)
+    fuel_taker: int = (0,)
+    fuel_maker: int = (0,)
+    if_staked_gov_token_amount: int = (0,)
     padding: list[int] = field(default_factory=lambda: [0] * 12)
 
 
