@@ -1,5 +1,5 @@
 {
-  "version": "2.85.0",
+  "version": "2.86.0",
   "name": "drift",
   "instructions": [
     {
@@ -12762,8 +12762,5 @@
       "name": "InvalidOpenbookV2Market",
       "msg": "InvalidOpenbookV2Market"
     }
-  ],
-  "metadata": {
-    "address": "dRiftyHA39MWEi3m9aunc5MzRF1JYuBsbn6VPcn33UH"
-  }
+  ]
 }
