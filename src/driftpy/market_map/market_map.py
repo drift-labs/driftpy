@@ -103,7 +103,7 @@ class MarketMap:
     def get_last_dump_filepath(self) -> str:
         return f"{market_type_to_string(self.market_type)}_{self.latest_slot}.pkl"
 
-    async def dump(self):
+    async def pre_dump(self) -> dict[str, bytes]:
         try:
             filters = []
             if is_variant(self.market_type, "Perp"):
@@ -142,13 +142,20 @@ class MarketMap:
                 raw_bytes = base64.b64decode(market["account"]["data"][0])
                 raw[str(pubkey)] = raw_bytes
 
+            return raw
+
+        except Exception as e:
+            print(f"error in marketmap pre-dump: {e}")
+
+    def dump(self, raw: dict[str, bytes], filename: Optional[str] = None):
+        try:
             markets = []
             for pubkey, market in raw.items():
                 markets.append(PickledData(pubkey=pubkey, data=compress(market)))
-            filename = (
+            path = filename or (
                 f"{market_type_to_string(self.market_type)}_{self.latest_slot}.pkl"
             )
-            with open(filename, "wb") as f:
+            with open(path, "wb") as f:
                 pickle.dump(markets, f)
 
         except Exception as e:

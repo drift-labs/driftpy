@@ -266,13 +266,13 @@ class UserStatsMap:
                     Pubkey.from_string(str(user_stat.pubkey)), DataAndSlot(slot, data)
                 )
 
-    def dump(self):
+    def dump(self, filename: Optional[str] = None):
         user_stats = []
         for _pubkey, user_stat in self.raw.items():
             decoded: UserStatsAccount = decode_user_stat(user_stat)
             auth = decoded.authority
             user_stats.append(PickledData(pubkey=auth, data=compress(user_stat)))
         self.last_dumped_slot = self.latest_slot
-        filename = f"userstats_{self.last_dumped_slot}.pkl"
-        with open(filename, "wb") as f:
+        path = filename or f"userstats_{self.last_dumped_slot}.pkl"
+        with open(path, "wb") as f:
             pickle.dump(user_stats, f, pickle.HIGHEST_PROTOCOL)
