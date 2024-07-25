@@ -108,6 +108,7 @@ mock_user_account = UserAccount(
     has_open_order=False,
     open_auctions=0,
     has_open_auction=False,
+    last_fuel_bonus_update_ts=0,
     padding=[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
 )
 

@@ -9,7 +9,9 @@ from sumtypes import constructor
 from typing import Optional
 from urllib.parse import urlparse, urlunparse
 
-from solders.pubkey import Pubkey  # type: ignore
+from solders.pubkey import Pubkey
+
+from driftpy.constants.numeric_constants import FUEL_START_TS  # type: ignore
 
 
 def is_variant(enum, type: str) -> bool:
