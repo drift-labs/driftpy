@@ -261,7 +261,8 @@ class UserStatsMap:
         with open(filename, "rb") as f:
             user_stats: list[PickledData] = pickle.load(f)
             for user_stat in user_stats:
-                data = decode_user_stat(decompress(user_stat.data))
+                decompressed_data = decompress(user_stat.data)
+                data = decode_user_stat(decompressed_data)
                 await self.add_user_stat(
                     Pubkey.from_string(str(user_stat.pubkey)), DataAndSlot(slot, data)
                 )

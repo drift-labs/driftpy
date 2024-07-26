@@ -241,7 +241,8 @@ class UserMap(UserMapInterface, DLOBSource):
         with open(filename, "rb") as f:
             users: list[PickledData] = pickle.load(f)
             for user in users:
-                data = decode_user(decompress(user.data))
+                decompressed_data = decompress(user.data)
+                data = decode_user(decompressed_data)
                 await self.add_pubkey(user.pubkey, DataAndSlot(slot, data))
 
     def dump(self, filename: Optional[str] = None):

@@ -172,5 +172,6 @@ class MarketMap:
         with open(filename, "rb") as f:
             markets: list[PickledData] = pickle.load(f)
             for market in markets:
-                data = self.program.coder.accounts.decode(decompress(market.data))
+                decompressed_data = decompress(market.data)
+                data = self.program.coder.accounts.decode(decompressed_data)
                 await self.add_market(data.market_index, DataAndSlot(slot, data))
