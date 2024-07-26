@@ -79,7 +79,7 @@ class UserStatsMap:
                     headers={"content-encoding": "gzip"},
                 )
 
-                resp = await asyncio.wait_for(post, timeout=10)
+                resp = await asyncio.wait_for(post, timeout=120)
 
                 parsed_resp = jsonrpcclient.parse(resp.json())
 
