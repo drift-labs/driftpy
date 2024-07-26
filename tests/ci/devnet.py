@@ -99,7 +99,7 @@ async def test_devnet_cached(rpc_url: str):
     print(f"1. Got: {len(spot_markets)}")
     assert len(spot_markets) == len(
         devnet_spot_market_configs
-    ), f"Expected {len(devnet_perp_market_configs)} spot markets, got {len(spot_markets)}"
+    ), f"Expected {len(devnet_spot_market_configs)} spot markets, got {len(spot_markets)}"
 
     await drift_client.account_subscriber.update_cache()
 

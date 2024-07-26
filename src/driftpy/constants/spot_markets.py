@@ -36,6 +36,13 @@ devnet_spot_market_configs: list[SpotMarketConfig] = [
         oracle_source=OracleSource.Pyth(),
         mint=Pubkey.from_string("3BZPwbcqB5kKScF3TEXxwNfx5ipV13kbRVDvfVp5c6fv"),
     ),
+    SpotMarketConfig(
+        symbol="PYUSD",
+        market_index=3,
+        oracle=Pubkey.from_string("HpMoKp3TCd3QT4MWYUKk2zCBwmhr5Df45fB6wdxYqEeh"),
+        oracle_source=OracleSource.PythPull(),
+        mint=Pubkey.from_string("GLfF72ZCUnS6N9iDJw8kedHzd6WFVf3VbpwdKKy76FRk"),
+    ),
 ]
 
 mainnet_spot_market_configs: list[SpotMarketConfig] = [
