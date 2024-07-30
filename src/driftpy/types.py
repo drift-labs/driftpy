@@ -286,6 +286,7 @@ class MarketStatus:
 class ContractType:
     Perpetual = constructor()
     Future = constructor()
+    Prediction = constructor()
 
 
 @_rust_enum
