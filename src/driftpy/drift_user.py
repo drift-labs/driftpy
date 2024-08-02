@@ -1386,18 +1386,6 @@ class DriftUser:
         user = self.get_user_account()
         return self.get_active_spot_positions_for_user_account(user)
 
-    def get_active_perp_positions_for_user_account(
-        self, user: UserAccount
-    ) -> list[PerpPosition]:
-        return [
-            pos
-            for pos in user.perp_positions
-            if pos.base_asset_amount != 0
-            or pos.quote_asset_amount != 0
-            or pos.open_orders != 0
-            or pos.lp_shares != 0
-        ]
-
     def get_active_spot_positions_for_user_account(
         self, user: UserAccount
     ) -> list[SpotPosition]:
