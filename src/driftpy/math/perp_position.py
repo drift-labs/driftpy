@@ -16,9 +16,7 @@ def calculate_base_asset_value_with_oracle(
         price = market.expiry_price
 
     baa = (
-        calculate_worst_case_base_asset_amount(
-            perp_position, market, oracle_price_data.price
-        )
+        calculate_worst_case_base_asset_amount(perp_position)
         if include_open_orders
         else perp_position.base_asset_amount
     )
@@ -71,54 +69,13 @@ def calculate_position_pnl_with_oracle(
     return pnl
 
 
-def calculate_worst_case_base_asset_amount(
-    perp_position: PerpPosition, perp_market: PerpMarketAccount, oracle_price: int
-) -> int:
-    return calculate_worst_case_perp_liability_value(
-        perp_position, perp_market, oracle_price
-    )["worst_case_base_asset_amount"]
-
-
-def calculate_worst_case_perp_liability_value(
-    perp_position: PerpPosition, perp_market: PerpMarketAccount, oracle_price: int
-) -> dict[str, int]:
+def calculate_worst_case_base_asset_amount(perp_position: PerpPosition):
     all_bids = perp_position.base_asset_amount + perp_position.open_bids
     all_asks = perp_position.base_asset_amount + perp_position.open_asks
-
-    is_prediction_market = is_variant(perp_market.contract_type, "Prediction")
-
-    all_bids_liability_value = calculate_perp_liability_value(
-        all_bids, oracle_price, is_prediction_market
-    )
-
-    all_asks_liability_value = calculate_perp_liability_value(
-        all_asks, oracle_price, is_prediction_market
-    )
-
-    if all_asks_liability_value >= all_bids_liability_value:
-        return {
-            "worst_case_base_asset_amount": all_asks,
-            "worst_case_quote_asset_amount": all_asks_liability_value,
-        }
-
-    return {
-        "worst_case_base_asset_amount": all_bids,
-        "worst_case_quote_asset_amount": all_bids_liability_value,
-    }
-
-
-def calculate_perp_liability_value(
-    base_asset_amount: int, oracle_price: int, is_prediction_market: bool
-) -> int:
-    if is_prediction_market:
-        if base_asset_amount > 0:
-            return (base_asset_amount * oracle_price) // BASE_PRECISION
-        else:
-            return (
-                abs(base_asset_amount) * (MAX_PREDICTION_PRICE - oracle_price)
-            ) // BASE_PRECISION
+    if abs(all_bids) > abs(all_asks):
+        return all_bids
     else:
-        return (abs(base_asset_amount) * oracle_price) // BASE_PRECISION
+        return all_asks
 
 
 def is_available(position: PerpPosition):
