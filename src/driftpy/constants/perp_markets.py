@@ -178,8 +178,8 @@ devnet_perp_market_configs: list[PerpMarketConfig] = [
         symbol="W-PERP",
         base_asset_symbol="W",
         market_index=23,
-        oracle=Pubkey.from_string("4HbitGsdcFbtFotmYscikQFAAKJ3nYx4t7sV7fTvsk8U"),
-        oracle_source=OracleSource.PythPull(),
+        oracle=Pubkey.from_string("4iCi4DvXrubHQne8jzbMaWL3pd7v1Fip8iTe4H9vHNXB"),
+        oracle_source=OracleSource.SwitchboardOnDemand(),
     ),
     PerpMarketConfig(
         symbol="KMNO-PERP",
@@ -194,6 +194,20 @@ devnet_perp_market_configs: list[PerpMarketConfig] = [
         market_index=25,
         oracle=Pubkey.from_string("F47c7aJgYkfKXQ9gzrJaEpsNwUKHprysregTWXrtYLFp"),
         oracle_source=OracleSource.Pyth1KPull(),
+    ),
+    PerpMarketConfig(
+        symbol="TRUMP-WIN-2024-PREDICT",
+        base_asset_symbol="TRUMP-WIN-2024",
+        market_index=26,
+        oracle=Pubkey.from_string("3TVuLmEGBRfVgrmFRtYTheczXaaoRBwcHw1yibZHSeNA"),
+        oracle_source=OracleSource.Prelaunch(),
+    ),
+    PerpMarketConfig(
+        symbol="KAMALA-POPULAR-VOTE-2024-PREDICT",
+        base_asset_symbol="KAMALA-POPULAR-VOTE",
+        market_index=27,
+        oracle=Pubkey.from_string("GU6CA7a2KCyhpfqZNb36UAfc9uzKBM8jHjGdt245QhYX"),
+        oracle_source=OracleSource.Prelaunch(),
     ),
 ]
 
