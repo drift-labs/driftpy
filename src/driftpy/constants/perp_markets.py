@@ -178,8 +178,8 @@ devnet_perp_market_configs: list[PerpMarketConfig] = [
         symbol="W-PERP",
         base_asset_symbol="W",
         market_index=23,
-        oracle=Pubkey.from_string("4HbitGsdcFbtFotmYscikQFAAKJ3nYx4t7sV7fTvsk8U"),
-        oracle_source=OracleSource.PythPull(),
+        oracle=Pubkey.from_string("4iCi4DvXrubHQne8jzbMaWL3pd7v1Fip8iTe4H9vHNXB"),
+        oracle_source=OracleSource.SwitchboardOnDemand(),
     ),
     PerpMarketConfig(
         symbol="KMNO-PERP",
