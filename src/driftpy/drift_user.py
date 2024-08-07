@@ -1390,6 +1390,19 @@ class DriftUser:
 
         return total_fuel
 
+    def get_active_spot_positions(self) -> list[SpotPosition]:
+        user = self.get_user_account()
+        return self.get_active_spot_positions_for_user_account(user)
+
+    def get_active_spot_positions_for_user_account(
+        self, user: UserAccount
+    ) -> list[SpotPosition]:
+        return [
+            spot_position
+            for spot_position in user.spot_positions
+            if not is_spot_position_available(spot_position)
+        ]
+
     def get_perp_position_value(
         self,
         market_index: int,
