@@ -19,29 +19,20 @@ def sig_num(x: int) -> int:
     return -1 if x < 0 else 1
 
 
-def time_remaining_until_update(now: int, last_update_ts: int, update_period: int):
+def time_remaining_until_update(now: int, last_update_ts: int, update_period: int) -> int:
     time_since_last_update = now - last_update_ts
-
-    next_update_wait = update_period
-    if update_period > 1:
-        last_update_delay = last_update_ts % update_period
-
-        if not last_update_ts == 0:
-            max_delay_for_next_period = update_period // 3
-
-            two_funding_periods = update_period * 2
-
-            if last_update_delay > max_delay_for_next_period:
-                next_update_wait = two_funding_periods - last_update_delay
-            else:
-                next_update_wait = update_period - last_update_delay
-
-            if next_update_wait > two_funding_periods:
-                next_update_wait = next_update_wait - update_period
-
-    if next_update_wait - time_since_last_update < 0:
-        time_remaining_until_update = 0
+    
+    if update_period == 1 or last_update_ts == 0:
+        time_remaining = update_period - time_since_last_update
     else:
-        time_remaining_until_update = next_update_wait - time_since_last_update
-
-    return time_remaining_until_update
+        last_update_delay = last_update_ts % update_period
+        max_delay_for_next_period = update_period // 3
+        
+        if last_update_delay > max_delay_for_next_period:
+            correction_factor = 2
+        else:
+            correction_factor = 1
+            
+        time_remaining = correction_factor * update_period - time_since_last_update - last_update_delay
+        
+    return max(0, time_remaining)
