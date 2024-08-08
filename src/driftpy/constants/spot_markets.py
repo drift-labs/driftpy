@@ -182,8 +182,8 @@ mainnet_spot_market_configs: list[SpotMarketConfig] = [
     SpotMarketConfig(
         symbol="JLP",
         market_index=19,
-        oracle=Pubkey.from_string("pmHEXBam7kbmCCg5ED5V7RNMN8e34sKu338KeuFAGof"),
-        oracle_source=OracleSource.Switchboard(),
+        oracle=Pubkey.from_string("5Mb11e5rt1Sp6A286B145E4TmgMzsM2UX9nCF2vas5bs"),
+        oracle_source=OracleSource.PythPull(),
         mint=Pubkey.from_string("27G8MtK7VtTcCHkpASjSDdkWWYfoqT6ggEuKidVJidD4"),
     ),
     SpotMarketConfig(
@@ -206,5 +206,19 @@ mainnet_spot_market_configs: list[SpotMarketConfig] = [
         oracle=Pubkey.from_string("HpMoKp3TCd3QT4MWYUKk2zCBwmhr5Df45fB6wdxYqEeh"),
         oracle_source=OracleSource.PythPull(),
         mint=Pubkey.from_string("2b1kV6DkPAnxd5ixfnxCpjxmKwqjjaYmCZfHsFu24GXo"),
+    ),
+    SpotMarketConfig(
+        symbol="USDe",
+        market_index=23,
+        oracle=Pubkey.from_string("BXej5boX2nWudwAfZQedo212B9XJxhjTeeF3GbCwXmYa"),
+        oracle_source=OracleSource.PythPull(),
+        mint=Pubkey.from_string("DEkqHyPN7GMRJ5cArtQFAWefqbZb33Hyf6s5iCwjEonT"),
+    ),
+    SpotMarketConfig(
+        symbol="sUSDe",
+        market_index=24,
+        oracle=Pubkey.from_string("BRuNuzLAPHHGSSVAJPKMcmJMdgDfrekvnSxkxPDGdeqp"),
+        oracle_source=OracleSource.PythPull(),
+        mint=Pubkey.from_string("Eh6XEPhSwoLv5wFApukmnaVSHQ6sAnoD9BmgmwQoN2sN"),
     ),
 ]

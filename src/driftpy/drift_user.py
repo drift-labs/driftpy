@@ -19,6 +19,7 @@ from driftpy.math.fuel import (
 )
 from driftpy.accounts.oracle import *
 from driftpy.math.spot_position import (
+    calculate_weighted_token_value,
     get_worst_case_token_amounts,
     is_spot_position_available,
 )
@@ -981,19 +982,25 @@ class DriftUser:
             ) // token_precision
 
     def get_perp_liq_price(
-        self, perp_market_index: int, position_base_size_change: int = 0
+        self,
+        perp_market_index: int,
+        position_base_size_change: int = 0,
+        margin_category: MarginCategory = MarginCategory.MAINTENANCE,
     ) -> Optional[int]:
-        total_collateral = self.get_total_collateral(MarginCategory.MAINTENANCE)
-        maintenance_margin_req = self.get_margin_requirement(MarginCategory.MAINTENANCE)
+        total_collateral = self.get_total_collateral(margin_category)
+        maintenance_margin_req = self.get_margin_requirement(margin_category)
         free_collateral = max(0, total_collateral - maintenance_margin_req)
 
         market = self.drift_client.get_perp_market_account(perp_market_index)
         current_perp_pos = self.get_perp_position_with_lp_settle(
             perp_market_index, burn_lp_shares=True
         )[0] or self.get_empty_position(perp_market_index)
+        oracle_price_data = self.drift_client.get_oracle_price_data_for_perp_market(
+            perp_market_index
+        )
 
         free_collateral_delta = self.calculate_free_collateral_delta_for_perp(
-            market, current_perp_pos, position_base_size_change
+            market, current_perp_pos, position_base_size_change, oracle_price_data.price
         )
 
         if not free_collateral_delta:
@@ -1655,3 +1662,106 @@ class DriftUser:
         return free_collateral_change - (
             free_collateral_consumption_after - free_collateral_consumption_before
         )
+
+    def get_total_liability_value(
+        self, margin_category: Optional[MarginCategory] = None
+    ):
+        perp_liability = self.get_total_perp_position_liability(
+            margin_category, include_open_orders=True
+        )
+
+        spot_liability = self.get_spot_market_liability_value(
+            margin_category=margin_category, include_open_orders=True
+        )
+
+        return perp_liability + spot_liability
+
+    def get_max_trade_size_usdc_for_perp(
+        self,
+        target_market_index: int,
+        trade_side: PositionDirection,
+        is_lp: bool = False,
+    ) -> dict[str, int]:
+        trade_size = 0
+        opposite_side_trade_size = 0
+
+        current_position, _, _ = self.get_perp_position_with_lp_settle(
+            target_market_index, None, True
+        ) or self.get_empty_position(target_market_index)
+
+        target_side = "short" if is_variant(trade_side, "Short") else "long"
+        current_position_side = (
+            "short" if current_position.base_asset_amount < 0 else "long"
+        )
+        targeting_same_side = (
+            True if not current_position else target_side == current_position_side
+        )
+
+        oracle_data = self.get_oracle_data_for_perp_market(target_market_index)
+        market_account = self.drift_client.get_perp_market_account(target_market_index)
+
+        lp_buffer = (
+            oracle_data.price
+            * market_account.amm.order_step_size
+            // AMM_RESERVE_PRECISION
+            if is_lp
+            else 0
+        )
+
+        opposite_size_liability_value = (
+            0
+            if targeting_same_side
+            else calculate_perp_liability_value(
+                current_position.base_asset_amount,
+                oracle_data.price,
+                is_variant(market_account.contract_type, "Prediction"),
+            )
+        )
+
+        max_position_size = self.get_perp_buying_power(target_market_index, lp_buffer)
+
+        if max_position_size >= 0:
+            if opposite_size_liability_value == 0:
+                # case 1: Regular trade where current total position less than max, and no opposite position to account for
+                trade_size = max_position_size
+            else:
+                # case 2: trade where current total position less than max, but need to account for flipping the current position over to the other side
+                trade_size = max_position_size + opposite_size_liability_value
+                opposite_side_trade_size = opposite_size_liability_value
+        else:
+            # current leverage is greater than max leverage - can only reduce position size
+            if not targeting_same_side:
+                market = self.drift_client.get_perp_market_account(target_market_index)
+                perp_liability_value = calculate_perp_liability_value(
+                    current_position.base_asset_amount,
+                    oracle_data.price,
+                    is_variant(market.contract_type, "Prediction"),
+                )
+                total_collateral = self.get_total_collateral()
+                margin_requirement = self.get_margin_requirement(MarginCategory.INITIAL)
+                margin_freed_by_closing = (
+                    perp_liability_value * market.margin_ratio_initial
+                ) // MARGIN_PRECISION
+                margin_requirement_after_closing = (
+                    margin_requirement - margin_freed_by_closing
+                )
+
+                if margin_requirement_after_closing > total_collateral:
+                    opposite_side_trade_size = perp_liability_value
+                else:
+                    free_collateral_after_close = (
+                        total_collateral - margin_requirement_after_closing
+                    )
+                    buying_power_after_close = self.get_perp_buying_power_from_free_collateral_and_base_asset_amount(
+                        target_market_index, free_collateral_after_close, 0
+                    )
+                    opposite_side_trade_size = perp_liability_value
+                    trade_size = buying_power_after_close
+            else:
+                # do nothing if targeting same side
+                trade_size = max_position_size
+
+        return {
+            "trade_size": trade_size,
+            "opposite_side_trade_size": opposite_side_trade_size,
+        }

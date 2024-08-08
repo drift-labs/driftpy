@@ -70,10 +70,15 @@ def handle_program_log(
         try:
             decoded = base64.b64decode(log_str)
         except binascii.Error:
+            # print("binascii error")
+            # print(log_str)
+            # print("log str ^^")
             return (None, None, False)
         if len(decoded) < 8:
+            # print("anchorpy error")
             return (None, None, False)
         event = program.coder.events.parse(decoded)
+        # print(event)
         return (event, None, False)
     else:
         return (None, *handle_system_log(log))
