@@ -1505,7 +1505,7 @@ class DriftUser:
                 perp_position, market, valuation_price
             )
             base_asset_amount = worst_case["worst_case_base_asset_amount"]
-            liability_value = worst_case["worst_case_quote_asset_amount"]
+            liability_value = worst_case["worst_case_liability_value"]
         else:
             base_asset_amount = perp_position.base_asset_amount
             liability_value = calculate_perp_liability_value(
@@ -1586,7 +1586,7 @@ class DriftUser:
         if include_open_orders:
             return calculate_worst_case_perp_liability_value(
                 user_position, market, oracle_price_data.price
-            )["worst_case_quote_asset_amount"]
+            )["worst_case_liability_value"]
         else:
             return calculate_perp_liability_value(
                 user_position.base_asset_amount,
@@ -1634,7 +1634,7 @@ class DriftUser:
                     perp_position, market, oracle_price
                 )
                 base_asset_amount = worst_case["worst_case_base_asset_amount"]
-                liability_value = worst_case["worst_case_quote_asset_amount"]
+                liability_value = worst_case["worst_case_liability_value"]
             else:
                 base_asset_amount = perp_position.base_asset_amount
                 liability_value = calculate_perp_liability_value(

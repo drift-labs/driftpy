@@ -98,12 +98,12 @@ def calculate_worst_case_perp_liability_value(
     if all_asks_liability_value >= all_bids_liability_value:
         return {
             "worst_case_base_asset_amount": all_asks,
-            "worst_case_quote_asset_amount": all_asks_liability_value,
+            "worst_case_liability_value": all_asks_liability_value,
         }
 
     return {
         "worst_case_base_asset_amount": all_bids,
-        "worst_case_quote_asset_amount": all_bids_liability_value,
+        "worst_case_liability_value": all_bids_liability_value,
     }
 
 
