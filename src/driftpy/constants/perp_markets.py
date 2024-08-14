@@ -464,4 +464,11 @@ mainnet_perp_market_configs: list[PerpMarketConfig] = [
         oracle=Pubkey.from_string("F47c7aJgYkfKXQ9gzrJaEpsNwUKHprysregTWXrtYLFp"),
         oracle_source=OracleSource.Pyth1KPull(),
     ),
+    PerpMarketConfig(
+        symbol="TRUMP-WIN-2024-BET",
+        base_asset_symbol="TRUMP-WIN-2024",
+        market_index=36,
+        oracle=Pubkey.from_string("7YrQUxmxGdbk8pvns9KcL5ojbZSL2eHj62hxRqggtEUR"),
+        oracle_source=OracleSource.Prelaunch(),
+    ),
 ]
