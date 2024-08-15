@@ -21,6 +21,7 @@ from driftpy.types import (
     PerpMarketAccount,
     PositionDirection,
     SwapDirection,
+    is_variant,
 )
 
 LiquiditySource = ["serum", "vamm", "dlob", "phoenix"]
@@ -168,7 +169,10 @@ def get_vamm_l2_generator(
 
     now = now or int(datetime.now().timestamp())
     bid_reserves, ask_reserves = calculate_spread_reserves(
-        updated_amm, oracle_price_data, now
+        updated_amm,
+        oracle_price_data,
+        now,
+        is_variant(market_account.contract_type, "Prediction"),
     )
 
     num_bids = 0
