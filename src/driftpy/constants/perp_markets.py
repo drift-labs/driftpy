@@ -471,4 +471,18 @@ mainnet_perp_market_configs: list[PerpMarketConfig] = [
         oracle=Pubkey.from_string("7YrQUxmxGdbk8pvns9KcL5ojbZSL2eHj62hxRqggtEUR"),
         oracle_source=OracleSource.Prelaunch(),
     ),
+    PerpMarketConfig(
+        symbol="KAMALA-POPULAR-VOTE-2024-BET",
+        base_asset_symbol="KAMALA-POPULAR-VOTE-2024",
+        market_index=37,
+        oracle=Pubkey.from_string("AowFw1dCVjS8kngvTCoT3oshiUyL69k7P1uxqXwteWH4"),
+        oracle_source=OracleSource.Prelaunch(),
+    ),
+    PerpMarketConfig(
+        symbol="FED-CUT-50-SEPT-2024-BET",
+        base_asset_symbol="FED-CUT-50-SEPT-2024",
+        market_index=38,
+        oracle=Pubkey.from_string("5QzgqAbEhJ1cPnLX4tSZEXezmW7sz7PPVVg2VanGi8QQ"),
+        oracle_source=OracleSource.Prelaunch(),
+    ),
 ]
