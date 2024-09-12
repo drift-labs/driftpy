@@ -486,13 +486,6 @@ mainnet_perp_market_configs: list[PerpMarketConfig] = [
         oracle_source=OracleSource.Prelaunch(),
     ),
     PerpMarketConfig(
-        symbol="FED-CUT-50-SEPT-2024-BET",
-        base_asset_symbol="FED-CUT-50-SEPT-2024",
-        market_index=38,
-        oracle=Pubkey.from_string("5QzgqAbEhJ1cPnLX4tSZEXezmW7sz7PPVVg2VanGi8QQ"),
-        oracle_source=OracleSource.Prelaunch(),
-    ),
-    PerpMarketConfig(
         symbol="REPUBLICAN-POPULAR-AND-WIN-BET",
         base_asset_symbol="REPUBLICAN-POPULAR-AND-WIN",
         market_index=39,
