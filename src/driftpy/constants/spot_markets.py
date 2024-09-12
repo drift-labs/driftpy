@@ -221,4 +221,11 @@ mainnet_spot_market_configs: list[SpotMarketConfig] = [
         oracle_source=OracleSource.PythPull(),
         mint=Pubkey.from_string("Eh6XEPhSwoLv5wFApukmnaVSHQ6sAnoD9BmgmwQoN2sN"),
     ),
+    SpotMarketConfig(
+        symbol="BNSOL",
+        market_index=25,
+        oracle=Pubkey.from_string("BAtFj4kQttZRVep3UZS2aZRDixkGYgWsbqTBVDbnSsPF"),
+        oracle_source=OracleSource.PythPull(),
+        mint=Pubkey.from_string("BNso1VUJnh4zcfpZa6986Ea66P6TCp59hvtNJ8b1X85"),
+    ),
 ]
