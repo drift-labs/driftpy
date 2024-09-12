@@ -52,7 +52,7 @@ devnet_perp_market_configs: list[PerpMarketConfig] = [
         symbol="MATIC-PERP",
         base_asset_symbol="MATIC",
         market_index=5,
-        oracle=Pubkey.from_string("BrzyDgwELy4jjjsqLQpBeUxzrsueYyMhuWpYBaUYcXvi"),
+        oracle=Pubkey.from_string("5Wf1WrXLeNJghU8WRo5odvwAjpjSSF4THbjdxbKmwVsi"),
         oracle_source=OracleSource.PythPull(),
     ),
     PerpMarketConfig(
