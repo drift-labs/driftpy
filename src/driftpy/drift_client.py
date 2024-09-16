@@ -28,6 +28,8 @@ from driftpy.constants import BASE_PRECISION, PRICE_PRECISION
 from driftpy.constants.numeric_constants import (
     QUOTE_SPOT_MARKET_INDEX,
 )
+from driftpy.enforcers.position_enforcer import PositionEnforcer
+from driftpy.enforcers.sequence_enforcer import SequenceEnforcer
 from driftpy.decode.utils import decode_name
 from driftpy.drift_user import DriftUser
 from driftpy.accounts import *
@@ -94,6 +96,7 @@ class DriftClient:
         jito_params: Optional[JitoParams] = None,
         tx_sender_blockhash_commitment: Optional[Commitment] = None,
         enforce_tx_sequencing: bool = False,
+        enforce_position_sizing: bool = False,
     ):
         """Initializes the drift client object
 
@@ -158,29 +161,13 @@ class DriftClient:
 
         self.tx_version = tx_version if tx_version is not None else 0
 
-        self.enforce_tx_sequencing = enforce_tx_sequencing
-        if self.enforce_tx_sequencing is True:
-            file = Path(str(driftpy.__path__[0]) + "/idl/sequence_enforcer.json")
-            with file.open() as f:
-                raw = file.read_text()
-            idl = Idl.from_json(raw)
+        self.sequence_enforcer = None
+        if enforce_tx_sequencing is True:
+            self.sequence_enforcer = SequenceEnforcer(self.connection, self.wallet, env)
 
-            provider = Provider(connection, wallet, opts)
-            self.sequence_enforcer_pid = (
-                SEQUENCER_PROGRAM_ID
-                if env == "mainnet"
-                else DEVNET_SEQUENCER_PROGRAM_ID
-            )
-            self.sequence_enforcer_program = Program(
-                idl,
-                self.sequence_enforcer_pid,
-                provider,
-            )
-            self.sequence_number_by_subaccount = {}
-            self.sequence_bump_by_subaccount = {}
-            self.sequence_initialized_by_subaccount = {}
-            self.sequence_address_by_subaccount = {}
-            self.resetting_sequence = False
+        self.position_enforcer = None
+        if enforce_position_sizing is True:
+            self.position_enforcer = PositionEnforcer(self.connection, self.wallet)
 
         if jito_params is not None:
             from driftpy.tx.jito_tx_sender import JitoTxSender
@@ -210,8 +197,8 @@ class DriftClient:
 
     async def subscribe(self):
         await self.account_subscriber.subscribe()
-        if self.enforce_tx_sequencing:
-            await self.load_sequence_info()
+        if self.sequence_enforcer:
+            await self.sequence_enforcer.load_sequence_info(self.sub_account_ids)
         for sub_account_id in self.sub_account_ids:
             await self.add_user(sub_account_id)
         await self.add_user_stats(self.authority)
@@ -424,12 +411,18 @@ class DriftClient:
         subaccount = sequencer_subaccount or self.active_sub_account_id
 
         if (
-            self.enforce_tx_sequencing
-            and self.sequence_initialized_by_subaccount[subaccount]
-            and not self.resetting_sequence
+            self.sequence_enforcer
+            and self.sequence_enforcer.get_sequence_init_for_subaccount(subaccount)
+            is True
+            and not self.sequence_enforcer.get_resetting_sequence()
         ):
-            sequence_instruction = self.get_check_and_set_sequence_number_ix(
-                self.sequence_number_by_subaccount[subaccount], subaccount
+            sequence_instruction = (
+                self.sequence_enforcer.get_check_and_set_sequence_number_ix(
+                    self.sequence_enforcer.get_sequence_number_for_subaccount(
+                        subaccount
+                    ),
+                    subaccount,
+                )
             )
             ixs.insert(len(compute_unit_instructions), sequence_instruction)
 
@@ -1145,6 +1138,7 @@ class DriftClient:
         self,
         order_params: OrderParams,
         sub_account_id: int = None,
+        expected_size: Optional[int] = None,
     ):
         tx_sig_and_slot = await self.send_ixs(
             [
@@ -3244,106 +3238,32 @@ class DriftClient:
         )
 
     async def init_sequence(self, subaccount: int = 0) -> Signature:
+        if self.sequence_enforcer is None:
+            raise Exception("Sequence enforcer is not initialized")
         try:
-            sig = (await self.send_ixs([self.get_sequence_init_ix(subaccount)])).tx_sig
-            self.sequence_initialized_by_subaccount[subaccount] = True
+            sig = (
+                await self.send_ixs(
+                    [self.sequence_enforcer.get_sequence_init_ix(subaccount)]
+                )
+            ).tx_sig
+            self.sequence_enforcer.set_sequence_init_for_subaccount(subaccount, True)
             return sig
         except Exception as e:
             print(f"WARNING: failed to initialize sequence: {e}")
 
-    def get_sequence_init_ix(self, subaccount: int = 0) -> Instruction:
-        if self.enforce_tx_sequencing is False:
-            raise ValueError("tx sequencing is disabled")
-        return self.sequence_enforcer_program.instruction["initialize"](
-            self.sequence_bump_by_subaccount[subaccount],
-            str(subaccount),
-            ctx=Context(
-                accounts={
-                    "sequence_account": self.sequence_address_by_subaccount[subaccount],
-                    "authority": self.wallet.payer.pubkey(),
-                    "system_program": ID,
-                }
-            ),
-        )
-
     async def reset_sequence_number(
         self, sequence_number: int = 0, subaccount: int = 0
     ) -> Signature:
+        if self.sequence_enforcer is None:
+            raise Exception("Sequence enforcer is not initialized")
         try:
-            ix = self.get_reset_sequence_number_ix(sequence_number)
-            self.resetting_sequence = True
+            ix = self.sequence_enforcer.get_reset_sequence_number_ix(sequence_number)
+            self.sequence_enforcer.set_resetting_sequence(True)
             sig = (await self.send_ixs(ix)).tx_sig
-            self.resetting_sequence = False
-            self.sequence_number_by_subaccount[subaccount] = sequence_number
+            self.sequence_enforcer.set_resetting_sequence(False)
+            self.sequence_enforcer.set_sequence_number_for_subaccount(
+                subaccount, sequence_number
+            )
             return sig
         except Exception as e:
             print(f"WARNING: failed to reset sequence number: {e}")
-
-    def get_reset_sequence_number_ix(
-        self, sequence_number: int, subaccount: int = 0
-    ) -> Instruction:
-        if self.enforce_tx_sequencing is False:
-            raise ValueError("tx sequencing is disabled")
-        return self.sequence_enforcer_program.instruction["reset_sequence_number"](
-            sequence_number,
-            ctx=Context(
-                accounts={
-                    "sequence_account": self.sequence_address_by_subaccount[subaccount],
-                    "authority": self.wallet.payer.pubkey(),
-                }
-            ),
-        )
-
-    def get_check_and_set_sequence_number_ix(
-        self, sequence_number: Optional[int] = None, subaccount: int = 0
-    ):
-        if self.enforce_tx_sequencing is False:
-            raise ValueError("tx sequencing is disabled")
-        sequence_number = (
-            sequence_number or self.sequence_number_by_subaccount[subaccount]
-        )
-
-        if (
-            sequence_number < self.sequence_number_by_subaccount[subaccount] - 1
-        ):  # we increment after creating the ix, so we check - 1
-            print(
-                f"WARNING: sequence number {sequence_number} < last used {self.sequence_number_by_subaccount[subaccount] - 1}"
-            )
-
-        ix = self.sequence_enforcer_program.instruction[
-            "check_and_set_sequence_number"
-        ](
-            sequence_number,
-            ctx=Context(
-                accounts={
-                    "sequence_account": self.sequence_address_by_subaccount[subaccount],
-                    "authority": self.wallet.payer.pubkey(),
-                }
-            ),
-        )
-
-        self.sequence_number_by_subaccount[subaccount] += 1
-        return ix
-
-    async def load_sequence_info(self):
-        for subaccount in self.sub_account_ids:
-            address, bump = get_sequencer_public_key_and_bump(
-                self.sequence_enforcer_pid, self.wallet.payer.pubkey(), subaccount
-            )
-            try:
-                sequence_account_raw = await self.sequence_enforcer_program.account[
-                    "SequenceAccount"
-                ].fetch(address)
-            except anchorpy.error.AccountDoesNotExistError as e:
-                self.sequence_address_by_subaccount[subaccount] = address
-                self.sequence_number_by_subaccount[subaccount] = 1
-                self.sequence_bump_by_subaccount[subaccount] = bump
-                self.sequence_initialized_by_subaccount[subaccount] = False
-                continue
-            sequence_account = cast(SequenceAccount, sequence_account_raw)
-            self.sequence_number_by_subaccount[subaccount] = (
-                sequence_account.sequence_num + 1
-            )
-            self.sequence_bump_by_subaccount[subaccount] = bump
-            self.sequence_initialized_by_subaccount[subaccount] = True
-            self.sequence_address_by_subaccount[subaccount] = address
