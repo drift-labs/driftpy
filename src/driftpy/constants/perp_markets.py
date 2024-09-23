@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+
 from driftpy.types import OracleSource
 from solders.pubkey import Pubkey  # type: ignore
 
@@ -512,5 +513,12 @@ mainnet_perp_market_configs: list[PerpMarketConfig] = [
         market_index=42,
         oracle=Pubkey.from_string("BNjCXrpEqjdBnuRy2SAUgm5Pq8B73wGFwsf6RYFJiLPY"),
         oracle_source=OracleSource.PythPull(),
+    ),
+    PerpMarketConfig(
+        symbol="LANDO-F1-SGP-WIN-BET",
+        base_asset_symbol="LANDO-F1-SGP-WIN",
+        market_index=43,
+        oracle=Pubkey.from_string("DpJz7rjTJLxxnuqrqZTUjMWtnaMFAEfZUv5ATdb9HTh1"),
+        oracle_source=OracleSource.Prelaunch(),
     ),
 ]
