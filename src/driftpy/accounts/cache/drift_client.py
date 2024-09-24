@@ -1,29 +1,30 @@
-from typing import Any, Optional
+from typing import Optional, TypedDict
 
 from anchorpy import Program
-
+from driftpy.accounts import DataAndSlot
+from driftpy.accounts import get_perp_market_account_and_slot
+from driftpy.accounts import get_spot_market_account_and_slot
+from driftpy.accounts import get_state_account_and_slot
+from driftpy.accounts.oracle import get_oracle_price_data_and_slot
+from driftpy.accounts.types import DataAndSlot
+from driftpy.accounts.types import DriftClientAccountSubscriber
+from driftpy.constants.numeric_constants import QUOTE_SPOT_MARKET_INDEX
+from driftpy.types import OracleInfo
+from driftpy.types import OraclePriceData
+from driftpy.types import PerpMarketAccount
+from driftpy.types import SpotMarketAccount
+from driftpy.types import stack_trace
+from driftpy.types import StateAccount
+from solana.rpc.commitment import Commitment
+from solana.rpc.commitment import Confirmed
 from solders.pubkey import Pubkey  # type: ignore
 
-from solana.rpc.commitment import Commitment, Confirmed
 
-from driftpy.accounts.oracle import get_oracle_price_data_and_slot
-from driftpy.accounts.types import DriftClientAccountSubscriber, DataAndSlot
-from driftpy.accounts import (
-    get_state_account_and_slot,
-    get_spot_market_account_and_slot,
-    get_perp_market_account_and_slot,
-)
-from driftpy.constants.numeric_constants import QUOTE_SPOT_MARKET_INDEX
-
-# from driftpy.market_map.market_map import MarketMap
-from driftpy.types import (
-    OracleInfo,
-    PerpMarketAccount,
-    SpotMarketAccount,
-    OraclePriceData,
-    StateAccount,
-    stack_trace,
-)
+class DriftClientCache(TypedDict):
+    perp_markets: list[DataAndSlot[PerpMarketAccount]]
+    spot_markets: list[DataAndSlot[SpotMarketAccount]]
+    oracle_price_data: dict[str, OraclePriceData]
+    state: DataAndSlot[StateAccount] | None
 
 
 class CachedDriftClientAccountSubscriber(DriftClientAccountSubscriber):
@@ -38,7 +39,7 @@ class CachedDriftClientAccountSubscriber(DriftClientAccountSubscriber):
     ):
         self.program = program
         self.commitment = commitment
-        self.cache = {
+        self.cache: DriftClientCache = {
             "spot_markets": [],
             "perp_markets": [],
             "oracle_price_data": {},
