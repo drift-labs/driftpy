@@ -1,57 +1,61 @@
 import json
 import os
-import anchorpy
-from deprecated import deprecated
-import requests
-from solders.pubkey import Pubkey
-from solders.keypair import Keypair
-from solders.transaction import TransactionVersion, Legacy
-from solders.instruction import Instruction
-from solders.system_program import ID
-from solders.sysvar import RENT
-from solders.signature import Signature
-from solders.address_lookup_table_account import AddressLookupTableAccount
-from solana.rpc.async_api import AsyncClient
-from solana.rpc.types import TxOpts
-from solana.rpc.commitment import Processed
-from solana.transaction import AccountMeta
-from solders.compute_budget import set_compute_unit_limit, set_compute_unit_price
-from spl.token.constants import TOKEN_PROGRAM_ID
-from spl.token.instructions import get_associated_token_address
-from anchorpy import Program, Context, Idl, Provider, Wallet
 from pathlib import Path
+from typing import List, Optional, Tuple, Union
 
+import anchorpy
+from anchorpy import Context
+from anchorpy import Idl
+from anchorpy import Program
+from anchorpy import Provider
+from anchorpy import Wallet
+from deprecated import deprecated
 import driftpy
 from driftpy.account_subscription_config import AccountSubscriptionConfig
+from driftpy.accounts import *
 from driftpy.address_lookup_table import get_address_lookup_table
-from driftpy.constants import BASE_PRECISION, PRICE_PRECISION
-from driftpy.constants.numeric_constants import (
-    QUOTE_SPOT_MARKET_INDEX,
-)
+from driftpy.addresses import get_sequencer_public_key_and_bump
+from driftpy.constants import BASE_PRECISION
+from driftpy.constants import PRICE_PRECISION
+from driftpy.constants.config import configs
+from driftpy.constants.config import decode_account
+from driftpy.constants.config import DEVNET_SEQUENCER_PROGRAM_ID
+from driftpy.constants.config import DRIFT_PROGRAM_ID
+from driftpy.constants.config import DriftEnv
+from driftpy.constants.config import SEQUENCER_PROGRAM_ID
+from driftpy.constants.numeric_constants import QUOTE_SPOT_MARKET_INDEX
 from driftpy.decode.utils import decode_name
 from driftpy.drift_user import DriftUser
-from driftpy.accounts import *
-
-from driftpy.constants.config import (
-    DriftEnv,
-    DRIFT_PROGRAM_ID,
-    configs,
-    SEQUENCER_PROGRAM_ID,
-    DEVNET_SEQUENCER_PROGRAM_ID,
-    decode_account,
-)
-
-from typing import Tuple, Union, Optional, List
-from driftpy.drift_user_stats import DriftUserStats, UserStatsSubscriptionConfig
+from driftpy.drift_user_stats import DriftUserStats
+from driftpy.drift_user_stats import UserStatsSubscriptionConfig
 from driftpy.math.perp_position import is_available
-from driftpy.math.spot_position import is_spot_position_available
 from driftpy.math.spot_market import cast_to_spot_precision
+from driftpy.math.spot_position import is_spot_position_available
 from driftpy.name import encode_name
 from driftpy.tx.standard_tx_sender import StandardTxSender
-from driftpy.tx.types import TxSender, TxSigAndSlot
-from driftpy.addresses import get_sequencer_public_key_and_bump
-from spl.token.constants import ASSOCIATED_TOKEN_PROGRAM_ID
+from driftpy.tx.types import TxSender
+from driftpy.tx.types import TxSigAndSlot
+import requests
+from solana.rpc.async_api import AsyncClient
+from solana.rpc.commitment import Processed
+from solana.rpc.types import TxOpts
+from solana.transaction import AccountMeta
+from solders.address_lookup_table_account import AddressLookupTableAccount
+from solders.compute_budget import set_compute_unit_limit
+from solders.compute_budget import set_compute_unit_price
+from solders.instruction import Instruction
+from solders.keypair import Keypair
+from solders.pubkey import Pubkey
+from solders.signature import Signature
+from solders.system_program import ID
 from solders.system_program import ID as SYS_PROGRAM_ID
+from solders.sysvar import RENT
+from solders.transaction import Legacy
+from solders.transaction import TransactionVersion
+from spl.token.constants import ASSOCIATED_TOKEN_PROGRAM_ID
+from spl.token.constants import TOKEN_PROGRAM_ID
+from spl.token.instructions import get_associated_token_address
+
 
 DEFAULT_USER_NAME = "Main Account"
 
