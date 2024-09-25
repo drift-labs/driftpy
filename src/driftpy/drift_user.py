@@ -1059,7 +1059,9 @@ class DriftUser:
             return -1
 
         total_collateral = self.get_total_collateral(MarginCategory.MAINTENANCE)
-        maintenance_margin_requirement = self.get_maintenance_margin_requirement()
+        maintenance_margin_requirement = self.get_margin_requirement(
+            MarginCategory.MAINTENANCE, None
+        )
         free_collateral = max(0, total_collateral - maintenance_margin_requirement)
 
         market = self.drift_client.get_spot_market_account(market_index)
