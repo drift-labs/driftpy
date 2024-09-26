@@ -1,57 +1,69 @@
 import json
 import os
-import anchorpy
-from deprecated import deprecated
-import requests
-from solders.pubkey import Pubkey
-from solders.keypair import Keypair
-from solders.transaction import TransactionVersion, Legacy
-from solders.instruction import Instruction
-from solders.system_program import ID
-from solders.sysvar import RENT
-from solders.signature import Signature
-from solders.address_lookup_table_account import AddressLookupTableAccount
-from solana.rpc.async_api import AsyncClient
-from solana.rpc.types import TxOpts
-from solana.rpc.commitment import Processed
-from solana.transaction import AccountMeta
-from solders.compute_budget import set_compute_unit_limit, set_compute_unit_price
-from spl.token.constants import TOKEN_PROGRAM_ID
-from spl.token.instructions import get_associated_token_address
-from anchorpy import Program, Context, Idl, Provider, Wallet
 from pathlib import Path
+import random
+import string
+from typing import List, Optional, Tuple, Union
 
+import anchorpy
+from anchorpy import Context
+from anchorpy import Idl
+from anchorpy import Program
+from anchorpy import Provider
+from anchorpy import Wallet
+from deprecated import deprecated
 import driftpy
 from driftpy.account_subscription_config import AccountSubscriptionConfig
+from driftpy.accounts import *
 from driftpy.address_lookup_table import get_address_lookup_table
-from driftpy.constants import BASE_PRECISION, PRICE_PRECISION
-from driftpy.constants.numeric_constants import (
-    QUOTE_SPOT_MARKET_INDEX,
-)
+from driftpy.addresses import get_sequencer_public_key_and_bump
+from driftpy.constants import BASE_PRECISION
+from driftpy.constants import PRICE_PRECISION
+from driftpy.constants.config import configs
+from driftpy.constants.config import decode_account
+from driftpy.constants.config import DEVNET_SEQUENCER_PROGRAM_ID
+from driftpy.constants.config import DRIFT_PROGRAM_ID
+from driftpy.constants.config import DriftEnv
+from driftpy.constants.config import SEQUENCER_PROGRAM_ID
+from driftpy.constants.numeric_constants import QUOTE_SPOT_MARKET_INDEX
+from driftpy.constants.spot_markets import WRAPPED_SOL_MINT
 from driftpy.decode.utils import decode_name
 from driftpy.drift_user import DriftUser
-from driftpy.accounts import *
-
-from driftpy.constants.config import (
-    DriftEnv,
-    DRIFT_PROGRAM_ID,
-    configs,
-    SEQUENCER_PROGRAM_ID,
-    DEVNET_SEQUENCER_PROGRAM_ID,
-    decode_account,
-)
-
-from typing import Tuple, Union, Optional, List
-from driftpy.drift_user_stats import DriftUserStats, UserStatsSubscriptionConfig
+from driftpy.drift_user_stats import DriftUserStats
+from driftpy.drift_user_stats import UserStatsSubscriptionConfig
 from driftpy.math.perp_position import is_available
-from driftpy.math.spot_position import is_spot_position_available
 from driftpy.math.spot_market import cast_to_spot_precision
+from driftpy.math.spot_position import is_spot_position_available
 from driftpy.name import encode_name
 from driftpy.tx.standard_tx_sender import StandardTxSender
-from driftpy.tx.types import TxSender, TxSigAndSlot
-from driftpy.addresses import get_sequencer_public_key_and_bump
-from spl.token.constants import ASSOCIATED_TOKEN_PROGRAM_ID
+from driftpy.tx.types import TxSender
+from driftpy.tx.types import TxSigAndSlot
+import requests
+from solana.rpc.async_api import AsyncClient
+from solana.rpc.commitment import Processed
+from solana.rpc.types import TxOpts
+from solana.transaction import AccountMeta
+from solders import system_program
+from solders.address_lookup_table_account import AddressLookupTableAccount
+from solders.compute_budget import set_compute_unit_limit
+from solders.compute_budget import set_compute_unit_price
+from solders.instruction import Instruction
+from solders.keypair import Keypair
+from solders.pubkey import Pubkey
+from solders.signature import Signature
+from solders.system_program import ID
 from solders.system_program import ID as SYS_PROGRAM_ID
+from solders.sysvar import RENT
+from solders.transaction import Legacy
+from solders.transaction import TransactionVersion
+from spl.token.constants import ASSOCIATED_TOKEN_PROGRAM_ID
+from spl.token.constants import TOKEN_PROGRAM_ID
+from spl.token.instructions import close_account
+from spl.token.instructions import CloseAccountParams
+from spl.token.instructions import get_associated_token_address
+from spl.token.instructions import initialize_account
+from spl.token.instructions import InitializeAccountParams
+
 
 DEFAULT_USER_NAME = "Main Account"
 
@@ -863,12 +875,52 @@ class DriftClient:
         )
         return initialize_user_account_ix
 
+    def random_string(self, length: int) -> str:
+        return "".join(random.choices(string.ascii_letters + string.digits, k=length))
+
+    async def get_wrapped_sol_account_creation_ixs(
+        self, amount: int, include_rent: bool = True
+    ) -> (List[Instruction], Pubkey):
+        wallet_pubkey = self.wallet.public_key
+        seed = self.random_string(32)
+        wrapped_sol_account = Pubkey.create_with_seed(
+            wallet_pubkey, seed, TOKEN_PROGRAM_ID
+        )
+        result = {"ixs": [], "pubkey": wrapped_sol_account}
+
+        LAMPORTS_PER_SOL: int = 1_000_000_000
+        rent_space_lamports = int(LAMPORTS_PER_SOL / 100)
+        lamports = amount + rent_space_lamports if include_rent else rent_space_lamports
+
+        create_params = system_program.CreateAccountWithSeedParams(
+            from_pubkey=wallet_pubkey,
+            to_pubkey=wrapped_sol_account,
+            base=wallet_pubkey,
+            seed=seed,
+            lamports=lamports,
+            space=165,
+            owner=TOKEN_PROGRAM_ID,
+        )
+
+        result["ixs"].append(system_program.create_account_with_seed(create_params))
+
+        initialize_params = InitializeAccountParams(
+            program_id=TOKEN_PROGRAM_ID,
+            account=wrapped_sol_account,
+            mint=WRAPPED_SOL_MINT,
+            owner=wallet_pubkey,
+        )
+
+        result["ixs"].append(initialize_account(initialize_params))
+
+        return result["ixs"], result["pubkey"]
+
     async def deposit(
         self,
         amount: int,
         spot_market_index: int,
-        user_token_account: Pubkey = None,
-        sub_account_id: int = None,
+        user_token_account: Pubkey,
+        sub_account_id: Optional[int] = None,
         reduce_only=False,
         user_initialized=True,
     ):
@@ -886,30 +938,39 @@ class DriftClient:
             str: sig
         """
         tx_sig_and_slot = await self.send_ixs(
-            [
-                self.get_deposit_collateral_ix(
-                    amount,
-                    spot_market_index,
-                    user_token_account,
-                    sub_account_id,
-                    reduce_only,
-                    user_initialized,
-                )
-            ]
+            await self.get_deposit_collateral_ix(
+                amount,
+                spot_market_index,
+                user_token_account,
+                sub_account_id,
+                reduce_only,
+                user_initialized,
+            )
         )
         self.last_spot_market_seen_cache[spot_market_index] = tx_sig_and_slot.slot
         return tx_sig_and_slot
 
-    def get_deposit_collateral_ix(
+    async def get_deposit_collateral_ix(
         self,
         amount: int,
         spot_market_index: int,
-        user_token_account: Pubkey = None,
-        sub_account_id: int = None,
-        reduce_only=False,
-        user_initialized=True,
-    ) -> Instruction:
+        user_token_account: Pubkey,
+        sub_account_id: Optional[int] = None,
+        reduce_only: Optional[bool] = False,
+        user_initialized: Optional[bool] = True,
+    ) -> List[Instruction]:
+
         sub_account_id = self.get_sub_account_id_for_ix(sub_account_id)
+        spot_market_account = self.get_spot_market_account(spot_market_index)
+        if not spot_market_account:
+            raise Exception("Spot market account not found")
+
+        is_sol_market = spot_market_account.mint == WRAPPED_SOL_MINT
+        signer_authority = self.wallet.public_key
+
+        create_WSOL_token_account = (
+            is_sol_market and user_token_account == signer_authority
+        )
 
         if user_initialized:
             remaining_accounts = self.get_remaining_accounts(
@@ -918,6 +979,13 @@ class DriftClient:
             )
         else:
             raise Exception("not implemented...")
+
+        instructions = []
+
+        if create_WSOL_token_account:
+            ixs, ata_pubkey = await self.get_wrapped_sol_account_creation_ixs(amount)
+            instructions.extend(ixs)
+            user_token_account = ata_pubkey
 
         user_token_account = (
             user_token_account
@@ -932,7 +1000,7 @@ class DriftClient:
         user_account_public_key = get_user_account_public_key(
             self.program_id, self.authority, sub_account_id
         )
-        return self.program.instruction["deposit"](
+        deposit_ix = self.program.instruction["deposit"](
             spot_market_index,
             amount,
             reduce_only,
@@ -950,6 +1018,16 @@ class DriftClient:
                 remaining_accounts=remaining_accounts,
             ),
         )
+        instructions.append(deposit_ix)
+        close_account_params = CloseAccountParams(
+            program_id=TOKEN_PROGRAM_ID,
+            account=ata_pubkey,
+            dest=signer_authority,
+            owner=signer_authority,
+        )
+        close_account_ix = close_account(close_account_params)
+        instructions.append(close_account_ix)
+        return instructions
 
     async def withdraw(
         self,

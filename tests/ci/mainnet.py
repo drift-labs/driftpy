@@ -1,17 +1,14 @@
-import os
-import pytest
 import asyncio
-
-from pytest import mark
-
-from solana.rpc.async_api import AsyncClient
+import os
 
 from anchorpy import Wallet
-
-from driftpy.drift_client import DriftClient
 from driftpy.account_subscription_config import AccountSubscriptionConfig
 from driftpy.constants.perp_markets import mainnet_perp_market_configs
 from driftpy.constants.spot_markets import mainnet_spot_market_configs
+from driftpy.drift_client import DriftClient
+import pytest
+from pytest import mark
+from solana.rpc.async_api import AsyncClient
 
 
 @pytest.fixture(scope="session")

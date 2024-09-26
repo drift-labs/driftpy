@@ -1,5 +1,5 @@
 {
-  "version": "2.89.0",
+  "version": "2.95.0",
   "name": "drift",
   "instructions": [
     {
@@ -1607,14 +1607,19 @@
       "name": "settleExpiredMarket",
       "accounts": [
         {
+          "name": "admin",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
           "name": "state",
           "isMut": false,
           "isSigner": false
         },
         {
-          "name": "authority",
-          "isMut": false,
-          "isSigner": true
+          "name": "perpMarket",
+          "isMut": true,
+          "isSigner": false
         }
       ],
       "args": [
@@ -1880,6 +1885,27 @@
           }
         }
       ]
+    },
+    {
+      "name": "setUserStatusToBeingLiquidated",
+      "accounts": [
+        {
+          "name": "state",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "user",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "authority",
+          "isMut": false,
+          "isSigner": true
+        }
+      ],
+      "args": []
     },
     {
       "name": "resolvePerpPnlDeficit",
@@ -2259,7 +2285,7 @@
         },
         {
           "name": "spotMarket",
-          "isMut": false,
+          "isMut": true,
           "isSigner": false
         },
         {
@@ -2273,7 +2299,7 @@
           "isSigner": false
         },
         {
-          "name": "authority",
+          "name": "signer",
           "isMut": false,
           "isSigner": true
         },
@@ -2295,7 +2321,7 @@
         },
         {
           "name": "spotMarket",
-          "isMut": false,
+          "isMut": true,
           "isSigner": false
         },
         {
@@ -2309,7 +2335,7 @@
           "isSigner": false
         },
         {
-          "name": "authority",
+          "name": "signer",
           "isMut": false,
           "isSigner": true
         },
@@ -3402,6 +3428,27 @@
           }
         }
       ]
+    },
+    {
+      "name": "initializePredictionMarket",
+      "accounts": [
+        {
+          "name": "admin",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "state",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "perpMarket",
+          "isMut": true,
+          "isSigner": false
+        }
+      ],
+      "args": []
     },
     {
       "name": "deleteInitializedPerpMarket",
@@ -12906,6 +12953,11 @@
       "code": 6283,
       "name": "LiquidationOrderFailedToFill",
       "msg": "Liquidation order failed to fill"
+    },
+    {
+      "code": 6284,
+      "name": "InvalidPredictionMarketOrder",
+      "msg": "Invalid prediction market order"
     }
   ]
 }

@@ -1,29 +1,23 @@
+import copy
 import math
 import time
-import copy
-
 from typing import Tuple
 
 from driftpy.account_subscription_config import AccountSubscriptionConfig
+from driftpy.accounts.oracle import *
 from driftpy.math.amm import calculate_market_open_bid_ask
 from driftpy.math.conversion import convert_to_number
+from driftpy.math.fuel import calculate_insurance_fuel_bonus
+from driftpy.math.fuel import calculate_perp_fuel_bonus
+from driftpy.math.fuel import calculate_spot_fuel_bonus
+from driftpy.math.margin import *
 from driftpy.math.oracles import calculate_live_oracle_twap
 from driftpy.math.perp_position import *
-from driftpy.math.margin import *
 from driftpy.math.spot_balance import get_strict_token_value
 from driftpy.math.spot_market import *
-from driftpy.math.fuel import (
-    calculate_spot_fuel_bonus,
-    calculate_perp_fuel_bonus,
-    calculate_insurance_fuel_bonus,
-)
-from driftpy.accounts.oracle import *
-from driftpy.math.spot_position import (
-    calculate_weighted_token_value,
-    get_worst_case_token_amounts,
-    is_spot_position_available,
-)
-from driftpy.math.amm import calculate_market_open_bid_ask
+from driftpy.math.spot_position import calculate_weighted_token_value
+from driftpy.math.spot_position import get_worst_case_token_amounts
+from driftpy.math.spot_position import is_spot_position_available
 from driftpy.oracles.strict_oracle_price import StrictOraclePrice
 from driftpy.types import OraclePriceData
 
@@ -141,7 +135,7 @@ class DriftUser:
 
     def get_perp_market_liability(
         self,
-        market_index: int = None,
+        market_index: int,
         margin_category: Optional[MarginCategory] = None,
         liquidation_buffer: Optional[int] = 0,
         include_open_orders: bool = False,
@@ -768,27 +762,8 @@ class DriftUser:
         return total_liability_value
 
     def get_leverage(self, include_open_orders: bool = True) -> int:
-        perp_liability = self.get_perp_market_liability(
-            include_open_orders=include_open_orders
-        )
-        perp_pnl = self.get_unrealized_pnl(True)
-
-        (
-            spot_asset_value,
-            spot_liability_value,
-        ) = self.get_spot_market_asset_and_liability_value(
-            include_open_orders=include_open_orders
-        )
-
-        total_asset_value = spot_asset_value + perp_pnl
-        total_liability_value = spot_liability_value + perp_liability
-
-        net_asset_value = total_asset_value - spot_liability_value
-
-        if net_asset_value == 0:
-            return 0
-
-        return (total_liability_value * 10_000) // net_asset_value
+        leverage_components = self.get_leverage_components(include_open_orders)
+        return self.calculate_leverage_from_components(leverage_components)
 
     def get_leverage_components(
         self,
@@ -809,6 +784,18 @@ class DriftUser:
         )
 
         return perp_liability, perp_pnl, spot_asset_value, spot_liability_value
+
+    def calculate_leverage_from_components(self, components: Tuple[int, int, int, int]):
+        perp_liability, perp_pnl, spot_asset_value, spot_liability_value = components
+
+        total_liabs = perp_liability + spot_liability_value
+        total_assets = spot_asset_value + perp_pnl
+        net_assets = total_assets - spot_liability_value
+
+        if net_assets == 0:
+            return 0
+
+        return (total_liabs * 10_000) // net_assets
 
     def get_max_leverage_for_perp(
         self,
@@ -1467,7 +1454,7 @@ class DriftUser:
         liquidation_buffer: int = 0,
         include_open_orders: bool = False,
         strict: bool = False,
-    ) -> int:
+    ):
         total_perp_value = 0
         for perp_position in self.get_active_perp_positions():
             base_asset_value = self.calculate_weighted_perp_position_liability(

@@ -521,4 +521,11 @@ mainnet_perp_market_configs: list[PerpMarketConfig] = [
         oracle=Pubkey.from_string("DpJz7rjTJLxxnuqrqZTUjMWtnaMFAEfZUv5ATdb9HTh1"),
         oracle_source=OracleSource.Prelaunch(),
     ),
+    PerpMarketConfig(
+        symbol="MOTHER-PERP",
+        base_asset_symbol="MOTHER",
+        market_index=44,
+        oracle=Pubkey.from_string("56ap2coZG7FPWUigVm9XrpQs3xuCwnwQaWtjWZcffEUG"),
+        oracle_source=OracleSource.PythPull(),
+    ),
 ]
