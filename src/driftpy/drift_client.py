@@ -1,6 +1,8 @@
 import json
 import os
 from pathlib import Path
+import random
+import string
 from typing import List, Optional, Tuple, Union
 
 import anchorpy
@@ -24,6 +26,7 @@ from driftpy.constants.config import DRIFT_PROGRAM_ID
 from driftpy.constants.config import DriftEnv
 from driftpy.constants.config import SEQUENCER_PROGRAM_ID
 from driftpy.constants.numeric_constants import QUOTE_SPOT_MARKET_INDEX
+from driftpy.constants.spot_markets import WRAPPED_SOL_MINT
 from driftpy.decode.utils import decode_name
 from driftpy.drift_user import DriftUser
 from driftpy.drift_user_stats import DriftUserStats
@@ -40,6 +43,7 @@ from solana.rpc.async_api import AsyncClient
 from solana.rpc.commitment import Processed
 from solana.rpc.types import TxOpts
 from solana.transaction import AccountMeta
+from solders import system_program
 from solders.address_lookup_table_account import AddressLookupTableAccount
 from solders.compute_budget import set_compute_unit_limit
 from solders.compute_budget import set_compute_unit_price
@@ -54,7 +58,11 @@ from solders.transaction import Legacy
 from solders.transaction import TransactionVersion
 from spl.token.constants import ASSOCIATED_TOKEN_PROGRAM_ID
 from spl.token.constants import TOKEN_PROGRAM_ID
+from spl.token.instructions import close_account
+from spl.token.instructions import CloseAccountParams
 from spl.token.instructions import get_associated_token_address
+from spl.token.instructions import initialize_account
+from spl.token.instructions import InitializeAccountParams
 
 
 DEFAULT_USER_NAME = "Main Account"
