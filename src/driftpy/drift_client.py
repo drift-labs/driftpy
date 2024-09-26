@@ -875,12 +875,52 @@ class DriftClient:
         )
         return initialize_user_account_ix
 
+    def random_string(self, length: int) -> str:
+        return "".join(random.choices(string.ascii_letters + string.digits, k=length))
+
+    async def get_wrapped_sol_account_creation_ixs(
+        self, amount: int, include_rent: bool = True
+    ) -> (List[Instruction], Pubkey):
+        wallet_pubkey = self.wallet.public_key
+        seed = self.random_string(32)
+        wrapped_sol_account = Pubkey.create_with_seed(
+            wallet_pubkey, seed, TOKEN_PROGRAM_ID
+        )
+        result = {"ixs": [], "pubkey": wrapped_sol_account}
+
+        LAMPORTS_PER_SOL: int = 1_000_000_000
+        rent_space_lamports = int(LAMPORTS_PER_SOL / 100)
+        lamports = amount + rent_space_lamports if include_rent else rent_space_lamports
+
+        create_params = system_program.CreateAccountWithSeedParams(
+            from_pubkey=wallet_pubkey,
+            to_pubkey=wrapped_sol_account,
+            base=wallet_pubkey,
+            seed=seed,
+            lamports=lamports,
+            space=165,
+            owner=TOKEN_PROGRAM_ID,
+        )
+
+        result["ixs"].append(system_program.create_account_with_seed(create_params))
+
+        initialize_params = InitializeAccountParams(
+            program_id=TOKEN_PROGRAM_ID,
+            account=wrapped_sol_account,
+            mint=WRAPPED_SOL_MINT,
+            owner=wallet_pubkey,
+        )
+
+        result["ixs"].append(initialize_account(initialize_params))
+
+        return result["ixs"], result["pubkey"]
+
     async def deposit(
         self,
         amount: int,
         spot_market_index: int,
-        user_token_account: Pubkey = None,
-        sub_account_id: int = None,
+        user_token_account: Pubkey,
+        sub_account_id: Optional[int] = None,
         reduce_only=False,
         user_initialized=True,
     ):
@@ -898,30 +938,39 @@ class DriftClient:
             str: sig
         """
         tx_sig_and_slot = await self.send_ixs(
-            [
-                self.get_deposit_collateral_ix(
-                    amount,
-                    spot_market_index,
-                    user_token_account,
-                    sub_account_id,
-                    reduce_only,
-                    user_initialized,
-                )
-            ]
+            await self.get_deposit_collateral_ix(
+                amount,
+                spot_market_index,
+                user_token_account,
+                sub_account_id,
+                reduce_only,
+                user_initialized,
+            )
         )
         self.last_spot_market_seen_cache[spot_market_index] = tx_sig_and_slot.slot
         return tx_sig_and_slot
 
-    def get_deposit_collateral_ix(
+    async def get_deposit_collateral_ix(
         self,
         amount: int,
         spot_market_index: int,
-        user_token_account: Pubkey = None,
-        sub_account_id: int = None,
-        reduce_only=False,
-        user_initialized=True,
-    ) -> Instruction:
+        user_token_account: Pubkey,
+        sub_account_id: Optional[int] = None,
+        reduce_only: Optional[bool] = False,
+        user_initialized: Optional[bool] = True,
+    ) -> List[Instruction]:
+
         sub_account_id = self.get_sub_account_id_for_ix(sub_account_id)
+        spot_market_account = self.get_spot_market_account(spot_market_index)
+        if not spot_market_account:
+            raise Exception("Spot market account not found")
+
+        is_sol_market = spot_market_account.mint == WRAPPED_SOL_MINT
+        signer_authority = self.wallet.public_key
+
+        create_WSOL_token_account = (
+            is_sol_market and user_token_account == signer_authority
+        )
 
         if user_initialized:
             remaining_accounts = self.get_remaining_accounts(
@@ -930,6 +979,13 @@ class DriftClient:
             )
         else:
             raise Exception("not implemented...")
+
+        instructions = []
+
+        if create_WSOL_token_account:
+            ixs, ata_pubkey = await self.get_wrapped_sol_account_creation_ixs(amount)
+            instructions.extend(ixs)
+            user_token_account = ata_pubkey
 
         user_token_account = (
             user_token_account
@@ -944,7 +1000,7 @@ class DriftClient:
         user_account_public_key = get_user_account_public_key(
             self.program_id, self.authority, sub_account_id
         )
-        return self.program.instruction["deposit"](
+        deposit_ix = self.program.instruction["deposit"](
             spot_market_index,
             amount,
             reduce_only,
@@ -962,6 +1018,16 @@ class DriftClient:
                 remaining_accounts=remaining_accounts,
             ),
         )
+        instructions.append(deposit_ix)
+        close_account_params = CloseAccountParams(
+            program_id=TOKEN_PROGRAM_ID,
+            account=ata_pubkey,
+            dest=signer_authority,
+            owner=signer_authority,
+        )
+        close_account_ix = close_account(close_account_params)
+        instructions.append(close_account_ix)
+        return instructions
 
     async def withdraw(
         self,
