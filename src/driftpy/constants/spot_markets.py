@@ -1,4 +1,12 @@
+"""
+This file contains the market configs for the spot markets on Drift.
+
+For reference, see the TypeScript implementation:
+- https://github.com/drift-labs/protocol-v2/blob/master/sdk/src/constants/spotMarkets.ts
+"""
+
 from dataclasses import dataclass
+
 from driftpy.types import OracleSource
 from solders.pubkey import Pubkey  # type: ignore
 
@@ -227,5 +235,12 @@ mainnet_spot_market_configs: list[SpotMarketConfig] = [
         oracle=Pubkey.from_string("BAtFj4kQttZRVep3UZS2aZRDixkGYgWsbqTBVDbnSsPF"),
         oracle_source=OracleSource.PythPull(),
         mint=Pubkey.from_string("BNso1VUJnh4zcfpZa6986Ea66P6TCp59hvtNJ8b1X85"),
+    ),
+    SpotMarketConfig(
+        symbol="MOTHER",
+        market_index=26,
+        oracle=Pubkey.from_string("56ap2coZG7FPWUigVm9XrpQs3xuCwnwQaWtjWZcffEUG"),
+        oracle_source=OracleSource.PythPull(),
+        mint=Pubkey.from_string("3S8qX1MsMqRbiwKg2cQyx7nis1oHMgaCuc9c4VfvVdPN"),
     ),
 ]
