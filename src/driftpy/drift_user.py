@@ -142,6 +142,9 @@ class DriftUser:
         signed: bool = False,
     ):
         perp_position = self.get_perp_position(market_index)
+        if perp_position is None:
+            return 0
+
         return self.calculate_weighted_perp_position_liability(
             perp_position,
             margin_category,
