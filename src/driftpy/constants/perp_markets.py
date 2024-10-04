@@ -532,7 +532,14 @@ mainnet_perp_market_configs: list[PerpMarketConfig] = [
         symbol="MOODENG-PERP",
         base_asset_symbol="MOODENG",
         market_index=45,
-        oracle=Pubkey.from_string("56ap2coZG7FPWUigVm9XrpQs3xuCwnwQaWtjWZcffEUG"),
+        oracle=Pubkey.from_string("21gjgEcuDppthwV16J1QpFzje3vmgMp2uSzh7pJsG7ob"),
         oracle_source=OracleSource.PythPull(),
+    ),
+    PerpMarketConfig(
+        symbol="WARWICK-FIGHT-WIN-BET",
+        base_asset_symbol="WARWICK-FIGHT-WIN",
+        market_index=46,
+        oracle=Pubkey.from_string("Dz5Nvxo1hv7Zfyu11hy8e97twLMRKk6heTWCDGXytj7N"),
+        oracle_source=OracleSource.Prelaunch(),
     ),
 ]
