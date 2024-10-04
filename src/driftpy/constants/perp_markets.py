@@ -528,4 +528,11 @@ mainnet_perp_market_configs: list[PerpMarketConfig] = [
         oracle=Pubkey.from_string("56ap2coZG7FPWUigVm9XrpQs3xuCwnwQaWtjWZcffEUG"),
         oracle_source=OracleSource.PythPull(),
     ),
+    PerpMarketConfig(
+        symbol="MOODENG-PERP",
+        base_asset_symbol="MOODENG",
+        market_index=45,
+        oracle=Pubkey.from_string("56ap2coZG7FPWUigVm9XrpQs3xuCwnwQaWtjWZcffEUG"),
+        oracle_source=OracleSource.PythPull(),
+    ),
 ]
