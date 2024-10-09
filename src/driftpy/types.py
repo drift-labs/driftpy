@@ -1,17 +1,13 @@
-from enum import Enum, auto
-import struct
-import zlib
+from dataclasses import dataclass
+from dataclasses import field
 import inspect
+from typing import Optional
+from urllib.parse import urlparse
+from urllib.parse import urlunparse
+import zlib
 
-from dataclasses import dataclass, field
 from borsh_construct.enum import _rust_enum
 from sumtypes import constructor
-from typing import Optional
-from urllib.parse import urlparse, urlunparse
-
-from solders.pubkey import Pubkey
-
-from driftpy.constants.numeric_constants import FUEL_START_TS  # type: ignore
 
 
 def is_variant(enum, type: str) -> bool:
