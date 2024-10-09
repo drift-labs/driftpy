@@ -7,11 +7,12 @@ from urllib.parse import urlunparse
 import zlib
 
 from borsh_construct.enum import _rust_enum
+from solders.pubkey import Pubkey
 from sumtypes import constructor
 
 
 def is_variant(enum, type: str) -> bool:
-    return type in str(enum)
+    return type == enum.__class__.__name__
 
 
 def is_one_of_variant(enum, types):
