@@ -542,4 +542,18 @@ mainnet_perp_market_configs: list[PerpMarketConfig] = [
         oracle=Pubkey.from_string("Dz5Nvxo1hv7Zfyu11hy8e97twLMRKk6heTWCDGXytj7N"),
         oracle_source=OracleSource.Prelaunch(),
     ),
+    PerpMarketConfig(
+        symbol="DBR-PERP",
+        base_asset_symbol="DBR",
+        market_index=47,
+        oracle=Pubkey.from_string("AQzxePg2vY52Cw4di1j5xF7BqetNPxogqYPgDBL7HXWn"),
+        oracle_source=OracleSource.Prelaunch(),
+    ),
+    PerpMarketConfig(
+        symbol="WLF-5B-1W-BET",
+        base_asset_symbol="WLF-5B-1W",
+        market_index=48,
+        oracle=Pubkey.from_string("7LpRfPaWR7cQqN7CMkCmZjEQpWyqso5LGuKCvDXH5ZAr"),
+        oracle_source=OracleSource.Prelaunch(),
+    ),
 ]
