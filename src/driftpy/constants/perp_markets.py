@@ -434,8 +434,8 @@ mainnet_perp_market_configs: list[PerpMarketConfig] = [
         symbol="CLOUD-PERP",
         base_asset_symbol="CLOUD",
         market_index=31,
-        oracle=Pubkey.from_string("4FG7UyPkszGvcSVCCKaLSZsArGjyxitwhJeQhYu2bFTS"),
-        oracle_source=OracleSource.Switchboard(),
+        oracle=Pubkey.from_string("FNFejcXENaPgKaCTfstew9vSSvdQPnXjGTkJjUnnYvHU"),
+        oracle_source=OracleSource.SwitchboardOnDemand(),
     ),
     PerpMarketConfig(
         symbol="IO-PERP",
