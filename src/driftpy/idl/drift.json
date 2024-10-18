@@ -1,5 +1,5 @@
 {
-  "version": "2.95.0",
+  "version": "2.96.0",
   "name": "drift",
   "instructions": [
     {
@@ -554,7 +554,7 @@
           }
         },
         {
-          "name": "makerOrderId",
+          "name": "successCondition",
           "type": {
             "option": "u32"
           }
@@ -605,6 +605,60 @@
         {
           "name": "takerOrderId",
           "type": "u32"
+        }
+      ]
+    },
+    {
+      "name": "placeSwiftTakerOrder",
+      "accounts": [
+        {
+          "name": "state",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "user",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "userStats",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "authority",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "ixSysvar",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "the supplied Sysvar could be anything else.",
+            "The Instruction Sysvar has not been implemented",
+            "in the Anchor framework yet, so this is the safe approach."
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "swiftMessageBytes",
+          "type": "bytes"
+        },
+        {
+          "name": "swiftOrderParamsMessageBytes",
+          "type": "bytes"
+        },
+        {
+          "name": "swiftMessageSignature",
+          "type": {
+            "array": [
+              "u8",
+              64
+            ]
+          }
         }
       ]
     },
@@ -1230,6 +1284,37 @@
       "args": []
     },
     {
+      "name": "enableUserHighLeverageMode",
+      "accounts": [
+        {
+          "name": "state",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "user",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "authority",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "highLeverageModeConfig",
+          "isMut": true,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "subAccountId",
+          "type": "u16"
+        }
+      ]
+    },
+    {
       "name": "fillPerpOrder",
       "accounts": [
         {
@@ -1438,6 +1523,58 @@
         },
         {
           "name": "user",
+          "isMut": true,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "disableUserHighLeverageMode",
+      "accounts": [
+        {
+          "name": "state",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "authority",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "user",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "highLeverageModeConfig",
+          "isMut": true,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "updateUserFuelBonus",
+      "accounts": [
+        {
+          "name": "state",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "authority",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "user",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "userStats",
           "isMut": true,
           "isSigner": false
         }
@@ -3908,6 +4045,36 @@
       ]
     },
     {
+      "name": "updatePerpMarketHighLeverageMarginRatio",
+      "accounts": [
+        {
+          "name": "admin",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "state",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "perpMarket",
+          "isMut": true,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "marginRatioInitial",
+          "type": "u16"
+        },
+        {
+          "name": "marginRatioMaintenance",
+          "type": "u16"
+        }
+      ]
+    },
+    {
       "name": "updatePerpMarketFundingPeriod",
       "accounts": [
         {
@@ -5872,6 +6039,72 @@
           }
         }
       ]
+    },
+    {
+      "name": "initializeHighLeverageModeConfig",
+      "accounts": [
+        {
+          "name": "admin",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "highLeverageModeConfig",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "state",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "rent",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "maxUsers",
+          "type": "u32"
+        }
+      ]
+    },
+    {
+      "name": "updateHighLeverageModeConfig",
+      "accounts": [
+        {
+          "name": "admin",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "highLeverageModeConfig",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "state",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "maxUsers",
+          "type": "u32"
+        },
+        {
+          "name": "reduceOnly",
+          "type": "bool"
+        }
+      ]
     }
   ],
   "accounts": [
@@ -6072,6 +6305,35 @@
               "array": [
                 "u8",
                 4
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "HighLeverageModeConfig",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "maxUsers",
+            "type": "u32"
+          },
+          {
+            "name": "currentUsers",
+            "type": "u32"
+          },
+          {
+            "name": "reduceOnly",
+            "type": "u8"
+          },
+          {
+            "name": "padding",
+            "type": {
+              "array": [
+                "u8",
+                31
               ]
             }
           }
@@ -6467,11 +6729,23 @@
             "type": "u8"
           },
           {
+            "name": "padding1",
+            "type": "u8"
+          },
+          {
+            "name": "highLeverageMarginRatioInitial",
+            "type": "u16"
+          },
+          {
+            "name": "highLeverageMarginRatioMaintenance",
+            "type": "u16"
+          },
+          {
             "name": "padding",
             "type": {
               "array": [
                 "u8",
-                43
+                38
               ]
             }
           }
@@ -7322,11 +7596,17 @@
             "type": "bool"
           },
           {
+            "name": "marginMode",
+            "type": {
+              "defined": "MarginMode"
+            }
+          },
+          {
             "name": "padding1",
             "type": {
               "array": [
                 "u8",
-                5
+                4
               ]
             }
           },
@@ -7450,11 +7730,13 @@
             "type": "u16"
           },
           {
-            "name": "isReferrer",
+            "name": "referrerStatus",
             "docs": [
-              "Whether the user is a referrer. Sub account 0 can not be deleted if user is a referrer"
+              "Flags for referrer status:",
+              "First bit (LSB): 1 if user is a referrer, 0 otherwise",
+              "Second bit: 1 if user was referred, 0 otherwise"
             ],
-            "type": "bool"
+            "type": "u8"
           },
           {
             "name": "disableUpdatePerpBidAskTwap",
@@ -8046,6 +8328,81 @@
             "type": {
               "option": "i64"
             }
+          }
+        ]
+      }
+    },
+    {
+      "name": "SwiftServerMessage",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "swiftOrderSignature",
+            "type": {
+              "array": [
+                "u8",
+                64
+              ]
+            }
+          },
+          {
+            "name": "slot",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "SwiftOrderParamsMessage",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "swiftOrderParams",
+            "type": {
+              "defined": "OrderParams"
+            }
+          },
+          {
+            "name": "expectedOrderId",
+            "type": "i32"
+          },
+          {
+            "name": "subAccountId",
+            "type": "u16"
+          },
+          {
+            "name": "takeProfitOrderParams",
+            "type": {
+              "option": {
+                "defined": "SwiftTriggerOrderParams"
+              }
+            }
+          },
+          {
+            "name": "stopLossOrderParams",
+            "type": {
+              "option": {
+                "defined": "SwiftTriggerOrderParams"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "SwiftTriggerOrderParams",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "triggerPrice",
+            "type": "u64"
+          },
+          {
+            "name": "baseAssetAmount",
+            "type": "u64"
           }
         ]
       }
@@ -10123,6 +10480,20 @@
       }
     },
     {
+      "name": "PlaceAndTakeOrderSuccessCondition",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "PartialFill"
+          },
+          {
+            "name": "FullFill"
+          }
+        ]
+      }
+    },
+    {
       "name": "PerpOperation",
       "type": {
         "kind": "enum",
@@ -10487,6 +10858,34 @@
           },
           {
             "name": "Perp"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ReferrerStatus",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "IsReferrer"
+          },
+          {
+            "name": "IsReferred"
+          }
+        ]
+      }
+    },
+    {
+      "name": "MarginMode",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Default"
+          },
+          {
+            "name": "HighLeverage"
           }
         ]
       }
@@ -12958,6 +13357,36 @@
       "code": 6284,
       "name": "InvalidPredictionMarketOrder",
       "msg": "Invalid prediction market order"
+    },
+    {
+      "code": 6285,
+      "name": "InvalidVerificationIxIndex",
+      "msg": "Ed25519 Ix must be before place and make swift order ix"
+    },
+    {
+      "code": 6286,
+      "name": "SigVerificationFailed",
+      "msg": "Swift message verificaiton failed"
+    },
+    {
+      "code": 6287,
+      "name": "MismatchedSwiftOrderParamsMarketIndex",
+      "msg": "Market index mismatched b/w taker and maker swift order params"
+    },
+    {
+      "code": 6288,
+      "name": "InvalidSwiftOrderParam",
+      "msg": "Swift only available for market/oracle perp orders"
+    },
+    {
+      "code": 6289,
+      "name": "PlaceAndTakeOrderSuccessConditionFailed",
+      "msg": "Place and take order success condition failed"
+    },
+    {
+      "code": 6290,
+      "name": "InvalidHighLeverageModeConfig",
+      "msg": "Invalid High Leverage Mode Config"
     }
   ]
 }
