@@ -18,21 +18,21 @@ devnet_perp_market_configs: list[PerpMarketConfig] = [
         symbol="SOL-PERP",
         base_asset_symbol="SOL",
         market_index=0,
-        oracle=Pubkey.from_string("BAtFj4kQttZRVep3UZS2aZRDixkGYgWsbqTBVDbnSsPF"),
-        oracle_source=OracleSource.PythPull(),
+        oracle=Pubkey.from_string("En8hkHLkRe9d9DraYmBTrus518BvmVH448YcvmrFM6Ce"),
+        oracle_source=OracleSource.PythStableCoinPull(),
     ),
     PerpMarketConfig(
         symbol="BTC-PERP",
         base_asset_symbol="BTC",
         market_index=1,
-        oracle=Pubkey.from_string("486kr3pmFPfTsS4aZgcsQ7kS4i9rjMsYYZup6HQNSTT4"),
+        oracle=Pubkey.from_string("BAtFj4kQttZRVep3UZS2aZRDixkGYgWsbqTBVDbnSsPF"),
         oracle_source=OracleSource.PythPull(),
     ),
     PerpMarketConfig(
         symbol="ETH-PERP",
         base_asset_symbol="ETH",
         market_index=2,
-        oracle=Pubkey.from_string("6bEp2MiyoiiiDxcVqE8rUHQWwHirXUXtKfAEATTVqNzT"),
+        oracle=Pubkey.from_string("486kr3pmFPfTsS4aZgcsQ7kS4i9rjMsYYZup6HQNSTT4"),
         oracle_source=OracleSource.PythPull(),
     ),
     PerpMarketConfig(
@@ -208,6 +208,14 @@ devnet_perp_market_configs: list[PerpMarketConfig] = [
         base_asset_symbol="KAMALA-POPULAR-VOTE",
         market_index=27,
         oracle=Pubkey.from_string("GU6CA7a2KCyhpfqZNb36UAfc9uzKBM8jHjGdt245QhYX"),
+        oracle_source=OracleSource.Prelaunch(),
+    ),
+    # 28 sDAQaZQJQ4RXAxH3x526mbEXyQZT15ktkL84d7hmk7M RANDOM-2024-BET OracleSource.Prelaunch()
+    PerpMarketConfig(
+        symbol="RANDOM-2024-BET",  # Unknown!
+        base_asset_symbol="RANDOM-2024",
+        market_index=28,
+        oracle=Pubkey.from_string("sDAQaZQJQ4RXAxH3x526mbEXyQZT15ktkL84d7hmk7M"),
         oracle_source=OracleSource.Prelaunch(),
     ),
 ]
@@ -569,5 +577,12 @@ mainnet_perp_market_configs: list[PerpMarketConfig] = [
         market_index=50,
         oracle=Pubkey.from_string("6AVy1y9SnJECnosQaiK2uY1kcT4ZEBf1F4DMvhxgvhUo"),
         oracle_source=OracleSource.Prelaunch(),
+    ),
+    PerpMarketConfig(
+        symbol="1KMEW-PERP",
+        base_asset_symbol="1KMEW",
+        market_index=51,
+        oracle=Pubkey.from_string("DKGwCUcwngwmgifGxnme7zVR695LCBGk2pnuksRnbhfD"),
+        oracle_source=OracleSource.Pyth1KPull(),
     ),
 ]
