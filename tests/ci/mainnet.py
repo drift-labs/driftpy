@@ -12,13 +12,30 @@ from solana.rpc.async_api import AsyncClient
 
 
 @pytest.fixture(scope="session")
+def event_loop():
+    """Create an instance of the default event loop for the session."""
+    try:
+        loop = asyncio.get_event_loop_policy().new_event_loop()
+        asyncio.set_event_loop(loop)
+        yield loop
+    finally:
+        pending = asyncio.all_tasks(loop)
+        for task in pending:
+            task.cancel()
+
+        # Allow tasks to respond to cancellation
+        loop.run_until_complete(asyncio.gather(*pending, return_exceptions=True))
+        loop.run_until_complete(loop.shutdown_asyncgens())
+        loop.close()
+
+
+@pytest.fixture(scope="session")
 def rpc_url():
     return os.environ.get("MAINNET_RPC_ENDPOINT")
 
 
 @mark.asyncio
 async def test_mainnet_constants(rpc_url: str):
-    print()
     print("Checking mainnet constants")
     drift_client = DriftClient(
         AsyncClient(rpc_url),
@@ -28,9 +45,7 @@ async def test_mainnet_constants(rpc_url: str):
     )
 
     print("Subscribing to Drift Client")
-
-    asyncio.wait_for(await drift_client.subscribe(), 15)
-
+    await drift_client.subscribe()
     print("Subscribed to Drift Client")
 
     expected_perp_markets = sorted(
@@ -72,7 +87,6 @@ async def test_mainnet_constants(rpc_url: str):
 
 @mark.asyncio
 async def test_mainnet_cached(rpc_url: str):
-    print()
     print("Checking mainnet cached subscription")
     drift_client = DriftClient(
         AsyncClient(rpc_url),
@@ -82,9 +96,7 @@ async def test_mainnet_cached(rpc_url: str):
     )
 
     print("Subscribing to Drift Client")
-
-    asyncio.wait_for(await drift_client.subscribe(), 15)
-
+    await drift_client.subscribe()
     print("Subscribed to Drift Client")
 
     perp_markets = drift_client.get_perp_market_accounts()
@@ -114,27 +126,23 @@ async def test_mainnet_cached(rpc_url: str):
     ), f"Expected {len(mainnet_spot_market_configs)} spot markets, got {len(spot_markets)}"
 
     print("Unsubscribing from Drift Client")
-
     await drift_client.unsubscribe()
-
     print("Unsubscribed from Drift Client")
 
 
 @mark.asyncio
 async def test_mainnet_ws(rpc_url: str):
-    print()
     print("Checking mainnet websocket subscription")
+    connection = AsyncClient(rpc_url)
     drift_client = DriftClient(
-        AsyncClient(rpc_url),
+        connection,
         Wallet.dummy(),
         env="mainnet",
         account_subscription=AccountSubscriptionConfig("websocket"),
     )
 
     print("Subscribing to Drift Client")
-
-    asyncio.wait_for(await drift_client.subscribe(), 15)
-
+    await drift_client.subscribe()
     print("Subscribed to Drift Client")
 
     perp_markets = drift_client.get_perp_market_accounts()
@@ -165,7 +173,6 @@ async def test_mainnet_ws(rpc_url: str):
     ), f"Expected {len(mainnet_spot_market_configs)} spot markets, got {len(spot_markets)}"
 
     print("Unsubscribing from Drift Client")
-
     await drift_client.unsubscribe()
-
+    await connection.close()
     print("Unsubscribed from Drift Client")
