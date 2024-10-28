@@ -31,7 +31,7 @@ def event_loop():
 
 @pytest.fixture(scope="session")
 def rpc_url():
-    return "https://api.devnet.solana.com"
+    return os.environ.get("DEVNET_RPC_ENDPOINT")
 
 
 @mark.asyncio
