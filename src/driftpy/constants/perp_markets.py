@@ -585,4 +585,32 @@ mainnet_perp_market_configs: list[PerpMarketConfig] = [
         oracle=Pubkey.from_string("DKGwCUcwngwmgifGxnme7zVR695LCBGk2pnuksRnbhfD"),
         oracle_source=OracleSource.Pyth1KPull(),
     ),
+    PerpMarketConfig(
+        symbol="MICHI-PERP",
+        base_asset_symbol="MICHI",
+        market_index=52,
+        oracle=Pubkey.from_string("GHzvsMDMSiuyZoWhEAuM27MKFdN2Y4fA4wSDuSd6dLMA"),
+        oracle_source=OracleSource.PythPull(),
+    ),
+    PerpMarketConfig(
+        symbol="GOAT-PERP",
+        base_asset_symbol="GOAT",
+        market_index=53,
+        oracle=Pubkey.from_string("5RgXW13Kq1RgCLEsJhhchWt3W4R2XLJnd6KqgZk6dSY7"),
+        oracle_source=OracleSource.PythPull(),
+    ),
+    PerpMarketConfig(
+        symbol="FWOG-PERP",
+        base_asset_symbol="FWOG",
+        market_index=54,
+        oracle=Pubkey.from_string("5Z7uvkAsHNN6qqkQkwcKcEPYZqiMbFE9E24p7SpvfSrv"),
+        oracle_source=OracleSource.PythPull(),
+    ),
+    PerpMarketConfig(
+        symbol="PNUT-PERP",
+        base_asset_symbol="PNUT",
+        market_index=55,
+        oracle=Pubkey.from_string("5AcetMtdRHxkse2ny44NcRdsysnXu9deW7Yy5Y63qAHE"),
+        oracle_source=OracleSource.PythPull(),
+    ),
 ]

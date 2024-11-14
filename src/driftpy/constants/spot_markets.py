@@ -243,4 +243,11 @@ mainnet_spot_market_configs: list[SpotMarketConfig] = [
         oracle_source=OracleSource.PythPull(),
         mint=Pubkey.from_string("3S8qX1MsMqRbiwKg2cQyx7nis1oHMgaCuc9c4VfvVdPN"),
     ),
+     SpotMarketConfig(
+        symbol="cbBTC",
+        market_index=27,
+        oracle=Pubkey.from_string("BAtFj4kQttZRVep3UZS2aZRDixkGYgWsbqTBVDbnSsPF"),
+        oracle_source=OracleSource.PythPull(),
+        mint=Pubkey.from_string("cbbtcf3aa214zXHbiAZQwf4122FBYbraNdFqgw4iMij"),
+    ),
 ]
