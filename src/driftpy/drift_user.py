@@ -153,6 +153,9 @@ class DriftUser:
             signed,
         )
 
+    def is_high_leverage_mode(self) -> bool:
+        return is_variant(self.get_user_account().margin_mode, "HighLeverage")
+
     def is_being_liquidated(self) -> bool:
         user_account = self.get_user_account()
         return (

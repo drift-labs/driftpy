@@ -1,18 +1,18 @@
 from typing import List, Literal
 
-from driftpy.types import (
-    MarketType,
-    Order,
-    OrderStatus,
-    OrderTriggerCondition,
-    OrderType,
-    PerpPosition,
-    PositionDirection,
-    SpotBalanceType,
-    SpotPosition,
-    UserAccount,
-)
+from driftpy.types import MarginMode
+from driftpy.types import MarketType
+from driftpy.types import Order
+from driftpy.types import OrderStatus
+from driftpy.types import OrderTriggerCondition
+from driftpy.types import OrderType
+from driftpy.types import PerpPosition
+from driftpy.types import PositionDirection
+from driftpy.types import SpotBalanceType
+from driftpy.types import SpotPosition
+from driftpy.types import UserAccount
 from solders.pubkey import Pubkey
+
 
 # Faster decoding for User Accounts
 # We skip all zero data to streamline the process and avoid unnecessary decoding
@@ -346,6 +346,16 @@ def decode_user(buffer: bytes) -> UserAccount:
     has_open_auction = read_uint8(buffer, offset) == 1
     offset += 1
 
+    margin_mode: MarginMode
+    margin_mode_num = read_uint8(buffer, offset)
+    if margin_mode_num == 0:
+        margin_mode = MarginMode.Default()
+    else:
+        margin_mode = MarginMode.HighLeverage()
+    offset += 1
+
+    padding = [0] * 21
+
     return UserAccount(
         authority,
         delegate,
@@ -373,5 +383,6 @@ def decode_user(buffer: bytes) -> UserAccount:
         has_open_order,
         open_auctions,
         has_open_auction,
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        margin_mode,
+        padding,
     )
