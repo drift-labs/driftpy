@@ -340,6 +340,13 @@ class UserStatus:
     BEING_LIQUIDATED = 1
     BANKRUPT = 2
     REDUCE_ONLY = 4
+    ADVANCED_UP = 8
+
+
+@_rust_enum
+class MarginMode:
+    Default = constructor()
+    HighLeverage = constructor()
 
 
 @_rust_enum
@@ -870,7 +877,7 @@ class UserAccount:
     has_open_order: bool
     open_auctions: int
     has_open_auction: bool
-    last_fuel_bonus_update_ts: int
+    margin_mode: MarginMode
     padding: list[int] = field(default_factory=lambda: [0] * 21)
 
 
