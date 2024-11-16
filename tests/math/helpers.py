@@ -1,29 +1,26 @@
 import asyncio
 from copy import deepcopy
 
-from solders.pubkey import Pubkey  # type: ignore
-from solders.keypair import Keypair  # type: ignore
-
 from anchorpy import Wallet
-
-from solana.rpc.async_api import AsyncClient
 from driftpy.constants.numeric_constants import PRICE_PRECISION
-
 from driftpy.drift_client import DriftClient
 from driftpy.drift_user import DriftUser
-from driftpy.types import (
-    OraclePriceData,
-    UserAccount,
-    PerpPosition,
-    SpotPosition,
-    Order,
-    SpotBalanceType,
-    OrderStatus,
-    OrderType,
-    MarketType,
-    PositionDirection,
-    OrderTriggerCondition,
-)
+from driftpy.types import MarginMode
+from driftpy.types import MarketType
+from driftpy.types import OraclePriceData
+from driftpy.types import Order
+from driftpy.types import OrderStatus
+from driftpy.types import OrderTriggerCondition
+from driftpy.types import OrderType
+from driftpy.types import PerpPosition
+from driftpy.types import PositionDirection
+from driftpy.types import SpotBalanceType
+from driftpy.types import SpotPosition
+from driftpy.types import UserAccount
+from solana.rpc.async_api import AsyncClient
+from solders.keypair import Keypair  # type: ignore
+from solders.pubkey import Pubkey  # type: ignore
+
 
 mock_perp_position = PerpPosition(
     base_asset_amount=0,
@@ -108,7 +105,7 @@ mock_user_account = UserAccount(
     has_open_order=False,
     open_auctions=0,
     has_open_auction=False,
-    last_fuel_bonus_update_ts=0,
+    margin_mode=MarginMode.Default(),
     padding=[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
 )
 
