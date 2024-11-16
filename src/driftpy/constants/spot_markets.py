@@ -26,22 +26,22 @@ devnet_spot_market_configs: list[SpotMarketConfig] = [
     SpotMarketConfig(
         symbol="USDC",
         market_index=0,
-        oracle=Pubkey.from_string("5SSkXsEKQepHHAewytPVwdej4epN1nxgLVM84L4KXgy7"),
-        oracle_source=OracleSource.PythStableCoin(),
+        oracle=Pubkey.from_string("En8hkHLkRe9d9DraYmBTrus518BvmVH448YcvmrFM6Ce"),
+        oracle_source=OracleSource.PythStableCoinPull(),
         mint=Pubkey.from_string("8zGuJQqwhZafTah7Uc7Z4tXRnguqkn5KLFAP8oV6PHe2"),
     ),
     SpotMarketConfig(
         symbol="SOL",
         market_index=1,
-        oracle=Pubkey.from_string("J83w4HKfqxwcq3BEMMkPFSppX3gqekLyLJBexebFVkix"),
-        oracle_source=OracleSource.Pyth(),
+        oracle=Pubkey.from_string("BAtFj4kQttZRVep3UZS2aZRDixkGYgWsbqTBVDbnSsPF"),
+        oracle_source=OracleSource.PythPull(),
         mint=WRAPPED_SOL_MINT,
     ),
     SpotMarketConfig(
         symbol="BTC",
         market_index=2,
-        oracle=Pubkey.from_string("HovQMDrbAgAYPCmHVSrezcSmkMtXSSUsLDFANExrZh2J"),
-        oracle_source=OracleSource.Pyth(),
+        oracle=Pubkey.from_string("486kr3pmFPfTsS4aZgcsQ7kS4i9rjMsYYZup6HQNSTT4"),
+        oracle_source=OracleSource.PythPull(),
         mint=Pubkey.from_string("3BZPwbcqB5kKScF3TEXxwNfx5ipV13kbRVDvfVp5c6fv"),
     ),
     SpotMarketConfig(
@@ -232,7 +232,7 @@ mainnet_spot_market_configs: list[SpotMarketConfig] = [
     SpotMarketConfig(
         symbol="BNSOL",
         market_index=25,
-        oracle=Pubkey.from_string("BAtFj4kQttZRVep3UZS2aZRDixkGYgWsbqTBVDbnSsPF"),
+        oracle=Pubkey.from_string("8DmXTfhhtb9kTcpTVfb6Ygx8WhZ8wexGqcpxfn23zooe"),
         oracle_source=OracleSource.PythPull(),
         mint=Pubkey.from_string("BNso1VUJnh4zcfpZa6986Ea66P6TCp59hvtNJ8b1X85"),
     ),
@@ -243,10 +243,10 @@ mainnet_spot_market_configs: list[SpotMarketConfig] = [
         oracle_source=OracleSource.PythPull(),
         mint=Pubkey.from_string("3S8qX1MsMqRbiwKg2cQyx7nis1oHMgaCuc9c4VfvVdPN"),
     ),
-     SpotMarketConfig(
+    SpotMarketConfig(
         symbol="cbBTC",
         market_index=27,
-        oracle=Pubkey.from_string("BAtFj4kQttZRVep3UZS2aZRDixkGYgWsbqTBVDbnSsPF"),
+        oracle=Pubkey.from_string("486kr3pmFPfTsS4aZgcsQ7kS4i9rjMsYYZup6HQNSTT4"),
         oracle_source=OracleSource.PythPull(),
         mint=Pubkey.from_string("cbbtcf3aa214zXHbiAZQwf4122FBYbraNdFqgw4iMij"),
     ),
