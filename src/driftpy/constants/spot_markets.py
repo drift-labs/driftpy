@@ -250,4 +250,11 @@ mainnet_spot_market_configs: list[SpotMarketConfig] = [
         oracle_source=OracleSource.PythPull(),
         mint=Pubkey.from_string("cbbtcf3aa214zXHbiAZQwf4122FBYbraNdFqgw4iMij"),
     ),
+    SpotMarketConfig(
+        symbol="USDS",
+        market_index=28,
+        oracle=Pubkey.from_string("7pT9mxKXyvfaZKeKy1oe2oV2K1RFtF7tPEJHUY3h2vVV"),
+        oracle_source=OracleSource.PythStableCoinPull(),
+        mint=Pubkey.from_string("USDSwr9ApdHk5bvJKMjzff41FfuX8bSxdKcR81vTwcA"),
+    ),
 ]
