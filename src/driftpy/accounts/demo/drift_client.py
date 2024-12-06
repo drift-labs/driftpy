@@ -1,32 +1,24 @@
 import asyncio
-from anchorpy import Program
-from solders.pubkey import Pubkey
-from solana.rpc.commitment import Commitment
-
-from driftpy.accounts import (
-    get_state_account_and_slot,
-)
-from driftpy.accounts.get_accounts import (
-    get_spot_market_account_and_slot,
-    get_perp_market_account_and_slot,
-)
-from driftpy.accounts.oracle import oracle_ai_to_oracle_price_data
-from driftpy.constants.perp_markets import (
-    devnet_perp_market_configs,
-    mainnet_perp_market_configs,
-)
-from driftpy.constants.spot_markets import (
-    devnet_spot_market_configs,
-    mainnet_spot_market_configs,
-)
-from driftpy.accounts.types import DriftClientAccountSubscriber, DataAndSlot
 from typing import Optional
-from driftpy.types import (
-    PerpMarketAccount,
-    SpotMarketAccount,
-    OraclePriceData,
-    StateAccount,
-)
+
+from anchorpy import Program
+from driftpy.accounts import get_state_account_and_slot
+from driftpy.accounts.get_accounts import get_perp_market_account_and_slot
+from driftpy.accounts.get_accounts import get_spot_market_account_and_slot
+from driftpy.accounts.oracle import oracle_ai_to_oracle_price_data
+from driftpy.accounts.types import DataAndSlot
+from driftpy.accounts.types import DriftClientAccountSubscriber
+from driftpy.constants.perp_markets import devnet_perp_market_configs
+from driftpy.constants.perp_markets import mainnet_perp_market_configs
+from driftpy.constants.spot_markets import devnet_spot_market_configs
+from driftpy.constants.spot_markets import mainnet_spot_market_configs
+from driftpy.oracles.oracle_id import get_oracle_id
+from driftpy.types import OraclePriceData
+from driftpy.types import PerpMarketAccount
+from driftpy.types import SpotMarketAccount
+from driftpy.types import StateAccount
+from solana.rpc.commitment import Commitment
+from solders.pubkey import Pubkey
 
 
 class DemoDriftClientAccountSubscriber(DriftClientAccountSubscriber):
@@ -87,7 +79,10 @@ class DemoDriftClientAccountSubscriber(DriftClientAccountSubscriber):
             oracle_price_data_and_slot = oracle_ai_to_oracle_price_data(
                 oracle_ai, self.oracle_infos[i].source
             )
-            oracle_data[str(self.oracle_infos[i].pubkey)] = oracle_price_data_and_slot
+            oracle_id = get_oracle_id(
+                self.oracle_infos[i].pubkey, self.oracle_infos[i].source
+            )
+            oracle_data[oracle_id] = oracle_price_data_and_slot
 
         self.cache["spot_markets"] = spot_markets
         self.cache["perp_markets"] = perp_markets
@@ -110,9 +105,9 @@ class DemoDriftClientAccountSubscriber(DriftClientAccountSubscriber):
         return self.cache["spot_markets"][market_index]
 
     def get_oracle_price_data_and_slot(
-        self, oracle: Pubkey
+        self, oracle_id: str
     ) -> Optional[DataAndSlot[OraclePriceData]]:
-        return self.cache["oracle_price_data"][str(oracle)]
+        return self.cache["oracle_price_data"][oracle_id]
 
     async def unsubscribe(self):
         self.cache = None
