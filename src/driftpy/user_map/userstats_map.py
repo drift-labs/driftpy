@@ -3,35 +3,32 @@ import base64
 import os
 import pickle
 import traceback
-
 from typing import Dict, Optional
-import jsonrpcclient
 
-from solders.pubkey import Pubkey
 from driftpy.accounts.types import DataAndSlot
-
 from driftpy.addresses import get_user_stats_account_public_key
-from driftpy.drift_user_stats import DriftUserStats, UserStatsSubscriptionConfig
-from driftpy.memcmp import get_user_stats_filter
-from driftpy.types import (
-    NewUserRecord,
-    DepositRecord,
-    InsuranceFundStakeRecord,
-    LPRecord,
-    FundingPaymentRecord,
-    LiquidationRecord,
-    PickledData,
-    SettlePnlRecord,
-    OrderRecord,
-    OrderActionRecord,
-    UserStatsAccount,
-    compress,
-    decompress,
-)
-from driftpy.events.types import WrappedEvent
-from driftpy.user_map.user_map_config import UserStatsMapConfig
-from driftpy.user_map.user_map import UserMap
 from driftpy.decode.user_stat import decode_user_stat
+from driftpy.drift_user_stats import DriftUserStats
+from driftpy.drift_user_stats import UserStatsSubscriptionConfig
+from driftpy.events.types import WrappedEvent
+from driftpy.memcmp import get_user_stats_filter
+from driftpy.types import compress
+from driftpy.types import decompress
+from driftpy.types import DepositRecord
+from driftpy.types import FundingPaymentRecord
+from driftpy.types import InsuranceFundStakeRecord
+from driftpy.types import LiquidationRecord
+from driftpy.types import LPRecord
+from driftpy.types import NewUserRecord
+from driftpy.types import OrderActionRecord
+from driftpy.types import OrderRecord
+from driftpy.types import PickledData
+from driftpy.types import SettlePnlRecord
+from driftpy.types import UserStatsAccount
+from driftpy.user_map.user_map import UserMap
+from driftpy.user_map.user_map_config import UserStatsMapConfig
+import jsonrpcclient
+from solders.pubkey import Pubkey
 
 
 class UserStatsMap:
@@ -108,7 +105,7 @@ class UserStatsMap:
                             Pubkey.from_string(pubkey), DataAndSlot(slot, data)
                         )
                     else:
-                        self.update_user_stat(pubkey, DataAndSlot(slot, data))
+                        await self.update_user_stat(pubkey, DataAndSlot(slot, data))
 
                     await asyncio.sleep(0)
 
