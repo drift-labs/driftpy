@@ -357,6 +357,21 @@ class OrderStatus:
     Canceled = constructor()
 
 
+class OracleSourceNum:
+    PYTH = 0
+    PYTH_1K = 1
+    PYTH_1M = 2
+    PYTH_PULL = 3
+    PYTH_1K_PULL = 4
+    PYTH_1M_PULL = 5
+    SWITCHBOARD = 6
+    QUOTE_ASSET = 7
+    PYTH_STABLE_COIN = 8
+    PYTH_STABLE_COIN_PULL = 9
+    PRELAUNCH = 10
+    SWITCHBOARD_ON_DEMAND = 11
+
+
 @_rust_enum
 class OrderType:
     Market = constructor()
