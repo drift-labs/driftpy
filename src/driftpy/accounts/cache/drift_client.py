@@ -9,6 +9,7 @@ from driftpy.accounts.oracle import get_oracle_price_data_and_slot
 from driftpy.accounts.types import DataAndSlot
 from driftpy.accounts.types import DriftClientAccountSubscriber
 from driftpy.constants.numeric_constants import QUOTE_SPOT_MARKET_INDEX
+from driftpy.oracles.oracle_id import get_oracle_id
 from driftpy.types import OracleInfo
 from driftpy.types import OraclePriceData
 from driftpy.types import PerpMarketAccount
@@ -17,7 +18,6 @@ from driftpy.types import stack_trace
 from driftpy.types import StateAccount
 from solana.rpc.commitment import Commitment
 from solana.rpc.commitment import Confirmed
-from solders.pubkey import Pubkey  # type: ignore
 
 
 class DriftClientCache(TypedDict):
@@ -82,9 +82,11 @@ class CachedDriftClientAccountSubscriber(DriftClientAccountSubscriber):
                     spot_market_and_slot.data.oracle,
                     spot_market_and_slot.data.oracle_source,
                 )
-                oracle_data[str(spot_market_and_slot.data.oracle)] = (
-                    oracle_price_data_and_slot
+                oracle_id = get_oracle_id(
+                    spot_market_and_slot.data.oracle,
+                    spot_market_and_slot.data.oracle_source,
                 )
+                oracle_data[oracle_id] = oracle_price_data_and_slot
 
             self.cache["spot_markets"] = spot_markets
 
@@ -99,9 +101,11 @@ class CachedDriftClientAccountSubscriber(DriftClientAccountSubscriber):
                     perp_market_and_slot.data.amm.oracle,
                     perp_market_and_slot.data.amm.oracle_source,
                 )
-                oracle_data[str(perp_market_and_slot.data.amm.oracle)] = (
-                    oracle_price_data_and_slot
+                oracle_id = get_oracle_id(
+                    perp_market_and_slot.data.amm.oracle,
+                    perp_market_and_slot.data.amm.oracle_source,
                 )
+                oracle_data[oracle_id] = oracle_price_data_and_slot
 
             self.cache["perp_markets"] = perp_markets
 
@@ -129,9 +133,11 @@ class CachedDriftClientAccountSubscriber(DriftClientAccountSubscriber):
                         spot_market_and_slot.data.oracle,
                         spot_market_and_slot.data.oracle_source,
                     )
-                    oracle_data[str(spot_market_and_slot.data.oracle)] = (
-                        oracle_price_data_and_slot
+                    oracle_id = get_oracle_id(
+                        spot_market_and_slot.data.oracle,
+                        spot_market_and_slot.data.oracle_source,
                     )
+                    oracle_data[oracle_id] = oracle_price_data_and_slot
 
             self.cache["spot_markets"] = spot_markets
 
@@ -150,9 +156,11 @@ class CachedDriftClientAccountSubscriber(DriftClientAccountSubscriber):
                         perp_market_and_slot.data.amm.oracle,
                         perp_market_and_slot.data.amm.oracle_source,
                     )
-                    oracle_data[str(perp_market_and_slot.data.amm.oracle)] = (
-                        oracle_price_data_and_slot
+                    oracle_id = get_oracle_id(
+                        perp_market_and_slot.data.amm.oracle,
+                        perp_market_and_slot.data.amm.oracle_source,
                     )
+                    oracle_data[oracle_id] = oracle_price_data_and_slot
 
             self.cache["perp_markets"] = perp_markets
 
@@ -177,12 +185,18 @@ class CachedDriftClientAccountSubscriber(DriftClientAccountSubscriber):
         for market_index, oracle_price_data in spot_oracles.items():
             corresponding_market = self.cache["spot_markets"][market_index]
             oracle_pubkey = corresponding_market.data.oracle
-            self.cache["oracle_price_data"][str(oracle_pubkey)] = oracle_price_data
+            oracle_id = get_oracle_id(
+                oracle_pubkey, oracle_price_data.data.oracle_source
+            )
+            self.cache["oracle_price_data"][oracle_id] = oracle_price_data
 
         for market_index, oracle_price_data in perp_oracles.items():
             corresponding_market = self.cache["perp_markets"][market_index]
             oracle_pubkey = corresponding_market.data.amm.oracle
-            self.cache["oracle_price_data"][str(oracle_pubkey)] = oracle_price_data
+            oracle_id = get_oracle_id(
+                oracle_pubkey, oracle_price_data.data.oracle_source
+            )
+            self.cache["oracle_price_data"][oracle_id] = oracle_price_data
 
     def get_state_account_and_slot(self) -> Optional[DataAndSlot[StateAccount]]:
         return self.cache["state"]
@@ -210,13 +224,13 @@ class CachedDriftClientAccountSubscriber(DriftClientAccountSubscriber):
             return None
 
     def get_oracle_price_data_and_slot(
-        self, oracle: Pubkey
+        self, oracle_id: str
     ) -> Optional[DataAndSlot[OraclePriceData]]:
         try:
-            return self.cache["oracle_price_data"][str(oracle)]
+            return self.cache["oracle_price_data"][oracle_id]
         except KeyError:
             print(
-                f"WARNING: Oracle {oracle} not found in cache, Location: {stack_trace()}"
+                f"WARNING: Oracle {oracle_id} not found in cache, Location: {stack_trace()}"
             )
             return None
 
@@ -226,7 +240,8 @@ class CachedDriftClientAccountSubscriber(DriftClientAccountSubscriber):
         perp_market = self.get_perp_market_and_slot(market_index)
         if perp_market:
             oracle = perp_market.data.amm.oracle
-            return self.get_oracle_price_data_and_slot(oracle)
+            oracle_id = get_oracle_id(oracle, perp_market.data.amm.oracle_source)
+            return self.get_oracle_price_data_and_slot(oracle_id)
         return None
 
     def get_oracle_price_data_and_slot_for_spot_market(
@@ -235,7 +250,8 @@ class CachedDriftClientAccountSubscriber(DriftClientAccountSubscriber):
         spot_market = self.get_spot_market_and_slot(market_index)
         if spot_market:
             oracle = spot_market.data.oracle
-            return self.get_oracle_price_data_and_slot(oracle)
+            oracle_id = get_oracle_id(oracle, spot_market.data.oracle_source)
+            return self.get_oracle_price_data_and_slot(oracle_id)
         return None
 
     async def unsubscribe(self):
