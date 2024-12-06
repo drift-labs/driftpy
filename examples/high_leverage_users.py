@@ -57,6 +57,7 @@ async def main():
 if __name__ == "__main__":
     high_leverage_users, keys = asyncio.run(main())
     keys.sort()
+    print(f"Number of high leverage users: {len(keys)}")
     # with open("high_leverage_users.txt", "w") as f:
     #     for key in keys:
     #         f.write(f"{key}\n")

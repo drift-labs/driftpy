@@ -1,13 +1,17 @@
-from anchorpy import Provider, Wallet
-from solders.keypair import Keypair
-from solana.rpc.async_api import AsyncClient
-from driftpy.drift_client import DriftClient, AccountSubscriptionConfig
 import asyncio
+import os
+
+from anchorpy import Provider
+from anchorpy import Wallet
+from driftpy.drift_client import AccountSubscriptionConfig
+from driftpy.drift_client import DriftClient
+from solana.rpc.async_api import AsyncClient
+from solders.keypair import Keypair
 
 
 async def get_all_market_names():
     env = "mainnet-beta"  # 'devnet'
-    rpc = "https://api.mainnet-beta.solana.com"  # todo replace
+    rpc = os.environ.get("MAINNET_RPC_ENDPOINT")
     kp = Keypair()  # random wallet
     wallet = Wallet(kp)
     connection = AsyncClient(rpc)
@@ -26,6 +30,9 @@ async def get_all_market_names():
     result_perp = [
         bytes(x.account.name).decode("utf-8").strip() for x in sorted_all_perps_markets
     ]
+    print("Perp Markets:")
+    for market in result_perp:
+        print(market)
 
     all_spot_markets = await drift_client.program.account["SpotMarket"].all()
     sorted_all_spot_markets = sorted(
@@ -34,8 +41,11 @@ async def get_all_market_names():
     result_spot = [
         bytes(x.account.name).decode("utf-8").strip() for x in sorted_all_spot_markets
     ]
+    print("\n\nSpot Markets:")
+    for market in result_spot:
+        print(market)
 
-    result = result_perp + result_spot[1:]  # ignore quote spot market index
+    result = result_perp + result_spot[1:]
     return result
 
 

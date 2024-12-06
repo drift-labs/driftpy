@@ -1,27 +1,24 @@
-import sys
 import json
 import pprint
+import sys
+
 
 sys.path.append("../src/")
 
 from anchorpy import Wallet
-
-from solders.keypair import Keypair  # type: ignore
-from solders.instruction import Instruction  # type: ignore
-
+from driftpy.account_subscription_config import AccountSubscriptionConfig
+from driftpy.accounts import *
+from driftpy.constants.config import configs
+from driftpy.constants.numeric_constants import QUOTE_PRECISION
+from driftpy.drift_client import DriftClient
 from solana.rpc import commitment
 from solana.rpc.async_api import AsyncClient
 from solana.transaction import AccountMeta
-
-from spl.token.instructions import get_associated_token_address
-from spl.token.instructions import create_associated_token_account
+from solders.instruction import Instruction  # type: ignore
+from solders.keypair import Keypair  # type: ignore
 from spl.token.constants import TOKEN_PROGRAM_ID
-
-from driftpy.account_subscription_config import AccountSubscriptionConfig
-from driftpy.constants.config import configs
-from driftpy.drift_client import DriftClient
-from driftpy.accounts import *
-from driftpy.constants.numeric_constants import QUOTE_PRECISION
+from spl.token.instructions import create_associated_token_account
+from spl.token.instructions import get_associated_token_address
 
 
 async def view_logs(sig: str, connection: AsyncClient):
@@ -65,6 +62,7 @@ async def main(
         str(env),
         account_subscription=AccountSubscriptionConfig("websocket"),
     )
+    dc.tx_params = TxParams(200_000, 10_000)
 
     print(dc.program_id)
 
