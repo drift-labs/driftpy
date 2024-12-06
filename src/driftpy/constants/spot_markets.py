@@ -51,6 +51,27 @@ devnet_spot_market_configs: list[SpotMarketConfig] = [
         oracle_source=OracleSource.PythPull(),
         mint=Pubkey.from_string("GLfF72ZCUnS6N9iDJw8kedHzd6WFVf3VbpwdKKy76FRk"),
     ),
+    SpotMarketConfig(
+        symbol="BONK",
+        market_index=4,
+        oracle=Pubkey.from_string("GojbSnJuPdKDT1ZuHuAM5t9oz6bxTo1xhUKpTua2F72p"),
+        oracle_source=OracleSource.PythPull(),
+        mint=Pubkey.from_string("7SekVZDmKCCDgTP8m6Hk4CfexFSru9RkwDCczmcwcsP6"),
+    ),
+    SpotMarketConfig(
+        symbol="JLP",
+        market_index=5,
+        oracle=Pubkey.from_string("5Mb11e5rt1Sp6A286B145E4TmgMzsM2UX9nCF2vas5bs"),
+        oracle_source=OracleSource.PythPull(),
+        mint=Pubkey.from_string("HGe9FejFyhWSx6zdvx2RjynX7rmoEXFiJiLU437NXemZ"),
+    ),
+    SpotMarketConfig(
+        symbol="USDC",
+        market_index=6,
+        oracle=Pubkey.from_string("En8hkHLkRe9d9DraYmBTrus518BvmVH448YcvmrFM6Ce"),
+        oracle_source=OracleSource.PythPull(),
+        mint=Pubkey.from_string("8zGuJQqwhZafTah7Uc7Z4tXRnguqkn5KLFAP8oV6PHe2"),
+    ),
 ]
 
 mainnet_spot_market_configs: list[SpotMarketConfig] = [
