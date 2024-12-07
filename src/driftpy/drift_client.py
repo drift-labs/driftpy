@@ -20,7 +20,6 @@ from driftpy.addresses import get_sequencer_public_key_and_bump
 from driftpy.constants import BASE_PRECISION
 from driftpy.constants import PRICE_PRECISION
 from driftpy.constants.config import configs
-from driftpy.constants.config import decode_account
 from driftpy.constants.config import DEVNET_SEQUENCER_PROGRAM_ID
 from driftpy.constants.config import DRIFT_PROGRAM_ID
 from driftpy.constants.config import DriftEnv
@@ -3413,7 +3412,7 @@ class DriftClient:
                 sequence_account_raw = await self.sequence_enforcer_program.account[
                     "SequenceAccount"
                 ].fetch(address)
-            except anchorpy.error.AccountDoesNotExistError as e:
+            except anchorpy.error.AccountDoesNotExistError:
                 self.sequence_address_by_subaccount[subaccount] = address
                 self.sequence_number_by_subaccount[subaccount] = 1
                 self.sequence_bump_by_subaccount[subaccount] = bump

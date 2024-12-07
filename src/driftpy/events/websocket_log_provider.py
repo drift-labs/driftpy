@@ -52,7 +52,7 @@ class WebsocketLogProvider(LogProvider):
 
                         callback(signature, slot, logs)
                     except Exception as e:
-                        print(f"Error processing event data", e)
+                        print("Error processing event data", e)
                         break
                 await ws.account_unsubscribe(subscription_id)
             except websockets.exceptions.ConnectionClosed:

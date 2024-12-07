@@ -14,9 +14,7 @@ from spl.token.async_client import AsyncToken
 from spl.token.instructions import initialize_mint, InitializeMintParams
 import math
 
-from spl.token.async_client import AsyncToken
 from spl.token._layouts import ACCOUNT_LAYOUT
-from spl.token.constants import TOKEN_PROGRAM_ID
 from spl.token.instructions import (
     initialize_account,
     InitializeAccountParams,

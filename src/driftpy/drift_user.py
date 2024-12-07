@@ -6,7 +6,6 @@ from typing import Tuple
 from driftpy.account_subscription_config import AccountSubscriptionConfig
 from driftpy.accounts.oracle import *
 from driftpy.math.amm import calculate_market_open_bid_ask
-from driftpy.math.conversion import convert_to_number
 from driftpy.math.fuel import calculate_insurance_fuel_bonus
 from driftpy.math.fuel import calculate_perp_fuel_bonus
 from driftpy.math.fuel import calculate_spot_fuel_bonus
@@ -15,7 +14,6 @@ from driftpy.math.oracles import calculate_live_oracle_twap
 from driftpy.math.perp_position import *
 from driftpy.math.spot_balance import get_strict_token_value
 from driftpy.math.spot_market import *
-from driftpy.math.spot_position import calculate_weighted_token_value
 from driftpy.math.spot_position import get_worst_case_token_amounts
 from driftpy.math.spot_position import is_spot_position_available
 from driftpy.oracles.strict_oracle_price import StrictOraclePrice

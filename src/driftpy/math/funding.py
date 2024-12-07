@@ -7,7 +7,6 @@ from driftpy.math.utils import clamp_num
 from driftpy.types import (
     OraclePriceData,
     PerpMarketAccount,
-    is_one_of_variant,
     is_variant,
 )
 

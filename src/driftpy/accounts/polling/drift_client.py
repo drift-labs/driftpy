@@ -222,7 +222,7 @@ class PollingDriftClientAccountSubscriber(DriftClientAccountSubscriber):
             oracle = market_account.amm.oracle
             oracle_source = market_account.amm.oracle_source
             oracle_id = get_oracle_id(oracle, oracle_source)
-            if not oracle_id in self.oracle:
+            if oracle_id not in self.oracle:
                 await self.add_oracle(oracle, oracle_source)
             self.perp_oracle_map[market_index] = oracle
 
@@ -234,7 +234,7 @@ class PollingDriftClientAccountSubscriber(DriftClientAccountSubscriber):
             oracle = market_account.oracle
             oracle_source = market_account.oracle_source
             oracle_id = get_oracle_id(oracle, oracle_source)
-            if not oracle_id in self.oracle:
+            if oracle_id not in self.oracle:
                 await self.add_oracle(oracle, oracle_source)
             self.spot_oracle_map[market_index] = oracle
 

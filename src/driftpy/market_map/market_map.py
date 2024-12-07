@@ -2,7 +2,6 @@ import asyncio
 import base64
 import os
 import pickle
-import traceback
 
 from typing import Dict, Optional, Union
 import jsonrpcclient

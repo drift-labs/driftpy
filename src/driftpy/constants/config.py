@@ -3,7 +3,7 @@ from base64 import b64decode
 from typing import Literal, Optional, Sequence, Tuple, Union
 
 import jsonrpcclient
-from driftpy.accounts.oracle import decode_oracle, decode_pyth_price_info
+from driftpy.accounts.oracle import decode_oracle
 from driftpy.accounts.types import DataAndSlot, FullOracleWrapper
 
 from driftpy.constants.spot_markets import (
@@ -23,8 +23,6 @@ from anchorpy import Program
 
 from driftpy.types import (
     OracleInfo,
-    OraclePriceData,
-    OracleSource,
     PerpMarketAccount,
     SpotMarketAccount,
 )

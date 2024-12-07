@@ -21,9 +21,8 @@ from driftpy.user_map.user_map_config import UserMapConfig, PollingConfig
 from driftpy.user_map.websocket_sub import WebsocketSubscription
 from driftpy.user_map.polling_sub import PollingSubscription
 
-from driftpy.memcmp import get_user_filter, get_non_idle_user_filter
 
-from driftpy.user_map.types import UserMapInterface, ConfigType
+from driftpy.user_map.types import UserMapInterface
 from driftpy.accounts.types import DataAndSlot
 
 from driftpy.decode.user import decode_user

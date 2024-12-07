@@ -4,7 +4,6 @@ import jsonrpcclient
 from dataclasses import dataclass
 
 from solana.rpc.async_api import AsyncClient
-from solders.pubkey import Pubkey
 
 
 @dataclass

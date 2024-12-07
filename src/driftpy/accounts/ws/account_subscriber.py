@@ -18,7 +18,7 @@ from solana.rpc.websocket_api import connect
 
 from typing import cast, Generic, TypeVar, Callable
 
-from driftpy.types import PerpMarketAccount, get_ws_url
+from driftpy.types import get_ws_url
 
 T = TypeVar("T")
 
@@ -80,7 +80,7 @@ class WebsocketAccountSubscriber(
                         decoded_data = self.decode(account_bytes)
                         self.update_data(DataAndSlot(slot, decoded_data))
                     except Exception:
-                        print(f"Error processing account data")
+                        print("Error processing account data")
                         break
                 await ws.account_unsubscribe(subscription_id)
             except websockets.exceptions.ConnectionClosed:

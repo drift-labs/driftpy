@@ -1,5 +1,4 @@
 import asyncio
-import traceback
 from typing import Dict, Optional, TypeVar, Callable
 from anchorpy import Program
 from driftpy.accounts.types import (

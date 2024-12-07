@@ -9,7 +9,6 @@ from driftpy.dlob.dlob_node import (
 )
 
 from driftpy.types import Order, is_variant
-import inspect
 
 T = TypeVar("T", bound=DLOBNode)
 

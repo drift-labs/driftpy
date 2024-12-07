@@ -21,38 +21,40 @@ Usage:
     python3 examples/place_and_take.py
 """
 
+import asyncio
 import os
 import sys
-import asyncio
-from driftpy.addresses import get_user_stats_account_public_key
-from solders.compute_budget import set_compute_unit_limit, set_compute_unit_price
 
+from driftpy.addresses import get_user_stats_account_public_key
 from driftpy.keypair import load_keypair
 from driftpy.user_map.user_map import UserMap
-from driftpy.user_map.user_map_config import UserMapConfig, WebsocketConfig
+from driftpy.user_map.user_map_config import UserMapConfig
+from driftpy.user_map.user_map_config import WebsocketConfig
+from solders.compute_budget import set_compute_unit_limit
+from solders.compute_budget import set_compute_unit_price
+
 
 sys.path.append("../src/")
 
 from anchorpy import Wallet
-
+from dotenv import load_dotenv
+from driftpy.account_subscription_config import AccountSubscriptionConfig
+from driftpy.constants.numeric_constants import BASE_PRECISION
+from driftpy.constants.numeric_constants import PRICE_PRECISION
+from driftpy.drift_client import DriftClient
+from driftpy.types import is_variant
+from driftpy.types import MakerInfo
+from driftpy.types import MarketType
+from driftpy.types import OrderParams
+from driftpy.types import OrderType
+from driftpy.types import PositionDirection
+from driftpy.types import TxParams
+import requests
+from solana.rpc.async_api import AsyncClient
 from solders.pubkey import Pubkey
 
-from solana.rpc.async_api import AsyncClient
 
-from driftpy.types import (
-    MakerInfo,
-    MarketType,
-    OrderType,
-    OrderParams,
-    PositionDirection,
-    TxParams,
-    is_variant,
-)
-from driftpy.account_subscription_config import AccountSubscriptionConfig
-from driftpy.drift_client import DriftClient
-from driftpy.constants.numeric_constants import BASE_PRECISION, PRICE_PRECISION
-
-import requests
+load_dotenv()
 
 
 def get_l3(market_type: str, market_index: int):

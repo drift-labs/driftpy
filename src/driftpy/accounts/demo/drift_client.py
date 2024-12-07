@@ -1,4 +1,3 @@
-import asyncio
 from typing import Optional
 
 from anchorpy import Program
@@ -8,10 +7,6 @@ from driftpy.accounts.get_accounts import get_spot_market_account_and_slot
 from driftpy.accounts.oracle import oracle_ai_to_oracle_price_data
 from driftpy.accounts.types import DataAndSlot
 from driftpy.accounts.types import DriftClientAccountSubscriber
-from driftpy.constants.perp_markets import devnet_perp_market_configs
-from driftpy.constants.perp_markets import mainnet_perp_market_configs
-from driftpy.constants.spot_markets import devnet_spot_market_configs
-from driftpy.constants.spot_markets import mainnet_spot_market_configs
 from driftpy.oracles.oracle_id import get_oracle_id
 from driftpy.types import OraclePriceData
 from driftpy.types import PerpMarketAccount

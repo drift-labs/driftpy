@@ -1,21 +1,24 @@
-import sys
 import json
 import pprint
+import sys
+
 
 sys.path.append("../src/")
 
 from anchorpy import Wallet
-
-from solana.rpc.async_api import AsyncClient
-from solana.rpc import commitment
-
-from solders.keypair import Keypair  # type: ignore
-
-from driftpy.constants.config import configs
-from driftpy.constants.numeric_constants import AMM_RESERVE_PRECISION, QUOTE_PRECISION
-from driftpy.drift_client import DriftClient
-from driftpy.accounts import *
+from dotenv import load_dotenv
 from driftpy.account_subscription_config import AccountSubscriptionConfig
+from driftpy.accounts import *
+from driftpy.constants.config import configs
+from driftpy.constants.numeric_constants import AMM_RESERVE_PRECISION
+from driftpy.constants.numeric_constants import QUOTE_PRECISION
+from driftpy.drift_client import DriftClient
+from driftpy.keypair import load_keypair
+from solana.rpc import commitment
+from solana.rpc.async_api import AsyncClient
+
+
+load_dotenv()
 
 
 async def view_logs(sig: str, connection: AsyncClient):
@@ -37,25 +40,25 @@ async def main(
     liquidity_amount,
     operation,
 ):
-    with open(keypath, "r") as f:
-        secret = json.load(f)
-    kp = Keypair.from_secret_key(bytes(secret))
-    print("using public key:", kp.public_key)
+    kp = load_keypair(keypath)
+    print("using public key:", kp.pubkey())
     print("market:", market_index)
 
-    config = configs[env]
     wallet = Wallet(kp)
     connection = AsyncClient(url)
 
     dc = DriftClient(
         connection,
         wallet,
-        config,
+        "mainnet",
         account_subscription=AccountSubscriptionConfig("websocket"),
     )
+    dc.tx_params = TxParams(200_000, 10_000)
+
+    await dc.subscribe()
     drift_user = dc.get_user()
 
-    total_collateral = await drift_user.get_total_collateral()
+    total_collateral = drift_user.get_total_collateral()
     print("total collateral:", total_collateral / QUOTE_PRECISION)
 
     if total_collateral == 0:
@@ -63,6 +66,7 @@ async def main(
         return
 
     market = await get_perp_market_account(dc.program, market_index)
+
     lp_amount = liquidity_amount * AMM_RESERVE_PRECISION
     lp_amount -= lp_amount % market.amm.order_step_size
     lp_amount = int(lp_amount)
@@ -75,17 +79,17 @@ async def main(
 
     sig = None
     if operation == "add":
-        resp = input("confirm adding liquidity: Y?")
-        if resp != "Y":
-            print("confirmation failed exiting...")
+        resp = input("confirm adding liquidity? (Y/n)")
+        if resp == "n":
+            print("exiting...")
             return
         sig = await dc.add_liquidity(lp_amount, market_index)
         print(sig)
 
     elif operation == "remove":
-        resp = input("confirm removing liquidity: Y?")
-        if resp != "Y":
-            print("confirmation failed exiting...")
+        resp = input("confirm removing liquidity? (Y/n)")
+        if resp == "n":
+            print("exiting...")
             return
         sig = await dc.remove_liquidity(lp_amount, market_index)
         print(sig)
@@ -94,9 +98,9 @@ async def main(
         pass
 
     elif operation == "settle":
-        resp = input("confirm settling revenue to if stake: Y?")
-        if resp != "Y":
-            print("confirmation failed exiting...")
+        resp = input("confirm settling revenue to if stake? (Y/n)")
+        if resp == "n":
+            print("exiting...")
             return
         sig = await dc.settle_lp(dc.authority, market_index)
         print(sig)
@@ -125,7 +129,7 @@ if __name__ == "__main__":
         "--keypath", type=str, required=False, default=os.environ.get("ANCHOR_WALLET")
     )
     parser.add_argument("--env", type=str, default="devnet")
-    parser.add_argument("--amount", type=float, required=False)
+    parser.add_argument("--amount", type=float, required=True)
     parser.add_argument("--market", type=int, required=True)
     parser.add_argument(
         "--operation", choices=["remove", "add", "view", "settle"], required=True

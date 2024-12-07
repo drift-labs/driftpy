@@ -2,36 +2,34 @@ from copy import deepcopy
 import math
 import time
 from typing import Optional, Tuple
+
 from driftpy.constants.numeric_constants import (
-    AMM_RESERVE_PRECISION,
-    AMM_TO_QUOTE_PRECISION_RATIO,
-    BID_ASK_SPREAD_PRECISION,
-    DEFAULT_REVENUE_SINCE_LAST_FUNDING_SPREAD_RETREAT,
-    FUNDING_RATE_BUFFER,
-    FUNDING_RATE_PRECISION,
-    PERCENTAGE_PRECISION,
-    PRICE_DIV_PEG,
-    PEG_PRECISION,
     AMM_TIMES_PEG_TO_QUOTE_PRECISION_RATIO,
-    PRICE_PRECISION,
-    QUOTE_PRECISION,
 )
+from driftpy.constants.numeric_constants import (
+    DEFAULT_REVENUE_SINCE_LAST_FUNDING_SPREAD_RETREAT,
+)
+from driftpy.constants.numeric_constants import AMM_TO_QUOTE_PRECISION_RATIO
+from driftpy.constants.numeric_constants import BID_ASK_SPREAD_PRECISION
+from driftpy.constants.numeric_constants import FUNDING_RATE_BUFFER
+from driftpy.constants.numeric_constants import PEG_PRECISION
+from driftpy.constants.numeric_constants import PERCENTAGE_PRECISION
+from driftpy.constants.numeric_constants import PRICE_DIV_PEG
+from driftpy.constants.numeric_constants import PRICE_PRECISION
+from driftpy.constants.numeric_constants import QUOTE_PRECISION
 from driftpy.math.oracles import calculate_live_oracle_std
-from driftpy.math.repeg import (
-    calculate_adjust_k_cost,
-    calculate_budgeted_peg,
-    calculate_optimal_peg_and_budget,
-    calculate_repeg_cost,
-)
-from driftpy.math.utils import clamp_num, sig_num
-from driftpy.types import (
-    OraclePriceData,
-    PositionDirection,
-    SwapDirection,
-    AMM,
-    AssetType,
-    is_variant,
-)
+from driftpy.math.repeg import calculate_adjust_k_cost
+from driftpy.math.repeg import calculate_budgeted_peg
+from driftpy.math.repeg import calculate_optimal_peg_and_budget
+from driftpy.math.repeg import calculate_repeg_cost
+from driftpy.math.utils import clamp_num
+from driftpy.math.utils import sig_num
+from driftpy.types import AMM
+from driftpy.types import AssetType
+from driftpy.types import is_variant
+from driftpy.types import OraclePriceData
+from driftpy.types import PositionDirection
+from driftpy.types import SwapDirection
 
 
 def calculate_vol_spread_bn(

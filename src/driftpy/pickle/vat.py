@@ -1,7 +1,6 @@
 import asyncio
 import pickle
 import os
-from dataclasses import dataclass
 from typing import Optional
 from driftpy.drift_client import DriftClient
 from driftpy.market_map.market_map import MarketMap

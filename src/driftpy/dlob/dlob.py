@@ -196,7 +196,7 @@ class DLOB:
 
         market_type = market_type_to_string(order.market_type)
 
-        if not order.market_index in self.order_lists.get(market_type):
+        if order.market_index not in self.order_lists.get(market_type):
             self.add_order_list(market_type, order.market_index)
 
         if is_variant(order.status, "Open"):

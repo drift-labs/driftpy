@@ -27,7 +27,6 @@ class DriftUserStats:
         user_stats_account_pubkey: Pubkey,
         config: UserStatsSubscriptionConfig,
     ):
-        from driftpy.drift_client import DriftClient
 
         self.drift_client = drift_client
         self.user_stats_account_pubkey = user_stats_account_pubkey

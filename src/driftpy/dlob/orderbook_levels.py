@@ -15,7 +15,6 @@ from driftpy.math.amm import (
 )
 from driftpy.math.orders import standardize_price
 from driftpy.types import (
-    AMM,
     AssetType,
     OraclePriceData,
     PerpMarketAccount,

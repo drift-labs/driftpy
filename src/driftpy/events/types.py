@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 from abc import abstractmethod
 from solana.transaction import Signature
-from solana.rpc.commitment import Commitment, Confirmed
+from solana.rpc.commitment import Commitment
 from solana.rpc.async_api import AsyncClient
 
 from typing import Callable, Literal, Union

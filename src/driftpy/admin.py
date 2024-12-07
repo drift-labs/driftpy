@@ -1,11 +1,10 @@
 from typing import Optional
 from solders.pubkey import Pubkey
 from solders.signature import Signature
-from solders.keypair import Keypair
 from solders.system_program import ID
 from solders.sysvar import RENT
 from spl.token.constants import TOKEN_PROGRAM_ID
-from anchorpy import Program, Provider, Context
+from anchorpy import Context
 
 from driftpy.drift_client import (
     DriftClient,
@@ -14,11 +13,6 @@ from driftpy.constants.numeric_constants import PEG_PRECISION
 from driftpy.types import OracleGuardRails, OracleSource, PrelaunchOracleParams
 from driftpy.addresses import *
 from driftpy.accounts import get_state_account
-from driftpy.constants.config import Config
-from anchorpy import Provider, Idl
-import driftpy
-from pathlib import Path
-import json
 from driftpy.constants.numeric_constants import (
     SPOT_RATE_PRECISION,
     SPOT_WEIGHT_PRECISION,

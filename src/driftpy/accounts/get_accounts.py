@@ -1,4 +1,3 @@
-import base64
 from typing import cast, Optional, Callable
 from solders.pubkey import Pubkey
 from anchorpy import Program, ProgramAccount

@@ -1,7 +1,6 @@
 from driftpy.constants.numeric_constants import BID_ASK_SPREAD_PRECISION, FIVE_MINUTE
 from driftpy.types import (
     AMM,
-    ContractTier,
     HistoricalOracleData,
     OracleGuardRails,
     OraclePriceData,

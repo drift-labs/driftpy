@@ -1,7 +1,5 @@
 import asyncio
-from driftpy.account_subscription_config import AccountSubscriptionConfig
-from driftpy.accounts.bulk_account_loader import BulkAccountLoader
-from driftpy.user_map.types import ConfigType, Subscription
+from driftpy.user_map.types import Subscription
 
 
 class PollingSubscription(Subscription):

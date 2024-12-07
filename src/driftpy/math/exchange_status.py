@@ -1,6 +1,5 @@
 from typing import Union
 from driftpy.types import (
-    ExchangeStatus,
     PerpMarketAccount,
     SpotMarketAccount,
     StateAccount,
