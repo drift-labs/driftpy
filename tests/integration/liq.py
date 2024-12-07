@@ -151,7 +151,10 @@ async def test_perp_liq_price(
     await drift_client.get_user(0).account_subscriber.update_cache()
     await drift_client.deposit(USDC_AMOUNT, 0, usdc_acc.pubkey())
     await drift_client.open_position(
-        PositionDirection.Long(), (175 * BASE_PRECISION) // 10, 0, 0  # 17.5 SOL
+        PositionDirection.Long(),
+        (175 * BASE_PRECISION) // 10,
+        0,
+        0,  # 17.5 SOL
     )
 
     lp_shares = drift_client.get_user_account().perp_positions[0].lp_shares

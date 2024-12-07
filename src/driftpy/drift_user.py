@@ -123,9 +123,8 @@ class DriftUser:
 
     def get_spot_position(self, market_index: int) -> Optional[SpotPosition]:
         for position in self.get_user_account().spot_positions:
-            if (
-                position.market_index == market_index
-                and not is_spot_position_available(position)
+            if position.market_index == market_index and not is_spot_position_available(
+                position
             ):
                 return position
 
@@ -358,9 +357,8 @@ class DriftUser:
 
         found = False
         for position in user.spot_positions:
-            if (
-                position.market_index == market_index
-                and not is_spot_position_available(position)
+            if position.market_index == market_index and not is_spot_position_available(
+                position
             ):
                 found = True
                 break

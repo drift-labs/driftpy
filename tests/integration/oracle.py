@@ -155,13 +155,17 @@ async def test_polling(
 
     await asyncio.sleep(20)
 
-    perp_oracle_price_before = (polling_drift_client.get_oracle_price_data_for_perp_market(0)).price  # type: ignore
+    perp_oracle_price_before = (
+        polling_drift_client.get_oracle_price_data_for_perp_market(0)
+    ).price  # type: ignore
     print(f"perp_oracle_price_before: {perp_oracle_price_before}")
     assert perp_oracle_price_before == 30 * PRICE_PRECISION
 
     await asyncio.sleep(10)
 
-    perp_oracle_price_after = (polling_drift_client.get_oracle_price_data_for_perp_market(0)).price  # type: ignore
+    perp_oracle_price_after = (
+        polling_drift_client.get_oracle_price_data_for_perp_market(0)
+    ).price  # type: ignore
     print(f"perp_oracle_price_after: {perp_oracle_price_after}")
     assert perp_oracle_price_after == 100 * PRICE_PRECISION
 
@@ -171,13 +175,17 @@ async def test_polling(
 
     await asyncio.sleep(20)
 
-    spot_oracle_price_before = (polling_drift_client.get_oracle_price_data_for_spot_market(1)).price  # type: ignore
+    spot_oracle_price_before = (
+        polling_drift_client.get_oracle_price_data_for_spot_market(1)
+    ).price  # type: ignore
     print(f"spot_oracle_price_before: {spot_oracle_price_before}")
     assert spot_oracle_price_before == 30 * PRICE_PRECISION
 
     await asyncio.sleep(10)
 
-    spot_oracle_price_after = (polling_drift_client.get_oracle_price_data_for_spot_market(1)).price  # type: ignore
+    spot_oracle_price_after = (
+        polling_drift_client.get_oracle_price_data_for_spot_market(1)
+    ).price  # type: ignore
     print(f"spot_oracle_price_after: {spot_oracle_price_after}")
     assert spot_oracle_price_after == 100 * PRICE_PRECISION
 

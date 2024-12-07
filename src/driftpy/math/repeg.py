@@ -131,13 +131,20 @@ def calculate_adjust_k_cost(amm: AMM, numerator: int, denominator: int) -> int:
 
     p = numerator * PRICE_PRECISION // denominator
 
-    cost = (quote_scale * PERCENTAGE_PRECISION * PERCENTAGE_PRECISION // (x + d)) - (
-        quote_scale
-        * p
-        * PERCENTAGE_PRECISION
-        * PERCENTAGE_PRECISION
-        // PRICE_PRECISION
-        // (x * p // PRICE_PRECISION + d)
-    ) // PERCENTAGE_PRECISION // PERCENTAGE_PRECISION // AMM_TO_QUOTE_PRECISION_RATIO // PEG_PRECISION
+    cost = (
+        (quote_scale * PERCENTAGE_PRECISION * PERCENTAGE_PRECISION // (x + d))
+        - (
+            quote_scale
+            * p
+            * PERCENTAGE_PRECISION
+            * PERCENTAGE_PRECISION
+            // PRICE_PRECISION
+            // (x * p // PRICE_PRECISION + d)
+        )
+        // PERCENTAGE_PRECISION
+        // PERCENTAGE_PRECISION
+        // AMM_TO_QUOTE_PRECISION_RATIO
+        // PEG_PRECISION
+    )
 
     return cost * -1

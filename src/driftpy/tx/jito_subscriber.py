@@ -13,7 +13,13 @@ from solders.system_program import TransferParams, transfer
 
 from jito_searcher_client.async_searcher import get_async_searcher_client  # type: ignore
 from jito_searcher_client.generated.searcher_pb2_grpc import SearcherServiceStub  # type: ignore
-from jito_searcher_client.generated.searcher_pb2 import ConnectedLeadersResponse, ConnectedLeadersRequest, GetTipAccountsRequest, GetTipAccountsResponse, SubscribeBundleResultsRequest  # type: ignore
+from jito_searcher_client.generated.searcher_pb2 import (
+    ConnectedLeadersResponse,
+    ConnectedLeadersRequest,
+    GetTipAccountsRequest,
+    GetTipAccountsResponse,
+    SubscribeBundleResultsRequest,
+)  # type: ignore
 
 
 class JitoSubscriber:
@@ -43,14 +49,20 @@ class JitoSubscriber:
         self.bundle_subscription = self.searcher_client.SubscribeBundleResults(
             SubscribeBundleResultsRequest()
         )
-        tip_accounts: GetTipAccountsResponse = await self.searcher_client.GetTipAccounts(GetTipAccountsRequest())  # type: ignore
+        tip_accounts: GetTipAccountsResponse = (
+            await self.searcher_client.GetTipAccounts(GetTipAccountsRequest())
+        )  # type: ignore
         for account in tip_accounts.accounts:
             self.tip_accounts.append(Pubkey.from_string(account))
         while True:
             try:
                 self.cache.clear()
                 current_slot = (await self.connection.get_slot(Confirmed)).value
-                leaders: ConnectedLeadersResponse = await self.searcher_client.GetConnectedLeaders(ConnectedLeadersRequest())  # type: ignore
+                leaders: ConnectedLeadersResponse = (
+                    await self.searcher_client.GetConnectedLeaders(
+                        ConnectedLeadersRequest()
+                    )
+                )  # type: ignore
                 for slot_list in leaders.connected_validators.values():
                     slots = slot_list.slots
                     for slot in slots:

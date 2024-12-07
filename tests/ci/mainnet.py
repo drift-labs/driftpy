@@ -59,11 +59,11 @@ async def test_mainnet_constants(rpc_url: str):
         assert (
             expected.market_index == received.market_index
         ), f"Perp: Expected market index {expected.market_index}, got {received.market_index} Market: {received.pubkey}"
-        assert str(expected.oracle) == str(
-            received.amm.oracle
+        assert (
+            str(expected.oracle) == str(received.amm.oracle)
         ), f"Perp: Expected oracle {expected.oracle}, got {received.amm.oracle} Market: {received.pubkey} Market Index: {received.market_index}"
-        assert str(expected.oracle_source) == str(
-            received.amm.oracle_source
+        assert (
+            str(expected.oracle_source) == str(received.amm.oracle_source)
         ), f"Perp: Expected oracle source {expected.oracle_source}, got {received.amm.oracle_source} Market: {received.pubkey} Market Index: {received.market_index}"
 
     expected_spot_markets = sorted(
@@ -77,11 +77,11 @@ async def test_mainnet_constants(rpc_url: str):
         assert (
             expected.market_index == received.market_index
         ), f"Spot: Expected market index {expected.market_index}, got {received.market_index} Market: {received.pubkey}"
-        assert str(expected.oracle) == str(
-            received.oracle
+        assert (
+            str(expected.oracle) == str(received.oracle)
         ), f"Spot: Expected oracle {expected.oracle}, got {received.oracle} Market: {received.pubkey} Market Index: {received.market_index}"
-        assert str(expected.oracle_source) == str(
-            received.oracle_source
+        assert (
+            str(expected.oracle_source) == str(received.oracle_source)
         ), f"Spot: Expected oracle source {expected.oracle_source}, got {received.oracle_source} Market: {received.pubkey} Market Index: {received.market_index}"
 
 
@@ -101,28 +101,28 @@ async def test_mainnet_cached(rpc_url: str):
 
     perp_markets = drift_client.get_perp_market_accounts()
     print(f"1. Got: {len(perp_markets)}")
-    assert len(perp_markets) == len(
-        mainnet_perp_market_configs
+    assert (
+        len(perp_markets) == len(mainnet_perp_market_configs)
     ), f"Expected {len(mainnet_perp_market_configs)} perp markets, got {len(perp_markets)}"
 
     spot_markets = drift_client.get_spot_market_accounts()
     print(f"1. Got: {len(spot_markets)}")
-    assert len(spot_markets) == len(
-        mainnet_spot_market_configs
+    assert (
+        len(spot_markets) == len(mainnet_spot_market_configs)
     ), f"Expected {len(mainnet_spot_market_configs)} spot markets, got {len(spot_markets)}"
 
     await drift_client.account_subscriber.update_cache()
 
     perp_markets = drift_client.get_perp_market_accounts()
     print(f"2. Got: {len(perp_markets)}")
-    assert len(perp_markets) == len(
-        mainnet_perp_market_configs
+    assert (
+        len(perp_markets) == len(mainnet_perp_market_configs)
     ), f"Expected {len(mainnet_perp_market_configs)} perp markets, got {len(perp_markets)}"
 
     spot_markets = drift_client.get_spot_market_accounts()
     print(f"2. Got: {len(spot_markets)}")
-    assert len(spot_markets) == len(
-        mainnet_spot_market_configs
+    assert (
+        len(spot_markets) == len(mainnet_spot_market_configs)
     ), f"Expected {len(mainnet_spot_market_configs)} spot markets, got {len(spot_markets)}"
 
     print("Unsubscribing from Drift Client")
@@ -147,14 +147,14 @@ async def test_mainnet_ws(rpc_url: str):
 
     perp_markets = drift_client.get_perp_market_accounts()
     print(f"1. Got: {len(perp_markets)}")
-    assert len(perp_markets) == len(
-        mainnet_perp_market_configs
+    assert (
+        len(perp_markets) == len(mainnet_perp_market_configs)
     ), f"Expected {len(mainnet_perp_market_configs)} perp markets, got {len(perp_markets)}"
 
     spot_markets = drift_client.get_spot_market_accounts()
     print(f"1. Got: {len(spot_markets)}")
-    assert len(spot_markets) == len(
-        mainnet_spot_market_configs
+    assert (
+        len(spot_markets) == len(mainnet_spot_market_configs)
     ), f"Expected {len(mainnet_spot_market_configs)} spot markets, got {len(spot_markets)}"
 
     # wait for some updates
@@ -162,14 +162,14 @@ async def test_mainnet_ws(rpc_url: str):
 
     perp_markets = drift_client.get_perp_market_accounts()
     print(f"2. Got: {len(perp_markets)}")
-    assert len(perp_markets) == len(
-        mainnet_perp_market_configs
+    assert (
+        len(perp_markets) == len(mainnet_perp_market_configs)
     ), f"Expected {len(mainnet_perp_market_configs)} perp markets, got {len(perp_markets)}"
 
     spot_markets = drift_client.get_spot_market_accounts()
     print(f"2. Got: {len(spot_markets)}")
-    assert len(spot_markets) == len(
-        mainnet_spot_market_configs
+    assert (
+        len(spot_markets) == len(mainnet_spot_market_configs)
     ), f"Expected {len(mainnet_spot_market_configs)} spot markets, got {len(spot_markets)}"
 
     print("Unsubscribing from Drift Client")

@@ -370,7 +370,12 @@ async def test_spread_reserves_with_offset():
     now = int(time.time())
 
     oracle_price_data = OraclePriceData(
-        int(13.553 * PRICE_PRECISION), 69, 1, 0, 0, True  # kek
+        int(13.553 * PRICE_PRECISION),
+        69,
+        1,
+        0,
+        0,
+        True,  # kek
     )
 
     bid_reserves, ask_reserves = calculate_spread_reserves(amm, oracle_price_data, now)
@@ -519,7 +524,12 @@ async def test_spread_reserves_with_negative_offset():
     now = int(time.time())
 
     oracle_price_data = OraclePriceData(
-        int(13.553 * PRICE_PRECISION), 69, 1, 0, 0, True  # kek
+        int(13.553 * PRICE_PRECISION),
+        69,
+        1,
+        0,
+        0,
+        True,  # kek
     )
 
     bid_reserves, ask_reserves = calculate_spread_reserves(amm, oracle_price_data, now)
