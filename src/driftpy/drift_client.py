@@ -1019,14 +1019,15 @@ class DriftClient:
             ),
         )
         instructions.append(deposit_ix)
-        close_account_params = CloseAccountParams(
-            program_id=TOKEN_PROGRAM_ID,
-            account=ata_pubkey,
-            dest=signer_authority,
-            owner=signer_authority,
-        )
-        close_account_ix = close_account(close_account_params)
-        instructions.append(close_account_ix)
+        if create_WSOL_token_account:
+            close_account_params = CloseAccountParams(
+                program_id=TOKEN_PROGRAM_ID,
+                account=user_token_account,
+                dest=signer_authority,
+                owner=signer_authority,
+            )
+            close_account_ix = close_account(close_account_params)
+            instructions.append(close_account_ix)
         return instructions
 
     async def withdraw(
