@@ -1,51 +1,21 @@
 import json
 import os
-from pathlib import Path
 import random
 import string
+from pathlib import Path
 from typing import List, Optional, Tuple, Union
 
 import anchorpy
-from anchorpy import Context
-from anchorpy import Idl
-from anchorpy import Program
-from anchorpy import Provider
-from anchorpy import Wallet
-from deprecated import deprecated
-import driftpy
-from driftpy.account_subscription_config import AccountSubscriptionConfig
-from driftpy.accounts import *
-from driftpy.address_lookup_table import get_address_lookup_table
-from driftpy.addresses import get_sequencer_public_key_and_bump
-from driftpy.constants import BASE_PRECISION
-from driftpy.constants import PRICE_PRECISION
-from driftpy.constants.config import configs
-from driftpy.constants.config import DEVNET_SEQUENCER_PROGRAM_ID
-from driftpy.constants.config import DRIFT_PROGRAM_ID
-from driftpy.constants.config import DriftEnv
-from driftpy.constants.config import SEQUENCER_PROGRAM_ID
-from driftpy.constants.numeric_constants import QUOTE_SPOT_MARKET_INDEX
-from driftpy.constants.spot_markets import WRAPPED_SOL_MINT
-from driftpy.decode.utils import decode_name
-from driftpy.drift_user import DriftUser
-from driftpy.drift_user_stats import DriftUserStats
-from driftpy.drift_user_stats import UserStatsSubscriptionConfig
-from driftpy.math.perp_position import is_available
-from driftpy.math.spot_market import cast_to_spot_precision
-from driftpy.math.spot_position import is_spot_position_available
-from driftpy.name import encode_name
-from driftpy.tx.standard_tx_sender import StandardTxSender
-from driftpy.tx.types import TxSender
-from driftpy.tx.types import TxSigAndSlot
 import requests
+from anchorpy import Context, Idl, Program, Provider, Wallet
+from deprecated import deprecated
 from solana.rpc.async_api import AsyncClient
 from solana.rpc.commitment import Processed
 from solana.rpc.types import TxOpts
 from solana.transaction import AccountMeta
 from solders import system_program
 from solders.address_lookup_table_account import AddressLookupTableAccount
-from solders.compute_budget import set_compute_unit_limit
-from solders.compute_budget import set_compute_unit_price
+from solders.compute_budget import set_compute_unit_limit, set_compute_unit_price
 from solders.instruction import Instruction
 from solders.keypair import Keypair
 from solders.pubkey import Pubkey
@@ -53,16 +23,42 @@ from solders.signature import Signature
 from solders.system_program import ID
 from solders.system_program import ID as SYS_PROGRAM_ID
 from solders.sysvar import RENT
-from solders.transaction import Legacy
-from solders.transaction import TransactionVersion
-from spl.token.constants import ASSOCIATED_TOKEN_PROGRAM_ID
-from spl.token.constants import TOKEN_PROGRAM_ID
-from spl.token.instructions import close_account
-from spl.token.instructions import CloseAccountParams
-from spl.token.instructions import get_associated_token_address
-from spl.token.instructions import initialize_account
-from spl.token.instructions import InitializeAccountParams
+from solders.transaction import Legacy, TransactionVersion
+from spl.token.constants import ASSOCIATED_TOKEN_PROGRAM_ID, TOKEN_PROGRAM_ID
+from spl.token.instructions import (
+    CloseAccountParams,
+    InitializeAccountParams,
+    close_account,
+    get_associated_token_address,
+    initialize_account,
+)
 
+import driftpy
+from driftpy.account_subscription_config import AccountSubscriptionConfig
+from driftpy.accounts import *
+from driftpy.accounts.cache import CachedDriftClientAccountSubscriber
+from driftpy.accounts.demo import DemoDriftClientAccountSubscriber
+from driftpy.address_lookup_table import get_address_lookup_table
+from driftpy.addresses import get_sequencer_public_key_and_bump
+from driftpy.constants import BASE_PRECISION, PRICE_PRECISION
+from driftpy.constants.config import (
+    DEVNET_SEQUENCER_PROGRAM_ID,
+    DRIFT_PROGRAM_ID,
+    SEQUENCER_PROGRAM_ID,
+    DriftEnv,
+    configs,
+)
+from driftpy.constants.numeric_constants import QUOTE_SPOT_MARKET_INDEX
+from driftpy.constants.spot_markets import WRAPPED_SOL_MINT
+from driftpy.decode.utils import decode_name
+from driftpy.drift_user import DriftUser
+from driftpy.drift_user_stats import DriftUserStats, UserStatsSubscriptionConfig
+from driftpy.math.perp_position import is_available
+from driftpy.math.spot_market import cast_to_spot_precision
+from driftpy.math.spot_position import is_spot_position_available
+from driftpy.name import encode_name
+from driftpy.tx.standard_tx_sender import StandardTxSender
+from driftpy.tx.types import TxSender, TxSigAndSlot
 
 DEFAULT_USER_NAME = "Main Account"
 
@@ -228,8 +224,6 @@ class DriftClient:
         await self.add_user_stats(self.authority)
 
     def resurrect(self, spot_markets, perp_markets, spot_oracles, perp_oracles):
-        from driftpy.accounts.cache import CachedDriftClientAccountSubscriber
-
         if not isinstance(self.account_subscriber, CachedDriftClientAccountSubscriber):
             raise ValueError(
                 'You can only resurrect a DriftClient that was initialized with AccountSubscriptionConfig("cached")'
@@ -346,14 +340,27 @@ class DriftClient:
         return getattr(spot_market_and_slot, "data", None)
 
     def get_oracle_price_data(self, oracle_id: str) -> Optional[OraclePriceData]:
-        oracle_price_data_and_slot = (
-            self.account_subscriber.get_oracle_price_data_and_slot(oracle_id)
+        if self.account_subscriber is None:
+            return None
+
+        data_and_slot = self.account_subscriber.get_oracle_price_data_and_slot(
+            oracle_id
         )
-        return getattr(oracle_price_data_and_slot, "data", None)
+
+        if data_and_slot is None:
+            return None
+
+        return getattr(data_and_slot, "data", None)
 
     def get_oracle_price_data_for_perp_market(
         self, market_index: int
     ) -> Optional[OraclePriceData]:
+        if self.account_subscriber is None:
+            raise ValueError("No account subscriber found")
+
+        if isinstance(self.account_subscriber, DemoDriftClientAccountSubscriber):
+            raise ValueError("Cannot get market for demo subscriber")
+
         data = self.account_subscriber.get_oracle_price_data_and_slot_for_perp_market(
             market_index
         )
@@ -369,6 +376,11 @@ class DriftClient:
     def get_oracle_price_data_for_spot_market(
         self, market_index: int
     ) -> Optional[OraclePriceData]:
+        if self.account_subscriber is None:
+            return None
+        if isinstance(self.account_subscriber, DemoDriftClientAccountSubscriber):
+            raise ValueError("Cannot get market for demo subscriber")
+
         data = self.account_subscriber.get_oracle_price_data_and_slot_for_spot_market(
             market_index
         )

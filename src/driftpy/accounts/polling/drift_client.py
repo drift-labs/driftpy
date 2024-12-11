@@ -1,24 +1,28 @@
 import asyncio
 from typing import Optional, Sequence, Union
 
-from anchorpy import Program
-from driftpy.accounts import DataAndSlot
-from driftpy.accounts import DriftClientAccountSubscriber
+from anchorpy.program.core import Program
+from solders.pubkey import Pubkey
+
+from driftpy.accounts import DataAndSlot, DriftClientAccountSubscriber
 from driftpy.accounts.bulk_account_loader import BulkAccountLoader
 from driftpy.accounts.oracle import get_oracle_decode_fn
-from driftpy.addresses import get_perp_market_public_key
-from driftpy.addresses import get_spot_market_public_key
-from driftpy.addresses import get_state_public_key
+from driftpy.addresses import (
+    get_perp_market_public_key,
+    get_spot_market_public_key,
+    get_state_public_key,
+)
 from driftpy.constants.config import find_all_market_and_oracles
 from driftpy.oracles.oracle_id import get_oracle_id
-from driftpy.types import OracleInfo
-from driftpy.types import OraclePriceData
-from driftpy.types import OracleSource
-from driftpy.types import PerpMarketAccount
-from driftpy.types import SpotMarketAccount
-from driftpy.types import stack_trace
-from driftpy.types import StateAccount
-from solders.pubkey import Pubkey
+from driftpy.types import (
+    OracleInfo,
+    OraclePriceData,
+    OracleSource,
+    PerpMarketAccount,
+    SpotMarketAccount,
+    StateAccount,
+    stack_trace,
+)
 
 
 class PollingDriftClientAccountSubscriber(DriftClientAccountSubscriber):
@@ -195,9 +199,8 @@ class PollingDriftClientAccountSubscriber(DriftClientAccountSubscriber):
         return self.spot_markets.get(market_index)
 
     def get_oracle_price_data_and_slot(
-        self, oracle: Pubkey, oracle_source: OracleSource
+        self, oracle_id: str
     ) -> Optional[DataAndSlot[OraclePriceData]]:
-        oracle_id = get_oracle_id(oracle, oracle_source)
         return self.oracle.get(oracle_id)
 
     def get_market_accounts_and_slots(self) -> list[DataAndSlot[PerpMarketAccount]]:
@@ -241,8 +244,17 @@ class PollingDriftClientAccountSubscriber(DriftClientAccountSubscriber):
     def get_oracle_price_data_and_slot_for_perp_market(
         self, market_index: int
     ) -> Union[DataAndSlot[OraclePriceData], None]:
+        print(
+            "==> PollingDriftClientAccountSubscriber: Getting oracle price data for perp market",
+            market_index,
+        )
+        print(self.perp_markets)
+        print(self.spot_markets)
         perp_market_account = self.get_perp_market_and_slot(market_index)
         oracle = self.perp_oracle_map.get(market_index)
+
+        print("Perp market account: ", perp_market_account)
+        print("Oracle: ", oracle)
 
         if not perp_market_account or not oracle:
             return None
