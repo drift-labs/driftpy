@@ -334,7 +334,7 @@ async def mock_oracle(
 
 
 async def initialize_sol_spot_market(
-    admin: Admin, sol_oracle: Pubkey, sol_mint: Pubkey = NATIVE_MINT
+    admin: Admin, sol_oracle: Pubkey, sol_mint: Pubkey = NATIVE_MINT, oracle_source: OracleSource = OracleSource.Pyth()
 ):
     optimal_utilization = SPOT_RATE_PRECISION // 2
     optimal_rate = SPOT_RATE_PRECISION * 20
@@ -352,7 +352,7 @@ async def initialize_sol_spot_market(
         optimal_rate,
         max_rate,
         sol_oracle,
-        OracleSource.Pyth(),
+        oracle_source,
         initial_asset_weight,
         maintenance_asset_weight,
         initial_liability_weight,

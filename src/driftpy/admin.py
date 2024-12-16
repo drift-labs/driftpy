@@ -9,8 +9,8 @@ from anchorpy import Context
 from driftpy.drift_client import (
     DriftClient,
 )
-from driftpy.constants.numeric_constants import PEG_PRECISION
-from driftpy.types import OracleGuardRails, OracleSource, PrelaunchOracleParams
+from driftpy.constants.numeric_constants import BASE_PRECISION, PEG_PRECISION, PRICE_PRECISION
+from driftpy.types import AssetTier, ContractTier, OracleGuardRails, OracleSource, PrelaunchOracleParams
 from driftpy.addresses import *
 from driftpy.accounts import get_state_account
 from driftpy.constants.numeric_constants import (
@@ -61,10 +61,24 @@ class Admin(DriftClient):
         periodicity: int,
         peg_multiplier: int = PEG_PRECISION,
         oracle_source: OracleSource = OracleSource.Pyth(),
+        contract_tier: ContractTier = ContractTier.Speculative(),
         margin_ratio_initial: int = 2000,
         margin_ratio_maintenance: int = 500,
-        liquidation_fee: int = 0,
+        liquidator_fee: int = 0,
+        if_liquidator_fee: int = 10000,
+        imf_factor: int = 0,
         active_status: bool = True,
+        base_spread: int = 0,
+        max_spread: int = 142500,
+        max_open_interest: int = 0,
+        max_revenue_withdraw_per_period: int = 0,
+        quote_max_insurance: int = 0,
+        order_step_size: int = BASE_PRECISION // 10000,
+        order_tick_size: int = PRICE_PRECISION // 100000,
+        min_order_size: int = BASE_PRECISION // 10000,
+        concentration_coef_scale: int = 1,
+        curve_update_intensity: int = 0,
+        amm_jit_intensity: int = 0,
         name: list = [0] * 32,
     ) -> Signature:
         state_public_key = get_state_public_key(self.program.program_id)
@@ -81,10 +95,24 @@ class Admin(DriftClient):
             periodicity,
             peg_multiplier,
             oracle_source,
+            contract_tier,
             margin_ratio_initial,
             margin_ratio_maintenance,
-            liquidation_fee,
+            liquidator_fee,
+            if_liquidator_fee,
+            imf_factor,
             active_status,
+            base_spread,
+            max_spread,
+            max_open_interest,
+            max_revenue_withdraw_per_period,
+            quote_max_insurance,
+            order_step_size,
+            order_tick_size,
+            min_order_size,
+            concentration_coef_scale,
+            curve_update_intensity,
+            amm_jit_intensity,
             name,
             ctx=Context(
                 accounts={
@@ -111,7 +139,14 @@ class Admin(DriftClient):
         initial_liability_weight: int = SPOT_WEIGHT_PRECISION,
         maintenance_liability_weight: int = SPOT_WEIGHT_PRECISION,
         imf_factor: int = 0,
-        liquidation_fee: int = 0,
+        liquidator_fee: int = 0,
+        if_liquidation_fee: int = 0,
+        scale_initial_asset_weight_start: int = 0,
+        withdraw_guard_threshold: int = 0,
+        order_tick_size: int = 1,
+        order_step_size: int = 1,
+        if_total_factor: int = 0,
+        asset_tier: AssetTier = AssetTier.COLLATERAL(),
         active_status: bool = True,
         name: list = [0] * 32,
     ):
@@ -137,8 +172,15 @@ class Admin(DriftClient):
             initial_liability_weight,
             maintenance_liability_weight,
             imf_factor,
-            liquidation_fee,
+            liquidator_fee,
+            if_liquidation_fee,
             active_status,
+            asset_tier,
+            scale_initial_asset_weight_start,
+            withdraw_guard_threshold,
+            order_tick_size,
+            order_step_size,
+            if_total_factor,
             name,
             ctx=Context(
                 accounts={

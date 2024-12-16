@@ -240,7 +240,6 @@ class MarginCalculationMode:
 class OracleSource:
     Pyth = constructor()
     Switchboard = constructor()
-    SwitchboardOnDemand = constructor()
     QuoteAsset = constructor()
     Pyth1K = constructor()
     Pyth1M = constructor()
@@ -250,6 +249,7 @@ class OracleSource:
     Pyth1KPull = constructor()
     Pyth1MPull = constructor()
     PythStableCoinPull = constructor()
+    SwitchboardOnDemand = constructor()
 
 
 @_rust_enum
@@ -359,16 +359,16 @@ class OrderStatus:
 
 class OracleSourceNum:
     PYTH = 0
+    SWITCHBOARD = 6
+    QUOTE_ASSET = 7
     PYTH_1K = 1
     PYTH_1M = 2
+    PYTH_STABLE_COIN = 8
+    PRELAUNCH = 10
     PYTH_PULL = 3
     PYTH_1K_PULL = 4
     PYTH_1M_PULL = 5
-    SWITCHBOARD = 6
-    QUOTE_ASSET = 7
-    PYTH_STABLE_COIN = 8
     PYTH_STABLE_COIN_PULL = 9
-    PRELAUNCH = 10
     SWITCHBOARD_ON_DEMAND = 11
 
 

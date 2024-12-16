@@ -47,7 +47,9 @@ class WebsocketDriftClientAccountSubscriber(DriftClientAccountSubscriber):
         self.spot_market_map = None
         self.perp_market_map = None
         self.spot_market_oracle_map: dict[int, Pubkey] = {}
+        self.spot_market_oracle_strings_map: dict[int, str] = {}
         self.perp_market_oracle_map: dict[int, Pubkey] = {}
+        self.perp_market_oracle_strings_map: dict[int, str] = {}
 
     async def subscribe(self):
         if self.is_subscribed():
@@ -178,7 +180,7 @@ class WebsocketDriftClientAccountSubscriber(DriftClientAccountSubscriber):
 
     async def subscribe_to_oracle_info(self, oracle_info: OracleInfo):
         oracle_id = get_oracle_id(oracle_info.pubkey, oracle_info.source)
-        if oracle_id == Pubkey.default():
+        if oracle_info.pubkey == Pubkey.default():
             return
 
         if oracle_id in self.oracle_subscribers:
@@ -221,7 +223,7 @@ class WebsocketDriftClientAccountSubscriber(DriftClientAccountSubscriber):
         if oracle_id in self.oracle_subscribers:
             return True
 
-        if oracle_id == Pubkey.default():
+        if oracle_info.pubkey == Pubkey.default():
             return True
 
         return await self.subscribe_to_oracle_info(oracle_info)
@@ -299,6 +301,7 @@ class WebsocketDriftClientAccountSubscriber(DriftClientAccountSubscriber):
                     OracleInfo(oracle, perp_market_account.amm.oracle_source)
                 )
             self.perp_market_oracle_map[market_index] = oracle
+            self.perp_market_oracle_strings_map[market_index] = oracle_id
 
     async def _set_spot_oracle_map(self):
         spot_markets = self.get_spot_market_accounts_and_slots()
@@ -315,12 +318,14 @@ class WebsocketDriftClientAccountSubscriber(DriftClientAccountSubscriber):
                     OracleInfo(oracle, spot_market_account.oracle_source)
                 )
             self.spot_market_oracle_map[market_index] = oracle
+            self.spot_market_oracle_strings_map[market_index] = oracle_id
 
     def get_oracle_price_data_and_slot_for_perp_market(
         self, market_index: int
     ) -> Union[DataAndSlot[OraclePriceData], None]:
         perp_market_account = self.get_perp_market_and_slot(market_index)
         oracle = self.perp_market_oracle_map.get(market_index)
+        oracle_id = self.perp_market_oracle_strings_map.get(market_index)
 
         if not perp_market_account or not oracle:
             return None
@@ -328,7 +333,6 @@ class WebsocketDriftClientAccountSubscriber(DriftClientAccountSubscriber):
         if perp_market_account.data.amm.oracle != oracle:
             asyncio.create_task(self._set_perp_oracle_map())
 
-        oracle_id = get_oracle_id(oracle, perp_market_account.data.amm.oracle_source)
         return self.get_oracle_price_data_and_slot(oracle_id)
 
     def get_oracle_price_data_and_slot_for_spot_market(
@@ -336,6 +340,7 @@ class WebsocketDriftClientAccountSubscriber(DriftClientAccountSubscriber):
     ) -> Union[DataAndSlot[OraclePriceData], None]:
         spot_market_account = self.get_spot_market_and_slot(market_index)
         oracle = self.spot_market_oracle_map.get(market_index)
+        oracle_id = self.spot_market_oracle_strings_map.get(market_index)
 
         if not spot_market_account or not oracle:
             return None
@@ -343,5 +348,5 @@ class WebsocketDriftClientAccountSubscriber(DriftClientAccountSubscriber):
         if spot_market_account.data.oracle != oracle:
             asyncio.create_task(self._set_spot_oracle_map())
 
-        oracle_id = get_oracle_id(oracle, spot_market_account.data.oracle_source)
         return self.get_oracle_price_data_and_slot(oracle_id)
+
