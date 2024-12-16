@@ -1,6 +1,6 @@
 from solana.rpc.async_api import AsyncClient
-from solders.pubkey import Pubkey
 from solders.address_lookup_table_account import AddressLookupTableAccount
+from solders.pubkey import Pubkey
 
 LOOKUP_TABLE_META_SIZE = 56
 
@@ -9,6 +9,8 @@ async def get_address_lookup_table(
     connection: AsyncClient, pubkey: Pubkey
 ) -> AddressLookupTableAccount:
     account_info = await connection.get_account_info(pubkey)
+    if account_info.value is None:
+        raise ValueError(f"Account {pubkey} not found")
     return decode_address_lookup_table(pubkey, account_info.value.data)
 
 

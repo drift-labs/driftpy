@@ -1,26 +1,26 @@
-from typing import Literal, Optional
+from typing import Literal, Optional, cast
 
-from solders.pubkey import Pubkey
+from anchorpy.program.core import Program
 from solana.rpc.commitment import Commitment
+from solders.pubkey import Pubkey
 
 from driftpy.accounts.bulk_account_loader import BulkAccountLoader
 from driftpy.accounts.cache import (
     CachedDriftClientAccountSubscriber,
     CachedUserAccountSubscriber,
 )
+from driftpy.accounts.demo import (
+    DemoDriftClientAccountSubscriber,
+    DemoUserAccountSubscriber,
+)
 from driftpy.accounts.polling import (
     PollingDriftClientAccountSubscriber,
     PollingUserAccountSubscriber,
 )
-from anchorpy import Program
-
+from driftpy.accounts.types import FullOracleWrapper
 from driftpy.accounts.ws import (
     WebsocketDriftClientAccountSubscriber,
     WebsocketUserAccountSubscriber,
-)
-from driftpy.accounts.demo import (
-    DemoDriftClientAccountSubscriber,
-    DemoUserAccountSubscriber,
 )
 from driftpy.types import OracleInfo
 
@@ -32,31 +32,33 @@ class AccountSubscriptionConfig:
 
     def __init__(
         self,
-        type: Literal["polling", "websocket", "cached", "demo"],
+        account_subscription_type: Literal["polling", "websocket", "cached", "demo"],
         bulk_account_loader: Optional[BulkAccountLoader] = None,
-        commitment: Commitment = None,
+        commitment: Commitment = Commitment("confirmed"),
     ):
-        self.type = type
-
-        if self.type == "polling":
-            if bulk_account_loader is None:
-                raise ValueError("polling subscription requires bulk account loader")
-
-            if commitment is not None and commitment != bulk_account_loader.commitment:
-                raise ValueError(
-                    f"bulk account loader commitment {bulk_account_loader.commitment} != commitment passed {commitment}"
-                )
-
-            self.bulk_account_loader = bulk_account_loader
-
+        self.type = account_subscription_type
         self.commitment = commitment
+        self.bulk_account_loader = None
+
+        if self.type != "polling":
+            return
+
+        if bulk_account_loader is None:
+            raise ValueError("polling subscription requires bulk account loader")
+
+        if commitment != bulk_account_loader.commitment:
+            raise ValueError(
+                f"bulk account loader commitment {bulk_account_loader.commitment} != commitment passed {commitment}"
+            )
+
+        self.bulk_account_loader = bulk_account_loader
 
     def get_drift_client_subscriber(
         self,
         program: Program,
-        perp_market_indexes: list[int] = None,
-        spot_market_indexes: list[int] = None,
-        oracle_infos: list[OracleInfo] = None,
+        perp_market_indexes: list[int] | None = None,
+        spot_market_indexes: list[int] | None = None,
+        oracle_infos: list[OracleInfo] | None = None,
     ):
         should_find_all_markets_and_oracles = (
             perp_market_indexes is None
@@ -69,6 +71,10 @@ class AccountSubscriptionConfig:
 
         match self.type:
             case "polling":
+                if self.bulk_account_loader is None:
+                    raise ValueError(
+                        "polling subscription requires bulk account loader"
+                    )
                 return PollingDriftClientAccountSubscriber(
                     program,
                     self.bulk_account_loader,
@@ -82,7 +88,7 @@ class AccountSubscriptionConfig:
                     program,
                     perp_market_indexes,
                     spot_market_indexes,
-                    oracle_infos,
+                    cast(list[FullOracleWrapper], oracle_infos),
                     should_find_all_markets_and_oracles,
                     self.commitment,
                 )
@@ -115,6 +121,10 @@ class AccountSubscriptionConfig:
     def get_user_client_subscriber(self, program: Program, user_pubkey: Pubkey):
         match self.type:
             case "polling":
+                if self.bulk_account_loader is None:
+                    raise ValueError(
+                        "polling subscription requires bulk account loader"
+                    )
                 return PollingUserAccountSubscriber(
                     user_pubkey, program, self.bulk_account_loader
                 )

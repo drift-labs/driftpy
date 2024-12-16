@@ -1,17 +1,16 @@
-from solana.rpc.async_api import AsyncClient
-from solana.transaction import Signature
-
-from events import Events as EventEmitter
-
-from anchorpy import Program, EventParser
-
 from typing import Optional
 
+from anchorpy.program.core import Program
+from anchorpy.program.event import EventParser
+from events import Events as EventEmitter
+from solana.rpc.async_api import AsyncClient
+from solders.signature import Signature
+
 from driftpy.events.event_list import EventList
+from driftpy.events.parse import parse_logs
 from driftpy.events.sort import get_sort_fn
 from driftpy.events.tx_event_cache import TxEventCache
-from driftpy.events.types import WrappedEvent, EventType, EventSubscriptionOptions
-from driftpy.events.parse import parse_logs
+from driftpy.events.types import EventSubscriptionOptions, EventType, WrappedEvent
 
 
 class EventSubscriber:
@@ -25,7 +24,7 @@ class EventSubscriber:
         self.program = program
         self.options = options
         self.subscribed = False
-        self.event_list_map: dict[EventType:EventList] = {}
+        self.event_list_map: dict[EventType, EventList] = {}
         for event_type in self.options.event_types:
             self.event_list_map[event_type] = EventList(
                 self.options.max_events_per_type,
@@ -56,7 +55,10 @@ class EventSubscriber:
 
         wrapped_events = self.parse_events_from_logs(tx_sig, slot, logs)
         for wrapped_event in wrapped_events:
-            self.event_list_map.get(wrapped_event.event_type).insert(wrapped_event)
+            event_list = self.event_list_map.get(wrapped_event.event_type)
+            if event_list is None:
+                raise ValueError(f"Event list for {wrapped_event.event_type} not found")
+            event_list.insert(wrapped_event)
 
         for wrapped_event in wrapped_events:
             self.event_emitter.new_event(wrapped_event)
