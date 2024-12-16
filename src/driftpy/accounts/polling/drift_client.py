@@ -39,6 +39,7 @@ class PollingDriftClientAccountSubscriber(DriftClientAccountSubscriber):
         self.program = program
         self.is_subscribed = False
         self.callbacks: dict[str, int] = {}
+        self.oracle_callbacks: dict[str, int] = {}
 
         self.perp_market_indexes = perp_market_indexes
         self.spot_market_indexes = spot_market_indexes
@@ -148,7 +149,7 @@ class PollingDriftClientAccountSubscriber(DriftClientAccountSubscriber):
         callback_id = self.bulk_account_loader.add_account(
             oracle, self._get_oracle_callback(oracle_id, oracle_source)
         )
-        self.callbacks[oracle_id] = callback_id
+        self.oracle_callbacks[oracle_id] = callback_id
 
         await self._wait_for_oracle(3, oracle_id)
 
@@ -181,7 +182,14 @@ class PollingDriftClientAccountSubscriber(DriftClientAccountSubscriber):
             self.bulk_account_loader.remove_account(
                 Pubkey.from_string(pubkey_str), callback_id
             )
+
+        for oracle_id, callback_id in self.oracle_callbacks.items():
+            self.bulk_account_loader.remove_account(
+                Pubkey.from_string(oracle_id.split("-")[0]), callback_id
+            )
+
         self.callbacks.clear()
+        self.oracle_callbacks.clear()
 
     def get_state_account_and_slot(self) -> Optional[DataAndSlot[StateAccount]]:
         return self.state
