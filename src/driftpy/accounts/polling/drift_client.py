@@ -13,7 +13,6 @@ from driftpy.addresses import (
     get_state_public_key,
 )
 from driftpy.constants.config import find_all_market_and_oracles
-from driftpy.oracles.oracle_id import get_oracle_id
 from driftpy.types import (
     OracleInfo,
     OraclePriceData,
@@ -139,20 +138,19 @@ class PollingDriftClientAccountSubscriber(DriftClientAccountSubscriber):
         return cb
 
     async def add_oracle(self, oracle: Pubkey, oracle_source: OracleSource):
-        oracle_id = get_oracle_id(oracle, oracle_source)
-
-        if oracle == Pubkey.default() or oracle_id in self.oracle:
+        if oracle == Pubkey.default() or oracle in self.oracle:
             return True
 
-        if oracle_id in self.callbacks:
+        oracle_str = str(oracle)
+        if oracle_str in self.callbacks:
             return True
 
         callback_id = self.bulk_account_loader.add_account(
-            oracle, self._get_oracle_callback(oracle_id, oracle_source)
+            oracle, self._get_oracle_callback(oracle_str, oracle_source)
         )
-        self.callbacks[oracle_id] = callback_id
+        self.callbacks[oracle_str] = callback_id
 
-        await self._wait_for_oracle(3, oracle_id)
+        await self._wait_for_oracle(3, oracle_str)
 
         return True
 
@@ -199,9 +197,9 @@ class PollingDriftClientAccountSubscriber(DriftClientAccountSubscriber):
         return self.spot_markets.get(market_index)
 
     def get_oracle_price_data_and_slot(
-        self, oracle_id: str
+        self, oracle: Pubkey
     ) -> Optional[DataAndSlot[OraclePriceData]]:
-        return self.oracle.get(oracle_id)
+        return self.oracle.get(str(oracle))
 
     def get_market_accounts_and_slots(self) -> list[DataAndSlot[PerpMarketAccount]]:
         return [
@@ -223,10 +221,8 @@ class PollingDriftClientAccountSubscriber(DriftClientAccountSubscriber):
             market_account = market.data
             market_index = market_account.market_index
             oracle = market_account.amm.oracle
-            oracle_source = market_account.amm.oracle_source
-            oracle_id = get_oracle_id(oracle, oracle_source)
-            if oracle_id not in self.oracle:
-                await self.add_oracle(oracle, oracle_source)
+            if oracle not in self.oracle:
+                await self.add_oracle(oracle, market_account.amm.oracle_source)
             self.perp_oracle_map[market_index] = oracle
 
     async def _set_spot_oracle_map(self):
@@ -235,10 +231,8 @@ class PollingDriftClientAccountSubscriber(DriftClientAccountSubscriber):
             market_account = market.data
             market_index = market_account.market_index
             oracle = market_account.oracle
-            oracle_source = market_account.oracle_source
-            oracle_id = get_oracle_id(oracle, oracle_source)
-            if oracle_id not in self.oracle:
-                await self.add_oracle(oracle, oracle_source)
+            if oracle not in self.oracle:
+                await self.add_oracle(oracle, market_account.oracle_source)
             self.spot_oracle_map[market_index] = oracle
 
     def get_oracle_price_data_and_slot_for_perp_market(

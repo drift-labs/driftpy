@@ -7,8 +7,9 @@ For reference, see the TypeScript implementation:
 
 from dataclasses import dataclass
 
-from driftpy.types import OracleSource
 from solders.pubkey import Pubkey  # type: ignore
+
+from driftpy.types import OracleSource
 
 
 @dataclass
@@ -277,5 +278,19 @@ mainnet_spot_market_configs: list[SpotMarketConfig] = [
         oracle=Pubkey.from_string("7pT9mxKXyvfaZKeKy1oe2oV2K1RFtF7tPEJHUY3h2vVV"),
         oracle_source=OracleSource.PythStableCoinPull(),
         mint=Pubkey.from_string("USDSwr9ApdHk5bvJKMjzff41FfuX8bSxdKcR81vTwcA"),
+    ),
+    SpotMarketConfig(
+        symbol="META",
+        market_index=29,
+        oracle=Pubkey.from_string("DwYF1yveo8XTF1oqfsqykj332rjSxAd7bR6Gu6i4iUET"),
+        oracle_source=OracleSource.SwitchboardOnDemand(),
+        mint=Pubkey.from_string("METADDFL6wWMWEoKTFJwcThTbUmtarRJZjRpzUvkxhr"),
+    ),
+    SpotMarketConfig(
+        symbol="ME",
+        market_index=30,
+        oracle=Pubkey.from_string("FLQjrmEPGwbCKRYZ1eYM5FPccHBrCv2cN4GBu3mWfmPH"),
+        oracle_source=OracleSource.PythPull(),
+        mint=Pubkey.from_string("MEFNBXixkEbait3xn9bkm8WsJzXtVsaJEn4c8Sam21u"),
     ),
 ]
