@@ -1,8 +1,10 @@
 from dataclasses import dataclass
 from typing import Optional
+
+from solders.keypair import Keypair
+
 from driftpy.constants.numeric_constants import BASE_PRECISION, QUOTE_PRECISION
 from driftpy.dlob.dlob import DLOB
-from tests.dlob_test_constants import mock_perp_markets, mock_spot_markets
 from driftpy.math.auction import is_auction_complete
 from driftpy.math.conversion import convert_to_number
 from driftpy.math.orders import is_resting_limit_order
@@ -13,12 +15,11 @@ from driftpy.types import (
     OrderType,
     PositionDirection,
 )
-from solders.keypair import Keypair
-
 from tests.decode.dlob_test_helpers import (
     insert_order_to_dlob,
     insert_trigger_order_to_dlob,
 )
+from tests.dlob_test_constants import mock_perp_markets, mock_spot_markets
 
 
 @dataclass

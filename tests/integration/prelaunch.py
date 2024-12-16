@@ -1,30 +1,24 @@
 import asyncio
 from math import sqrt
 
+from anchorpy import Program, Provider, WorkspaceType, workspace_fixture
 from pytest import fixture, mark
 from pytest_asyncio import fixture as async_fixture
 from solders.keypair import Keypair
 from solders.pubkey import Pubkey
-from anchorpy import Program, Provider, WorkspaceType, workspace_fixture
-from driftpy.account_subscription_config import AccountSubscriptionConfig
-from driftpy.accounts.bulk_account_loader import BulkAccountLoader
+
 from driftpy.accounts.get_accounts import (
     get_perp_market_account,
-    get_spot_market_account,
 )
 from driftpy.addresses import get_prelaunch_oracle_public_key
-
-from driftpy.constants.numeric_constants import *
 from driftpy.admin import Admin
+from driftpy.constants.numeric_constants import *
 from driftpy.drift_client import DriftClient
 from driftpy.setup.helpers import (
-    _create_mint,
     _create_and_mint_user_usdc,
-    mock_oracle,
-    set_price_feed,
+    _create_mint,
 )
 from driftpy.types import *
-from driftpy.setup.helpers import initialize_sol_spot_market
 
 workspace = workspace_fixture("protocol-v2", build_cmd="anchor build", scope="session")
 
@@ -34,6 +28,13 @@ LARGE_USDC_AMOUNT = 10_000 * QUOTE_PRECISION
 MANTISSA_SQRT_SCALE = int(sqrt(PRICE_PRECISION))
 AMM_INITIAL_BAA = (5 * 10**13) * MANTISSA_SQRT_SCALE
 AMM_INITIAL_QAA = (5 * 10**13) * MANTISSA_SQRT_SCALE
+
+
+@fixture(scope="session")
+def event_loop():
+    loop = asyncio.get_event_loop()
+    yield loop
+    loop.close()
 
 
 @async_fixture(scope="session")

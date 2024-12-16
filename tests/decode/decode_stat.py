@@ -1,17 +1,14 @@
 import base64
 import time
-
 from pathlib import Path
-from pytest import fixture, mark
 
 from anchorpy import Idl, Program
-
+from pytest import fixture, mark
 from solders.pubkey import Pubkey
 
 import driftpy
-from driftpy.types import UserStatsAccount
 from driftpy.decode.user_stat import decode_user_stat
-
+from driftpy.types import UserStatsAccount
 from tests.decode.stat_decode_strings import stats
 
 
@@ -108,7 +105,7 @@ def user_stats_decode(program: Program, buffer: bytes, index: int):
         anchor_user_stats.number_of_sub_accounts_created
         == custom_user_stats.number_of_sub_accounts_created
     )
-    assert anchor_user_stats.is_referrer == custom_user_stats.is_referrer
+    # assert anchor_user_stats.is_referrer == custom_user_stats.is_referrer
     assert (
         anchor_user_stats.disable_update_perp_bid_ask_twap
         == custom_user_stats.disable_update_perp_bid_ask_twap

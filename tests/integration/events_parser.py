@@ -1,11 +1,10 @@
+from anchorpy.provider import Wallet
 from pytest import mark
-
 from solana.rpc.async_api import AsyncClient
 from solders.signature import Signature
-from anchorpy import Wallet
 
-from driftpy.events.event_subscriber import EventSubscriber
 from driftpy.drift_client import DriftClient
+from driftpy.events.event_subscriber import EventSubscriber
 
 
 @mark.asyncio
@@ -21,6 +20,13 @@ async def test_events_parser():
         ),
         max_supported_transaction_version=0,
     )
+    if not tx.value:
+        raise ValueError("tx.value is None")
+    if not tx.value.transaction.meta:
+        raise ValueError("tx.value.transaction.meta is None")
+    if not tx.value.transaction.meta.log_messages:
+        raise ValueError("tx.value.transaction.meta.log_messages is None")
+
     logs = tx.value.transaction.meta.log_messages
 
     events = event_subscriber.parse_events_from_logs(
