@@ -77,7 +77,7 @@ async def admin_client(program: Program, usdc_mint: Keypair) -> Admin:
     admin = Admin(
         program.provider.connection,
         program.provider.wallet,
-        account_subscription=AccountSubscriptionConfig("polling"),
+        account_subscription=AccountSubscriptionConfig("websocket"),
         perp_market_indexes=market_indexes,
         spot_market_indexes=spot_market_indexes,
     )
@@ -155,6 +155,7 @@ async def test_polling(
         oracle_infos=oracle_infos,
     )
     await polling_client.subscribe()
+    print("sub done")
 
     # Verify spot market oracles
     oracle_data_for_spot_market_1 = (
