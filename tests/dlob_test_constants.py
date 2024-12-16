@@ -1,3 +1,6 @@
+from solders.pubkey import Pubkey
+
+from driftpy.constants.config import devnet_spot_market_configs
 from driftpy.constants.numeric_constants import (
     AMM_TO_QUOTE_PRECISION_RATIO,
     BASE_PRECISION,
@@ -5,7 +8,6 @@ from driftpy.constants.numeric_constants import (
     QUOTE_PRECISION,
     SPOT_CUMULATIVE_INTEREST_PRECISION,
     SPOT_MARKET_CUMULATIVE_INTEREST_PRECISION,
-    SPOT_MARKET_CUMULATIVE_INTEREST_PRECISION_EXP,
     SPOT_MARKET_WEIGHT_PRECISION,
 )
 from driftpy.types import (
@@ -23,8 +25,6 @@ from driftpy.types import (
     PoolBalance,
     SpotMarketAccount,
 )
-from driftpy.constants.config import devnet_spot_market_configs
-from solders.pubkey import Pubkey
 
 mock_pool_balance = PoolBalance(
     scaled_balance=0, market_index=0, padding=[0] * 6
