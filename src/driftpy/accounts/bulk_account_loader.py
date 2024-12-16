@@ -1,11 +1,12 @@
 import asyncio
-from typing import Callable, List, Optional
-from dataclasses import dataclass
-import jsonrpcclient
+import time
 from base64 import b64decode
+from dataclasses import dataclass
+from typing import Callable, List, Optional
 
-from solana.rpc.commitment import Commitment
+import jsonrpcclient
 from solana.rpc.async_api import AsyncClient
+from solana.rpc.commitment import Commitment
 from solders.pubkey import Pubkey
 
 
@@ -28,7 +29,7 @@ class BulkAccountLoader:
     def __init__(
         self,
         connection: AsyncClient,
-        commitment: Commitment = "confirmed",
+        commitment: Commitment = Commitment("confirmed"),
         frequency: float = 1,
     ):
         self.connection = connection
@@ -39,8 +40,11 @@ class BulkAccountLoader:
         self.callback_id = 0
         self.accounts_to_load: dict[str, AccountToLoad] = {}
         self.buffer_and_slot_map: dict[str, BufferAndSlot] = {}
+        self.load_future: Optional[asyncio.Future] = None
+        self.last_time_loading_future_cleared = 0
+        self.most_recent_slot = 0
 
-    def add_account(
+    async def add_account(
         self, pubkey: Pubkey, callback: Callable[[bytes, int], None]
     ) -> int:
         existing_size = len(self.accounts_to_load)
@@ -59,14 +63,22 @@ class BulkAccountLoader:
         if existing_size == 0:
             self._start_loading()
 
+        if self.load_future is not None:
+            await self.load_future
         return callback_id
 
     def get_callback_id(self) -> int:
         self.callback_id += 1
         return self.callback_id
 
+    def get_buffer_and_slot(self, pubkey: Pubkey) -> BufferAndSlot | None:
+        return self.buffer_and_slot_map.get(str(pubkey))
+
     def _start_loading(self):
-        if self.task is None:
+        if self.task is not None:
+            return
+
+        if self.frequency != 0:
 
             async def loop():
                 while True:
@@ -95,15 +107,38 @@ class BulkAccountLoader:
         return [array[i : i + size] for i in range(0, len(array), size)]
 
     async def load(self):
-        chunks = self.chunks(
-            self.chunks(
-                list(self.accounts_to_load.values()),
-                GET_MULTIPLE_ACCOUNTS_CHUNK_SIZE,
-            ),
-            10,
-        )
+        if self.load_future and not self.load_future.done():
+            now = time.time()
+            if (
+                now - getattr(self, "last_time_loading_future_cleared", 0) > 60
+            ):  # one minute
+                self.load_future = None
+            else:
+                return await self.load_future
 
-        await asyncio.gather(*[self.load_chunk(chunk) for chunk in chunks])
+        self.load_future = asyncio.Future()
+        self.last_time_loading_future_cleared = time.time()
+        accounts_to_load = list(self.accounts_to_load.values())
+
+        try:
+            chunks = self.chunks(
+                self.chunks(
+                    accounts_to_load,
+                    GET_MULTIPLE_ACCOUNTS_CHUNK_SIZE,
+                ),
+                10,
+            )
+
+            await asyncio.gather(*[self.load_chunk(chunk) for chunk in chunks])
+
+        except Exception as e:
+            print("Error in bulkAccountLoader.load()")
+            print(e)
+
+        finally:
+            if not self.load_future.done():
+                self.load_future.set_result(None)
+            self.load_future = None
 
     async def load_chunk(self, chunk: List[List[AccountToLoad]]):
         if len(chunk) == 0:
@@ -116,10 +151,10 @@ class BulkAccountLoader:
             ]
             rpc_request = jsonrpcclient.request(
                 "getMultipleAccounts",
-                params=[
+                params=(
                     pubkeys_to_send,
                     {"encoding": "base64", "commitment": self.commitment},
-                ],
+                ),
             )
             rpc_requests.append(rpc_request)
 
@@ -130,6 +165,7 @@ class BulkAccountLoader:
                 headers={"content-encoding": "gzip"},
             )
             resp = await asyncio.wait_for(post, timeout=10)
+
         except asyncio.TimeoutError:
             print("request to rpc timed out")
             return
@@ -137,11 +173,15 @@ class BulkAccountLoader:
         parsed_resp = jsonrpcclient.parse(resp.json())
 
         for rpc_result, chunk_accounts in zip(parsed_resp, chunk):
-            if isinstance(rpc_result, jsonrpcclient.Error):
-                print(f"Failed to get info about accounts: {rpc_result.message}")
+            if not isinstance(rpc_result, jsonrpcclient.Ok):
+                print(
+                    f"Failed to get info about accounts: {rpc_result.message if isinstance(rpc_result, jsonrpcclient.Error) else 'unknown error'}"
+                )
                 continue
 
             slot = rpc_result.result["context"]["slot"]
+            if slot > self.most_recent_slot:
+                self.most_recent_slot = slot
 
             for i, account_to_load in enumerate(chunk_accounts):
                 pubkey_str = str(account_to_load.pubkey)
@@ -167,5 +207,5 @@ class BulkAccountLoader:
         self, account_to_load: AccountToLoad, buffer: Optional[bytes], slot: int
     ):
         for cb in account_to_load.callbacks.values():
-            if bytes is not None:
+            if buffer is not None:
                 cb(buffer, slot)

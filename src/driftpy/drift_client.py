@@ -1,22 +1,27 @@
+import asyncio
+import base64
 import json
 import os
 import random
 import string
+from dataclasses import dataclass
 from pathlib import Path
-from typing import List, Optional, Tuple, Union
+from typing import List, Optional, Tuple, Union, cast
 
-import anchorpy
 import requests
-from anchorpy import Context, Idl, Program, Provider, Wallet
+from anchorpy.error import AccountDoesNotExistError
+from anchorpy.program.context import Context
+from anchorpy.program.core import Program
+from anchorpy.provider import Provider, Wallet
+from anchorpy_core.idl import Idl
 from deprecated import deprecated
 from solana.rpc.async_api import AsyncClient
-from solana.rpc.commitment import Processed
+from solana.rpc.commitment import Commitment, Processed
 from solana.rpc.types import TxOpts
-from solana.transaction import AccountMeta
 from solders import system_program
 from solders.address_lookup_table_account import AddressLookupTableAccount
 from solders.compute_budget import set_compute_unit_limit, set_compute_unit_price
-from solders.instruction import Instruction
+from solders.instruction import AccountMeta, Instruction
 from solders.keypair import Keypair
 from solders.pubkey import Pubkey
 from solders.signature import Signature
@@ -35,11 +40,32 @@ from spl.token.instructions import (
 
 import driftpy
 from driftpy.account_subscription_config import AccountSubscriptionConfig
-from driftpy.accounts import *
-from driftpy.accounts.cache import CachedDriftClientAccountSubscriber
-from driftpy.accounts.demo import DemoDriftClientAccountSubscriber
+from driftpy.accounts import (
+    DataAndSlot,
+    OracleInfo,
+    OraclePriceData,
+    PerpMarketAccount,
+    SpotMarketAccount,
+    StateAccount,
+    TxParams,
+    UserAccount,
+)
+from driftpy.accounts.cache.drift_client import CachedDriftClientAccountSubscriber
+from driftpy.accounts.demo.drift_client import DemoDriftClientAccountSubscriber
+from driftpy.accounts.get_accounts import get_perp_market_account
 from driftpy.address_lookup_table import get_address_lookup_table
-from driftpy.addresses import get_sequencer_public_key_and_bump
+from driftpy.addresses import (
+    get_drift_client_signer_public_key,
+    get_insurance_fund_stake_public_key,
+    get_insurance_fund_vault_public_key,
+    get_sequencer_public_key_and_bump,
+    get_serum_signer_public_key,
+    get_spot_market_public_key,
+    get_spot_market_vault_public_key,
+    get_state_public_key,
+    get_user_account_public_key,
+    get_user_stats_account_public_key,
+)
 from driftpy.constants import BASE_PRECISION, PRICE_PRECISION
 from driftpy.constants.config import (
     DEVNET_SEQUENCER_PROGRAM_ID,
@@ -59,6 +85,23 @@ from driftpy.math.spot_position import is_spot_position_available
 from driftpy.name import encode_name
 from driftpy.tx.standard_tx_sender import StandardTxSender
 from driftpy.tx.types import TxSender, TxSigAndSlot
+from driftpy.types import (
+    MakerInfo,
+    MarketType,
+    ModifyOrderParams,
+    Order,
+    OrderParams,
+    OrderType,
+    PerpPosition,
+    PhoenixV1FulfillmentConfigAccount,
+    PositionDirection,
+    ReferrerInfo,
+    SequenceAccount,
+    SerumV3FulfillmentConfigAccount,
+    SpotPosition,
+    SwapReduceOnly,
+    is_variant,
+)
 
 DEFAULT_USER_NAME = "Main Account"
 
@@ -82,24 +125,22 @@ class DriftClient:
     def __init__(
         self,
         connection: AsyncClient,
-        wallet: Union[Keypair, Wallet],
-        env: DriftEnv = "mainnet",
+        wallet: Keypair | Wallet,
+        env: DriftEnv | None = "mainnet",
         opts: TxOpts = DEFAULT_TX_OPTIONS,
-        authority: Pubkey = None,
-        account_subscription: Optional[
-            AccountSubscriptionConfig
-        ] = AccountSubscriptionConfig.default(),
-        perp_market_indexes: list[int] = None,
-        spot_market_indexes: list[int] = None,
-        oracle_infos: list[OracleInfo] = None,
+        authority: Pubkey | None = None,
+        account_subscription: AccountSubscriptionConfig = AccountSubscriptionConfig.default(),
+        perp_market_indexes: list[int] | None = None,
+        spot_market_indexes: list[int] | None = None,
+        oracle_infos: list[OracleInfo] | None = None,
         tx_params: Optional[TxParams] = None,
         tx_version: Optional[TransactionVersion] = None,
-        tx_sender: TxSender = None,
+        tx_sender: TxSender | None = None,
         active_sub_account_id: Optional[int] = None,
         sub_account_ids: Optional[list[int]] = None,
         market_lookup_table: Optional[Pubkey] = None,
         jito_params: Optional[JitoParams] = None,
-        tx_sender_blockhash_commitment: Optional[Commitment] = None,
+        tx_sender_blockhash_commitment: Commitment | None = None,
         enforce_tx_sequencing: bool = False,
     ):
         """Initializes the drift client object
@@ -110,18 +151,15 @@ class DriftClient:
         """
         self.connection = connection
 
-        file = Path(str(driftpy.__path__[0]) + "/idl/drift.json")
-        with file.open() as f:
-            raw = file.read_text()
-        idl = Idl.from_json(raw)
+        file = Path(str(next(iter(driftpy.__path__))) + "/idl/drift.json")
+        idl = Idl.from_json(file.read_text())
+
+        if isinstance(wallet, Keypair):
+            wallet = Wallet(wallet)
 
         provider = Provider(connection, wallet, opts)
         self.program_id = DRIFT_PROGRAM_ID
-        self.program = Program(
-            idl,
-            self.program_id,
-            provider,
-        )
+        self.program = Program(idl, self.program_id, provider)
 
         if isinstance(wallet, Keypair):
             wallet = Wallet(wallet)
@@ -140,8 +178,8 @@ class DriftClient:
             if sub_account_ids is not None
             else [self.active_sub_account_id]
         )
-        self.users = {}
-        self.user_stats = {}
+        self.users: dict[int, DriftUser] = {}
+        self.user_stats: dict[Pubkey, DriftUserStats] = {}
 
         self.last_perp_market_seen_cache = {}
         self.last_spot_market_seen_cache = {}
@@ -149,13 +187,18 @@ class DriftClient:
         self.account_subscriber = account_subscription.get_drift_client_subscriber(
             self.program, perp_market_indexes, spot_market_indexes, oracle_infos
         )
+        if self.account_subscriber is None:
+            raise ValueError("No account subscriber found")
+
         self.account_subscription_config = account_subscription
 
-        self.market_lookup_table = (
-            market_lookup_table
-            if market_lookup_table is not None
-            else configs[env].market_lookup_table
-        )
+        self.market_lookup_table = None
+        if env is not None:
+            self.market_lookup_table = (
+                market_lookup_table
+                if market_lookup_table is not None
+                else configs[env].market_lookup_table
+            )
         self.market_lookup_table_account: Optional[AddressLookupTableAccount] = None
 
         if tx_params is None:
@@ -167,10 +210,10 @@ class DriftClient:
 
         self.enforce_tx_sequencing = enforce_tx_sequencing
         if self.enforce_tx_sequencing is True:
-            file = Path(str(driftpy.__path__[0]) + "/idl/sequence_enforcer.json")
-            with file.open() as f:
-                raw = file.read_text()
-            idl = Idl.from_json(raw)
+            file = Path(
+                str(next(iter(driftpy.__path__))) + "/idl/sequence_enforcer.json"
+            )
+            idl = Idl.from_json(file.read_text())
 
             provider = Provider(connection, wallet, opts)
             self.sequence_enforcer_pid = (
@@ -208,7 +251,7 @@ class DriftClient:
                     blockhash_commitment=(
                         tx_sender_blockhash_commitment
                         if tx_sender_blockhash_commitment is not None
-                        else "finalized"
+                        else Commitment("finalized")
                     ),
                 )
                 if tx_sender is None
@@ -216,11 +259,16 @@ class DriftClient:
             )
 
     async def subscribe(self):
+        if self.account_subscriber is None:
+            raise ValueError("No account subscriber found")
         await self.account_subscriber.subscribe()
+
         if self.enforce_tx_sequencing:
             await self.load_sequence_info()
+
         for sub_account_id in self.sub_account_ids:
             await self.add_user(sub_account_id)
+
         await self.add_user_stats(self.authority)
 
     def resurrect(self, spot_markets, perp_markets, spot_oracles, perp_oracles):
@@ -232,8 +280,15 @@ class DriftClient:
             spot_markets, perp_markets, spot_oracles, perp_oracles
         )
 
+    async def fetch_accounts(self):
+        users = [user for user in self.users.values()]
+        tasks = [user.fetch_accounts() for user in users]
+
+        await asyncio.gather(*tasks)
+
     async def add_user(self, sub_account_id: int):
         if sub_account_id in self.users:
+            print(f"User {sub_account_id} already exists")
             return
 
         user = DriftUser(
@@ -251,13 +306,15 @@ class DriftClient:
         self.user_stats[authority] = DriftUserStats(
             self,
             self.get_user_stats_public_key(),
-            UserStatsSubscriptionConfig("confirmed"),
+            UserStatsSubscriptionConfig(Commitment("confirmed")),
         )
 
         # don't subscribe because up to date UserStats is not required
         await self.user_stats[authority].fetch_accounts()
 
     async def unsubscribe(self):
+        if self.account_subscriber is None:
+            raise ValueError("No account subscriber found")
         await self.account_subscriber.unsubscribe()
 
     def get_user(self, sub_account_id=None) -> DriftUser:
@@ -314,26 +371,41 @@ class DriftClient:
 
     def get_associated_token_account_public_key(self, market_index: int) -> Pubkey:
         spot_market = self.get_spot_market_account(market_index)
+        if spot_market is None:
+            raise Exception("Spot market account not found")
         mint = spot_market.mint
         return get_associated_token_address(self.wallet.public_key, mint)
 
     def get_state_account(self) -> Optional[StateAccount]:
+        if self.account_subscriber is None:
+            return None
+
         state_and_slot = self.account_subscriber.get_state_account_and_slot()
         return getattr(state_and_slot, "data", None)
 
     def get_perp_market_account(self, market_index: int) -> Optional[PerpMarketAccount]:
+        if self.account_subscriber is None:
+            return None
+
         perp_market_and_slot = self.account_subscriber.get_perp_market_and_slot(
             market_index
         )
         return getattr(perp_market_and_slot, "data", None)
 
     def get_spot_market_account(self, market_index: int) -> Optional[SpotMarketAccount]:
+        if self.account_subscriber is None:
+            return None
+
         spot_market_and_slot = self.account_subscriber.get_spot_market_and_slot(
             market_index
         )
+
         return getattr(spot_market_and_slot, "data", None)
 
     def get_quote_spot_market_account(self) -> Optional[SpotMarketAccount]:
+        if self.account_subscriber is None:
+            return None
+
         spot_market_and_slot = self.account_subscriber.get_spot_market_and_slot(
             QUOTE_SPOT_MARKET_INDEX
         )
@@ -375,9 +447,9 @@ class DriftClient:
 
     def get_oracle_price_data_for_spot_market(
         self, market_index: int
-    ) -> Optional[OraclePriceData]:
+    ) -> OraclePriceData | None:
         if self.account_subscriber is None:
-            return None
+            raise ValueError("No account subscriber found")
         if isinstance(self.account_subscriber, DemoDriftClientAccountSubscriber):
             raise ValueError("Cannot get market for demo subscriber")
 
@@ -395,6 +467,8 @@ class DriftClient:
 
     def convert_to_spot_precision(self, amount: Union[int, float], market_index) -> int:
         spot_market = self.get_spot_market_account(market_index)
+        if spot_market is None:
+            raise Exception("Spot market account not found")
         return cast_to_spot_precision(amount, spot_market)
 
     def convert_to_perp_precision(self, amount: Union[int, float]) -> int:
@@ -403,12 +477,15 @@ class DriftClient:
     def convert_to_price_precision(self, amount: Union[int, float]) -> int:
         return int(amount * PRICE_PRECISION)
 
-    def get_sub_account_id_for_ix(self, sub_account_id: int = None):
+    def get_sub_account_id_for_ix(self, sub_account_id: int | None = None) -> int:
         return (
             sub_account_id if sub_account_id is not None else self.active_sub_account_id
         )
 
     async def fetch_market_lookup_table(self) -> AddressLookupTableAccount:
+        if self.market_lookup_table is None:
+            raise ValueError("Market lookup table not found")
+
         if self.market_lookup_table_account is not None:
             return self.market_lookup_table_account
 
@@ -421,7 +498,7 @@ class DriftClient:
         self,
         ixs: Union[Instruction, list[Instruction]],
         signers=None,
-        lookup_tables: list[AddressLookupTableAccount] = None,
+        lookup_tables: list[AddressLookupTableAccount] | None = None,
         tx_version: Optional[Union[Legacy, int]] = None,
         sequencer_subaccount: Optional[int] = None,
     ) -> TxSigAndSlot:
@@ -459,6 +536,8 @@ class DriftClient:
         if tx_version == Legacy:
             tx = await self.tx_sender.get_legacy_tx(ixs, self.wallet.payer, signers)
         elif tx_version == 0:
+            if lookup_tables is None and self.market_lookup_table is None:
+                lookup_tables = []
             if lookup_tables is None:
                 lookup_tables = [await self.fetch_market_lookup_table()]
             tx = await self.tx_sender.get_versioned_tx(
@@ -471,11 +550,11 @@ class DriftClient:
 
     def get_remaining_accounts(
         self,
-        user_accounts: list[UserAccount] = (),
-        writable_perp_market_indexes: list[int] = (),
-        writable_spot_market_indexes: list[int] = (),
-        readable_spot_market_indexes: list[int] = (),
-        readable_perp_market_indexes: list[int] = (),
+        user_accounts: list[UserAccount] = [],
+        writable_perp_market_indexes: list[int] = [],
+        writable_spot_market_indexes: list[int] = [],
+        readable_spot_market_indexes: list[int] = [],
+        readable_perp_market_indexes: list[int] = [],
     ):
         (
             oracle_map,
@@ -537,6 +616,8 @@ class DriftClient:
         perp_market_account_map: dict[int, AccountMeta],
     ) -> None:
         perp_market_account = self.get_perp_market_account(market_index)
+        if perp_market_account is None:
+            raise Exception("Perp market account not found")
 
         perp_market_account_map[market_index] = AccountMeta(
             pubkey=perp_market_account.pubkey, is_signer=False, is_writable=writable
@@ -551,8 +632,11 @@ class DriftClient:
             is_writable=oracle_writable,
         )
 
+        quote_spot_market_index = perp_market_account.quote_spot_market_index
+        if quote_spot_market_index is None:
+            raise Exception("Quote spot market index not found")
         self.add_spot_market_to_remaining_account_maps(
-            perp_market_account.quote_spot_market_index,
+            quote_spot_market_index,
             False,
             oracle_account_map,
             spot_market_account_map,
@@ -566,6 +650,8 @@ class DriftClient:
         spot_market_account_map: dict[int, AccountMeta],
     ) -> None:
         spot_market_account = self.get_spot_market_account(market_index)
+        if spot_market_account is None:
+            raise Exception("Spot market account not found")
 
         spot_market_account_map[market_index] = AccountMeta(
             pubkey=spot_market_account.pubkey, is_signer=False, is_writable=writable
@@ -578,7 +664,7 @@ class DriftClient:
 
     def get_remaining_accounts_for_users(
         self, user_accounts: list[UserAccount]
-    ) -> (dict[str, AccountMeta], dict[int, AccountMeta], dict[int, AccountMeta]):
+    ) -> tuple[dict[str, AccountMeta], dict[int, AccountMeta], dict[int, AccountMeta]]:
         oracle_map = {}
         spot_market_map = {}
         perp_market_map = {}
@@ -629,16 +715,24 @@ class DriftClient:
                     f"unknown fulfillment config: {type(fulfillment_config)}"
                 )
         else:
+            spot_market_account = self.get_spot_market_account(market_index)
+            if spot_market_account is None:
+                raise Exception("Spot market account not found")
             remaining_accounts.append(
                 AccountMeta(
-                    self.get_spot_market_account(market_index).vault,
+                    spot_market_account.vault,
                     is_writable=False,
                     is_signer=False,
                 )
             )
+            quote_spot_market_account = self.get_spot_market_account(
+                QUOTE_SPOT_MARKET_INDEX
+            )
+            if quote_spot_market_account is None:
+                raise Exception("Quote spot market account not found")
             remaining_accounts.append(
                 AccountMeta(
-                    self.get_spot_market_account(QUOTE_SPOT_MARKET_INDEX).vault,
+                    quote_spot_market_account.vault,
                     is_writable=False,
                     is_signer=False,
                 )
@@ -716,24 +810,36 @@ class DriftClient:
         remaining_accounts.append(
             AccountMeta(TOKEN_PROGRAM_ID, is_writable=False, is_signer=False)
         )
+
+        spot_market_account = self.get_spot_market_account(market_index)
+        if spot_market_account is None:
+            raise Exception("Spot market account not found")
         remaining_accounts.append(
             AccountMeta(
-                self.get_spot_market_account(market_index).vault,
+                spot_market_account.vault,
                 is_writable=True,
                 is_signer=False,
             )
         )
+
+        quote_spot_market_account = self.get_spot_market_account(
+            QUOTE_SPOT_MARKET_INDEX
+        )
+        if quote_spot_market_account is None:
+            raise Exception("Quote spot market account not found")
         remaining_accounts.append(
             AccountMeta(
-                self.get_spot_market_account(QUOTE_SPOT_MARKET_INDEX).vault,
+                quote_spot_market_account.vault,
                 is_writable=True,
                 is_signer=False,
             )
         )
+
+        state_account = self.get_state_account()
+        if state_account is None:
+            raise Exception("State account not found")
         remaining_accounts.append(
-            AccountMeta(
-                self.get_state_account().srm_vault, is_writable=False, is_signer=False
-            )
+            AccountMeta(state_account.srm_vault, is_writable=False, is_signer=False)
         )
 
     def add_phoenix_remaining_accounts(
@@ -781,16 +887,26 @@ class DriftClient:
                 is_signer=False,
             )
         )
+
+        spot_market_account = self.get_spot_market_account(market_index)
+        if spot_market_account is None:
+            raise Exception("Spot market account not found")
         remaining_accounts.append(
             AccountMeta(
-                self.get_spot_market_account(market_index).vault,
+                spot_market_account.vault,
                 is_writable=True,
                 is_signer=False,
             )
         )
+
+        quote_spot_market_account = self.get_spot_market_account(
+            QUOTE_SPOT_MARKET_INDEX
+        )
+        if quote_spot_market_account is None:
+            raise Exception("Quote spot market account not found")
         remaining_accounts.append(
             AccountMeta(
-                self.get_spot_market_account(QUOTE_SPOT_MARKET_INDEX).vault,
+                quote_spot_market_account.vault,
                 is_writable=True,
                 is_signer=False,
             )
@@ -802,8 +918,8 @@ class DriftClient:
     async def initialize_user(
         self,
         sub_account_id: int = 0,
-        name: str = None,
-        referrer_info: ReferrerInfo = None,
+        name: str | None = None,
+        referrer_info: ReferrerInfo | None = None,
     ):
         """intializes a drift user
 
@@ -849,7 +965,7 @@ class DriftClient:
         self,
         sub_account_id: int = 0,
         name: str = DEFAULT_USER_NAME,
-        referrer_info: ReferrerInfo = None,
+        referrer_info: ReferrerInfo | None = None,
     ) -> Instruction:
         user_public_key = self.get_user_account_public_key(sub_account_id)
         state_public_key = self.get_state_public_key()
@@ -891,7 +1007,7 @@ class DriftClient:
 
     async def get_wrapped_sol_account_creation_ixs(
         self, amount: int, include_rent: bool = True
-    ) -> (List[Instruction], Pubkey):
+    ) -> Tuple[List[Instruction], Pubkey]:
         wallet_pubkey = self.wallet.public_key
         seed = self.random_string(32)
         wrapped_sol_account = Pubkey.create_with_seed(
@@ -1046,7 +1162,7 @@ class DriftClient:
         market_index: int,
         user_token_account: Pubkey,
         reduce_only: bool = False,
-        sub_account_id: int = None,
+        sub_account_id: int | None = None,
     ):
         """withdraws from drift protocol (can also allow borrowing)
 
@@ -1080,7 +1196,7 @@ class DriftClient:
         market_index: int,
         user_token_account: Pubkey,
         reduce_only: bool = False,
-        sub_account_id: int = None,
+        sub_account_id: int | None = None,
     ):
         sub_account_id = self.get_sub_account_id_for_ix(sub_account_id)
 
@@ -1089,7 +1205,10 @@ class DriftClient:
             user_accounts=[self.get_user_account(sub_account_id)],
             writable_spot_market_indexes=[market_index],
         )
-        dc_signer = self.get_signer_public_key(self.program_id)
+        if not spot_market:
+            raise Exception("Spot market account not found")
+
+        dc_signer = self.get_signer_public_key()
 
         return self.program.instruction["withdraw"](
             market_index,
@@ -1159,8 +1278,15 @@ class DriftClient:
             writable_spot_market_indexes=[
                 market_index,
             ],
-            user_accounts=[from_user_account, to_user_account],
+            user_accounts=[
+                cast(UserAccount, from_user_account),
+                cast(UserAccount, to_user_account),
+            ],
         )
+
+        spot_market_account = self.get_spot_market_account(market_index)
+        if not spot_market_account:
+            raise Exception("Spot market account not found")
 
         ix = self.program.instruction["transfer_deposit"](
             market_index,
@@ -1172,9 +1298,7 @@ class DriftClient:
                     "from_user": from_user_public_key,
                     "to_user": to_user_public_key,
                     "authority": self.wallet.public_key,
-                    "spot_market_vault": self.get_spot_market_account(
-                        market_index
-                    ).vault,
+                    "spot_market_vault": spot_market_account.vault,
                 },
                 remaining_accounts=remaining_accounts,
             ),
@@ -1185,7 +1309,7 @@ class DriftClient:
     async def place_spot_order(
         self,
         order_params: OrderParams,
-        sub_account_id: int = None,
+        sub_account_id: int | None = None,
     ):
         tx_sig_and_slot = await self.send_ixs(
             [
@@ -1201,7 +1325,7 @@ class DriftClient:
     def get_place_spot_order_ix(
         self,
         order_params: OrderParams,
-        sub_account_id: int = None,
+        sub_account_id: int | None = None,
     ):
         sub_account_id = self.get_sub_account_id_for_ix(sub_account_id)
 
@@ -1233,7 +1357,7 @@ class DriftClient:
     async def place_perp_order(
         self,
         order_params: OrderParams,
-        sub_account_id: int = None,
+        sub_account_id: int | None = None,
     ):
         tx_sig_and_slot = await self.send_ixs(
             [
@@ -1248,7 +1372,7 @@ class DriftClient:
     def get_place_perp_order_ix(
         self,
         order_params: OrderParams,
-        sub_account_id: int = None,
+        sub_account_id: int | None = None,
     ):
         sub_account_id = self.get_sub_account_id_for_ix(sub_account_id)
 
@@ -1278,7 +1402,7 @@ class DriftClient:
     async def place_orders(
         self,
         order_params: List[OrderParams],
-        sub_account_id: int = None,
+        sub_account_id: int | None = None,
     ):
         tx_sig_and_slot = await self.send_ixs(
             [
@@ -1301,7 +1425,7 @@ class DriftClient:
     def get_place_orders_ix(
         self,
         order_params: List[OrderParams],
-        sub_account_id: int = None,
+        sub_account_id: int | None = None,
     ):
         sub_account_id = self.get_sub_account_id_for_ix(sub_account_id)
 
@@ -1345,7 +1469,7 @@ class DriftClient:
     async def cancel_order(
         self,
         order_id: Optional[int] = None,
-        sub_account_id: int = None,
+        sub_account_id: int | None = None,
     ):
         """cancel specific order (if order_id=None will be most recent order)
 
@@ -1363,7 +1487,7 @@ class DriftClient:
         ).tx_sig
 
     def get_cancel_order_ix(
-        self, order_id: Optional[int] = None, sub_account_id: int = None
+        self, order_id: Optional[int] = None, sub_account_id: int | None = None
     ):
         sub_account_id = self.get_sub_account_id_for_ix(sub_account_id)
 
@@ -1386,7 +1510,7 @@ class DriftClient:
     async def cancel_order_by_user_id(
         self,
         user_order_id: int,
-        sub_account_id: int = None,
+        sub_account_id: int | None = None,
     ):
         sub_account_id = self.get_sub_account_id_for_ix(sub_account_id)
 
@@ -1397,7 +1521,7 @@ class DriftClient:
         ).tx_sig
 
     def get_cancel_order_by_user_id_ix(
-        self, user_order_id: int, sub_account_id: int = None
+        self, user_order_id: int, sub_account_id: int | None = None
     ):
         sub_account_id = self.get_sub_account_id_for_ix(sub_account_id)
 
@@ -1419,10 +1543,10 @@ class DriftClient:
 
     async def cancel_orders(
         self,
-        market_type: MarketType = None,
-        market_index: int = None,
-        direction: PositionDirection = None,
-        sub_account_id: int = None,
+        market_type: MarketType | None = None,
+        market_index: int | None = None,
+        direction: PositionDirection | None = None,
+        sub_account_id: int | None = None,
     ):
         """cancel all existing orders on the book
 
@@ -1445,10 +1569,10 @@ class DriftClient:
 
     def get_cancel_orders_ix(
         self,
-        market_type: MarketType = None,
-        market_index: int = None,
-        direction: PositionDirection = None,
-        sub_account_id: int = None,
+        market_type: MarketType | None = None,
+        market_index: int | None = None,
+        direction: PositionDirection | None = None,
+        sub_account_id: int | None = None,
     ):
         sub_account_id = self.get_sub_account_id_for_ix(sub_account_id)
 
@@ -1472,13 +1596,13 @@ class DriftClient:
 
     async def cancel_and_place_orders(
         self,
-        cancel_params: (
+        cancel_params: Tuple[
             Optional[MarketType],
             Optional[int],
             Optional[PositionDirection],
-        ),
+        ],
         place_order_params: List[OrderParams],
-        sub_account_id: int = None,
+        sub_account_id: int | None = None,
     ):
         tx_sig_and_slot = await self.send_ixs(
             self.get_cancel_and_place_orders_ix(
@@ -1500,13 +1624,13 @@ class DriftClient:
 
     def get_cancel_and_place_orders_ix(
         self,
-        cancel_params: (
+        cancel_params: Tuple[
             Optional[MarketType],
             Optional[int],
             Optional[PositionDirection],
-        ),
+        ],
         place_order_params: List[OrderParams],
-        sub_account_id: int = None,
+        sub_account_id: int | None = None,
     ):
         sub_account_id = self.get_sub_account_id_for_ix(sub_account_id)
 
@@ -1522,7 +1646,7 @@ class DriftClient:
         self,
         order_id: int,
         modify_order_params: ModifyOrderParams,
-        sub_account_id: int = None,
+        sub_account_id: int | None = None,
     ):
         return (
             await self.send_ixs(
@@ -1538,7 +1662,7 @@ class DriftClient:
         self,
         order_id: int,
         modify_order_params: ModifyOrderParams,
-        sub_account_id: int = None,
+        sub_account_id: int | None = None,
     ):
         sub_account_id = self.get_sub_account_id_for_ix(sub_account_id)
 
@@ -1563,7 +1687,7 @@ class DriftClient:
         self,
         user_order_id: int,
         modify_order_params: ModifyOrderParams,
-        sub_account_id: int = None,
+        sub_account_id: int | None = None,
     ):
         return (
             await self.send_ixs(
@@ -1579,7 +1703,7 @@ class DriftClient:
         self,
         user_order_id: int,
         modify_order_params: ModifyOrderParams,
-        sub_account_id: int = None,
+        sub_account_id: int | None = None,
     ):
         sub_account_id = self.get_sub_account_id_for_ix(sub_account_id)
 
@@ -1603,9 +1727,9 @@ class DriftClient:
     async def place_and_take_perp_order(
         self,
         order_params: OrderParams,
-        maker_info: Union[MakerInfo, List[MakerInfo]] = None,
-        referrer_info: ReferrerInfo = None,
-        sub_account_id: int = None,
+        maker_info: Union[MakerInfo, List[MakerInfo]] | None = None,
+        referrer_info: ReferrerInfo | None = None,
+        sub_account_id: int | None = None,
     ):
         tx_sig_and_slot = await self.send_ixs(
             [
@@ -1622,9 +1746,9 @@ class DriftClient:
     def get_place_and_take_perp_order_ix(
         self,
         order_params: OrderParams,
-        maker_info: Union[MakerInfo, List[MakerInfo]] = None,
-        referrer_info: ReferrerInfo = None,
-        sub_account_id: int = None,
+        maker_info: Union[MakerInfo, List[MakerInfo]] | None = None,
+        referrer_info: ReferrerInfo | None = None,
+        sub_account_id: int | None = None,
     ):
         sub_account_id = self.get_sub_account_id_for_ix(sub_account_id)
 
@@ -1694,12 +1818,12 @@ class DriftClient:
     async def place_and_take_spot_order(
         self,
         order_params: OrderParams,
-        fulfillment_config: Optional[
-            Union[SerumV3FulfillmentConfigAccount, PhoenixV1FulfillmentConfigAccount]
-        ] = None,
-        maker_info: Union[MakerInfo, List[MakerInfo]] = None,
-        referrer_info: ReferrerInfo = None,
-        sub_account_id: int = None,
+        fulfillment_config: SerumV3FulfillmentConfigAccount
+        | PhoenixV1FulfillmentConfigAccount
+        | None = None,
+        maker_info: MakerInfo | List[MakerInfo] | None = None,
+        referrer_info: ReferrerInfo | None = None,
+        sub_account_id: int | None = None,
     ):
         tx_sig_and_slot = await self.send_ixs(
             [
@@ -1723,9 +1847,9 @@ class DriftClient:
         fulfillment_config: Optional[
             Union[SerumV3FulfillmentConfigAccount, PhoenixV1FulfillmentConfigAccount]
         ] = None,
-        maker_info: Union[MakerInfo, List[MakerInfo]] = None,
-        referrer_info: ReferrerInfo = None,
-        sub_account_id: int = None,
+        maker_info: Union[MakerInfo, List[MakerInfo]] | None = None,
+        referrer_info: ReferrerInfo | None = None,
+        sub_account_id: int | None = None,
     ):
         sub_account_id = self.get_sub_account_id_for_ix(sub_account_id)
 
@@ -1764,7 +1888,9 @@ class DriftClient:
 
         if referrer_info is not None:
             referrer_is_maker = (
-                referrer_info.referrer == maker_info.maker if maker_info else False
+                referrer_info.referrer == maker_info.maker
+                if isinstance(maker_info, MakerInfo)
+                else False
             )
             if not referrer_is_maker:
                 remaining_accounts.append(
@@ -1800,7 +1926,7 @@ class DriftClient:
         )
 
     async def add_liquidity(
-        self, amount: int, market_index: int, sub_account_id: int = None
+        self, amount: int, market_index: int, sub_account_id: int | None = None
     ):
         """mint LP tokens and add liquidity to the DAMM
 
@@ -1821,7 +1947,7 @@ class DriftClient:
         return tx_sig_and_slot.tx_sig
 
     def get_add_liquidity_ix(
-        self, amount: int, market_index: int, sub_account_id: int = None
+        self, amount: int, market_index: int, sub_account_id: int | None = None
     ):
         sub_account_id = self.get_sub_account_id_for_ix(sub_account_id)
 
@@ -1847,7 +1973,7 @@ class DriftClient:
         )
 
     async def remove_liquidity(
-        self, amount: int, market_index: int, sub_account_id: int = None
+        self, amount: int, market_index: int, sub_account_id: int | None = None
     ):
         """burns LP tokens and removes liquidity to the DAMM
 
@@ -1866,7 +1992,7 @@ class DriftClient:
         ).tx_sig
 
     def get_remove_liquidity_ix(
-        self, amount: int, market_index: int, sub_account_id: int = None
+        self, amount: int, market_index: int, sub_account_id: int | None = None
     ):
         sub_account_id = self.get_sub_account_id_for_ix(sub_account_id)
 
@@ -1916,7 +2042,7 @@ class DriftClient:
 
         remaining_accounts = self.get_remaining_accounts(
             writable_perp_market_indexes=[market_index],
-            user_accounts=[settlee_user_account],
+            user_accounts=[cast(UserAccount, settlee_user_account)],
         )
 
         return self.program.instruction["settle_lp"](
@@ -1933,7 +2059,7 @@ class DriftClient:
     def get_spot_position(
         self,
         market_index: int,
-        sub_account_id: int = None,
+        sub_account_id: int | None = None,
     ) -> Optional[SpotPosition]:
         sub_account_id = self.get_sub_account_id_for_ix(sub_account_id)
 
@@ -1942,7 +2068,7 @@ class DriftClient:
     def get_perp_position(
         self,
         market_index: int,
-        sub_account_id: int = None,
+        sub_account_id: int | None = None,
     ) -> Optional[PerpPosition]:
         sub_account_id = self.get_sub_account_id_for_ix(sub_account_id)
         return self.get_user(sub_account_id).get_perp_position(market_index)
@@ -1954,7 +2080,7 @@ class DriftClient:
         liability_market_index: int,
         max_liability_transfer: int,
         user_sub_account_id: int = 0,
-        liq_sub_account_id: int = None,
+        liq_sub_account_id: int = 0,
     ):
         tx_sig_and_slot = await self.send_ixs(
             [
@@ -1978,9 +2104,9 @@ class DriftClient:
         asset_market_index: int,
         liability_market_index: int,
         max_liability_transfer: int,
-        limit_price: int = None,
+        limit_price: int | None = None,
         user_sub_account_id: int = 0,
-        liq_sub_account_id: int = None,
+        liq_sub_account_id: int | None = None,
     ):
         user_pk = get_user_account_public_key(
             self.program_id, user_authority, sub_account_id=user_sub_account_id
@@ -1999,7 +2125,7 @@ class DriftClient:
 
         remaining_accounts = self.get_remaining_accounts(
             writable_spot_market_indexes=[liability_market_index, asset_market_index],
-            user_accounts=[user_account, liq_user_account],
+            user_accounts=[cast(UserAccount, user_account), liq_user_account],
         )
 
         return self.program.instruction["liquidate_spot"](
@@ -2027,7 +2153,7 @@ class DriftClient:
         max_base_asset_amount: int,
         limit_price: Optional[int] = None,
         user_sub_account_id: int = 0,
-        liq_sub_account_id: int = None,
+        liq_sub_account_id: int | None = None,
     ):
         tx_sig_and_slot = await self.send_ixs(
             [
@@ -2051,7 +2177,7 @@ class DriftClient:
         max_base_asset_amount: int,
         limit_price: Optional[int] = None,
         user_sub_account_id: int = 0,
-        liq_sub_account_id: int = None,
+        liq_sub_account_id: int | None = None,
     ):
         user_pk = get_user_account_public_key(
             self.program_id, user_authority, user_sub_account_id
@@ -2070,7 +2196,7 @@ class DriftClient:
 
         remaining_accounts = self.get_remaining_accounts(
             writable_perp_market_indexes=[market_index],
-            user_accounts=[user_account, liq_user_account],
+            user_accounts=[cast(UserAccount, user_account), liq_user_account],
         )
 
         return self.program.instruction["liquidate_perp"](
@@ -2097,7 +2223,7 @@ class DriftClient:
         spot_market_index: int,
         max_pnl_transfer: int,
         user_sub_account_id: int = 0,
-        liq_sub_account_id: int = None,
+        liq_sub_account_id: int = 0,
     ):
         tx_sig_and_slot = await self.send_ixs(
             await self.get_liquidate_perp_pnl_for_deposit_ix(
@@ -2119,9 +2245,9 @@ class DriftClient:
         perp_market_index: int,
         spot_market_index: int,
         max_pnl_transfer: int,
-        limit_price: int = None,
+        limit_price: int | None = None,
         user_sub_account_id: int = 0,
-        liq_sub_account_id: int = None,
+        liq_sub_account_id: int | None = None,
     ):
         user_pk = get_user_account_public_key(
             self.program_id, user_authority, user_sub_account_id
@@ -2141,7 +2267,7 @@ class DriftClient:
         remaining_accounts = self.get_remaining_accounts(
             writable_perp_market_indexes=[perp_market_index],
             writable_spot_market_indexes=[spot_market_index],
-            user_accounts=[user_account, liq_user_account],
+            user_accounts=[cast(UserAccount, user_account), liq_user_account],
         )
 
         result = self.program.instruction["liquidate_perp_pnl_for_deposit"](
@@ -2222,7 +2348,7 @@ class DriftClient:
         user_authority: Pubkey,
         spot_market_index: int,
         user_sub_account_id: int = 0,
-        liq_sub_account_id: int = None,
+        liq_sub_account_id: int | None = None,
     ):
         return (
             await self.send_ixs(
@@ -2242,7 +2368,7 @@ class DriftClient:
         user_authority: Pubkey,
         spot_market_index: int,
         user_sub_account_id: int = 0,
-        liq_sub_account_id: int = None,
+        liq_sub_account_id: int | None = None,
     ):
         user_pk = get_user_account_public_key(
             self.program_id, user_authority, user_sub_account_id
@@ -2261,7 +2387,7 @@ class DriftClient:
 
         remaining_accounts = self.get_remaining_accounts(
             writable_spot_market_indexes=[spot_market_index],
-            user_accounts=[user_account, liq_user_account],
+            user_accounts=[cast(UserAccount, user_account), liq_user_account],
         )
 
         if_vault = get_insurance_fund_vault_public_key(
@@ -2270,7 +2396,7 @@ class DriftClient:
         spot_vault = get_spot_market_vault_public_key(
             self.program_id, spot_market_index
         )
-        dc_signer = self.get_signer_public_key(self.program_id)
+        dc_signer = self.get_signer_public_key()
 
         return self.program.instruction["resolve_spot_bankruptcy"](
             spot_market_index,
@@ -2296,7 +2422,7 @@ class DriftClient:
         user_authority: Pubkey,
         market_index: int,
         user_sub_account_id: int = 0,
-        liq_sub_account_id: int = None,
+        liq_sub_account_id: int | None = None,
     ):
         return (
             await self.send_ixs(
@@ -2316,7 +2442,7 @@ class DriftClient:
         user_authority: Pubkey,
         market_index: int,
         user_sub_account_id: int = 0,
-        liq_sub_account_id: int = None,
+        liq_sub_account_id: int | None = None,
     ):
         user_pk = get_user_account_public_key(
             self.program_id, user_authority, user_sub_account_id
@@ -2335,12 +2461,12 @@ class DriftClient:
 
         remaining_accounts = self.get_remaining_accounts(
             writable_perp_market_indexes=[market_index],
-            user_accounts=[user_account, liq_user_account],
+            user_accounts=[cast(UserAccount, user_account), liq_user_account],
         )
 
         if_vault = get_insurance_fund_vault_public_key(self.program_id, market_index)
         spot_vault = get_spot_market_vault_public_key(self.program_id, market_index)
-        dc_signer = self.get_signer_public_key(self.program_id)
+        dc_signer = self.get_signer_public_key()
 
         return self.program.instruction["resolve_perp_bankruptcy"](
             QUOTE_SPOT_MARKET_INDEX,
@@ -2474,9 +2600,7 @@ class DriftClient:
             )
         ).tx_sig
 
-    def get_cancel_request_remove_insurance_fund_stake_ix(
-        self, spot_market_index: int, user_token_account: Pubkey = None
-    ):
+    def get_cancel_request_remove_insurance_fund_stake_ix(self, spot_market_index: int):
         ra = self.get_remaining_accounts(
             writable_spot_market_indexes=[spot_market_index]
         )
@@ -2505,7 +2629,7 @@ class DriftClient:
         )
 
     async def remove_insurance_fund_stake(
-        self, spot_market_index: int, user_token_account: Pubkey = None
+        self, spot_market_index: int, user_token_account: Pubkey | None = None
     ):
         return (
             await self.send_ixs(
@@ -2516,7 +2640,7 @@ class DriftClient:
         ).tx_sig
 
     def get_remove_insurance_fund_stake_ix(
-        self, spot_market_index: int, user_token_account: Pubkey = None
+        self, spot_market_index: int, user_token_account: Pubkey | None = None
     ):
         ra = self.get_remaining_accounts(
             writable_spot_market_indexes=[spot_market_index],
@@ -2546,7 +2670,7 @@ class DriftClient:
                     "insurance_fund_vault": get_insurance_fund_vault_public_key(
                         self.program_id, spot_market_index
                     ),
-                    "drift_signer": self.get_signer_public_key(self.program_id),
+                    "drift_signer": self.get_signer_public_key(),
                     "user_token_account": user_token_account,
                     "token_program": TOKEN_PROGRAM_ID,
                 },
@@ -2555,7 +2679,10 @@ class DriftClient:
         )
 
     async def add_insurance_fund_stake(
-        self, spot_market_index: int, amount: int, user_token_account: Pubkey = None
+        self,
+        spot_market_index: int,
+        amount: int,
+        user_token_account: Pubkey | None = None,
     ):
         return (
             await self.send_ixs(
@@ -2566,7 +2693,10 @@ class DriftClient:
         ).tx_sig
 
     def get_add_insurance_fund_stake_ix(
-        self, spot_market_index: int, amount: int, user_token_account: Pubkey = None
+        self,
+        spot_market_index: int,
+        amount: int,
+        user_token_account: Pubkey | None = None,
     ):
         remaining_accounts = self.get_remaining_accounts(
             writable_spot_market_indexes=[spot_market_index],
@@ -2600,7 +2730,7 @@ class DriftClient:
                     "insurance_fund_vault": get_insurance_fund_vault_public_key(
                         self.program_id, spot_market_index
                     ),
-                    "drift_signer": self.get_signer_public_key(self.program_id),
+                    "drift_signer": self.get_signer_public_key(),
                     "user_token_account": user_token_account,
                     "token_program": TOKEN_PROGRAM_ID,
                 },
@@ -2649,8 +2779,8 @@ class DriftClient:
         user_account_pubkey: Pubkey,
         user_account: UserAccount,
         order: Order,
-        maker_info: Optional[Union[MakerInfo, list[MakerInfo]]],
-        referrer_info: Optional[ReferrerInfo],
+        maker_info: MakerInfo | list[MakerInfo] | None,
+        referrer_info: ReferrerInfo | None,
     ):
         return (
             await self.send_ixs(
@@ -2706,7 +2836,12 @@ class DriftClient:
         for maker in maker_info:
             user_accounts.append(maker.maker_user_account)
 
-        remaining_accounts = self.get_remaining_accounts(user_accounts, [market_index])
+        if market_index is not None:
+            remaining_accounts = self.get_remaining_accounts(
+                user_accounts, [market_index]
+            )
+        else:
+            remaining_accounts = self.get_remaining_accounts(user_accounts)
 
         for maker in maker_info:
             remaining_accounts.append(
@@ -2847,7 +2982,7 @@ class DriftClient:
         direction: PositionDirection,
         amount: int,
         market_index: int,
-        sub_account_id: int = None,
+        sub_account_id: int | None = None,
         limit_price: int = 0,
         ioc: bool = False,
     ):
@@ -2870,14 +3005,14 @@ class DriftClient:
         direction: PositionDirection,
         amount: int,
         market_index: int,
-        sub_account_id: int = None,
+        sub_account_id: int | None = None,
         limit_price: int = 0,
         ioc: bool = False,
     ):
         sub_account_id = self.get_sub_account_id_for_ix(sub_account_id)
 
         order_params = OrderParams(
-            order_type=OrderType.Market(),
+            order_type=OrderType.Market(),  # type: ignore
             direction=direction,
             market_index=market_index,
             base_asset_amount=amount,
@@ -2891,35 +3026,37 @@ class DriftClient:
 
     @deprecated
     async def close_position(
-        self, market_index: int, limit_price: int = 0, sub_account_id: int = None
+        self, market_index: int, limit_price: int = 0, sub_account_id: int | None = None
     ):
-        return (
-            await self.send_ixs(
-                self.get_close_position_ix(
-                    market_index, limit_price, sub_account_id=sub_account_id
-                )
-            )
-        ).tx_sig
+        close_position_ix = self.get_close_position_ix(
+            market_index, limit_price, sub_account_id=sub_account_id
+        )
+        if not close_position_ix:
+            return None
+        return (await self.send_ixs([close_position_ix])).tx_sig
 
     @deprecated
     def get_close_position_ix(
-        self, market_index: int, limit_price: int = 0, sub_account_id: int = None
+        self,
+        market_index: int,
+        limit_price: int = 0,
+        sub_account_id: int | None = None,
     ):
         sub_account_id = self.get_sub_account_id_for_ix(sub_account_id)
 
         position = self.get_perp_position(market_index, sub_account_id)
         if position is None or position.base_asset_amount == 0:
-            print("=> user has no position to close...")
-            return
+            print(f"===> User has no position to close for market {market_index}...")
+            return None
 
         order_params = OrderParams(
-            order_type=OrderType.Market(),
+            order_type=OrderType.Market(),  # type: ignore
             market_index=market_index,
             base_asset_amount=abs(int(position.base_asset_amount)),
             direction=(
-                PositionDirection.Long()
+                PositionDirection.Long()  # type: ignore
                 if position.base_asset_amount < 0
-                else PositionDirection.Short()
+                else PositionDirection.Short()  # type: ignore
             ),
             price=limit_price,
             reduce_only=True,
@@ -2946,6 +3083,8 @@ class DriftClient:
         for idx in market_indexs:
             if idx != 100:
                 market = self.get_perp_market_account(idx)
+                if market is None:
+                    raise Exception(f"Market {idx} not found")
                 market_infos.append(
                     AccountMeta(
                         pubkey=market.pubkey,
@@ -2984,7 +3123,7 @@ class DriftClient:
                     "spot_market_vault": get_spot_market_vault_public_key(
                         self.program_id, spot_market_index
                     ),
-                    "drift_signer": self.get_signer_public_key(self.program_id),
+                    "drift_signer": self.get_signer_public_key(),
                     "insurance_fund_vault": get_insurance_fund_vault_public_key(
                         self.program_id,
                         spot_market_index,
@@ -3034,8 +3173,9 @@ class DriftClient:
 
         try:
             user_accounts.append(self.get_user().get_user_account_and_slot().data)
-        except:
-            pass  # ignore
+        except Exception as e:
+            print(f"===> Ignoring error getting user account: {e}")
+            pass
 
         remaining_accounts = self.get_remaining_accounts(
             user_accounts=user_accounts,
@@ -3046,9 +3186,17 @@ class DriftClient:
         out_market = self.get_spot_market_account(out_market_index)
         in_market = self.get_spot_market_account(in_market_index)
 
+        if out_market is None:
+            raise Exception(f"Out market {out_market_index} not found")
+        if in_market is None:
+            raise Exception(f"In market {in_market_index} not found")
+
         sysvar_pubkey = Pubkey.from_string(
             "Sysvar1nstructions1111111111111111111111111"
         )
+        state_account = self.get_state_account()
+        if state_account is None:
+            raise Exception("State account not found (required for swap)")
 
         begin_swap_ix = self.program.instruction["begin_swap"](
             in_market_index,
@@ -3065,7 +3213,7 @@ class DriftClient:
                     "in_token_account": in_ata,
                     "out_token_account": out_ata,
                     "token_program": TOKEN_PROGRAM_ID,
-                    "drift_signer": self.get_state_account().signer,
+                    "drift_signer": state_account.signer,
                     "instructions": sysvar_pubkey,
                 },
                 remaining_accounts=remaining_accounts,
@@ -3088,7 +3236,7 @@ class DriftClient:
                     "in_token_account": in_ata,
                     "out_token_account": out_ata,
                     "token_program": TOKEN_PROGRAM_ID,
-                    "drift_signer": self.get_state_account().signer,
+                    "drift_signer": state_account.signer,
                     "instructions": sysvar_pubkey,
                 },
                 remaining_accounts=remaining_accounts,
@@ -3114,6 +3262,8 @@ class DriftClient:
 
         out_market = self.get_spot_market_account(out_market_idx)
         in_market = self.get_spot_market_account(in_market_idx)
+        if out_market is None or in_market is None:
+            raise Exception("Market not found")
 
         if slippage_bps is None:
             slippage_bps = 10
@@ -3129,38 +3279,41 @@ class DriftClient:
             quote = quote_resp.json()
 
         if out_ata is None:
-            out_ata: Pubkey = self.get_associated_token_account_public_key(
+            new_out_ata = self.get_associated_token_account_public_key(
                 out_market.market_index
             )
 
-            ai = await self.connection.get_account_info(out_ata)
+            ai = await self.connection.get_account_info(new_out_ata)
 
             if not ai.value:
                 pre_instructions.append(
                     self.create_associated_token_account_idempotent_instruction(
-                        out_ata,
+                        new_out_ata,
                         self.wallet.public_key,
                         self.wallet.public_key,
                         out_market.mint,
                     )
                 )
 
+            out_ata = new_out_ata
+
         if in_ata is None:
-            in_ata: Pubkey = self.get_associated_token_account_public_key(
+            new_in_ata = self.get_associated_token_account_public_key(
                 in_market.market_index
             )
 
-            ai = await self.connection.get_account_info(in_ata)
+            ai = await self.connection.get_account_info(new_in_ata)
 
             if not ai.value:
                 pre_instructions.append(
                     self.create_associated_token_account_idempotent_instruction(
-                        in_ata,
+                        new_in_ata,
                         self.wallet.public_key,
                         self.wallet.public_key,
                         in_market.mint,
                     )
                 )
+            in_ata = new_in_ata
 
         data = {
             "quoteResponse": quote,
@@ -3205,16 +3358,16 @@ class DriftClient:
 
         ixs = [*pre_instructions, begin_swap_ix, *swap_ixs, end_swap_ix]
         cleansed_ixs: list[Instruction] = []
-
         for ix in ixs:
-            if type(ix) == list:
-                for i in ix:
-                    if type(i) == dict:
-                        cleansed_ixs.append(self._dict_to_instructions(i))
-            elif type(ix) == dict:
-                cleansed_ixs.append(self._dict_to_instructions(ix))
+            if isinstance(ix, list):
+                cleansed_ixs.extend(
+                    self._dict_to_instructions(i) if isinstance(i, dict) else i
+                    for i in ix
+                )
             else:
-                cleansed_ixs.append(ix)
+                cleansed_ixs.append(
+                    self._dict_to_instructions(ix) if isinstance(ix, dict) else ix
+                )
 
         return cleansed_ixs, address_table_lookup_accounts
 
@@ -3232,6 +3385,8 @@ class DriftClient:
         return Instruction(program_id, data, accounts)
 
     def get_perp_market_accounts(self) -> list[PerpMarketAccount]:
+        if self.account_subscriber is None:
+            raise Exception("Account subscriber not initialized")
         return [
             value.data
             for value in self.account_subscriber.get_market_accounts_and_slots()
@@ -3239,6 +3394,8 @@ class DriftClient:
         ]
 
     def get_spot_market_accounts(self) -> list[SpotMarketAccount]:
+        if self.account_subscriber is None:
+            raise Exception("Account subscriber not initialized")
         return [
             value.data
             for value in self.account_subscriber.get_spot_market_accounts_and_slots()
@@ -3249,18 +3406,24 @@ class DriftClient:
         self, name: str
     ) -> Union[Tuple[int, MarketType], None]:
         """
-        Returns the market index and type for a given market name \n
-        Returns `None` if the market name couldn't be matched \n
+        Returns the market index and type for a given market name
+        Returns `None` if the market name couldn't be matched
         e.g. "SOL-PERP" -> `(0, MarketType.Perp())`
         """
         name = name.upper()
         for perp_market_account in self.get_perp_market_accounts():
             if decode_name(perp_market_account.name).upper() == name:
-                return (perp_market_account.market_index, MarketType.Perp())
+                return (
+                    perp_market_account.market_index,
+                    MarketType.Perp(),  # type: ignore
+                )
 
         for spot_market_account in self.get_spot_market_accounts():
             if decode_name(spot_market_account.name).upper() == name:
-                return (spot_market_account.market_index, MarketType.Spot())
+                return (
+                    spot_market_account.market_index,
+                    MarketType.Spot(),  # type: ignore
+                )
 
         return None  # explicitly return None if no match is found
 
@@ -3288,7 +3451,7 @@ class DriftClient:
         )
 
     async def update_user_margin_trading_enabled(
-        self, margin_trading_enabled: bool, sub_account_id: Optional[int] = None
+        self, margin_trading_enabled: bool, sub_account_id: int = 0
     ):
         """Toggles margin trading for a user
 
@@ -3300,15 +3463,16 @@ class DriftClient:
         """
         await self.add_user(sub_account_id)
 
-        tx_sig = await self.send_ixs(
+        tx = await self.send_ixs(
             [
                 self.get_update_user_margin_trading_enabled_ix(
                     margin_trading_enabled=margin_trading_enabled,
                     sub_account_id=sub_account_id,
                 )
             ]
-        ).tx_sig
-        return tx_sig
+        )
+
+        return tx.tx_sig
 
     async def update_prelaunch_oracle(
         self,
@@ -3324,6 +3488,8 @@ class DriftClient:
 
     def get_update_prelaunch_oracle_ix(self, market_index: int):
         perp_market = self.get_perp_market_account(market_index)
+        if perp_market is None:
+            raise Exception("Perp market not found")
 
         if not is_variant(perp_market.amm.oracle_source, "Prelaunch"):
             raise ValueError(f"wrong oracle source: {perp_market.amm.oracle_source}")
@@ -3338,7 +3504,7 @@ class DriftClient:
             )
         )
 
-    async def init_sequence(self, subaccount: int = 0) -> Signature:
+    async def init_sequence(self, subaccount: int = 0) -> Signature | None:
         try:
             sig = (await self.send_ixs([self.get_sequence_init_ix(subaccount)])).tx_sig
             self.sequence_initialized_by_subaccount[subaccount] = True
@@ -3363,7 +3529,7 @@ class DriftClient:
 
     async def reset_sequence_number(
         self, sequence_number: int = 0, subaccount: int = 0
-    ) -> Signature:
+    ) -> Signature | None:
         try:
             ix = self.get_reset_sequence_number_ix(sequence_number)
             self.resetting_sequence = True
@@ -3429,7 +3595,7 @@ class DriftClient:
                 sequence_account_raw = await self.sequence_enforcer_program.account[
                     "SequenceAccount"
                 ].fetch(address)
-            except anchorpy.error.AccountDoesNotExistError:
+            except AccountDoesNotExistError:
                 self.sequence_address_by_subaccount[subaccount] = address
                 self.sequence_number_by_subaccount[subaccount] = 1
                 self.sequence_bump_by_subaccount[subaccount] = bump

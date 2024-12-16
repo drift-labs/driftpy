@@ -1,23 +1,40 @@
 from typing import Optional
+
+from anchorpy.program.context import Context
 from solders.pubkey import Pubkey
 from solders.signature import Signature
 from solders.system_program import ID
 from solders.sysvar import RENT
 from spl.token.constants import TOKEN_PROGRAM_ID
-from anchorpy import Context
 
-from driftpy.drift_client import (
-    DriftClient,
+from driftpy.accounts import get_perp_market_account, get_state_account
+from driftpy.addresses import (
+    get_drift_client_signer_public_key,
+    get_insurance_fund_vault_public_key,
+    get_perp_market_public_key,
+    get_prelaunch_oracle_public_key,
+    get_spot_market_public_key,
+    get_spot_market_vault_public_key,
+    get_state_public_key,
 )
-from driftpy.constants.numeric_constants import PEG_PRECISION
-from driftpy.types import OracleGuardRails, OracleSource, PrelaunchOracleParams
-from driftpy.addresses import *
-from driftpy.accounts import get_state_account
 from driftpy.constants.numeric_constants import (
+    BASE_PRECISION,
+    PEG_PRECISION,
+    PRICE_PRECISION,
     SPOT_RATE_PRECISION,
     SPOT_WEIGHT_PRECISION,
 )
-from driftpy.accounts import get_perp_market_account
+from driftpy.drift_client import (
+    DriftClient,
+)
+from driftpy.types import (
+    AssetTier,
+    ContractTier,
+    MarketStatus,
+    OracleGuardRails,
+    OracleSource,
+    PrelaunchOracleParams,
+)
 
 
 class Admin(DriftClient):
@@ -25,7 +42,7 @@ class Admin(DriftClient):
         self,
         usdc_mint: Pubkey,
         admin_controls_prices: bool,
-    ) -> tuple[Signature, Signature]:
+    ) -> Signature:
         state_account_rpc_response = (
             await self.program.provider.connection.get_account_info(
                 get_state_public_key(self.program_id)
@@ -60,11 +77,25 @@ class Admin(DriftClient):
         quote_asset_reserve: int,
         periodicity: int,
         peg_multiplier: int = PEG_PRECISION,
-        oracle_source: OracleSource = OracleSource.Pyth(),
+        oracle_source: OracleSource = OracleSource.Pyth(),  # type: ignore
+        contract_tier: ContractTier = ContractTier.Speculative(),  # type: ignore
         margin_ratio_initial: int = 2000,
         margin_ratio_maintenance: int = 500,
-        liquidation_fee: int = 0,
+        liquidator_fee: int = 0,
+        if_liquidator_fee: int = 10000,
+        imf_factor: int = 0,
         active_status: bool = True,
+        base_spread: int = 0,
+        max_spread: int = 142500,
+        max_open_interest: int = 0,
+        max_revenue_withdraw_per_period: int = 0,
+        quote_max_insurance: int = 0,
+        order_step_size: int = BASE_PRECISION // 10000,
+        order_tick_size: int = PRICE_PRECISION // 100000,
+        min_order_size: int = BASE_PRECISION // 10000,
+        concentration_coef_scale: int = 1,
+        curve_update_intensity: int = 0,
+        amm_jit_intensity: int = 0,
         name: list = [0] * 32,
     ) -> Signature:
         state_public_key = get_state_public_key(self.program.program_id)
@@ -81,10 +112,24 @@ class Admin(DriftClient):
             periodicity,
             peg_multiplier,
             oracle_source,
+            contract_tier,
             margin_ratio_initial,
             margin_ratio_maintenance,
-            liquidation_fee,
+            liquidator_fee,
+            if_liquidator_fee,
+            imf_factor,
             active_status,
+            base_spread,
+            max_spread,
+            max_open_interest,
+            max_revenue_withdraw_per_period,
+            quote_max_insurance,
+            order_step_size,
+            order_tick_size,
+            min_order_size,
+            concentration_coef_scale,
+            curve_update_intensity,
+            amm_jit_intensity,
             name,
             ctx=Context(
                 accounts={
@@ -105,27 +150,46 @@ class Admin(DriftClient):
         optimal_rate: int = SPOT_RATE_PRECISION,
         max_rate: int = SPOT_RATE_PRECISION,
         oracle: Pubkey = Pubkey([0] * Pubkey.LENGTH),
-        oracle_source: OracleSource = OracleSource.QuoteAsset(),
+        oracle_source: OracleSource = OracleSource.QuoteAsset(),  # type: ignore
         initial_asset_weight: int = SPOT_WEIGHT_PRECISION,
         maintenance_asset_weight: int = SPOT_WEIGHT_PRECISION,
         initial_liability_weight: int = SPOT_WEIGHT_PRECISION,
         maintenance_liability_weight: int = SPOT_WEIGHT_PRECISION,
         imf_factor: int = 0,
         liquidation_fee: int = 0,
+        if_liquidation_fee: int = 0,
         active_status: bool = True,
+        asset_tier: AssetTier = AssetTier.COLLATERAL(),  # type: ignore
+        scale_initial_asset_weight_start: int = 0,
+        withdraw_guard_threshold: int = 0,
+        order_tick_size: int = 1,
+        order_step_size: int = 1,
+        if_total_factor: int = 0,
         name: list = [0] * 32,
+        market_index: Optional[int] = None,
     ):
-        state_public_key = get_state_public_key(self.program_id)
-        state = await get_state_account(self.program)
-        spot_market_index = state.number_of_spot_markets
+        state = self.get_state_account()
+        if state is None:
+            raise ValueError("State account not found")
 
-        spot_public_key = get_spot_market_public_key(self.program_id, spot_market_index)
+        spot_market_index = state.number_of_spot_markets
+        if market_index is not None:
+            spot_market_index = market_index
+
+        spot_market_public_key = get_spot_market_public_key(
+            self.program_id, spot_market_index
+        )
         spot_vault_public_key = get_spot_market_vault_public_key(
             self.program_id, spot_market_index
         )
         insurance_vault_public_key = get_insurance_fund_vault_public_key(
             self.program_id, spot_market_index
         )
+
+        mint_info = await self.program.provider.connection.get_account_info(mint)
+        if mint_info.value is None:
+            raise ValueError("Mint account not found")
+        token_program = mint_info.value.owner
 
         return await self.program.rpc["initialize_spot_market"](
             optimal_utilization,
@@ -138,13 +202,20 @@ class Admin(DriftClient):
             maintenance_liability_weight,
             imf_factor,
             liquidation_fee,
+            if_liquidation_fee,
             active_status,
+            asset_tier,
+            scale_initial_asset_weight_start,
+            withdraw_guard_threshold,
+            order_tick_size,
+            order_step_size,
+            if_total_factor,
             name,
             ctx=Context(
                 accounts={
-                    "admin": self.authority,
-                    "state": state_public_key,
-                    "spot_market": spot_public_key,
+                    "admin": state.admin,
+                    "state": get_state_public_key(self.program_id),
+                    "spot_market": spot_market_public_key,
                     "spot_market_vault": spot_vault_public_key,
                     "insurance_fund_vault": insurance_vault_public_key,
                     "drift_signer": get_drift_client_signer_public_key(self.program_id),
@@ -152,7 +223,7 @@ class Admin(DriftClient):
                     "oracle": oracle,
                     "rent": RENT,
                     "system_program": ID,
-                    "token_program": TOKEN_PROGRAM_ID,
+                    "token_program": token_program,
                 }
             ),
         )
@@ -238,17 +309,6 @@ class Admin(DriftClient):
                     "admin": self.authority,
                     "state": get_state_public_key(self.program_id),
                     "perp_market": market_public_key,
-                }
-            ),
-        )
-
-    async def update_lp_cooldown_time(self, duration: int):
-        return await self.program.rpc["update_lp_cooldown_time"](
-            duration,
-            ctx=Context(
-                accounts={
-                    "admin": self.authority,
-                    "state": get_state_public_key(self.program_id),
                 }
             ),
         )
@@ -373,8 +433,6 @@ class Admin(DriftClient):
                 },
             ),
         )
-
-    from driftpy.types import MarketStatus
 
     async def update_perp_market_status(
         self, market_index: int, market_status: MarketStatus

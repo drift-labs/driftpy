@@ -1,10 +1,8 @@
-from dataclasses import dataclass
-from dataclasses import field
 import inspect
-from typing import Optional
-from urllib.parse import urlparse
-from urllib.parse import urlunparse
 import zlib
+from dataclasses import dataclass, field
+from typing import Optional
+from urllib.parse import urlparse, urlunparse
 
 from borsh_construct.enum import _rust_enum
 from solders.pubkey import Pubkey
@@ -240,7 +238,6 @@ class MarginCalculationMode:
 class OracleSource:
     Pyth = constructor()
     Switchboard = constructor()
-    SwitchboardOnDemand = constructor()
     QuoteAsset = constructor()
     Pyth1K = constructor()
     Pyth1M = constructor()
@@ -250,6 +247,8 @@ class OracleSource:
     Pyth1KPull = constructor()
     Pyth1MPull = constructor()
     PythStableCoinPull = constructor()
+    SwitchboardOnDemand = constructor()
+    PythLazer = constructor()
 
 
 @_rust_enum

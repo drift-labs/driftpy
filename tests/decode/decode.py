@@ -1,12 +1,10 @@
-import time
 import base64
-
+import time
 from pathlib import Path
-from pytest import fixture, mark
 from sys import getsizeof
 
 from anchorpy import Idl, Program
-
+from pytest import fixture, mark
 from solders.pubkey import Pubkey
 
 import driftpy
@@ -14,7 +12,6 @@ from driftpy.decode.user import decode_user
 from driftpy.math.perp_position import is_available
 from driftpy.math.spot_position import is_spot_position_available
 from driftpy.types import Order, PerpPosition, SpotPosition, UserAccount, is_variant
-
 from tests.decode.decode_strings import user_account_buffer_strings
 
 

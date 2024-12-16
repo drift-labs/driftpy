@@ -1,23 +1,68 @@
 import copy
 import math
 import time
-from typing import Tuple
+from enum import Enum
+from typing import Optional, Tuple
+
+from solders.pubkey import Pubkey
 
 from driftpy.account_subscription_config import AccountSubscriptionConfig
-from driftpy.accounts.oracle import *
+from driftpy.accounts import (
+    DataAndSlot,
+    OraclePriceData,
+    PerpMarketAccount,
+    SpotMarketAccount,
+    UserAccount,
+)
+from driftpy.constants import BASE_PRECISION, PRICE_PRECISION
+from driftpy.constants.numeric_constants import (
+    AMM_RESERVE_PRECISION,
+    FIVE_MINUTE,
+    FUEL_START_TS,
+    GOV_SPOT_MARKET_INDEX,
+    MARGIN_PRECISION,
+    OPEN_ORDER_MARGIN_REQUIREMENT,
+    QUOTE_PRECISION,
+    QUOTE_SPOT_MARKET_INDEX,
+    SPOT_MARKET_WEIGHT_PRECISION,
+)
 from driftpy.math.amm import calculate_market_open_bid_ask
-from driftpy.math.fuel import calculate_insurance_fuel_bonus
-from driftpy.math.fuel import calculate_perp_fuel_bonus
-from driftpy.math.fuel import calculate_spot_fuel_bonus
-from driftpy.math.margin import *
+from driftpy.math.fuel import (
+    calculate_insurance_fuel_bonus,
+    calculate_perp_fuel_bonus,
+    calculate_spot_fuel_bonus,
+)
+from driftpy.math.margin import (
+    MarginCategory,
+    calculate_asset_weight,
+    calculate_liability_weight,
+    calculate_market_margin_ratio,
+    calculate_unrealized_asset_weight,
+)
 from driftpy.math.oracles import calculate_live_oracle_twap
-from driftpy.math.perp_position import *
+from driftpy.math.perp_position import (
+    calculate_base_asset_value_with_oracle,
+    calculate_perp_liability_value,
+    calculate_position_funding_pnl,
+    calculate_position_pnl,
+    calculate_worst_case_base_asset_amount,
+    calculate_worst_case_perp_liability_value,
+    is_available,
+)
 from driftpy.math.spot_balance import get_strict_token_value
-from driftpy.math.spot_market import *
-from driftpy.math.spot_position import get_worst_case_token_amounts
-from driftpy.math.spot_position import is_spot_position_available
+from driftpy.math.spot_market import get_signed_token_amount, get_token_amount
+from driftpy.math.spot_position import (
+    get_worst_case_token_amounts,
+    is_spot_position_available,
+)
 from driftpy.oracles.strict_oracle_price import StrictOraclePrice
-from driftpy.types import OraclePriceData
+from driftpy.types import (
+    Order,
+    PerpPosition,
+    SpotPosition,
+    UserStatus,
+    is_variant,
+)
 
 
 class DriftUser:
@@ -27,9 +72,7 @@ class DriftUser:
         self,
         drift_client,
         user_public_key: Pubkey,
-        account_subscription: Optional[
-            AccountSubscriptionConfig
-        ] = AccountSubscriptionConfig.default(),
+        account_subscription: AccountSubscriptionConfig = AccountSubscriptionConfig.default(),
     ):
         """Initialize the user object
 
@@ -52,9 +95,13 @@ class DriftUser:
         )
 
     async def subscribe(self):
+        if not self.account_subscriber:
+            raise ValueError("Account subscriber not initialized")
         await self.account_subscriber.subscribe()
 
     def unsubscribe(self):
+        if not self.account_subscriber:
+            raise ValueError("Account subscriber not initialized")
         self.account_subscriber.unsubscribe()
 
     def get_oracle_data_for_spot_market(
@@ -68,16 +115,39 @@ class DriftUser:
         return self.drift_client.get_oracle_price_data_for_perp_market(market_index)
 
     def get_perp_market_account(self, market_index: int) -> PerpMarketAccount:
-        return self.drift_client.get_perp_market_account(market_index)
+        if not self.drift_client:
+            raise ValueError("Drift client not initialized")
+        account = self.drift_client.get_perp_market_account(market_index)
+        if account is None:
+            raise ValueError(f"Perp market account not found for market {market_index}")
+        return account
 
     def get_spot_market_account(self, market_index: int) -> SpotMarketAccount:
-        return self.drift_client.get_spot_market_account(market_index)
+        if not self.drift_client:
+            raise ValueError("Drift client not initialized")
+        account = self.drift_client.get_spot_market_account(market_index)
+        if account is None:
+            raise ValueError(f"Spot market account not found for market {market_index}")
+        return account
 
     def get_user_account_and_slot(self) -> DataAndSlot[UserAccount]:
-        return self.account_subscriber.get_user_account_and_slot()
+        if not self.account_subscriber:
+            raise ValueError("Account subscriber not initialized")
+        account_and_slot = self.account_subscriber.get_user_account_and_slot()
+        if account_and_slot is None:
+            raise ValueError("Account and slot not found")
+        return account_and_slot
 
     def get_user_account(self) -> UserAccount:
-        return self.account_subscriber.get_user_account_and_slot().data
+        account_and_slot = self.get_user_account_and_slot()
+        if account_and_slot is None:
+            raise ValueError("Account and slot not found")
+        return account_and_slot.data
+
+    async def fetch_accounts(self):
+        if not self.account_subscriber:
+            raise ValueError("Account subscriber not initialized")
+        await self.account_subscriber.fetch()
 
     def get_token_amount(self, market_index: int) -> int:
         spot_position = self.get_spot_position(market_index)
@@ -134,7 +204,7 @@ class DriftUser:
         self,
         market_index: int,
         margin_category: Optional[MarginCategory] = None,
-        liquidation_buffer: Optional[int] = 0,
+        liquidation_buffer: int = 0,
         include_open_orders: bool = False,
         signed: bool = False,
     ):
@@ -164,9 +234,11 @@ class DriftUser:
 
         liquidation_buffer = None
         if self.is_being_liquidated():
-            liquidation_buffer = (
-                self.drift_client.get_state_account()
-            ).liquidation_margin_buffer_ratio
+            account = self.drift_client.get_state_account()
+            if account is None:
+                raise ValueError("State account not found")
+
+            liquidation_buffer = account.liquidation_margin_buffer_ratio
 
         maintenance_req = self.get_margin_requirement(
             MarginCategory.MAINTENANCE, liquidation_buffer
@@ -177,7 +249,7 @@ class DriftUser:
     def get_margin_requirement(
         self,
         margin_category: MarginCategory = MarginCategory.INITIAL,
-        liquidation_buffer: Optional[int] = 0,
+        liquidation_buffer: int = 0,
         strict: bool = False,
     ) -> int:
         total_perp_pos_value = self.get_total_perp_position_liability(
@@ -195,7 +267,7 @@ class DriftUser:
         liquidation_buffer: Optional[int] = None,
         include_open_orders: Optional[bool] = False,
         strict: bool = False,
-    ) -> int:
+    ) -> float:
         total_perp_value = 0
         for perp_position in self.get_active_perp_positions():
             base_asset_value = self.calculate_weighted_perp_position_value(
@@ -216,8 +288,10 @@ class DriftUser:
         liquidation_buffer: Optional[int] = None,
         include_open_orders: Optional[bool] = False,
         strict: bool = False,
-    ) -> int:
+    ) -> float:
         market = self.drift_client.get_perp_market_account(perp_position.market_index)
+        if market is None:
+            return 0
 
         if perp_position.lp_shares > 0:
             perp_position = self.get_perp_position_with_lp_settle(
@@ -226,18 +300,21 @@ class DriftUser:
                 margin_category is not None,
             )[0]
 
-        valuation_price = self.get_oracle_data_for_perp_market(
-            market.market_index
-        ).price
+        valuation = self.get_oracle_data_for_perp_market(market.market_index)
+        if not valuation:
+            raise ValueError(f"No valuation data for market {market.market_index}")
+
+        valuation_price = valuation.price
 
         if is_variant(market.status, "Settlement"):
             valuation_price = market.expiry_price
 
-        base_asset_amount = (
-            calculate_worst_case_base_asset_amount(perp_position)
-            if include_open_orders
-            else perp_position.base_asset_amount
-        )
+        if include_open_orders:
+            base_asset_amount = calculate_worst_case_base_asset_amount(
+                perp_position, market, valuation_price
+            )
+        else:
+            base_asset_amount = perp_position.base_asset_amount
 
         base_asset_value = (abs(base_asset_amount) * valuation_price) // BASE_PRECISION
 
@@ -254,6 +331,11 @@ class DriftUser:
 
             if is_variant(market.status, "Settlement"):
                 margin_ratio = 0
+
+            if market.quote_spot_market_index is None:
+                raise ValueError(
+                    f"Quote spot market index is None for market {market.market_index}"
+                )
 
             quote_spot_market = self.drift_client.get_spot_market_account(
                 market.quote_spot_market_index
@@ -300,10 +382,6 @@ class DriftUser:
         user = self.get_user_account()
         return self.get_active_perp_positions_for_user_account(user)
 
-    def get_active_spot_positions(self) -> list[SpotPosition]:
-        user = self.get_user_account()
-        return self.get_active_spot_positions_for_user_account(user)
-
     def get_active_perp_positions_for_user_account(
         self, user: UserAccount
     ) -> list[PerpPosition]:
@@ -314,15 +392,6 @@ class DriftUser:
             or pos.quote_asset_amount != 0
             or pos.open_orders != 0
             or pos.lp_shares != 0
-        ]
-
-    def get_active_spot_positions_for_user_account(
-        self, user: UserAccount
-    ) -> list[SpotPosition]:
-        return [
-            spot_position
-            for spot_position in user.spot_positions
-            if not is_spot_position_available(spot_position)
         ]
 
     def get_total_collateral(
@@ -981,6 +1050,11 @@ class DriftUser:
         free_collateral = max(0, total_collateral - maintenance_margin_req)
 
         market = self.drift_client.get_perp_market_account(perp_market_index)
+        if market is None:
+            raise ValueError(
+                f"Perp market account not found for market {perp_market_index}"
+            )
+
         current_perp_pos = self.get_perp_position_with_lp_settle(
             perp_market_index, burn_lp_shares=True
         )[0] or self.get_empty_position(perp_market_index)
@@ -1114,7 +1188,7 @@ class DriftUser:
     def get_perp_position_with_lp_settle(
         self,
         market_index: int,
-        original_position: PerpPosition = None,
+        original_position: PerpPosition | None = None,
         burn_lp_shares: bool = False,
         include_remainder_in_base_amount: bool = False,
     ) -> Tuple[PerpPosition, int, int]:
@@ -1136,6 +1210,10 @@ class DriftUser:
 
         position = copy.deepcopy(original_position)
         market = self.drift_client.get_perp_market_account(position.market_index)
+        if market is None:
+            raise ValueError(
+                f"Perp market account not found for market {position.market_index}"
+            )
 
         if market.amm.per_lp_base != position.per_lp_base:
             expo_diff = market.amm.per_lp_base - position.per_lp_base
@@ -1210,6 +1288,10 @@ class DriftUser:
             oracle_price_data = self.drift_client.get_oracle_price_data_for_perp_market(
                 position.market_index
             )
+            if oracle_price_data is None:
+                raise ValueError(
+                    f"Oracle price data not found for perp market {position.market_index}"
+                )
             dust_base_asset_value = (
                 abs(position.remainder_base_asset_amount)
                 * oracle_price_data.price
@@ -1333,10 +1415,18 @@ class DriftUser:
                     spot_market_account = self.drift_client.get_spot_market_account(
                         spot_position.market_index
                     )
+                    if spot_market_account is None:
+                        raise ValueError(
+                            f"Spot market account not found for market {spot_position.market_index}"
+                        )
                     token_amount = self.get_token_amount(spot_position.market_index)
                     oracle_price_data = self.get_oracle_data_for_spot_market(
                         spot_position.market_index
                     )
+                    if oracle_price_data is None:
+                        raise ValueError(
+                            f"Oracle price data not found for spot market {spot_position.market_index}"
+                        )
                     twap_5min = calculate_live_oracle_twap(
                         spot_market_account.historical_oracle_data,
                         oracle_price_data,
@@ -1361,9 +1451,17 @@ class DriftUser:
                     oracle_price_data = self.get_oracle_data_for_perp_market(
                         perp_position.market_index
                     )
+                    if oracle_price_data is None:
+                        raise ValueError(
+                            f"Oracle price data not found for perp market {perp_position.market_index}"
+                        )
                     perp_market_account = self.drift_client.get_perp_market_account(
                         perp_position.market_index
                     )
+                    if perp_market_account is None:
+                        raise ValueError(
+                            f"Perp market account not found for market {perp_position.market_index}"
+                        )
                     base_asset_value = self.get_perp_position_value(
                         perp_position.market_index, oracle_price_data, False
                     )
@@ -1377,6 +1475,10 @@ class DriftUser:
                 spot_market_account = self.drift_client.get_spot_market_account(
                     GOV_SPOT_MARKET_INDEX
                 )
+                if spot_market_account is None:
+                    raise ValueError(
+                        f"Spot market account not found for market {GOV_SPOT_MARKET_INDEX}"
+                    )
                 fuel_bonus_numerator_user_stats = (
                     now - user_stats.last_fuel_bonus_update_ts
                 )
@@ -1412,6 +1514,11 @@ class DriftUser:
         ] or self.get_empty_position(market_index)
 
         market = self.drift_client.get_perp_market_account(perp_position.market_index)
+        if market is None:
+            print(
+                f"Perp market account not found for market {perp_position.market_index}"
+            )
+            return 0
 
         perp_position_value = calculate_base_asset_value_with_oracle(
             market, perp_position, oracle_price_data, include_open_orders
@@ -1478,6 +1585,11 @@ class DriftUser:
         strict: bool = False,
     ) -> int:
         market = self.drift_client.get_perp_market_account(perp_position.market_index)
+        if market is None:
+            print(
+                f"Perp market account not found for market {perp_position.market_index}"
+            )
+            return 0
 
         if perp_position.lp_shares > 0:
             # is an lp, clone so we don't mutate the position
@@ -1573,6 +1685,11 @@ class DriftUser:
         ) or self.get_empty_position(market_index)
 
         market = self.drift_client.get_perp_market_account(user_position.market_index)
+        if market is None:
+            print(
+                f"Perp market account not found for market {user_position.market_index}"
+            )
+            return 0
 
         if include_open_orders:
             return calculate_worst_case_perp_liability_value(

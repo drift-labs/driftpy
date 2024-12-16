@@ -1,23 +1,26 @@
 from typing import Optional, TypedDict
 
-from anchorpy import Program
-from driftpy.accounts import DataAndSlot
-from driftpy.accounts import get_perp_market_account_and_slot
-from driftpy.accounts import get_spot_market_account_and_slot
-from driftpy.accounts import get_state_account_and_slot
+from anchorpy.program.core import Program
+from solana.rpc.commitment import Commitment, Confirmed
+
+from driftpy.accounts import (
+    DataAndSlot,
+    get_perp_market_account_and_slot,
+    get_spot_market_account_and_slot,
+    get_state_account_and_slot,
+)
 from driftpy.accounts.oracle import get_oracle_price_data_and_slot
-from driftpy.accounts.types import DataAndSlot
-from driftpy.accounts.types import DriftClientAccountSubscriber
+from driftpy.accounts.types import DataAndSlot, DriftClientAccountSubscriber
 from driftpy.constants.numeric_constants import QUOTE_SPOT_MARKET_INDEX
 from driftpy.oracles.oracle_id import get_oracle_id
-from driftpy.types import OracleInfo
-from driftpy.types import OraclePriceData
-from driftpy.types import PerpMarketAccount
-from driftpy.types import SpotMarketAccount
-from driftpy.types import stack_trace
-from driftpy.types import StateAccount
-from solana.rpc.commitment import Commitment
-from solana.rpc.commitment import Confirmed
+from driftpy.types import (
+    OracleInfo,
+    OraclePriceData,
+    PerpMarketAccount,
+    SpotMarketAccount,
+    StateAccount,
+    stack_trace,
+)
 
 
 class DriftClientCache(TypedDict):
@@ -176,9 +179,9 @@ class CachedDriftClientAccountSubscriber(DriftClientAccountSubscriber):
         spot_oracles: dict[int, OraclePriceData],
         perp_oracles: dict[int, OraclePriceData],
     ):
-        sort_markets = lambda markets: sorted(
-            markets.values(), key=lambda market: market.data.market_index
-        )
+        def sort_markets(markets):
+            return sorted(markets.values(), key=lambda market: market.data.market_index)
+
         self.cache["spot_markets"] = sort_markets(spot_markets)
         self.cache["perp_markets"] = sort_markets(perp_markets)
 

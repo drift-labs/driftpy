@@ -1,14 +1,16 @@
 import asyncio
 import os
 
-from anchorpy import Wallet
+import pytest
+from anchorpy.provider import Wallet
+from pytest import mark
+from solana.rpc.async_api import AsyncClient
+
 from driftpy.account_subscription_config import AccountSubscriptionConfig
+from driftpy.accounts.cache import CachedDriftClientAccountSubscriber
 from driftpy.constants.perp_markets import mainnet_perp_market_configs
 from driftpy.constants.spot_markets import mainnet_spot_market_configs
 from driftpy.drift_client import DriftClient
-import pytest
-from pytest import mark
-from solana.rpc.async_api import AsyncClient
 
 
 @pytest.fixture(scope="session")
@@ -111,6 +113,9 @@ async def test_mainnet_cached(rpc_url: str):
         len(spot_markets) == len(mainnet_spot_market_configs)
     ), f"Expected {len(mainnet_spot_market_configs)} spot markets, got {len(spot_markets)}"
 
+    assert isinstance(
+        drift_client.account_subscriber, CachedDriftClientAccountSubscriber
+    )
     await drift_client.account_subscriber.update_cache()
 
     perp_markets = drift_client.get_perp_market_accounts()
