@@ -59,6 +59,12 @@ class BulkAccountLoader:
         if existing_size == 0:
             self._start_loading()
 
+        # If the account is already loaded, call the callback immediately
+        if existing_account_to_load is not None:
+            buffer_and_slot = self.buffer_and_slot_map.get(pubkey_str)
+            if buffer_and_slot is not None and buffer_and_slot.buffer is not None:
+                self.handle_callbacks(existing_account_to_load, buffer_and_slot.buffer, buffer_and_slot.slot)
+
         return callback_id
 
     def get_callback_id(self) -> int:

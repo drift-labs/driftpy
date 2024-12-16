@@ -155,6 +155,7 @@ async def test_polling(
         oracle_infos=oracle_infos,
     )
     await polling_client.subscribe()
+    print("sub done")
 
     # Verify spot market oracles
     oracle_data_for_spot_market_1 = (
