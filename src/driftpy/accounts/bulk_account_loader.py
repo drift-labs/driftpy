@@ -1,11 +1,11 @@
 import asyncio
-from typing import Callable, List, Optional
-from dataclasses import dataclass
-import jsonrpcclient
 from base64 import b64decode
+from dataclasses import dataclass
+from typing import Callable, List, Optional
 
-from solana.rpc.commitment import Commitment
+import jsonrpcclient
 from solana.rpc.async_api import AsyncClient
+from solana.rpc.commitment import Commitment
 from solders.pubkey import Pubkey
 
 
@@ -63,7 +63,11 @@ class BulkAccountLoader:
         if existing_account_to_load is not None:
             buffer_and_slot = self.buffer_and_slot_map.get(pubkey_str)
             if buffer_and_slot is not None and buffer_and_slot.buffer is not None:
-                self.handle_callbacks(existing_account_to_load, buffer_and_slot.buffer, buffer_and_slot.slot)
+                self.handle_callbacks(
+                    existing_account_to_load,
+                    buffer_and_slot.buffer,
+                    buffer_and_slot.slot,
+                )
 
         return callback_id
 

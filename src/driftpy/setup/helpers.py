@@ -1,32 +1,31 @@
-from solana.rpc.async_api import AsyncClient
+import math
 from base64 import b64decode
 from dataclasses import dataclass
 from typing import Optional
+
+from anchorpy import Context, Program, Provider
 from construct import Int32sl, Int64ul
+from solana.rpc.async_api import AsyncClient
+from solana.transaction import Signature, Transaction
 from solders.keypair import Keypair
 from solders.pubkey import Pubkey
-from solders.system_program import create_account, CreateAccountParams
-from anchorpy import Program, Context, Provider
-from solana.transaction import Transaction
-from spl.token.constants import TOKEN_PROGRAM_ID
-from spl.token._layouts import MINT_LAYOUT
+from solders.system_program import CreateAccountParams, create_account
+from spl.token._layouts import ACCOUNT_LAYOUT, MINT_LAYOUT
 from spl.token.async_client import AsyncToken
-from spl.token.instructions import initialize_mint, InitializeMintParams
-import math
-
-from spl.token._layouts import ACCOUNT_LAYOUT
+from spl.token.constants import TOKEN_PROGRAM_ID
 from spl.token.instructions import (
-    initialize_account,
     InitializeAccountParams,
-    mint_to,
+    InitializeMintParams,
     MintToParams,
+    initialize_account,
+    initialize_mint,
+    mint_to,
 )
-from solana.transaction import Signature
 
-from driftpy.types import *
-from driftpy.math.amm import calculate_amm_reserves_after_swap, calculate_price
 from driftpy.admin import Admin
 from driftpy.constants.numeric_constants import *
+from driftpy.math.amm import calculate_amm_reserves_after_swap, calculate_price
+from driftpy.types import *
 
 NATIVE_MINT = Pubkey.from_string("So11111111111111111111111111111111111111112")
 
@@ -334,7 +333,10 @@ async def mock_oracle(
 
 
 async def initialize_sol_spot_market(
-    admin: Admin, sol_oracle: Pubkey, sol_mint: Pubkey = NATIVE_MINT, oracle_source: OracleSource = OracleSource.Pyth()
+    admin: Admin,
+    sol_oracle: Pubkey,
+    sol_mint: Pubkey = NATIVE_MINT,
+    oracle_source: OracleSource = OracleSource.Pyth(),
 ):
     optimal_utilization = SPOT_RATE_PRECISION // 2
     optimal_rate = SPOT_RATE_PRECISION * 20

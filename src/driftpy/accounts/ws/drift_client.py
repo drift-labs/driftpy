@@ -2,24 +2,28 @@ import asyncio
 from typing import Optional, Sequence, Union
 
 from anchorpy import Program
+from solana.rpc.commitment import Commitment
+
 from driftpy.accounts.oracle import get_oracle_decode_fn
-from driftpy.accounts.types import DataAndSlot
-from driftpy.accounts.types import DriftClientAccountSubscriber
-from driftpy.accounts.types import FullOracleWrapper
+from driftpy.accounts.types import (
+    DataAndSlot,
+    DriftClientAccountSubscriber,
+    FullOracleWrapper,
+)
 from driftpy.accounts.ws.account_subscriber import WebsocketAccountSubscriber
 from driftpy.addresses import *
 from driftpy.constants.config import find_all_market_and_oracles
 from driftpy.market_map.market_map import MarketMap
-from driftpy.market_map.market_map_config import MarketMapConfig
-from driftpy.market_map.market_map_config import WebsocketConfig
+from driftpy.market_map.market_map_config import MarketMapConfig, WebsocketConfig
 from driftpy.oracles.oracle_id import get_oracle_id
-from driftpy.types import MarketType
-from driftpy.types import OracleInfo
-from driftpy.types import OraclePriceData
-from driftpy.types import PerpMarketAccount
-from driftpy.types import SpotMarketAccount
-from driftpy.types import StateAccount
-from solana.rpc.commitment import Commitment
+from driftpy.types import (
+    MarketType,
+    OracleInfo,
+    OraclePriceData,
+    PerpMarketAccount,
+    SpotMarketAccount,
+    StateAccount,
+)
 
 
 class WebsocketDriftClientAccountSubscriber(DriftClientAccountSubscriber):
@@ -349,4 +353,3 @@ class WebsocketDriftClientAccountSubscriber(DriftClientAccountSubscriber):
             asyncio.create_task(self._set_spot_oracle_map())
 
         return self.get_oracle_price_data_and_slot(oracle_id)
-
