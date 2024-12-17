@@ -1,13 +1,13 @@
 import asyncio
+
+import jsonrpcclient
 from solana.rpc.async_api import AsyncClient
 from solana.rpc.commitment import Commitment
+from solana.transaction import Signature
 from solders.pubkey import Pubkey
 from solders.rpc.responses import (
     RpcConfirmedTransactionStatusWithSignature,
 )
-import jsonrpcclient
-
-from solana.transaction import Signature
 
 
 async def fetch_logs(
@@ -63,10 +63,10 @@ async def fetch_transactions(
     for signature in signatures:
         rpc_request = jsonrpcclient.request(
             "getTransaction",
-            [
+            (
                 str(signature.signature),
                 {"commitment": commitment, "maxSupportedTransactionVersion": 0},
-            ],
+            ),
         )
         rpc_requests.append(rpc_request)
 
@@ -82,6 +82,11 @@ async def fetch_transactions(
         return []
 
     parsed_resp = jsonrpcclient.parse(resp.json())
+
+    if isinstance(parsed_resp, jsonrpcclient.Error):
+        raise ValueError(f"Error fetching transactions: {parsed_resp.message}")
+    if not isinstance(parsed_resp, jsonrpcclient.Ok):
+        raise ValueError(f"Error fetching transactions - not ok: {parsed_resp}")
 
     response = []
     for rpc_result in parsed_resp:

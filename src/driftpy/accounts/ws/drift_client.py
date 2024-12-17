@@ -13,6 +13,7 @@ from driftpy.accounts.types import (
 from driftpy.accounts.ws.account_subscriber import WebsocketAccountSubscriber
 from driftpy.addresses import *
 from driftpy.constants.config import find_all_market_and_oracles
+from driftpy.constants.perp_markets import mainnet_perp_market_configs
 from driftpy.market_map.market_map import MarketMap
 from driftpy.market_map.market_map_config import MarketMapConfig, WebsocketConfig
 from driftpy.oracles.oracle_id import get_oracle_id
@@ -331,7 +332,19 @@ class WebsocketDriftClientAccountSubscriber(DriftClientAccountSubscriber):
         oracle = self.perp_market_oracle_map.get(market_index)
         oracle_id = self.perp_market_oracle_strings_map.get(market_index)
 
-        if not perp_market_account or not oracle:
+        if not perp_market_account:
+            if any(
+                market_index == market.market_index
+                for market in mainnet_perp_market_configs
+            ):
+                raise ValueError(
+                    f"No perp market account found for market index {market_index} but market should exist. This may be an issue with your RPC?"
+                )
+
+        if not oracle:
+            print(f"No oracle found for market index {market_index}")
+
+        if not perp_market_account or not oracle or not oracle_id:
             return None
 
         if perp_market_account.data.amm.oracle != oracle:

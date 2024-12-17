@@ -1,26 +1,24 @@
 import asyncio
 from base64 import b64decode
+from dataclasses import dataclass
 from typing import Literal, Optional, Sequence, Tuple, Union
 
 import jsonrpcclient
-from driftpy.accounts.oracle import decode_oracle
-from driftpy.accounts.types import DataAndSlot, FullOracleWrapper
-
-from driftpy.constants.spot_markets import (
-    devnet_spot_market_configs,
-    mainnet_spot_market_configs,
-    SpotMarketConfig,
-)
-from driftpy.constants.perp_markets import (
-    devnet_perp_market_configs,
-    mainnet_perp_market_configs,
-    PerpMarketConfig,
-)
-from dataclasses import dataclass
+from anchorpy import Program
 from solders.pubkey import Pubkey
 
-from anchorpy import Program
-
+from driftpy.accounts.oracle import decode_oracle
+from driftpy.accounts.types import DataAndSlot, FullOracleWrapper
+from driftpy.constants.perp_markets import (
+    PerpMarketConfig,
+    devnet_perp_market_configs,
+    mainnet_perp_market_configs,
+)
+from driftpy.constants.spot_markets import (
+    SpotMarketConfig,
+    devnet_spot_market_configs,
+    mainnet_spot_market_configs,
+)
 from driftpy.types import (
     OracleInfo,
     PerpMarketAccount,
@@ -123,10 +121,10 @@ async def find_all_market_and_oracles(
 
         perp_request = jsonrpcclient.request(
             "getProgramAccounts",
-            [
+            (
                 str(program.program_id),
                 {"filters": perp_filters, "encoding": "base64", "withContext": True},
-            ],
+            ),
         )
 
         post = program.provider.connection._provider.session.post(
@@ -138,6 +136,12 @@ async def find_all_market_and_oracles(
         resp = await asyncio.wait_for(post, timeout=10)
 
         parsed_resp = jsonrpcclient.parse(resp.json())
+
+        if isinstance(parsed_resp, jsonrpcclient.Error):
+            raise ValueError(f"Error fetching perp markets: {parsed_resp.message}")
+
+        if not isinstance(parsed_resp, jsonrpcclient.Ok):
+            raise ValueError(f"Error fetching perp markets - not ok: {parsed_resp}")
 
         perp_slot = int(parsed_resp.result["context"]["slot"])
 
@@ -152,10 +156,10 @@ async def find_all_market_and_oracles(
 
         spot_request = jsonrpcclient.request(
             "getProgramAccounts",
-            [
+            (
                 str(program.program_id),
                 {"filters": spot_filters, "encoding": "base64", "withContext": True},
-            ],
+            ),
         )
 
         post = program.provider.connection._provider.session.post(
@@ -167,6 +171,11 @@ async def find_all_market_and_oracles(
         resp = await asyncio.wait_for(post, timeout=10)
 
         parsed_resp = jsonrpcclient.parse(resp.json())
+
+        if isinstance(parsed_resp, jsonrpcclient.Error):
+            raise ValueError(f"Error fetching spot markets: {parsed_resp.message}")
+        if not isinstance(parsed_resp, jsonrpcclient.Ok):
+            raise ValueError(f"Error fetching spot markets - not ok: {parsed_resp}")
 
         spot_slot = int(parsed_resp.result["context"]["slot"])
 
