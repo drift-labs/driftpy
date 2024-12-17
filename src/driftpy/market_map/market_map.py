@@ -2,22 +2,21 @@ import asyncio
 import base64
 import os
 import pickle
-
 from typing import Dict, Optional, Union
+
 import jsonrpcclient
-
 from solana.rpc.commitment import Confirmed
-from driftpy.accounts.types import DataAndSlot
 
+from driftpy.accounts.types import DataAndSlot
 from driftpy.market_map.market_map_config import MarketMapConfig
 from driftpy.market_map.websocket_sub import WebsocketSubscription
 from driftpy.types import (
     PerpMarketAccount,
     PickledData,
     SpotMarketAccount,
-    is_variant,
     compress,
     decompress,
+    is_variant,
     market_type_to_string,
 )
 
@@ -112,10 +111,10 @@ class MarketMap:
 
             rpc_request = jsonrpcclient.request(
                 "getProgramAccounts",
-                [
+                (
                     str(self.program.program_id),
                     {"filters": filters, "encoding": "base64", "withContext": True},
-                ],
+                ),
             )
 
             post = self.connection._provider.session.post(
@@ -127,6 +126,11 @@ class MarketMap:
             resp = await asyncio.wait_for(post, timeout=30)
 
             parsed_resp = jsonrpcclient.parse(resp.json())
+
+            if isinstance(parsed_resp, jsonrpcclient.Error):
+                raise ValueError(f"Error fetching market map: {parsed_resp.message}")
+            if not isinstance(parsed_resp, jsonrpcclient.Ok):
+                raise ValueError(f"Error fetching market map - not ok: {parsed_resp}")
 
             slot = int(parsed_resp.result["context"]["slot"])
 

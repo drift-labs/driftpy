@@ -126,10 +126,10 @@ class BulkAccountLoader:
             ]
             rpc_request = jsonrpcclient.request(
                 "getMultipleAccounts",
-                params=[
+                params=(
                     pubkeys_to_send,
                     {"encoding": "base64", "commitment": self.commitment},
-                ],
+                ),
             )
             rpc_requests.append(rpc_request)
 
@@ -145,6 +145,11 @@ class BulkAccountLoader:
             return
 
         parsed_resp = jsonrpcclient.parse(resp.json())
+
+        if isinstance(parsed_resp, jsonrpcclient.Error):
+            raise ValueError(f"Error fetching accounts: {parsed_resp.message}")
+        if not isinstance(parsed_resp, jsonrpcclient.Ok):
+            raise ValueError(f"Error fetching accounts - not ok: {parsed_resp}")
 
         for rpc_result, chunk_accounts in zip(parsed_resp, chunk):
             if isinstance(rpc_result, jsonrpcclient.Error):

@@ -1,8 +1,7 @@
 import asyncio
-import jsonrpcclient
-
 from dataclasses import dataclass
 
+import jsonrpcclient
 from solana.rpc.async_api import AsyncClient
 
 
@@ -54,6 +53,12 @@ class PriorityFeeSubscriber:
         resp = await asyncio.wait_for(post, timeout=20)
 
         parsed_resp = jsonrpcclient.parse(resp.json())
+
+        if isinstance(parsed_resp, jsonrpcclient.Error):
+            raise ValueError(f"Error fetching priority fees: {parsed_resp.message}")
+
+        if not isinstance(parsed_resp, jsonrpcclient.Ok):
+            raise ValueError(f"Error fetching priority fees - not ok: {parsed_resp}")
 
         result = parsed_resp.result
 

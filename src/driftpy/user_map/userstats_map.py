@@ -5,30 +5,32 @@ import pickle
 import traceback
 from typing import Dict, Optional
 
+import jsonrpcclient
+from solders.pubkey import Pubkey
+
 from driftpy.accounts.types import DataAndSlot
 from driftpy.addresses import get_user_stats_account_public_key
 from driftpy.decode.user_stat import decode_user_stat
-from driftpy.drift_user_stats import DriftUserStats
-from driftpy.drift_user_stats import UserStatsSubscriptionConfig
+from driftpy.drift_user_stats import DriftUserStats, UserStatsSubscriptionConfig
 from driftpy.events.types import WrappedEvent
 from driftpy.memcmp import get_user_stats_filter
-from driftpy.types import compress
-from driftpy.types import decompress
-from driftpy.types import DepositRecord
-from driftpy.types import FundingPaymentRecord
-from driftpy.types import InsuranceFundStakeRecord
-from driftpy.types import LiquidationRecord
-from driftpy.types import LPRecord
-from driftpy.types import NewUserRecord
-from driftpy.types import OrderActionRecord
-from driftpy.types import OrderRecord
-from driftpy.types import PickledData
-from driftpy.types import SettlePnlRecord
-from driftpy.types import UserStatsAccount
+from driftpy.types import (
+    DepositRecord,
+    FundingPaymentRecord,
+    InsuranceFundStakeRecord,
+    LiquidationRecord,
+    LPRecord,
+    NewUserRecord,
+    OrderActionRecord,
+    OrderRecord,
+    PickledData,
+    SettlePnlRecord,
+    UserStatsAccount,
+    compress,
+    decompress,
+)
 from driftpy.user_map.user_map import UserMap
 from driftpy.user_map.user_map_config import UserStatsMapConfig
-import jsonrpcclient
-from solders.pubkey import Pubkey
 
 
 class UserStatsMap:
@@ -64,10 +66,10 @@ class UserStatsMap:
 
                 rpc_request = jsonrpcclient.request(
                     "getProgramAccounts",
-                    [
+                    (
                         str(self.drift_client.program_id),
                         {"filters": filters, "encoding": "base64", "withContext": True},
-                    ],
+                    ),
                 )
 
                 post = self.connection._provider.session.post(
@@ -79,6 +81,15 @@ class UserStatsMap:
                 resp = await asyncio.wait_for(post, timeout=120)
 
                 parsed_resp = jsonrpcclient.parse(resp.json())
+                if isinstance(parsed_resp, jsonrpcclient.Error):
+                    raise ValueError(
+                        f"Error fetching user stats: {parsed_resp.message}"
+                    )
+
+                if not isinstance(parsed_resp, jsonrpcclient.Ok):
+                    raise ValueError(
+                        f"Error fetching user stats - not ok: {parsed_resp}"
+                    )
 
                 slot = int(parsed_resp.result["context"]["slot"])
 

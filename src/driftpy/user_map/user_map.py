@@ -1,31 +1,24 @@
 import asyncio
-import os
-import jsonrpcclient
-import pickle
 import base64
+import os
+import pickle
+from typing import Any, Container, Dict, Optional
 
-from typing import Any, Container, Optional, Dict
-
+import jsonrpcclient
+from solana.rpc.commitment import Confirmed
 from solders.pubkey import Pubkey
 
-from solana.rpc.commitment import Confirmed
+from driftpy.account_subscription_config import AccountSubscriptionConfig
+from driftpy.accounts.types import DataAndSlot
+from driftpy.decode.user import decode_user
 from driftpy.dlob.client_types import DLOBSource
-
 from driftpy.drift_client import DriftClient
 from driftpy.drift_user import DriftUser
-from driftpy.account_subscription_config import AccountSubscriptionConfig
-
 from driftpy.types import OrderRecord, PickledData, UserAccount, compress, decompress
-
-from driftpy.user_map.user_map_config import UserMapConfig, PollingConfig
-from driftpy.user_map.websocket_sub import WebsocketSubscription
 from driftpy.user_map.polling_sub import PollingSubscription
-
-
 from driftpy.user_map.types import UserMapInterface
-from driftpy.accounts.types import DataAndSlot
-
-from driftpy.decode.user import decode_user
+from driftpy.user_map.user_map_config import PollingConfig, UserMapConfig
+from driftpy.user_map.websocket_sub import WebsocketSubscription
 
 
 class UserMap(UserMapInterface, DLOBSource):
@@ -144,10 +137,10 @@ class UserMap(UserMapInterface, DLOBSource):
 
                 rpc_request = jsonrpcclient.request(
                     "getProgramAccounts",
-                    [
+                    (
                         str(self.drift_client.program_id),
                         {"filters": filters, "encoding": "base64", "withContext": True},
-                    ],
+                    ),
                 )
 
                 post = self.drift_client.connection._provider.session.post(
@@ -159,6 +152,12 @@ class UserMap(UserMapInterface, DLOBSource):
                 resp = await asyncio.wait_for(post, timeout=120)
 
                 parsed_resp = jsonrpcclient.parse(resp.json())
+
+                if isinstance(parsed_resp, jsonrpcclient.Error):
+                    raise ValueError(f"Error fetching user map: {parsed_resp.message}")
+
+                if not isinstance(parsed_resp, jsonrpcclient.Ok):
+                    raise ValueError(f"Error fetching user map - not ok: {parsed_resp}")
 
                 slot = int(parsed_resp.result["context"]["slot"])
 
