@@ -1,12 +1,11 @@
 import asyncio
 import os
 
-from anchorpy import Provider
-from anchorpy import Wallet
-from driftpy.drift_client import AccountSubscriptionConfig
-from driftpy.drift_client import DriftClient
+from anchorpy import Provider, Wallet
 from solana.rpc.async_api import AsyncClient
 from solders.keypair import Keypair
+
+from driftpy.drift_client import AccountSubscriptionConfig, DriftClient
 
 
 async def get_all_market_names():
