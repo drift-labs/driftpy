@@ -1,5 +1,5 @@
 import asyncio
-from base64 import b64decode
+import base64
 from dataclasses import dataclass
 from typing import Literal, Optional, Sequence, Tuple, Union
 
@@ -132,9 +132,7 @@ async def find_all_market_and_oracles(
             json=perp_request,
             headers={"content-encoding": "gzip"},
         )
-
         resp = await asyncio.wait_for(post, timeout=10)
-
         parsed_resp = jsonrpcclient.parse(resp.json())
 
         if isinstance(parsed_resp, jsonrpcclient.Error):
@@ -144,11 +142,10 @@ async def find_all_market_and_oracles(
             raise ValueError(f"Error fetching perp markets - not ok: {parsed_resp}")
 
         perp_slot = int(parsed_resp.result["context"]["slot"])
-
-        perp_markets: list[PerpMarketAccount] = [
-            decode_account(account["account"]["data"][0], program)
-            for account in parsed_resp.result["value"]
-        ]
+        perp_markets: list[PerpMarketAccount] = []
+        for account in parsed_resp.result["value"]:
+            perp_market = decode_account(account["account"]["data"][0], program)
+            perp_markets.append(perp_market)
 
         perp_ds: list[DataAndSlot] = [
             DataAndSlot(perp_slot, perp_market) for perp_market in perp_markets
@@ -167,9 +164,7 @@ async def find_all_market_and_oracles(
             json=spot_request,
             headers={"content-encoding": "gzip"},
         )
-
         resp = await asyncio.wait_for(post, timeout=10)
-
         parsed_resp = jsonrpcclient.parse(resp.json())
 
         if isinstance(parsed_resp, jsonrpcclient.Error):
@@ -179,10 +174,10 @@ async def find_all_market_and_oracles(
 
         spot_slot = int(parsed_resp.result["context"]["slot"])
 
-        spot_markets: list[SpotMarketAccount] = [
-            decode_account(account["account"]["data"][0], program)
-            for account in parsed_resp.result["value"]
-        ]
+        spot_markets: list[SpotMarketAccount] = []
+        for account in parsed_resp.result["value"]:
+            spot_market = decode_account(account["account"]["data"][0], program)
+            spot_markets.append(spot_market)
 
         spot_ds: list[DataAndSlot] = [
             DataAndSlot(spot_slot, spot_market) for spot_market in spot_markets
@@ -227,8 +222,11 @@ async def find_all_market_and_oracles(
         return perp_ds, spot_ds, full_oracle_wrappers
 
 
-def decode_account(account_data: str, program: Program):
-    decoded_data = b64decode(account_data)
+def decode_account(decoded_data: bytes | str, program):
+    if isinstance(decoded_data, str):
+        decoded_data = bytes(decoded_data, "utf-8")
+
+    decoded_data = base64.b64decode(decoded_data)
     return program.coder.accounts.decode(decoded_data)
 
 
