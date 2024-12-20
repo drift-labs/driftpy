@@ -1,10 +1,8 @@
-from dataclasses import dataclass
-from dataclasses import field
 import inspect
-from typing import Optional
-from urllib.parse import urlparse
-from urllib.parse import urlunparse
 import zlib
+from dataclasses import dataclass, field
+from typing import Optional
+from urllib.parse import urlparse, urlunparse
 
 from borsh_construct.enum import _rust_enum
 from solders.pubkey import Pubkey
@@ -250,6 +248,7 @@ class OracleSource:
     Pyth1MPull = constructor()
     PythStableCoinPull = constructor()
     SwitchboardOnDemand = constructor()
+    PythLazer = constructor()
 
 
 @_rust_enum
@@ -370,6 +369,7 @@ class OracleSourceNum:
     PYTH_1M_PULL = 5
     PYTH_STABLE_COIN_PULL = 9
     SWITCHBOARD_ON_DEMAND = 11
+    PYTH_LAZER = 12
 
 
 @_rust_enum
