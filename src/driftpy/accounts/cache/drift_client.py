@@ -1,23 +1,28 @@
-from typing import Optional, TypedDict
+from typing import Optional, TypedDict, TypeVar
 
 from anchorpy import Program
-from driftpy.accounts import DataAndSlot
-from driftpy.accounts import get_perp_market_account_and_slot
-from driftpy.accounts import get_spot_market_account_and_slot
-from driftpy.accounts import get_state_account_and_slot
+from solana.rpc.commitment import Commitment, Confirmed
+
+from driftpy.accounts import (
+    DataAndSlot,
+    get_perp_market_account_and_slot,
+    get_spot_market_account_and_slot,
+    get_state_account_and_slot,
+)
 from driftpy.accounts.oracle import get_oracle_price_data_and_slot
-from driftpy.accounts.types import DataAndSlot
-from driftpy.accounts.types import DriftClientAccountSubscriber
+from driftpy.accounts.types import DataAndSlot, DriftClientAccountSubscriber
 from driftpy.constants.numeric_constants import QUOTE_SPOT_MARKET_INDEX
 from driftpy.oracles.oracle_id import get_oracle_id
-from driftpy.types import OracleInfo
-from driftpy.types import OraclePriceData
-from driftpy.types import PerpMarketAccount
-from driftpy.types import SpotMarketAccount
-from driftpy.types import stack_trace
-from driftpy.types import StateAccount
-from solana.rpc.commitment import Commitment
-from solana.rpc.commitment import Confirmed
+from driftpy.types import (
+    OracleInfo,
+    OraclePriceData,
+    PerpMarketAccount,
+    SpotMarketAccount,
+    StateAccount,
+    stack_trace,
+)
+
+T = TypeVar("T", PerpMarketAccount, SpotMarketAccount)
 
 
 class DriftClientCache(TypedDict):
@@ -176,25 +181,28 @@ class CachedDriftClientAccountSubscriber(DriftClientAccountSubscriber):
         spot_oracles: dict[int, OraclePriceData],
         perp_oracles: dict[int, OraclePriceData],
     ):
-        sort_markets = lambda markets: sorted(
-            markets.values(), key=lambda market: market.data.market_index
-        )
-        self.cache["spot_markets"] = sort_markets(spot_markets)
-        self.cache["perp_markets"] = sort_markets(perp_markets)
+        def sort_markets(
+            markets: dict[int, T],  # where T is the specific market type
+        ) -> list[T]:
+            return sorted(markets.values(), key=lambda market: market.data.market_index)
+
+        self.cache["spot_markets"] = sort_markets(spot_markets)  # SpotMarketAccount
+        self.cache["perp_markets"] = sort_markets(perp_markets)  # PerpMarketAccount
 
         for market_index, oracle_price_data in spot_oracles.items():
             corresponding_market = self.cache["spot_markets"][market_index]
             oracle_pubkey = corresponding_market.data.oracle
-            oracle_id = get_oracle_id(
-                oracle_pubkey, oracle_price_data.data.oracle_source
-            )
+            oracle_source = corresponding_market.data.oracle_source
+            oracle_id = get_oracle_id(oracle_pubkey, oracle_source)
             self.cache["oracle_price_data"][oracle_id] = oracle_price_data
 
         for market_index, oracle_price_data in perp_oracles.items():
             corresponding_market = self.cache["perp_markets"][market_index]
             oracle_pubkey = corresponding_market.data.amm.oracle
+            oracle_source = corresponding_market.data.amm.oracle_source
             oracle_id = get_oracle_id(
-                oracle_pubkey, oracle_price_data.data.oracle_source
+                oracle_pubkey,
+                oracle_source,
             )
             self.cache["oracle_price_data"][oracle_id] = oracle_price_data
 
