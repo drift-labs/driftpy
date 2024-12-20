@@ -814,10 +814,6 @@
       ],
       "args": [
         {
-          "name": "swiftMessageBytes",
-          "type": "bytes"
-        },
-        {
           "name": "swiftOrderParamsMessageBytes",
           "type": "bytes"
         }
@@ -1512,7 +1508,7 @@
         },
         {
           "name": "authority",
-          "isMut": false,
+          "isMut": true,
           "isSigner": true
         }
       ],
@@ -6458,6 +6454,68 @@
       ]
     },
     {
+      "name": "initializePythLazerOracle",
+      "accounts": [
+        {
+          "name": "admin",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "lazerOracle",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "state",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "rent",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "feedId",
+          "type": "u32"
+        }
+      ]
+    },
+    {
+      "name": "postPythLazerOracleUpdate",
+      "accounts": [
+        {
+          "name": "keeper",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "pythLazerStorage",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "ixSysvar",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "pythMessage",
+          "type": "bytes"
+        }
+      ]
+    },
+    {
       "name": "initializeHighLeverageModeConfig",
       "accounts": [
         {
@@ -7260,6 +7318,43 @@
                 31
               ]
             }
+          }
+        ]
+      }
+    },
+    {
+      "name": "PythLazerOracle",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "price",
+            "type": "i64"
+          },
+          {
+            "name": "publishTime",
+            "type": "u64"
+          },
+          {
+            "name": "postedSlot",
+            "type": "u64"
+          },
+          {
+            "name": "exponent",
+            "type": "i32"
+          },
+          {
+            "name": "padding",
+            "type": {
+              "array": [
+                "u8",
+                4
+              ]
+            }
+          },
+          {
+            "name": "conf",
+            "type": "u64"
           }
         ]
       }
@@ -8903,36 +8998,6 @@
       }
     },
     {
-      "name": "SwiftServerMessage",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "uuid",
-            "type": {
-              "array": [
-                "u8",
-                8
-              ]
-            }
-          },
-          {
-            "name": "swiftOrderSignature",
-            "type": {
-              "array": [
-                "u8",
-                64
-              ]
-            }
-          },
-          {
-            "name": "slot",
-            "type": "u64"
-          }
-        ]
-      }
-    },
-    {
       "name": "SwiftOrderParamsMessage",
       "type": {
         "kind": "struct",
@@ -8946,6 +9011,19 @@
           {
             "name": "subAccountId",
             "type": "u16"
+          },
+          {
+            "name": "slot",
+            "type": "u64"
+          },
+          {
+            "name": "uuid",
+            "type": {
+              "array": [
+                "u8",
+                8
+              ]
+            }
           },
           {
             "name": "takeProfitOrderParams",
@@ -11194,6 +11272,9 @@
           },
           {
             "name": "SwitchboardOnDemand"
+          },
+          {
+            "name": "PythLazer"
           }
         ]
       }
@@ -14179,12 +14260,12 @@
     {
       "code": 6277,
       "name": "OracleMismatchedVaaAndPriceUpdates",
-      "msg": "Don't have the same remaining accounts number and merkle price updates left"
+      "msg": "Don't have the same remaining accounts number and pyth updates left"
     },
     {
       "code": 6278,
       "name": "OracleBadRemainingAccountPublicKey",
-      "msg": "Remaining account passed is not a valid pda"
+      "msg": "Remaining account passed does not match oracle update derived pda"
     },
     {
       "code": 6279,
@@ -14234,7 +14315,7 @@
     {
       "code": 6288,
       "name": "InvalidSwiftOrderParam",
-      "msg": "Swift only available for market/oracle perp orders"
+      "msg": "Invalid swift order param"
     },
     {
       "code": 6289,
@@ -14310,6 +14391,26 @@
       "code": 6303,
       "name": "InvalidProtectedMakerModeConfig",
       "msg": "Invalid Protected Maker Mode Config"
+    },
+    {
+      "code": 6304,
+      "name": "InvalidPythLazerStorageOwner",
+      "msg": "Invalid pyth lazer storage owner"
+    },
+    {
+      "code": 6305,
+      "name": "UnverifiedPythLazerMessage",
+      "msg": "Verification of pyth lazer message failed"
+    },
+    {
+      "code": 6306,
+      "name": "InvalidPythLazerMessage",
+      "msg": "Invalid pyth lazer message"
+    },
+    {
+      "code": 6307,
+      "name": "PythLazerMessagePriceFeedMismatch",
+      "msg": "Pyth lazer message does not correspond to correct fed id"
     }
   ]
 }
