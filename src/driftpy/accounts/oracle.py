@@ -1,20 +1,20 @@
+import struct
 from pathlib import Path
 from typing import Optional
 
-from anchorpy import Coder, Idl
+from anchorpy.coder.coder import Coder
+from anchorpy_core.idl import Idl
+from pythclient.pythaccounts import _ACCOUNT_HEADER_BYTES, EmaType, PythPriceInfo
+from solana.rpc.async_api import AsyncClient
+from solders.account import Account
+from solders.pubkey import Pubkey
 
 import driftpy
-from .types import DataAndSlot
 from driftpy.constants.numeric_constants import *
-from driftpy.types import OracleSource, OraclePriceData, is_variant
-
-from solders.pubkey import Pubkey
-from solders.account import Account
-from pythclient.pythaccounts import PythPriceInfo, _ACCOUNT_HEADER_BYTES, EmaType
-from solana.rpc.async_api import AsyncClient
 from driftpy.decode.pull_oracle import decode_pull_oracle
+from driftpy.types import OraclePriceData, OracleSource, is_variant
 
-import struct
+from .types import DataAndSlot
 
 file = Path(str(driftpy.__path__[0]) + "/idl/switchboard.json")
 with file.open() as f:
@@ -87,6 +87,9 @@ async def get_oracle_price_data_and_slot(
         data_and_slot = DataAndSlot(data=oracle_price_data, slot=slot)
     elif is_variant(oracle_source, "Prelaunch"):
         oracle_price_data = decode_prelaunch_price_info(oracle_raw)
+        data_and_slot = DataAndSlot(data=oracle_price_data, slot=slot)
+    elif is_variant(oracle_source, "PythLazer"):
+        oracle_price_data = decode_pyth_lazer_price_info(oracle_raw)
         data_and_slot = DataAndSlot(data=oracle_price_data, slot=slot)
 
     if data_and_slot:
@@ -245,6 +248,31 @@ def decode_pyth_pull_price_info(
     )
 
 
+def decode_pyth_lazer_price_info(data: bytes):
+    oracle = DRIFT_CODER.accounts.decode(data)
+
+    exponent = abs(oracle.exponent)
+    pyth_precision = 10**exponent
+
+    price = convert_pyth_price(oracle.price / pyth_precision)
+    confidence = convert_pyth_price(oracle.conf / pyth_precision)
+
+    # Stable coin price adjustment logic
+    five_bps = 500
+    if abs(price - QUOTE_PRECISION) < min(confidence, five_bps):
+        price = QUOTE_PRECISION
+
+    price_data = OraclePriceData(
+        price=int(price),
+        slot=oracle.posted_slot,
+        confidence=int(confidence),
+        twap=convert_pyth_price(oracle.price / pyth_precision),
+        twap_confidence=convert_pyth_price(oracle.price / pyth_precision),
+        has_sufficient_number_of_data_points=True,
+    )
+    return price_data
+
+
 def decode_oracle(oracle_ai: bytes, oracle_source: OracleSource):
     if is_pyth_pull_oracle(oracle_source):
         return decode_pyth_pull_price_info(oracle_ai, oracle_source)
@@ -256,6 +284,8 @@ def decode_oracle(oracle_ai: bytes, oracle_source: OracleSource):
         return decode_swb_price_info(oracle_ai)
     elif is_variant(oracle_source, "Prelaunch"):
         return decode_prelaunch_price_info(oracle_ai)
+    elif is_variant(oracle_source, "PythLazer"):
+        return decode_pyth_lazer_price_info(oracle_ai)
     else:
         raise NotImplementedError(
             f"Received unexpected oracle source: {str(oracle_source)}"
@@ -273,6 +303,8 @@ def get_oracle_decode_fn(oracle_source: OracleSource):
         return lambda data: decode_swb_price_info(data)
     elif is_variant(oracle_source, "Prelaunch"):
         return lambda data: decode_prelaunch_price_info(data)
+    elif is_variant(oracle_source, "PythLazer"):
+        return lambda data: decode_pyth_lazer_price_info(data)
     else:
         raise NotImplementedError(
             f"Received unexpected oracle source: {str(oracle_source)}"
