@@ -141,10 +141,9 @@ def get_sequencer_public_key_and_bump(
     )
 
 
-# program = Pubkey("9jwr5nC2f9yAraXrg4UzHXmCX3vi9FQkjD6p9e8bRqNa")
-# auth = Pubkey("D78cqss3dbU1aJAs5qeuhLi8Rqa2CL4Kzkr3VzdgN5F6")
-# == EjQ8rFmR4hd9faX1TYLkqCTsAkyjJ4qUKBuagtmVG3cP
-# get_user_account_public_key(
-#     program,
-#     auth
-# )
+def get_high_leverage_mode_config_public_key(program_id: Pubkey) -> Pubkey:
+    return Pubkey.find_program_address([b"high_leverage_mode_config"], program_id)[0]
+
+
+def get_protected_maker_mode_config_public_key(program_id: Pubkey) -> Pubkey:
+    return Pubkey.find_program_address([b"protected_maker_mode_config"], program_id)[0]
