@@ -340,6 +340,7 @@ class UserStatus:
     BANKRUPT = 2
     REDUCE_ONLY = 4
     ADVANCED_UP = 8
+    PROTECTED_MAKER = 16
 
 
 @_rust_enum
