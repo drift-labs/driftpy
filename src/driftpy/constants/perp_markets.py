@@ -19,8 +19,8 @@ devnet_perp_market_configs: list[PerpMarketConfig] = [
         symbol="SOL-PERP",
         base_asset_symbol="SOL",
         market_index=0,
-        oracle=Pubkey.from_string("BAtFj4kQttZRVep3UZS2aZRDixkGYgWsbqTBVDbnSsPF"),
-        oracle_source=OracleSource.PythPull(),  # type: ignore
+        oracle=Pubkey.from_string("3m6i4RFWEDw2Ft4tFHPJtYgmpPe21k56M3FHeWYrgGBz"),
+        oracle_source=OracleSource.PythLazer(),  # type: ignore
     ),
     PerpMarketConfig(
         symbol="BTC-PERP",
