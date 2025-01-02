@@ -151,3 +151,18 @@ class GrpcDriftClientAccountSubscriber(WebsocketDriftClientAccountSubscriber):
 
         await self._set_perp_oracle_map()
         await self._set_spot_oracle_map()
+        await self.fetch()
+
+    async def unsubscribe(self):
+        if self.is_subscribed():
+            await self.state_subscriber.unsubscribe()
+            if self.spot_market_map and self.perp_market_map:
+                await self.spot_market_map.unsubscribe()
+                await self.perp_market_map.unsubscribe()
+            else:
+                for spot_market_subscriber in self.spot_market_subscribers.values():
+                    await spot_market_subscriber.unsubscribe()
+                for perp_market_subscriber in self.perp_market_subscribers.values():
+                    await perp_market_subscriber.unsubscribe()
+            for oracle_subscriber in self.oracle_subscribers.values():
+                await oracle_subscriber.unsubscribe()
