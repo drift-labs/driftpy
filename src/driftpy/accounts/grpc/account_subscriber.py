@@ -8,11 +8,9 @@ from solana.rpc.commitment import Commitment
 from solders.pubkey import Pubkey
 
 from driftpy.accounts.grpc.geyser_codegen import geyser_pb2, geyser_pb2_grpc
-from driftpy.accounts.oracle import get_oracle_decode_fn
-from driftpy.accounts.types import DataAndSlot, FullOracleWrapper
+from driftpy.accounts.types import DataAndSlot
 from driftpy.accounts.ws.account_subscriber import WebsocketAccountSubscriber
-from driftpy.constants.config import DRIFT_PROGRAM_ID, find_all_market_and_oracles
-from driftpy.types import GrpcConfig, OraclePriceData
+from driftpy.types import GrpcConfig
 
 T = TypeVar("T")
 
@@ -74,10 +72,11 @@ class GrpcAccountSubscriber(WebsocketAccountSubscriber[T]):
         try:
             request_iterator = self._create_subscribe_request()
             self.stream = self.client.Subscribe(request_iterator)
+            await self.stream.wait_for_connection()
+
             self.listener_id = 1
 
             async for update in self.stream:
-                print(f"Got update for {self.account_name}", update)
                 try:
                     if update.HasField("ping") or update.HasField("pong"):
                         continue
@@ -142,7 +141,7 @@ class GrpcAccountSubscriber(WebsocketAccountSubscriber[T]):
         if self.listener_id is not None:
             try:
                 if self.stream:
-                    await self.stream.cancel()
+                    self.stream.cancel()
                 self.listener_id = None
             except Exception as e:
                 print(f"Error unsubscribing from account {self.account_name}: {e}")
@@ -154,98 +153,3 @@ class GrpcAccountSubscriber(WebsocketAccountSubscriber[T]):
 
         if self.data_and_slot is None or new_data.slot >= self.data_and_slot.slot:
             self.data_and_slot = new_data
-            print("Good stuff!")
-
-
-async def start_subscribers(
-    full_oracle_wrappers: list[FullOracleWrapper],
-    rpc_fqdn: str,
-    x_token: str,
-    program: Program,
-):
-    tasks = []
-    subscribers = []
-
-    for oracle in full_oracle_wrappers:
-        subscriber = GrpcAccountSubscriber[OraclePriceData](
-            GrpcConfig(
-                endpoint=rpc_fqdn, token=x_token, commitment=Commitment("confirmed")
-            ),
-            str(oracle.pubkey),
-            program,
-            oracle.pubkey,
-            decode=get_oracle_decode_fn(oracle.oracle_source),
-            initial_data=oracle.oracle_price_data_and_slot,
-        )
-        subscribers.append(subscriber)
-        task = await subscriber.subscribe()
-        tasks.append(task)
-
-    asyncio.gather(*tasks)
-    return subscribers
-
-
-async def main():
-    import os
-    from pathlib import Path
-
-    import dotenv
-    from anchorpy.program.core import Program
-    from anchorpy.provider import Provider, Wallet
-    from anchorpy_core.idl import Idl
-    from solana.rpc.async_api import AsyncClient
-    from solders.keypair import Keypair
-
-    import driftpy
-
-    dotenv.load_dotenv()
-
-    rpc_fqdn = os.environ.get("RPC_FQDN")
-    x_token = os.environ.get("X_TOKEN")
-    pk = os.environ.get("PUBKEY")
-    private_key = os.environ.get("PRIVATE_KEY")
-    rpc_url = os.environ.get("RPC_TRITON")
-
-    if not rpc_fqdn or not x_token or not pk or not private_key:
-        raise ValueError("RPC_FDQN, X_TOKEN, PUBKEY, and PRIVATE_KEY must be set")
-
-    file = Path(str(next(iter(driftpy.__path__))) + "/idl/drift.json")
-    idl = Idl.from_json(file.read_text())
-    program_id = DRIFT_PROGRAM_ID
-
-    connection = AsyncClient(rpc_url)
-
-    wallet = Keypair.from_base58_string(private_key)
-    wallet = Wallet(wallet)
-    from driftpy.drift_client import DEFAULT_TX_OPTIONS
-
-    opts = DEFAULT_TX_OPTIONS
-    provider = Provider(connection, wallet, opts)
-
-    program = Program(idl, program_id, provider)
-
-    (
-        perp_ds,
-        spot_ds,
-        full_oracle_wrappers,
-    ) = await find_all_market_and_oracles(program)
-
-    full_oracle_wrappers = full_oracle_wrappers
-
-    subscribers = await start_subscribers(
-        full_oracle_wrappers, rpc_fqdn, x_token, program
-    )
-
-    print("All subscribers started")
-
-    # Keep the program running
-    try:
-        await asyncio.Event().wait()  # This will never complete
-    except KeyboardInterrupt:
-        # Handle cleanup
-        for subscriber in subscribers:
-            await subscriber.unsubscribe()
-
-
-if __name__ == "__main__":
-    asyncio.run(main())
