@@ -1,10 +1,9 @@
 from typing import Optional
 
 from driftpy.accounts import DataAndSlot
-from driftpy.types import UserStatsAccount
-
-from driftpy.accounts.ws.account_subscriber import WebsocketAccountSubscriber
 from driftpy.accounts.types import UserStatsAccountSubscriber
+from driftpy.accounts.ws.account_subscriber import WebsocketAccountSubscriber
+from driftpy.types import UserStatsAccount
 
 
 class WebsocketUserStatsAccountSubscriber(
