@@ -13,6 +13,9 @@ from driftpy.accounts.demo import (
     DemoDriftClientAccountSubscriber,
     DemoUserAccountSubscriber,
 )
+from driftpy.accounts.grpc.account_subscriber import GrpcConfig
+from driftpy.accounts.grpc.drift_client import GrpcDriftClientAccountSubscriber
+from driftpy.accounts.grpc.user import GrpcUserAccountSubscriber
 from driftpy.accounts.polling import (
     PollingDriftClientAccountSubscriber,
     PollingUserAccountSubscriber,
@@ -32,13 +35,17 @@ class AccountSubscriptionConfig:
 
     def __init__(
         self,
-        account_subscription_type: Literal["polling", "websocket", "cached", "demo"],
+        account_subscription_type: Literal[
+            "polling", "websocket", "cached", "demo", "grpc"
+        ],
         bulk_account_loader: Optional[BulkAccountLoader] = None,
         commitment: Commitment = Commitment("confirmed"),
+        grpc_config: Optional[GrpcConfig] = None,
     ):
         self.type = account_subscription_type
         self.commitment = commitment
         self.bulk_account_loader = None
+        self.grpc_config = grpc_config
 
         if self.type != "polling":
             return
@@ -117,6 +124,18 @@ class AccountSubscriptionConfig:
                     oracle_infos,
                     self.commitment,
                 )
+            case "grpc":
+                if self.grpc_config is None:
+                    raise ValueError("A grpc config is required for grpc subscription")
+                return GrpcDriftClientAccountSubscriber(
+                    program,
+                    self.grpc_config,
+                    perp_market_indexes,
+                    spot_market_indexes,
+                    cast(list[FullOracleWrapper], oracle_infos),
+                    should_find_all_markets_and_oracles,
+                    self.commitment,
+                )
 
     def get_user_client_subscriber(self, program: Program, user_pubkey: Pubkey):
         match self.type:
@@ -138,3 +157,13 @@ class AccountSubscriptionConfig:
                 )
             case "demo":
                 return DemoUserAccountSubscriber(user_pubkey, program, self.commitment)
+            case "grpc":
+                if self.grpc_config is None:
+                    raise ValueError("A grpc config is required for grpc subscription")
+                return GrpcUserAccountSubscriber(
+                    grpc_config=self.grpc_config,
+                    account_name="user",
+                    account_public_key=user_pubkey,
+                    program=program,
+                    commitment=self.commitment,
+                )
