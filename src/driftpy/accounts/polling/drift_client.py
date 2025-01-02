@@ -12,7 +12,7 @@ from driftpy.addresses import (
     get_spot_market_public_key,
     get_state_public_key,
 )
-from driftpy.constants.config import find_all_market_and_oracles
+from driftpy.constants.config import find_all_market_and_oracles_no_data_and_slots
 from driftpy.oracles.oracle_id import get_oracle_id
 from driftpy.types import (
     OracleInfo,
@@ -64,7 +64,7 @@ class PollingDriftClientAccountSubscriber(DriftClientAccountSubscriber):
                 perp_market_indexes,
                 spot_market_indexes,
                 oracle_infos,
-            ) = await find_all_market_and_oracles(self.program)
+            ) = await find_all_market_and_oracles_no_data_and_slots(self.program)
             self.perp_market_indexes = perp_market_indexes
             self.spot_market_indexes = spot_market_indexes
             self.oracle_infos = oracle_infos

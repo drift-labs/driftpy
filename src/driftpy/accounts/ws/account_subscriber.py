@@ -1,23 +1,19 @@
 import asyncio
-from typing import Optional
-
-from anchorpy import Program
-from solders.pubkey import Pubkey
-from solana.rpc.commitment import Commitment
-
-from driftpy.accounts import get_account_data_and_slot
-from driftpy.accounts import (
-    UserAccountSubscriber,
-    DataAndSlot,
-    UserStatsAccountSubscriber,
-)
+from typing import Callable, Generic, Optional, TypeVar, cast
 
 import websockets
 import websockets.exceptions  # force eager imports
-from solana.rpc.websocket_api import connect
+from anchorpy.program.core import Program
+from solana.rpc.commitment import Commitment
+from solana.rpc.websocket_api import SolanaWsClientProtocol, connect
+from solders.pubkey import Pubkey
 
-from typing import cast, Generic, TypeVar, Callable
-
+from driftpy.accounts import (
+    DataAndSlot,
+    UserAccountSubscriber,
+    UserStatsAccountSubscriber,
+    get_account_data_and_slot,
+)
 from driftpy.types import get_ws_url
 
 T = TypeVar("T")
@@ -30,7 +26,7 @@ class WebsocketAccountSubscriber(
         self,
         pubkey: Pubkey,
         program: Program,
-        commitment: Commitment = "confirmed",
+        commitment: Commitment = Commitment("confirmed"),
         decode: Optional[Callable[[bytes], T]] = None,
         initial_data: Optional[DataAndSlot] = None,
     ):
@@ -42,7 +38,7 @@ class WebsocketAccountSubscriber(
         self.decode = (
             decode if decode is not None else self.program.coder.accounts.decode
         )
-        self.ws = None
+        self.ws: Optional[SolanaWsClientProtocol] = None
 
     async def subscribe(self):
         if self.data_and_slot is None:
@@ -60,8 +56,8 @@ class WebsocketAccountSubscriber(
 
         async for ws in connect(ws_endpoint):
             try:
-                self.ws = ws
-                await ws.account_subscribe(
+                self.ws = cast(SolanaWsClientProtocol, ws)
+                await self.ws.account_subscribe(
                     self.pubkey,
                     commitment=self.commitment,
                     encoding="base64",
@@ -82,7 +78,7 @@ class WebsocketAccountSubscriber(
                     except Exception:
                         print("Error processing account data")
                         break
-                await ws.account_unsubscribe(subscription_id)
+                await self.ws.account_unsubscribe(subscription_id)
             except websockets.exceptions.ConnectionClosed:
                 print("Websocket closed, reconnecting...")
                 continue

@@ -1,7 +1,9 @@
-from solana.rpc.async_api import AsyncClient
-from solana.rpc.commitment import Commitment
 from dataclasses import dataclass
 from typing import Optional, Union
+
+from solana.rpc.async_api import AsyncClient
+from solana.rpc.commitment import Commitment
+
 from driftpy.drift_client import DriftClient
 
 

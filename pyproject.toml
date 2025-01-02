@@ -84,7 +84,9 @@ mypy = "^1.7.0"
 deprecated = "^1.2.14"
 events = "^0.5"
 numpy = "^1.26.2"
-jito-searcher-client = "0.1.4"
+# jito-searcher-client = "0.1.5"
+grpcio = "1.68.1"
+protobuf = "5.29.2"
 
 [tool.poetry.dev-dependencies]
 pytest = "^7.2.0"
@@ -97,6 +99,9 @@ mkdocs-material = "^8.1.8"
 bump2version = "^1.0.1"
 autopep8 = "^2.0.4"
 mypy = "^1.7.0"
+python-dotenv = "^1.0.0"
+ruff = "^0.8.4"
+
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.4.4"
@@ -111,7 +116,7 @@ build-backend = "poetry.core.masonry.api"
 asyncio_mode = "strict"
 
 [tool.ruff]
-exclude = [".git", "__pycache__", "docs/source/conf.py", "old", "build", "dist"]
+exclude = [".git", "__pycache__", "docs/source/conf.py", "old", "build", "dist", "**/geyser_codegen/**"]
 
 [tool.ruff.pycodestyle]
 max-line-length = 88

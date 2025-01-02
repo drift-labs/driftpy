@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from typing import Literal, Optional, Sequence, Tuple, Union
 
 import jsonrpcclient
-from anchorpy import Program
+from anchorpy.program.core import Program
 from solders.pubkey import Pubkey
 
 from driftpy.accounts.oracle import decode_oracle
@@ -84,142 +84,147 @@ configs = {
 }
 
 
-async def find_all_market_and_oracles(
-    program: Program, data_and_slots: bool = False
+async def find_all_market_and_oracles_no_data_and_slots(
+    program: Program,
 ) -> Tuple[
-    Union[list[int], list[DataAndSlot[PerpMarketAccount]]],
-    Union[list[int], list[DataAndSlot[SpotMarketAccount]]],
-    Union[list[OracleInfo], list[FullOracleWrapper]],
+    list[int],
+    list[int],
+    list[OracleInfo],
 ]:
-    if not data_and_slots:
-        perp_market_indexes = []
-        spot_market_indexes = []
-        oracle_infos = {}
+    perp_market_indexes = []
+    spot_market_indexes = []
+    oracle_infos: dict[str, OracleInfo] = {}
 
-        perp_markets = await program.account["PerpMarket"].all()
-        for perp_market in perp_markets:
-            perp_market_indexes.append(perp_market.account.market_index)
-            oracle = perp_market.account.amm.oracle
-            oracle_source = perp_market.account.amm.oracle_source
-            oracle_infos[str(oracle)] = OracleInfo(oracle, oracle_source)
+    perp_markets = await program.account["PerpMarket"].all()
+    for perp_market in perp_markets:
+        perp_market_indexes.append(perp_market.account.market_index)
+        oracle = perp_market.account.amm.oracle
+        oracle_source = perp_market.account.amm.oracle_source
+        oracle_infos[str(oracle)] = OracleInfo(oracle, oracle_source)
 
-        spot_markets = await program.account["SpotMarket"].all()
-        for spot_market in spot_markets:
-            spot_market_indexes.append(spot_market.account.market_index)
-            oracle = spot_market.account.oracle
-            oracle_source = spot_market.account.oracle_source
-            oracle_infos[str(oracle)] = OracleInfo(oracle, oracle_source)
+    spot_markets = await program.account["SpotMarket"].all()
+    for spot_market in spot_markets:
+        spot_market_indexes.append(spot_market.account.market_index)
+        oracle = spot_market.account.oracle
+        oracle_source = spot_market.account.oracle_source
+        oracle_infos[str(oracle)] = OracleInfo(oracle, oracle_source)
 
-        return perp_market_indexes, spot_market_indexes, oracle_infos.values()
-    else:
-        perp_markets = []
-        spot_markets = []
-        oracle_infos = {}
+    return perp_market_indexes, spot_market_indexes, list(oracle_infos.values())
 
-        perp_filters = [{"memcmp": {"offset": 0, "bytes": "2pTyMkwXuti"}}]
-        spot_filters = [{"memcmp": {"offset": 0, "bytes": "HqqNdyfVbzv"}}]
 
-        perp_request = jsonrpcclient.request(
-            "getProgramAccounts",
-            (
-                str(program.program_id),
-                {"filters": perp_filters, "encoding": "base64", "withContext": True},
-            ),
+async def find_all_market_and_oracles(
+    program: Program,
+) -> Tuple[
+    list[DataAndSlot[PerpMarketAccount]],
+    list[DataAndSlot[SpotMarketAccount]],
+    list[FullOracleWrapper],
+]:
+    perp_markets = []
+    spot_markets = []
+    oracle_infos = {}
+
+    perp_filters = [{"memcmp": {"offset": 0, "bytes": "2pTyMkwXuti"}}]
+    spot_filters = [{"memcmp": {"offset": 0, "bytes": "HqqNdyfVbzv"}}]
+
+    perp_request = jsonrpcclient.request(
+        "getProgramAccounts",
+        (
+            str(program.program_id),
+            {"filters": perp_filters, "encoding": "base64", "withContext": True},
+        ),
+    )
+
+    post = program.provider.connection._provider.session.post(
+        program.provider.connection._provider.endpoint_uri,
+        json=perp_request,
+        headers={"content-encoding": "gzip"},
+    )
+    resp = await asyncio.wait_for(post, timeout=10)
+    parsed_resp = jsonrpcclient.parse(resp.json())
+
+    if isinstance(parsed_resp, jsonrpcclient.Error):
+        raise ValueError(f"Error fetching perp markets: {parsed_resp.message}")
+
+    if not isinstance(parsed_resp, jsonrpcclient.Ok):
+        raise ValueError(f"Error fetching perp markets - not ok: {parsed_resp}")
+
+    perp_slot = int(parsed_resp.result["context"]["slot"])
+    perp_markets: list[PerpMarketAccount] = []
+    for account in parsed_resp.result["value"]:
+        perp_market = decode_account(account["account"]["data"][0], program)
+        perp_markets.append(perp_market)
+
+    perp_ds: list[DataAndSlot] = [
+        DataAndSlot(perp_slot, perp_market) for perp_market in perp_markets
+    ]
+
+    spot_request = jsonrpcclient.request(
+        "getProgramAccounts",
+        (
+            str(program.program_id),
+            {"filters": spot_filters, "encoding": "base64", "withContext": True},
+        ),
+    )
+
+    post = program.provider.connection._provider.session.post(
+        program.provider.connection._provider.endpoint_uri,
+        json=spot_request,
+        headers={"content-encoding": "gzip"},
+    )
+    resp = await asyncio.wait_for(post, timeout=10)
+    parsed_resp = jsonrpcclient.parse(resp.json())
+
+    if isinstance(parsed_resp, jsonrpcclient.Error):
+        raise ValueError(f"Error fetching spot markets: {parsed_resp.message}")
+    if not isinstance(parsed_resp, jsonrpcclient.Ok):
+        raise ValueError(f"Error fetching spot markets - not ok: {parsed_resp}")
+
+    spot_slot = int(parsed_resp.result["context"]["slot"])
+
+    spot_markets: list[SpotMarketAccount] = []
+    for account in parsed_resp.result["value"]:
+        spot_market = decode_account(account["account"]["data"][0], program)
+        spot_markets.append(spot_market)
+
+    spot_ds: list[DataAndSlot] = [
+        DataAndSlot(spot_slot, spot_market) for spot_market in spot_markets
+    ]
+
+    oracle_infos.update(
+        {market.amm.oracle: market.amm.oracle_source for market in perp_markets}
+    )
+    oracle_infos.update(
+        {market.oracle: market.oracle_source for market in spot_markets}
+    )
+
+    oracle_keys = list(oracle_infos.keys())
+
+    oracle_ais = await program.provider.connection.get_multiple_accounts(oracle_keys)
+
+    oracle_slot = oracle_ais.context.slot
+
+    oracle_price_datas = [
+        decode_oracle(account.data, oracle_infos[oracle_keys[i]])
+        for i, account in enumerate(oracle_ais.value)
+        if account is not None
+    ]
+
+    oracle_ds: list[DataAndSlot] = [
+        DataAndSlot(oracle_slot, oracle_price_data)
+        for oracle_price_data in oracle_price_datas
+    ]
+
+    full_oracle_wrappers: list[FullOracleWrapper] = [
+        FullOracleWrapper(
+            pubkey=oracle_keys[i],
+            oracle_source=oracle_infos[oracle_keys[i]],
+            oracle_price_data_and_slot=oracle_ds[i],
         )
+        for i in range(len(oracle_keys))
+        if oracle_ais.value[i] is not None
+    ]
 
-        post = program.provider.connection._provider.session.post(
-            program.provider.connection._provider.endpoint_uri,
-            json=perp_request,
-            headers={"content-encoding": "gzip"},
-        )
-        resp = await asyncio.wait_for(post, timeout=10)
-        parsed_resp = jsonrpcclient.parse(resp.json())
-
-        if isinstance(parsed_resp, jsonrpcclient.Error):
-            raise ValueError(f"Error fetching perp markets: {parsed_resp.message}")
-
-        if not isinstance(parsed_resp, jsonrpcclient.Ok):
-            raise ValueError(f"Error fetching perp markets - not ok: {parsed_resp}")
-
-        perp_slot = int(parsed_resp.result["context"]["slot"])
-        perp_markets: list[PerpMarketAccount] = []
-        for account in parsed_resp.result["value"]:
-            perp_market = decode_account(account["account"]["data"][0], program)
-            perp_markets.append(perp_market)
-
-        perp_ds: list[DataAndSlot] = [
-            DataAndSlot(perp_slot, perp_market) for perp_market in perp_markets
-        ]
-
-        spot_request = jsonrpcclient.request(
-            "getProgramAccounts",
-            (
-                str(program.program_id),
-                {"filters": spot_filters, "encoding": "base64", "withContext": True},
-            ),
-        )
-
-        post = program.provider.connection._provider.session.post(
-            program.provider.connection._provider.endpoint_uri,
-            json=spot_request,
-            headers={"content-encoding": "gzip"},
-        )
-        resp = await asyncio.wait_for(post, timeout=10)
-        parsed_resp = jsonrpcclient.parse(resp.json())
-
-        if isinstance(parsed_resp, jsonrpcclient.Error):
-            raise ValueError(f"Error fetching spot markets: {parsed_resp.message}")
-        if not isinstance(parsed_resp, jsonrpcclient.Ok):
-            raise ValueError(f"Error fetching spot markets - not ok: {parsed_resp}")
-
-        spot_slot = int(parsed_resp.result["context"]["slot"])
-
-        spot_markets: list[SpotMarketAccount] = []
-        for account in parsed_resp.result["value"]:
-            spot_market = decode_account(account["account"]["data"][0], program)
-            spot_markets.append(spot_market)
-
-        spot_ds: list[DataAndSlot] = [
-            DataAndSlot(spot_slot, spot_market) for spot_market in spot_markets
-        ]
-
-        oracle_infos.update(
-            {market.amm.oracle: market.amm.oracle_source for market in perp_markets}
-        )
-        oracle_infos.update(
-            {market.oracle: market.oracle_source for market in spot_markets}
-        )
-
-        oracle_keys = list(oracle_infos.keys())
-
-        oracle_ais = await program.provider.connection.get_multiple_accounts(
-            oracle_keys
-        )
-
-        oracle_slot = oracle_ais.context.slot
-
-        oracle_price_datas = [
-            decode_oracle(account.data, oracle_infos[oracle_keys[i]])
-            for i, account in enumerate(oracle_ais.value)
-            if account is not None
-        ]
-
-        oracle_ds: list[DataAndSlot] = [
-            DataAndSlot(oracle_slot, oracle_price_data)
-            for oracle_price_data in oracle_price_datas
-        ]
-
-        full_oracle_wrappers: list[FullOracleWrapper] = [
-            FullOracleWrapper(
-                pubkey=oracle_keys[i],
-                oracle_source=oracle_infos[oracle_keys[i]],
-                oracle_price_data_and_slot=oracle_ds[i],
-            )
-            for i in range(len(oracle_keys))
-            if oracle_ais.value[i] is not None
-        ]
-
-        return perp_ds, spot_ds, full_oracle_wrappers
+    return perp_ds, spot_ds, full_oracle_wrappers
 
 
 def decode_account(decoded_data: bytes | str, program):

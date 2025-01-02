@@ -5,6 +5,7 @@ from typing import Optional
 from urllib.parse import urlparse, urlunparse
 
 from borsh_construct.enum import _rust_enum
+from solana.rpc.commitment import Commitment
 from solders.pubkey import Pubkey
 from sumtypes import constructor
 
@@ -1412,3 +1413,10 @@ class PriceFeedMessage:
 class PriceUpdateV2:
     price_message: PriceFeedMessage
     posted_slot: int
+
+
+@dataclass
+class GrpcConfig:
+    endpoint: str
+    token: str
+    commitment: Commitment = Commitment("confirmed")

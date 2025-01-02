@@ -1,11 +1,22 @@
-import asyncio
+raise ImportError(
+    "The jito_tx_sender module is deprecated and has been removed in driftpy. "
+)
 
+import asyncio
 from typing import Optional, Union
 
-from solana.transaction import Transaction
-from solana.rpc.types import TxOpts
+from jito_searcher_client.convert import (
+    tx_to_protobuf_packet,
+    versioned_tx_to_protobuf_packet,
+)
+from jito_searcher_client.generated.bundle_pb2 import Bundle
+from jito_searcher_client.generated.searcher_pb2 import (
+    SendBundleRequest,
+    SendBundleResponse,
+)
 from solana.rpc.commitment import Commitment, Confirmed
-
+from solana.rpc.types import TxOpts
+from solana.transaction import Transaction
 from solders.keypair import Keypair  # type: ignore
 from solders.transaction import VersionedTransaction  # type: ignore
 
@@ -14,16 +25,6 @@ from driftpy.slot.slot_subscriber import SlotSubscriber
 from driftpy.tx.fast_tx_sender import FastTxSender
 from driftpy.tx.jito_subscriber import JitoSubscriber
 from driftpy.tx.types import TxSigAndSlot
-
-from jito_searcher_client.convert import (
-    versioned_tx_to_protobuf_packet,
-    tx_to_protobuf_packet,
-)
-from jito_searcher_client.generated.bundle_pb2 import Bundle
-from jito_searcher_client.generated.searcher_pb2 import (
-    SendBundleRequest,
-    SendBundleResponse,
-)
 
 
 class JitoTxSender(FastTxSender):

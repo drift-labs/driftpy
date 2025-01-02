@@ -1,25 +1,29 @@
+raise ImportError(
+    "The jito_subscriber module is deprecated and has been removed in driftpy."
+)
+
 import asyncio
 import random
-
 from typing import Optional, Tuple, Union
 
-from solders.keypair import Keypair  # type: ignore
-from solders.pubkey import Pubkey  # type: ignore
-
-from solana.rpc.async_api import AsyncClient
-from solana.rpc.commitment import Confirmed
-
-from solders.system_program import TransferParams, transfer
-
-from jito_searcher_client.async_searcher import get_async_searcher_client  # type: ignore
-from jito_searcher_client.generated.searcher_pb2_grpc import SearcherServiceStub  # type: ignore
+from jito_searcher_client.async_searcher import (
+    get_async_searcher_client,  # type: ignore
+)
 from jito_searcher_client.generated.searcher_pb2 import (
-    ConnectedLeadersResponse,
     ConnectedLeadersRequest,
+    ConnectedLeadersResponse,
     GetTipAccountsRequest,
     GetTipAccountsResponse,
     SubscribeBundleResultsRequest,
 )  # type: ignore
+from jito_searcher_client.generated.searcher_pb2_grpc import (
+    SearcherServiceStub,  # type: ignore
+)
+from solana.rpc.async_api import AsyncClient
+from solana.rpc.commitment import Confirmed
+from solders.keypair import Keypair  # type: ignore
+from solders.pubkey import Pubkey  # type: ignore
+from solders.system_program import TransferParams, transfer
 
 
 class JitoSubscriber:
