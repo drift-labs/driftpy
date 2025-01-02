@@ -6,16 +6,20 @@ from typing import Tuple
 from driftpy.account_subscription_config import AccountSubscriptionConfig
 from driftpy.accounts.oracle import *
 from driftpy.math.amm import calculate_market_open_bid_ask
-from driftpy.math.fuel import calculate_insurance_fuel_bonus
-from driftpy.math.fuel import calculate_perp_fuel_bonus
-from driftpy.math.fuel import calculate_spot_fuel_bonus
+from driftpy.math.fuel import (
+    calculate_insurance_fuel_bonus,
+    calculate_perp_fuel_bonus,
+    calculate_spot_fuel_bonus,
+)
 from driftpy.math.margin import *
 from driftpy.math.oracles import calculate_live_oracle_twap
 from driftpy.math.perp_position import *
 from driftpy.math.spot_balance import get_strict_token_value
 from driftpy.math.spot_market import *
-from driftpy.math.spot_position import get_worst_case_token_amounts
-from driftpy.math.spot_position import is_spot_position_available
+from driftpy.math.spot_position import (
+    get_worst_case_token_amounts,
+    is_spot_position_available,
+)
 from driftpy.oracles.strict_oracle_price import StrictOraclePrice
 from driftpy.types import OraclePriceData
 
@@ -27,9 +31,7 @@ class DriftUser:
         self,
         drift_client,
         user_public_key: Pubkey,
-        account_subscription: Optional[
-            AccountSubscriptionConfig
-        ] = AccountSubscriptionConfig.default(),
+        account_subscription: AccountSubscriptionConfig = AccountSubscriptionConfig.default(),
     ):
         """Initialize the user object
 
@@ -52,19 +54,23 @@ class DriftUser:
         )
 
     async def subscribe(self):
+        if self.account_subscriber is None:
+            raise ValueError("No account subscriber found")
         await self.account_subscriber.subscribe()
 
     def unsubscribe(self):
+        if self.account_subscriber is None:
+            raise ValueError("No account subscriber found")
         self.account_subscriber.unsubscribe()
 
     def get_oracle_data_for_spot_market(
         self, market_index: int
-    ) -> Optional[OraclePriceData]:
+    ) -> OraclePriceData | None:
         return self.drift_client.get_oracle_price_data_for_spot_market(market_index)
 
     def get_oracle_data_for_perp_market(
         self, market_index: int
-    ) -> Optional[OraclePriceData]:
+    ) -> OraclePriceData | None:
         return self.drift_client.get_oracle_price_data_for_perp_market(market_index)
 
     def get_perp_market_account(self, market_index: int) -> PerpMarketAccount:
