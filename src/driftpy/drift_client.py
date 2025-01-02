@@ -258,6 +258,8 @@ class DriftClient:
             )
 
     async def subscribe(self):
+        if self.account_subscriber is None:
+            raise ValueError("No account subscriber found")
         await self.account_subscriber.subscribe()
         if self.enforce_tx_sequencing:
             await self.load_sequence_info()
@@ -300,6 +302,8 @@ class DriftClient:
         await self.user_stats[authority].fetch_accounts()
 
     async def unsubscribe(self):
+        if self.account_subscriber is None:
+            raise ValueError("No account subscriber found")
         await self.account_subscriber.unsubscribe()
 
     def get_user(self, sub_account_id=None) -> DriftUser:
