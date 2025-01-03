@@ -1,13 +1,15 @@
 import asyncio
-from typing import Dict, Optional, TypeVar, Callable
-from anchorpy import Program
+from typing import Callable, Dict, Optional, TypeVar
+
+from anchorpy.program.core import Program
+from solana.rpc.websocket_api import SolanaWsClientProtocol, connect
+from solders.pubkey import Pubkey
+
 from driftpy.accounts.types import (
     DataAndSlot,
     UpdateCallback,
     WebsocketProgramAccountOptions,
 )
-from solana.rpc.websocket_api import connect, SolanaWsClientProtocol
-from solders.pubkey import Pubkey
 from driftpy.types import get_ws_url
 
 T = TypeVar("T")
