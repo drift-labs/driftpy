@@ -1,18 +1,20 @@
 from typing import List, Literal
 
-from driftpy.types import MarginMode
-from driftpy.types import MarketType
-from driftpy.types import Order
-from driftpy.types import OrderStatus
-from driftpy.types import OrderTriggerCondition
-from driftpy.types import OrderType
-from driftpy.types import PerpPosition
-from driftpy.types import PositionDirection
-from driftpy.types import SpotBalanceType
-from driftpy.types import SpotPosition
-from driftpy.types import UserAccount
 from solders.pubkey import Pubkey
 
+from driftpy.types import (
+    MarginMode,
+    MarketType,
+    Order,
+    OrderStatus,
+    OrderTriggerCondition,
+    OrderType,
+    PerpPosition,
+    PositionDirection,
+    SpotBalanceType,
+    SpotPosition,
+    UserAccount,
+)
 
 # Faster decoding for User Accounts
 # We skip all zero data to streamline the process and avoid unnecessary decoding
@@ -204,6 +206,8 @@ def decode_user(buffer: bytes) -> UserAccount:
             order_type = OrderType.TriggerLimit()
         elif order_type_num == 4:
             order_type = OrderType.Oracle()
+        else:
+            raise ValueError(f"Invalid order type: {order_type_num}")
 
         offset += 1
 
