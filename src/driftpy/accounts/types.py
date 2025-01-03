@@ -1,17 +1,18 @@
 from abc import abstractmethod
 from dataclasses import dataclass
-from typing import Awaitable, Callable, TypeVar, Generic, Optional, Sequence, Union
-from solana.rpc.types import MemcmpOpts
+from typing import Awaitable, Callable, Generic, Optional, Sequence, TypeVar, Union
+
 from solana.rpc.commitment import Commitment
+from solana.rpc.types import MemcmpOpts
 from solders.pubkey import Pubkey
 
 from driftpy.types import (
+    OraclePriceData,
     OracleSource,
     PerpMarketAccount,
     SpotMarketAccount,
-    UserAccount,
-    OraclePriceData,
     StateAccount,
+    UserAccount,
     UserStatsAccount,
 )
 
@@ -42,6 +43,12 @@ class WebsocketProgramAccountOptions:
     filters: Sequence[MemcmpOpts]
     commitment: Commitment
     encoding: str
+
+
+@dataclass
+class GrpcProgramAccountOptions:
+    filters: Sequence[MemcmpOpts]
+    commitment: Commitment
 
 
 UpdateCallback = Callable[[str, DataAndSlot[UserAccount]], Awaitable[None]]
