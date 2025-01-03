@@ -1,13 +1,22 @@
 import asyncio
 
-from events import Events as EventEmitter
+from events.events import Events, _EventSlot
 from solders.pubkey import Pubkey
 
 from driftpy.accounts.grpc.account_subscriber import GrpcAccountSubscriber
-from driftpy.accounts.types import DataAndSlot
+from driftpy.accounts.grpc.program_account_subscriber import (
+    GrpcProgramAccountSubscriber,
+)
+from driftpy.accounts.types import DataAndSlot, GrpcProgramAccountOptions
 from driftpy.auction_subscriber.types import GrpcAuctionSubscriberConfig
 from driftpy.decode.user import decode_user
+from driftpy.memcmp import get_user_filter, get_user_with_auction_filter
 from driftpy.types import UserAccount
+
+
+class GrpcAuctionEvents(Events):
+    __events__ = ("on_account_update",)
+    on_account_update: _EventSlot
 
 
 class GrpcAuctionSubscriber:
@@ -20,8 +29,7 @@ class GrpcAuctionSubscriber:
             else self.drift_client.connection.commitment
         )
         self.subscribers: list[GrpcAccountSubscriber] = []
-        self.event_emitter = EventEmitter(("on_account_update"))
-        self.event_emitter.on("on_account_update")
+        self.event_emitter = GrpcAuctionEvents()
 
     async def on_update(self, account_pubkey: str, data: DataAndSlot[UserAccount]):
         self.event_emitter.on_account_update(
@@ -32,19 +40,17 @@ class GrpcAuctionSubscriber:
         if self.subscribers:
             return
 
-        accounts = await self.drift_client.program.account["User"].all()
-        auction_accounts = [acc for acc in accounts if acc.account.in_auction()]
-        for account in auction_accounts:
-            subscriber = GrpcAccountSubscriber(
-                self.config.grpc_config,
-                "AuctionSubscriber",
-                self.drift_client.program,
-                account.public_key,
-                self.commitment,
-                decode_user,
-            )
-            await subscriber.subscribe()
-            self.subscribers.append(subscriber)
+        filters = (get_user_filter(), get_user_with_auction_filter())
+        options = GrpcProgramAccountOptions(filters, self.commitment)
+        self.subscriber = GrpcProgramAccountSubscriber(
+            grpc_config=self.config.grpc_config,
+            subscription_name="AuctionSubscriber",
+            program=self.drift_client.program,
+            options=options,
+            on_update=self.on_update,
+            decode=decode_user,
+        )
+        await self.subscriber.subscribe()
 
     def unsubscribe(self):
         if not self.subscribers:
