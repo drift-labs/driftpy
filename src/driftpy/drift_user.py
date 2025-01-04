@@ -1484,6 +1484,10 @@ class DriftUser:
         strict: bool = False,
     ) -> int:
         market = self.drift_client.get_perp_market_account(perp_position.market_index)
+        if not market:
+            raise ValueError(
+                f"No perp market account found for market {perp_position.market_index}"
+            )
 
         if perp_position.lp_shares > 0:
             # is an lp, clone so we don't mutate the position
@@ -1491,9 +1495,15 @@ class DriftUser:
                 market.market_index, copy.deepcopy(perp_position), bool(margin_category)
             )
 
-        valuation_price = self.get_oracle_data_for_perp_market(
+        valuation_price_data = self.drift_client.get_oracle_price_data_for_perp_market(
             market.market_index
-        ).price
+        )
+        if not valuation_price_data:
+            raise ValueError(
+                f"No oracle price data found for market {market.market_index}"
+            )
+
+        valuation_price = valuation_price_data.price
         if is_variant(market.status, "Settlement"):
             valuation_price = market.expiry_price
 

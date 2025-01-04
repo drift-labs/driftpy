@@ -368,6 +368,8 @@ class DriftClient:
         return getattr(state_and_slot, "data", None)
 
     def get_perp_market_account(self, market_index: int) -> Optional[PerpMarketAccount]:
+        if self.account_subscriber is None:
+            raise ValueError("No account subscriber found")
         perp_market_and_slot = self.account_subscriber.get_perp_market_and_slot(
             market_index
         )
