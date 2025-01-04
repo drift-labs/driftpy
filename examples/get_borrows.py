@@ -3,15 +3,18 @@ import os
 
 from anchorpy import Wallet
 from dotenv import load_dotenv
+from solana.rpc.async_api import AsyncClient
+
 from driftpy.accounts.get_accounts import get_spot_market_account
 from driftpy.drift_client import DriftClient
-from driftpy.math.spot_balance import calculate_borrow_rate
-from driftpy.math.spot_balance import calculate_deposit_rate
-from driftpy.math.spot_balance import calculate_interest_rate
-from driftpy.math.spot_balance import calculate_utilization
+from driftpy.math.spot_balance import (
+    calculate_borrow_rate,
+    calculate_deposit_rate,
+    calculate_interest_rate,
+    calculate_utilization,
+)
 from driftpy.math.spot_market import get_token_amount
 from driftpy.types import SpotBalanceType
-from solana.rpc.async_api import AsyncClient
 
 
 async def main():
@@ -21,11 +24,15 @@ async def main():
     dc = DriftClient(connection, Wallet.dummy(), "mainnet")
     market = await get_spot_market_account(dc.program, 0)  # USDC
     token_deposit_amount = get_token_amount(
-        market.deposit_balance, market, SpotBalanceType.Deposit()
+        market.deposit_balance,
+        market,
+        SpotBalanceType.Deposit(),  # type: ignore
     )
 
     token_borrow_amount = get_token_amount(
-        market.borrow_balance, market, SpotBalanceType.Borrow()
+        market.borrow_balance,
+        market,
+        SpotBalanceType.Borrow(),  # type: ignore
     )
     print(f"token_deposit_amount: {(token_deposit_amount/10**market.decimals):,.2f}")
     print(f"token_borrow_amount: {(token_borrow_amount/10**market.decimals):,.2f}")
