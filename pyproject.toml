@@ -100,7 +100,7 @@ autopep8 = "^2.0.4"
 mypy = "^1.7.0"
 python-dotenv = "^1.0.0"
 ruff = "^0.8.4"
-drift-jit-proxy = "^0.1.5"
+drift-jit-proxy = ">=0.1.6"
 
 
 [tool.poetry.group.dev.dependencies]
