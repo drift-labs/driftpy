@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "driftpy"
-version = "0.7.103"
+version = "0.8.1"
 description = "A Python client for the Drift DEX"
 authors = [
     "x19 <https://twitter.com/0xNineteen@gmail.com>",
@@ -84,7 +84,6 @@ mypy = "^1.7.0"
 deprecated = "^1.2.14"
 events = "^0.5"
 numpy = "^1.26.2"
-# jito-searcher-client = "0.1.5"
 grpcio = "1.68.1"
 protobuf = "5.29.2"
 
@@ -101,6 +100,7 @@ autopep8 = "^2.0.4"
 mypy = "^1.7.0"
 python-dotenv = "^1.0.0"
 ruff = "^0.8.4"
+drift-jit-proxy = "^0.1.5"
 
 
 [tool.poetry.group.dev.dependencies]

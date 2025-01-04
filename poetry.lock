@@ -622,6 +622,23 @@ trio = ["trio (>=0.14,<0.20)"]
 wmi = ["wmi (>=1.5.1,<2.0.0)"]
 
 [[package]]
+name = "drift-jit-proxy"
+version = "0.1.5"
+description = "python sdk for drift protocol v2 jit proxy program"
+optional = false
+python-versions = "<4.0,>=3.10"
+files = [
+    {file = "drift_jit_proxy-0.1.5-py3-none-any.whl", hash = "sha256:eb1bbb404e37ffab4c5dcbb2a282efb90133f2dfddc028b6467176207fec69ad"},
+    {file = "drift_jit_proxy-0.1.5.tar.gz", hash = "sha256:e42cd017e2d137364feaf8c926e5c4b26f1af5b9b4964ded7201afe7aad44eef"},
+]
+
+[package.dependencies]
+anchorpy = ">=0.20.1,<0.21.0"
+driftpy = ">=0.7.52,<0.8.0"
+python-dotenv = ">=1.0.0,<2.0.0"
+solana = ">=0.34.0,<0.35.0"
+
+[[package]]
 name = "events"
 version = "0.5"
 description = "Bringing the elegance of C# EventHandler to Python"
@@ -2526,4 +2543,4 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "e375aa4100bd07523d0272705c587d76ab359a845f9457a518f38d14c8a30cf9"
+content-hash = "57472a68ca0de49a9a058b3cb3730db89556f56cc658f6b0aa681dbe00705723"
