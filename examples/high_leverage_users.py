@@ -1,35 +1,16 @@
 import asyncio
-from asyncio import create_task
-from asyncio import gather
 import os
 
 from anchorpy import Wallet
 from dotenv import load_dotenv
-from driftpy.account_subscription_config import AccountSubscriptionConfig
+from solana.rpc.async_api import AsyncClient
+
 from driftpy.drift_client import DriftClient
-from driftpy.keypair import load_keypair
-from driftpy.market_map.market_map import MarketMap
-from driftpy.market_map.market_map import MarketMapConfig
-from driftpy.market_map.market_map_config import (
-    WebsocketConfig as MarketMapWebsocketConfig,
-)
-from driftpy.market_map.market_map_config import MarketMapConfig
-from driftpy.pickle.vat import Vat
-from driftpy.types import MarketType
-from driftpy.types import OrderParams
-from driftpy.types import OrderType
-from driftpy.types import PositionDirection
-from driftpy.types import PostOnlyParams
-from driftpy.types import TxParams
 from driftpy.user_map.user_map import UserMap
+from driftpy.user_map.user_map_config import UserMapConfig
 from driftpy.user_map.user_map_config import (
     WebsocketConfig as UserMapWebsocketConfig,
 )
-from driftpy.user_map.user_map_config import UserMapConfig
-from driftpy.user_map.user_map_config import UserStatsMapConfig
-from driftpy.user_map.userstats_map import UserStatsMap
-from driftpy.user_map.userstats_map import UserStatsMapConfig
-from solana.rpc.async_api import AsyncClient
 
 
 async def main():
