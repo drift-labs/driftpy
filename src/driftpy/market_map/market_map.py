@@ -2,7 +2,7 @@ import asyncio
 import base64
 import os
 import pickle
-from typing import Dict, Optional, Union
+from typing import Dict, Generic, Optional, TypeVar, Union
 
 import jsonrpcclient
 from solana.rpc.commitment import Confirmed
@@ -22,13 +22,15 @@ from driftpy.types import (
 
 GenericMarketType = Union[SpotMarketAccount, PerpMarketAccount]
 
+T = TypeVar("T", SpotMarketAccount, PerpMarketAccount)
 
-class MarketMap:
+
+class MarketMap(Generic[T]):
     def __init__(self, config: MarketMapConfig):
         if is_variant(config.market_type, "Perp"):
-            self.market_map: Dict[str, PerpMarketAccount] = {}
+            self.market_map: Dict[int, T] = {}
         else:
-            self.market_map: Dict[str, SpotMarketAccount] = {}
+            self.market_map: Dict[int, T] = {}
         self.program = config.program
         self.market_type = config.market_type
         self.sync_lock = asyncio.Lock()
