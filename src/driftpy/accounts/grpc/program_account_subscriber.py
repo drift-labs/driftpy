@@ -13,6 +13,7 @@ from driftpy.accounts.grpc.geyser_codegen import geyser_pb2, geyser_pb2_grpc
 from driftpy.accounts.types import (
     DataAndSlot,
     GrpcProgramAccountOptions,
+    MarketUpdateCallback,
     UpdateCallback,
 )
 from driftpy.types import GrpcConfig
@@ -26,7 +27,7 @@ class GrpcProgramAccountSubscriber:
         subscription_name: str,
         program: Program,
         grpc_config: GrpcConfig,
-        on_update: Optional[UpdateCallback],
+        on_update: Optional[UpdateCallback | MarketUpdateCallback],
         options: GrpcProgramAccountOptions,
         decode: Optional[Callable[[bytes], T]] = None,
     ):

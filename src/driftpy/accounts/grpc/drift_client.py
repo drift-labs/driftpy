@@ -14,8 +14,11 @@ from driftpy.addresses import (
     get_state_public_key,
 )
 from driftpy.constants.config import find_all_market_and_oracles
+from driftpy.market_map.grpc_market_map import GrpcMarketMap
+from driftpy.market_map.market_map_config import GrpcMarketMapConfig
 from driftpy.oracles.oracle_id import get_oracle_id
 from driftpy.types import (
+    MarketType,
     OraclePriceData,
     PerpMarketAccount,
     SpotMarketAccount,
@@ -130,6 +133,32 @@ class GrpcDriftClientAccountSubscriber(WebsocketDriftClientAccountSubscriber):
                 data_and_slot.data.market_index for data_and_slot in spot_ds
             ]
             self.full_oracle_wrappers = full_oracle_wrappers
+
+            spot_market_config = GrpcMarketMapConfig(
+                program=self.program,
+                market_type=MarketType.Spot(),  # type: ignore
+                grpc_config=self.grpc_config,
+                connection=self.program.provider.connection,
+            )
+
+            perp_market_config = GrpcMarketMapConfig(
+                program=self.program,
+                market_type=MarketType.Perp(),  # type: ignore
+                grpc_config=self.grpc_config,
+                connection=self.program.provider.connection,
+            )
+
+            spot_market_map = GrpcMarketMap(spot_market_config)
+            perp_market_map = GrpcMarketMap(perp_market_config)
+
+            spot_market_map.init(spot_ds)
+            perp_market_map.init(perp_ds)
+
+            self.spot_market_map = spot_market_map
+            self.perp_market_map = perp_market_map
+
+            await spot_market_map.subscribe()
+            await perp_market_map.subscribe()
 
             for full_oracle_wrapper in self.full_oracle_wrappers:
                 await self.subscribe_to_oracle(full_oracle_wrapper)
