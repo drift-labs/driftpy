@@ -477,7 +477,7 @@ class DriftUser:
 
     def get_unrealized_funding_pnl(
         self,
-        market_index: int = None,
+        market_index: Optional[int] = None,
     ):
         user = self.get_user_account()
 

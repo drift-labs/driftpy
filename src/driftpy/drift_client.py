@@ -451,7 +451,7 @@ class DriftClient:
     def convert_to_price_precision(self, amount: Union[int, float]) -> int:
         return int(amount * PRICE_PRECISION)
 
-    def get_sub_account_id_for_ix(self, sub_account_id: int = None):
+    def get_sub_account_id_for_ix(self, sub_account_id: Optional[int] = None):
         return (
             sub_account_id if sub_account_id is not None else self.active_sub_account_id
         )
@@ -1128,16 +1128,19 @@ class DriftClient:
         market_index: int,
         user_token_account: Pubkey,
         reduce_only: bool = False,
-        sub_account_id: int = None,
+        sub_account_id: Optional[int] = None,
     ):
         sub_account_id = self.get_sub_account_id_for_ix(sub_account_id)
 
         spot_market = self.get_spot_market_account(market_index)
+        if not spot_market:
+            raise Exception("Spot market account not found")
+
         remaining_accounts = self.get_remaining_accounts(
             user_accounts=[self.get_user_account(sub_account_id)],
             writable_spot_market_indexes=[market_index],
         )
-        dc_signer = self.get_signer_public_key(self.program_id)
+        dc_signer = self.get_signer_public_key()
 
         return self.program.instruction["withdraw"](
             market_index,
