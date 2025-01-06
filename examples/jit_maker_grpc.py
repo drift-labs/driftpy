@@ -703,7 +703,11 @@ async def main():
     )
 
     jit_maker_perp_config = JitMakerConfig(
-        "jit maker", [0], [0], MarketType.Perp(), spread=-0.001
+        bot_id="jit maker",
+        market_indexes=[0],
+        sub_accounts=[0],
+        market_type=MarketType.Perp(),  # type: ignore
+        spread=-0.01,
     )
 
     for sub_id in jit_maker_perp_config.sub_accounts:
