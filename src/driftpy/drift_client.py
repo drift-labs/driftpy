@@ -1,5 +1,4 @@
 import base64
-import json
 import os
 import random
 import string
@@ -3155,10 +3154,14 @@ class DriftClient:
         amount: int,
         out_ata: Optional[Pubkey] = None,
         in_ata: Optional[Pubkey] = None,
-        slippage_bps: Optional[int] = None,
-        quote=None,
+        slippage_bps: int = 50,
+        quote: Optional[dict] = None,
         reduce_only: Optional[SwapReduceOnly] = None,
         user_account_public_key: Optional[Pubkey] = None,
+        swap_mode: str = "ExactIn",
+        fee_account: Optional[Pubkey] = None,
+        platform_fee_bps: Optional[int] = None,
+        only_direct_routes: bool = False,
     ) -> Tuple[list[Instruction], list[AddressLookupTableAccount]]:
         pre_instructions: list[Instruction] = []
         JUPITER_URL = os.getenv("JUPITER_URL", "https://quote-api.jup.ag/v6")
@@ -3166,26 +3169,38 @@ class DriftClient:
         out_market = self.get_spot_market_account(out_market_idx)
         in_market = self.get_spot_market_account(in_market_idx)
 
-        if slippage_bps is None:
-            slippage_bps = 10
+        if not out_market or not in_market:
+            raise Exception("Invalid market indexes")
 
         if quote is None:
-            url = f"{JUPITER_URL}/quote?inputMint={str(in_market.mint)}&outputMint={str(out_market.mint)}&amount={amount}&slippageBps={slippage_bps}"
+            params = {
+                "inputMint": str(in_market.mint),
+                "outputMint": str(out_market.mint),
+                "amount": str(amount),
+                "slippageBps": slippage_bps,
+                "swapMode": swap_mode,
+                "maxAccounts": 50,
+            }
+            if only_direct_routes:
+                params["onlyDirectRoutes"] = "true"
+            if platform_fee_bps:
+                params["platformFeeBps"] = platform_fee_bps
 
+            url = f"{JUPITER_URL}/quote?" + "&".join(
+                f"{k}={v}" for k, v in params.items()
+            )
             quote_resp = requests.get(url)
 
             if quote_resp.status_code != 200:
-                raise Exception("Couldn't get a Jupiter quote")
+                raise Exception(f"Jupiter quote failed: {quote_resp.text}")
 
             quote = quote_resp.json()
 
         if out_ata is None:
-            out_ata: Pubkey = self.get_associated_token_account_public_key(
+            out_ata = self.get_associated_token_account_public_key(
                 out_market.market_index
             )
-
             ai = await self.connection.get_account_info(out_ata)
-
             if not ai.value:
                 pre_instructions.append(
                     self.create_associated_token_account_idempotent_instruction(
@@ -3197,12 +3212,10 @@ class DriftClient:
                 )
 
         if in_ata is None:
-            in_ata: Pubkey = self.get_associated_token_account_public_key(
+            in_ata = self.get_associated_token_account_public_key(
                 in_market.market_index
             )
-
             ai = await self.connection.get_account_info(in_ata)
-
             if not ai.value:
                 pre_instructions.append(
                     self.create_associated_token_account_idempotent_instruction(
@@ -3213,23 +3226,24 @@ class DriftClient:
                     )
                 )
 
-        data = {
+        swap_data = {
             "quoteResponse": quote,
             "userPublicKey": str(self.wallet.public_key),
             "destinationTokenAccount": str(out_ata),
         }
+        if fee_account:
+            swap_data["feeAccount"] = str(fee_account)
 
         swap_ix_resp = requests.post(
             f"{JUPITER_URL}/swap-instructions",
             headers={"Accept": "application/json", "Content-Type": "application/json"},
-            data=json.dumps(data),
+            json=swap_data,
         )
 
         if swap_ix_resp.status_code != 200:
-            raise Exception("Couldn't get Jupiter swap ix")
+            raise Exception(f"Jupiter swap instructions failed: {swap_ix_resp.text}")
 
         swap_ix_json = swap_ix_resp.json()
-
         swap_ix = swap_ix_json.get("swapInstruction")
         address_table_lookups = swap_ix_json.get("addressLookupTableAddresses")
 
@@ -3258,11 +3272,11 @@ class DriftClient:
         cleansed_ixs: list[Instruction] = []
 
         for ix in ixs:
-            if type(ix) == list:
+            if isinstance(ix, list):
                 for i in ix:
-                    if type(i) == dict:
+                    if isinstance(i, dict):
                         cleansed_ixs.append(self._dict_to_instructions(i))
-            elif type(ix) == dict:
+            elif isinstance(ix, dict):
                 cleansed_ixs.append(self._dict_to_instructions(ix))
             else:
                 cleansed_ixs.append(ix)
