@@ -159,7 +159,7 @@ class GrpcProgramAccountSubscriber:
             self.task.cancel()
             self.task = None
         if self.stream:
-            await self.stream.cancel()
+            self.stream.cancel()
             self.stream = None
         if self.channel:
             await self.channel.close()
