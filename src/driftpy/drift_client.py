@@ -1522,13 +1522,13 @@ class DriftClient:
 
     async def cancel_and_place_orders(
         self,
-        cancel_params: (
+        cancel_params: Tuple[
             Optional[MarketType],
             Optional[int],
             Optional[PositionDirection],
-        ),
+        ],
         place_order_params: List[OrderParams],
-        sub_account_id: int = None,
+        sub_account_id: Optional[int] = None,
     ):
         tx_sig_and_slot = await self.send_ixs(
             self.get_cancel_and_place_orders_ix(
@@ -1550,13 +1550,13 @@ class DriftClient:
 
     def get_cancel_and_place_orders_ix(
         self,
-        cancel_params: (
+        cancel_params: Tuple[
             Optional[MarketType],
             Optional[int],
             Optional[PositionDirection],
-        ),
+        ],
         place_order_params: List[OrderParams],
-        sub_account_id: int = None,
+        sub_account_id: Optional[int] = None,
     ):
         sub_account_id = self.get_sub_account_id_for_ix(sub_account_id)
 
@@ -1572,7 +1572,7 @@ class DriftClient:
         self,
         order_id: int,
         modify_order_params: ModifyOrderParams,
-        sub_account_id: int = None,
+        sub_account_id: Optional[int] = None,
     ):
         return (
             await self.send_ixs(
