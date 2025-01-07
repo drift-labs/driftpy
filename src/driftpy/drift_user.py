@@ -489,6 +489,8 @@ class DriftUser:
             perp_market = self.drift_client.get_perp_market_account(
                 position.market_index
             )
+            if not perp_market:
+                raise Exception("Perp market account not found")
 
             unrealized_pnl += calculate_position_funding_pnl(perp_market, position)
 
