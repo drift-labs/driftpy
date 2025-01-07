@@ -198,8 +198,8 @@ mainnet_spot_market_configs: list[SpotMarketConfig] = [
     SpotMarketConfig(
         symbol="dSOL",
         market_index=17,
-        oracle=Pubkey.from_string("7QJ6e57t3yM8HYVg6bAnJiCiZ3wQQ5CSVsa6GA16nJuK"),
-        oracle_source=OracleSource.SwitchboardOnDemand(),  # type: ignore
+        oracle=Pubkey.from_string("4YstsHafLyDbYFxmJbgoEr33iJJEp6rNPgLTQRgXDkG2"),
+        oracle_source=OracleSource.PythPull(),  # type: ignore
         mint=Pubkey.from_string("Dso1bDeDjCQxTrWHqUUi63oBvV7Mdm6WaobLbQ7gnPQ"),
     ),
     SpotMarketConfig(
