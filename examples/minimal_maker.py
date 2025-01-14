@@ -5,11 +5,14 @@ import os
 import dotenv
 from anchorpy.provider import Wallet
 from solana.rpc.async_api import AsyncClient
+from solana.rpc.core import RPCException
 
+from driftpy.accounts.get_accounts import get_protected_maker_mode_stats
 from driftpy.constants.numeric_constants import BASE_PRECISION, PRICE_PRECISION
 from driftpy.constants.perp_markets import mainnet_perp_market_configs
 from driftpy.drift_client import DriftClient
 from driftpy.keypair import load_keypair
+from driftpy.math.user_status import is_user_protected_maker
 from driftpy.types import (
     MarketType,
     OrderParams,
@@ -37,6 +40,32 @@ async def get_drift_client() -> DriftClient:
     )
     await drift_client.subscribe()
     logger.info("Drift client subscribed")
+
+    user = drift_client.get_user()
+    is_protected_maker = is_user_protected_maker(user.get_user_account())
+    if not is_protected_maker:
+        logger.warning("User is not a protected maker")
+        logger.warning("Attempting to make protected maker...")
+        stats = await get_protected_maker_mode_stats(drift_client.program)
+        logger.info(f"Protected maker stats: {stats}")
+        if stats["current_users"] >= stats["max_users"]:
+            logger.error("No room for a new protected maker")
+            print("---\nYour orders will not be protected. Continue anyway? (Y/n)")
+            if input().lower().startswith("n"):
+                exit(1)
+            return drift_client
+
+        try:
+            result = await drift_client.update_user_protected_maker_orders(0, True)
+            logger.info(result)
+        except RPCException as e:
+            logger.error(f"Failed to make protected maker: {e}")
+            print("---\nYour orders will not be protected. Continue anyway? (Y/n)")
+            if input().lower().startswith("n"):
+                exit(1)
+
+    logger.info("Drift client is ready.")
+
     return drift_client
 
 
