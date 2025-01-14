@@ -1,17 +1,33 @@
-from typing import cast, Optional, Callable
-from solders.pubkey import Pubkey
-from anchorpy import Program, ProgramAccount
-from solana.rpc.commitment import Commitment
+from typing import Callable, Optional, cast
 
-from driftpy.types import *
-from driftpy.addresses import *
-from .types import DataAndSlot, T
+from anchorpy.program.core import Program
+from anchorpy.program.namespace.account import ProgramAccount
+from solana.rpc.commitment import Commitment
+from solders.pubkey import Pubkey
+
+from driftpy.accounts.types import DataAndSlot, T
+from driftpy.addresses import (
+    get_insurance_fund_stake_public_key,
+    get_perp_market_public_key,
+    get_protected_maker_mode_config_public_key,
+    get_spot_market_public_key,
+    get_state_public_key,
+    get_user_stats_account_public_key,
+)
+from driftpy.types import (
+    InsuranceFundStakeAccount,
+    PerpMarketAccount,
+    SpotMarketAccount,
+    StateAccount,
+    UserAccount,
+    UserStatsAccount,
+)
 
 
 async def get_account_data_and_slot(
     address: Pubkey,
     program: Program,
-    commitment: Commitment = "processed",
+    commitment: Commitment = Commitment("processed"),
     decode: Optional[Callable[[bytes], T]] = None,
 ) -> Optional[DataAndSlot[T]]:
     account_info = await program.provider.connection.get_account_info(
@@ -67,14 +83,14 @@ async def get_user_stats_account(
 async def get_user_account_and_slot(
     program: Program,
     user_public_key: Pubkey,
-) -> DataAndSlot[UserAccount]:
+) -> Optional[DataAndSlot[UserAccount]]:
     return await get_account_data_and_slot(user_public_key, program)
 
 
 async def get_user_account(
     program: Program,
     user_public_key: Pubkey,
-) -> UserAccount:
+) -> Optional[UserAccount]:
     return (await get_user_account_and_slot(program, user_public_key)).data
 
 
@@ -89,7 +105,7 @@ async def get_perp_market_account_and_slot(
 
 async def get_perp_market_account(
     program: Program, market_index: int
-) -> PerpMarketAccount:
+) -> Optional[PerpMarketAccount]:
     return (await get_perp_market_account_and_slot(program, market_index)).data
 
 
@@ -99,7 +115,7 @@ async def get_all_perp_market_accounts(program: Program) -> list[ProgramAccount]
 
 async def get_spot_market_account_and_slot(
     program: Program, spot_market_index: int
-) -> DataAndSlot[SpotMarketAccount]:
+) -> Optional[DataAndSlot[SpotMarketAccount]]:
     spot_market_public_key = get_spot_market_public_key(
         program.program_id, spot_market_index
     )
@@ -108,9 +124,19 @@ async def get_spot_market_account_and_slot(
 
 async def get_spot_market_account(
     program: Program, spot_market_index: int
-) -> SpotMarketAccount:
+) -> Optional[SpotMarketAccount]:
     return (await get_spot_market_account_and_slot(program, spot_market_index)).data
 
 
 async def get_all_spot_market_accounts(program: Program) -> list[ProgramAccount]:
     return await program.account["SpotMarket"].all()
+
+
+async def get_protected_maker_mode_stats(program: Program) -> dict[str, int | bool]:
+    config_pubkey = get_protected_maker_mode_config_public_key(program.program_id)
+    config = await program.account["ProtectedMakerModeConfig"].fetch(config_pubkey)
+    return {
+        "max_users": config.max_users,
+        "current_users": config.current_users,
+        "is_reduce_only": config.reduce_only > 0,
+    }

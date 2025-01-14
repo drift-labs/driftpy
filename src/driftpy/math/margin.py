@@ -1,11 +1,21 @@
 import math
-
-from driftpy.math.spot_market import *
-
 from enum import Enum
 
-from driftpy.types import OraclePriceData
-from driftpy.constants.numeric_constants import *
+from driftpy.constants.numeric_constants import (
+    AMM_RESERVE_PRECISION,
+    BASE_PRECISION,
+    MARGIN_PRECISION,
+    PRICE_TO_QUOTE_PRECISION_RATIO,
+    SPOT_IMF_PRECISION,
+    SPOT_WEIGHT_PRECISION,
+)
+from driftpy.math.spot_market import get_token_amount, get_token_value
+from driftpy.types import (
+    OraclePriceData,
+    PerpMarketAccount,
+    SpotBalanceType,
+    SpotMarketAccount,
+)
 
 
 def calculate_size_discount_asset_weight(
@@ -77,7 +87,9 @@ def calculate_scaled_initial_asset_weight(
         return spot_market.initial_asset_weight
 
     deposits = get_token_amount(
-        spot_market.deposit_balance, spot_market, SpotBalanceType.Deposit()
+        spot_market.deposit_balance,
+        spot_market,
+        SpotBalanceType.Deposit(),  # type: ignore
     )
 
     deposits_value = get_token_value(deposits, spot_market.decimals, oracle_price)
@@ -139,7 +151,9 @@ def calculate_net_user_pnl_imbalance(
     user_pnl = calculate_net_user_pnl(perp_market, oracle_data)
 
     pnl_pool = get_token_amount(
-        perp_market.pnl_pool.scaled_balance, spot_market, SpotBalanceType.Deposit()
+        perp_market.pnl_pool.scaled_balance,
+        spot_market,
+        SpotBalanceType.Deposit(),  # type: ignore
     )
 
     imbalance = user_pnl - pnl_pool

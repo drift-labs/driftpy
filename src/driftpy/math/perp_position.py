@@ -1,7 +1,21 @@
-from driftpy.math.spot_market import *
-from driftpy.types import OraclePriceData, is_variant
-from driftpy.constants.numeric_constants import *
+from driftpy.constants.numeric_constants import (
+    AMM_RESERVE_PRECISION,
+    AMM_TIMES_PEG_TO_QUOTE_PRECISION_RATIO,
+    AMM_TO_QUOTE_PRECISION_RATIO,
+    BASE_PRECISION,
+    FUNDING_RATE_BUFFER,
+    MAX_PREDICTION_PRICE,
+    PRICE_PRECISION,
+)
 from driftpy.math.amm import calculate_amm_reserves_after_swap, get_swap_direction
+from driftpy.types import (
+    AssetType,
+    OraclePriceData,
+    PerpMarketAccount,
+    PerpPosition,
+    PositionDirection,
+    is_variant,
+)
 
 
 def calculate_base_asset_value_with_oracle(
@@ -132,25 +146,28 @@ def is_available(position: PerpPosition):
 
 def calculate_base_asset_value(
     market: PerpMarketAccount, user_position: PerpPosition
-) -> int:
+) -> float:
     if user_position.base_asset_amount == 0:
         return 0
 
     direction_to_close = (
-        PositionDirection.Short()
+        PositionDirection.Short()  # type: ignore
         if user_position.base_asset_amount > 0
-        else PositionDirection.Long()
+        else PositionDirection.Long()  # type: ignore
     )
 
     new_quote_asset_reserve, _ = calculate_amm_reserves_after_swap(
         market.amm,
-        AssetType.BASE(),
+        AssetType.BASE(),  # type: ignore
         abs(user_position.base_asset_amount),
-        get_swap_direction(AssetType.BASE(), direction_to_close),
+        get_swap_direction(
+            AssetType.BASE(),  # type: ignore
+            direction_to_close,
+        ),
     )
 
     result = None
-    if direction_to_close == PositionDirection.Short():
+    if direction_to_close == PositionDirection.Short():  # type: ignore
         result = (
             (market.amm.quote_asset_reserve - new_quote_asset_reserve)
             * market.amm.peg_multiplier
