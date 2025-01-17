@@ -663,4 +663,11 @@ mainnet_perp_market_configs: list[PerpMarketConfig] = [
         oracle=Pubkey.from_string("7vGHChuBJyFMYBqMLXRzBmRxWdSuwEmg8RvRm3RWQsxi"),
         oracle_source=OracleSource.PythPull(),  # type: ignore
     ),
+    PerpMarketConfig(
+        symbol="AI16Z-PERP",
+        base_asset_symbol="AI16Z",
+        market_index=63,
+        oracle=Pubkey.from_string("3gdGkrmBdYR7B1MRRdRVysqhZCvYvLGHonr9b7o9WVki"),
+        oracle_source=OracleSource.PythPull(),  # type: ignore
+    ),
 ]

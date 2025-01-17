@@ -21,7 +21,13 @@ from driftpy.math.spot_position import (
     is_spot_position_available,
 )
 from driftpy.oracles.strict_oracle_price import StrictOraclePrice
-from driftpy.types import OraclePriceData
+from driftpy.types import (
+    OraclePriceData,
+    Order,
+    PerpPosition,
+    SpotPosition,
+    UserAccount,
+)
 
 
 class DriftUser:

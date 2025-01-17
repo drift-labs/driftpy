@@ -1,8 +1,12 @@
 from typing import Union
 
-from driftpy.accounts import *
 from driftpy.math.utils import div_ceil
-from driftpy.types import OraclePriceData
+from driftpy.types import (
+    OraclePriceData,
+    SpotBalanceType,
+    SpotMarketAccount,
+    is_variant,
+)
 
 
 def get_signed_token_amount(amount, balance_type):

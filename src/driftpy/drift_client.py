@@ -39,12 +39,10 @@ import driftpy
 from driftpy.account_subscription_config import AccountSubscriptionConfig
 from driftpy.accounts import (
     DataAndSlot,
-    OracleInfo,
     OraclePriceData,
     PerpMarketAccount,
     SpotMarketAccount,
     StateAccount,
-    TxParams,
     UserAccount,
 )
 from driftpy.accounts.cache.drift_client import CachedDriftClientAccountSubscriber
@@ -87,6 +85,7 @@ from driftpy.types import (
     MakerInfo,
     MarketType,
     ModifyOrderParams,
+    OracleInfo,
     Order,
     OrderParams,
     OrderType,
@@ -98,6 +97,7 @@ from driftpy.types import (
     SerumV3FulfillmentConfigAccount,
     SpotPosition,
     SwapReduceOnly,
+    TxParams,
     is_variant,
 )
 
