@@ -1,5 +1,5 @@
 {
-  "version": "2.104.0",
+  "version": "2.106.0",
   "name": "drift",
   "instructions": [
     {
@@ -143,11 +143,6 @@
           "isSigner": true
         },
         {
-          "name": "user",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
           "name": "payer",
           "isMut": true,
           "isSigner": true
@@ -182,11 +177,6 @@
           "name": "authority",
           "isMut": true,
           "isSigner": true
-        },
-        {
-          "name": "user",
-          "isMut": false,
-          "isSigner": false
         },
         {
           "name": "systemProgram",
@@ -1554,11 +1544,6 @@
       "name": "deleteSwiftUserOrders",
       "accounts": [
         {
-          "name": "user",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
           "name": "swiftUserOrders",
           "isMut": true,
           "isSigner": false
@@ -2276,6 +2261,176 @@
           "type": {
             "option": "u64"
           }
+        }
+      ]
+    },
+    {
+      "name": "liquidateSpotWithSwapBegin",
+      "accounts": [
+        {
+          "name": "state",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "authority",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "liquidator",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "liquidatorStats",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "user",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "userStats",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "liabilitySpotMarketVault",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "assetSpotMarketVault",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "liabilityTokenAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "assetTokenAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "driftSigner",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "instructions",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Instructions Sysvar for instruction introspection"
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "assetMarketIndex",
+          "type": "u16"
+        },
+        {
+          "name": "liabilityMarketIndex",
+          "type": "u16"
+        },
+        {
+          "name": "swapAmount",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "liquidateSpotWithSwapEnd",
+      "accounts": [
+        {
+          "name": "state",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "authority",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "liquidator",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "liquidatorStats",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "user",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "userStats",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "liabilitySpotMarketVault",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "assetSpotMarketVault",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "liabilityTokenAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "assetTokenAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "driftSigner",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "instructions",
+          "isMut": false,
+          "isSigner": false,
+          "docs": [
+            "Instructions Sysvar for instruction introspection"
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "assetMarketIndex",
+          "type": "u16"
+        },
+        {
+          "name": "liabilityMarketIndex",
+          "type": "u16"
         }
       ]
     },
@@ -3279,6 +3434,32 @@
           "type": "bytes"
         }
       ]
+    },
+    {
+      "name": "pauseSpotMarketDepositWithdraw",
+      "accounts": [
+        {
+          "name": "state",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "keeper",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "spotMarket",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "spotMarketVault",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": []
     },
     {
       "name": "initialize",
@@ -6085,7 +6266,7 @@
         {
           "name": "fuelBoostDeposits",
           "type": {
-            "option": "u32"
+            "option": "i32"
           }
         },
         {
@@ -6486,6 +6667,40 @@
         {
           "name": "feedId",
           "type": "u32"
+        },
+        {
+          "name": "exponent",
+          "type": "i32"
+        }
+      ]
+    },
+    {
+      "name": "updatePythLazerOracleExponent",
+      "accounts": [
+        {
+          "name": "admin",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "lazerOracle",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "state",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "feedId",
+          "type": "u32"
+        },
+        {
+          "name": "exponent",
+          "type": "i32"
         }
       ]
     },
@@ -8016,7 +8231,7 @@
         "kind": "struct",
         "fields": [
           {
-            "name": "userPubkey",
+            "name": "authorityPubkey",
             "type": "publicKey"
           },
           {
@@ -11275,6 +11490,12 @@
           },
           {
             "name": "PythLazer"
+          },
+          {
+            "name": "PythLazer1K"
+          },
+          {
+            "name": "PythLazer1M"
           }
         ]
       }
@@ -11746,6 +11967,44 @@
           },
           {
             "name": "HighLeverage"
+          }
+        ]
+      }
+    },
+    {
+      "name": "SignatureVerificationError",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "InvalidEd25519InstructionProgramId"
+          },
+          {
+            "name": "InvalidEd25519InstructionDataLength"
+          },
+          {
+            "name": "InvalidSignatureIndex"
+          },
+          {
+            "name": "InvalidSignatureOffset"
+          },
+          {
+            "name": "InvalidPublicKeyOffset"
+          },
+          {
+            "name": "InvalidMessageOffset"
+          },
+          {
+            "name": "InvalidMessageDataSize"
+          },
+          {
+            "name": "InvalidInstructionIndex"
+          },
+          {
+            "name": "MessageOffsetOverflow"
+          },
+          {
+            "name": "InvalidMessageHex"
           }
         ]
       }
@@ -14411,6 +14670,11 @@
       "code": 6307,
       "name": "PythLazerMessagePriceFeedMismatch",
       "msg": "Pyth lazer message does not correspond to correct fed id"
+    },
+    {
+      "code": 6308,
+      "name": "InvalidLiquidateSpotWithSwap",
+      "msg": "InvalidLiquidateSpotWithSwap"
     }
   ]
 }
