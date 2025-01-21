@@ -31,6 +31,8 @@ jobs:
         run: poetry install
       - name: Install pytest
         run: poetry run pip install pytest
+      - name: Install ruff
+        run: poetry run pip install ruff
       - name: Run tests
         env:
           MAINNET_RPC_ENDPOINT: ${{ secrets.MAINNET_RPC_ENDPOINT }}
