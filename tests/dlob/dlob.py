@@ -1,8 +1,10 @@
 from dataclasses import dataclass
 from typing import Optional
+
+from solders.keypair import Keypair
+
 from driftpy.constants.numeric_constants import BASE_PRECISION, QUOTE_PRECISION
 from driftpy.dlob.dlob import DLOB
-from tests.dlob_test_constants import mock_perp_markets, mock_spot_markets
 from driftpy.math.auction import is_auction_complete
 from driftpy.math.conversion import convert_to_number
 from driftpy.math.orders import is_resting_limit_order
@@ -13,12 +15,11 @@ from driftpy.types import (
     OrderType,
     PositionDirection,
 )
-from solders.keypair import Keypair
-
 from tests.decode.dlob_test_helpers import (
     insert_order_to_dlob,
     insert_trigger_order_to_dlob,
 )
+from tests.dlob_test_constants import mock_perp_markets, mock_spot_markets
 
 
 @dataclass
@@ -46,14 +47,22 @@ def test_fresh_dlob_is_empty():
     for market in mock_perp_markets:
         found_asks = 0
         for _ in dlob.get_asks(
-            market.market_index, slot, MarketType.Perp(), oracle_price_data, v_ask
+            market.market_index,
+            slot,
+            MarketType.Perp(),  # type: ignore
+            oracle_price_data,
+            v_ask,
         ):
             found_asks += 1
         assert found_asks == 1
 
         found_bids = 0
         for _ in dlob.get_bids(
-            market.market_index, 0, MarketType.Perp(), oracle_price_data, v_bid
+            market.market_index,
+            0,
+            MarketType.Perp(),  # type: ignore
+            oracle_price_data,
+            v_bid,
         ):
             found_bids += 1
         assert found_bids == 1
@@ -62,14 +71,22 @@ def test_fresh_dlob_is_empty():
         for market in mock_spot_markets:
             found_asks = 0
             for _ in dlob.get_asks(
-                market.market_index, slot, MarketType.Spot(), oracle_price_data, None
+                market.market_index,
+                slot,
+                MarketType.Spot(),  # type: ignore
+                oracle_price_data,
+                None,
             ):
                 found_asks += 1
             assert found_asks == 0
 
             found_bids = 0
             for _ in dlob.get_bids(
-                market.market_index, 0, MarketType.Spot(), oracle_price_data, None
+                market.market_index,
+                0,
+                MarketType.Spot(),  # type: ignore
+                oracle_price_data,
+                None,
             ):
                 found_bids += 1
             assert found_bids == 0
@@ -90,49 +107,53 @@ def test_clear_dlob():
 
     insert_order_to_dlob(
         dlob,
-        user0.pubkey,
-        OrderType.Limit(),
-        MarketType.Perp(),
+        user0.pubkey(),
+        OrderType.Limit(),  # type: ignore
+        MarketType.Perp(),  # type: ignore
         0,
         market_index,
         9,
         BASE_PRECISION,
-        PositionDirection.Long(),
+        PositionDirection.Long(),  # type: ignore
         v_bid,
         v_ask,
     )
 
     insert_order_to_dlob(
         dlob,
-        user1.pubkey,
-        OrderType.Limit(),
-        MarketType.Perp(),
+        user1.pubkey(),
+        OrderType.Limit(),  # type: ignore
+        MarketType.Perp(),  # type: ignore
         1,
         market_index,
         8,
         BASE_PRECISION,
-        PositionDirection.Long(),
+        PositionDirection.Long(),  # type: ignore
         v_bid,
         v_ask,
     )
 
     insert_order_to_dlob(
         dlob,
-        user2.pubkey,
-        OrderType.Limit(),
-        MarketType.Perp(),
+        user2.pubkey(),
+        OrderType.Limit(),  # type: ignore
+        MarketType.Perp(),  # type: ignore
         2,
         market_index,
         8,
         BASE_PRECISION,
-        PositionDirection.Long(),
+        PositionDirection.Long(),  # type: ignore
         v_bid,
         v_ask,
     )
 
     bids = 0
     for _ in dlob.get_bids(
-        market_index, slot, MarketType.Perp(), oracle_price_data, None
+        market_index,
+        slot,
+        MarketType.Perp(),  # type: ignore
+        oracle_price_data,
+        None,
     ):
         bids += 1
     assert bids == 3
@@ -140,7 +161,11 @@ def test_clear_dlob():
     dlob.clear()
 
     cleared_bids = dlob.get_bids(
-        market_index, slot, MarketType.Perp(), oracle_price_data, None
+        market_index,
+        slot,
+        MarketType.Perp(),  # type: ignore
+        oracle_price_data,
+        None,
     )
     try:
         next(cleared_bids)
@@ -164,18 +189,18 @@ def test_update_resting_limit_orders_bids():
     user2 = Keypair()
 
     market_index = 0
-    market_type = MarketType.Perp()
+    market_type = MarketType.Perp()  # type: ignore
 
     insert_order_to_dlob(
         dlob,
         user0.pubkey(),
-        OrderType.Limit(),
+        OrderType.Limit(),  # type: ignore
         market_type,
         1,
         market_index,
         11,
         BASE_PRECISION,
-        PositionDirection.Long(),
+        PositionDirection.Long(),  # type: ignore
         v_bid,
         v_ask,
         1,
@@ -184,13 +209,13 @@ def test_update_resting_limit_orders_bids():
     insert_order_to_dlob(
         dlob,
         user1.pubkey(),
-        OrderType.Limit(),
+        OrderType.Limit(),  # type: ignore
         market_type,
         2,
         market_index,
         12,
         BASE_PRECISION,
-        PositionDirection.Long(),
+        PositionDirection.Long(),  # type: ignore
         v_bid,
         v_ask,
         11,
@@ -199,13 +224,13 @@ def test_update_resting_limit_orders_bids():
     insert_order_to_dlob(
         dlob,
         user2.pubkey(),
-        OrderType.Limit(),
+        OrderType.Limit(),  # type: ignore
         market_type,
         3,
         market_index,
         13,
         BASE_PRECISION,
-        PositionDirection.Long(),
+        PositionDirection.Long(),  # type: ignore
         v_bid,
         v_ask,
         21,
@@ -215,6 +240,8 @@ def test_update_resting_limit_orders_bids():
         dlob.get_taking_bids(market_index, market_type, slot, oracle_price_data)
     )
     assert len(taking_bids) == 3
+    print(type(taking_bids[0]))
+
     assert taking_bids[0].order.order_id == 1
     assert taking_bids[1].order.order_id == 2
     assert taking_bids[2].order.order_id == 3

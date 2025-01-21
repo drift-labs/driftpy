@@ -1,5 +1,6 @@
 import copy
 from typing import Callable, Dict, Generator, List, Optional, Tuple, Union
+
 from solders.pubkey import Pubkey
 
 from driftpy.constants.numeric_constants import (
@@ -8,27 +9,27 @@ from driftpy.constants.numeric_constants import (
     QUOTE_PRECISION,
 )
 from driftpy.dlob.dlob_helpers import get_maker_rebate, get_node_lists
-from driftpy.dlob.node_list import get_vamm_node_generator, NodeList
+from driftpy.dlob.dlob_node import (
+    DLOBNode,
+    FloatingLimitOrderNode,
+    MarketOrderNode,
+    RestingLimitOrderNode,
+    TakingLimitOrderNode,
+    TriggerOrderNode,
+    VAMMNode,
+)
+from driftpy.dlob.node_list import NodeList, get_vamm_node_generator
 from driftpy.dlob.orderbook_levels import (
-    create_l2_levels,
-    merge_l2_level_generators,
-    get_l2_generator_from_dlob_nodes,
     L2OrderBook,
     L2OrderBookGenerator,
     L3Level,
     L3OrderBook,
-)
-from driftpy.dlob.dlob_node import (
-    DLOBNode,
-    RestingLimitOrderNode,
-    FloatingLimitOrderNode,
-    TakingLimitOrderNode,
-    MarketOrderNode,
-    TriggerOrderNode,
-    VAMMNode,
+    create_l2_levels,
+    get_l2_generator_from_dlob_nodes,
+    merge_l2_level_generators,
 )
 from driftpy.math.auction import is_fallback_available_liquidity_source
-from driftpy.math.exchange_status import exchange_paused, fill_paused, amm_paused
+from driftpy.math.exchange_status import amm_paused, exchange_paused, fill_paused
 from driftpy.math.orders import (
     get_limit_price,
     is_order_expired,
@@ -47,8 +48,8 @@ from driftpy.types import (
     SpotMarketAccount,
     StateAccount,
     UserAccount,
-    is_variant,
     is_one_of_variant,
+    is_variant,
     market_type_to_string,
 )
 

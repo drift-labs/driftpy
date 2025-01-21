@@ -3,12 +3,16 @@ from base64 import b64decode
 from dataclasses import dataclass
 from typing import Optional
 
-from anchorpy import Context, Program, Provider
+from anchorpy.program.context import Context
+from anchorpy.program.core import Program
+from anchorpy.provider import Provider
 from construct import Int32sl, Int64ul
 from solana.rpc.async_api import AsyncClient
-from solana.transaction import Signature, Transaction
+from solana.transaction import Transaction
+from solders.instruction import Instruction
 from solders.keypair import Keypair
 from solders.pubkey import Pubkey
+from solders.signature import Signature
 from solders.system_program import CreateAccountParams, create_account
 from spl.token._layouts import ACCOUNT_LAYOUT, MINT_LAYOUT
 from spl.token.async_client import AsyncToken
@@ -23,9 +27,19 @@ from spl.token.instructions import (
 )
 
 from driftpy.admin import Admin
-from driftpy.constants.numeric_constants import *
+from driftpy.constants.numeric_constants import (
+    QUOTE_PRECISION,
+    SPOT_MARKET_WEIGHT_PRECISION,
+    SPOT_RATE_PRECISION,
+)
 from driftpy.math.amm import calculate_amm_reserves_after_swap, calculate_price
-from driftpy.types import *
+from driftpy.types import (
+    AssetType,
+    OracleSource,
+    PerpMarketAccount,
+    PositionDirection,
+    SwapDirection,
+)
 
 NATIVE_MINT = Pubkey.from_string("So11111111111111111111111111111111111111112")
 
@@ -43,14 +57,14 @@ async def adjust_oracle_pretrade(
     )
     swap_direction = (
         SwapDirection.Add
-        if position_direction == PositionDirection.Short()
+        if position_direction == PositionDirection.Short()  # type: ignore
         else SwapDirection.Remove
     )
     new_qar, new_bar = calculate_amm_reserves_after_swap(
         market.amm,
-        AssetType.BASE,
+        AssetType.BASE,  # type: ignore
         abs(baa),
-        swap_direction,
+        swap_direction,  # type: ignore
     )
     newprice = calculate_price(new_bar, new_qar, market.amm.peg_multiplier)
     await set_price_feed(oracle_program, market.amm.oracle, newprice)
@@ -141,8 +155,8 @@ def mint_ix(
     mint_auth: Pubkey,
     usdc_amount: int,
     ata_account: Pubkey,
-) -> Transaction:
-    mint_to_user_account_tx = mint_to(
+) -> Instruction:
+    mint_to_user_account_ix = mint_to(
         MintToParams(
             program_id=TOKEN_PROGRAM_ID,
             mint=usdc_mint,
@@ -152,7 +166,7 @@ def mint_ix(
             amount=usdc_amount,
         )
     )
-    return mint_to_user_account_tx
+    return mint_to_user_account_ix
 
 
 def _mint_usdc_tx(
@@ -306,6 +320,8 @@ def parse_price_data(data: bytes) -> PriceData:
 
 async def get_feed_data(oracle_program: Program, price_feed: Pubkey) -> PriceData:
     info_resp = await oracle_program.provider.connection.get_account_info(price_feed)
+    if info_resp.value is None:
+        raise Exception("No account info found")
     return parse_price_data(info_resp.value.data)
 
 
@@ -314,7 +330,9 @@ async def get_oracle_data(
     oracle_addr: Pubkey,
 ):
     info_resp = await connection.get_account_info(oracle_addr)
-    return parse_price_data(b64decode(info_resp["result"]["value"]["data"][0]))
+    if info_resp.value is None:
+        raise Exception("No account info found")
+    return parse_price_data(b64decode(info_resp.value.data))
 
 
 async def mock_oracle(
@@ -336,7 +354,7 @@ async def initialize_sol_spot_market(
     admin: Admin,
     sol_oracle: Pubkey,
     sol_mint: Pubkey = NATIVE_MINT,
-    oracle_source: OracleSource = OracleSource.Pyth(),
+    oracle_source: OracleSource = OracleSource.Pyth(),  # type: ignore
 ):
     optimal_utilization = SPOT_RATE_PRECISION // 2
     optimal_rate = SPOT_RATE_PRECISION * 20
@@ -389,7 +407,7 @@ async def initialize_quote_spot_market(
         optimal_rate,
         max_rate,
         Pubkey.default(),
-        OracleSource.QuoteAsset(),
+        OracleSource.QuoteAsset(),  # type: ignore
         initial_asset_weight,
         maintenance_asset_weight,
         initial_liability_weight,

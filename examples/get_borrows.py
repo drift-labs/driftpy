@@ -1,7 +1,7 @@
 import asyncio
 import os
 
-from anchorpy import Wallet
+from anchorpy.provider import Wallet
 from dotenv import load_dotenv
 from solana.rpc.async_api import AsyncClient
 
@@ -23,6 +23,8 @@ async def main():
     connection = AsyncClient(url)
     dc = DriftClient(connection, Wallet.dummy(), "mainnet")
     market = await get_spot_market_account(dc.program, 0)  # USDC
+    if market is None:
+        raise Exception("No market found")
     token_deposit_amount = get_token_amount(
         market.deposit_balance,
         market,

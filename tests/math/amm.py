@@ -1,5 +1,7 @@
 import copy
+
 import pytest
+
 from driftpy.constants.numeric_constants import (
     BASE_PRECISION,
     PEG_PRECISION,

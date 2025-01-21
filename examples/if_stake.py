@@ -1,32 +1,49 @@
 import json
+import os
 import pprint
 import sys
 
+from solders.signature import Signature
+
+from driftpy.addresses import get_insurance_fund_vault_public_key
+from driftpy.types import TxParams
 
 sys.path.append("../src/")
 
-from anchorpy import Wallet
-from driftpy.account_subscription_config import AccountSubscriptionConfig
-from driftpy.accounts import *
-from driftpy.constants.config import configs
-from driftpy.constants.numeric_constants import QUOTE_PRECISION
-from driftpy.drift_client import DriftClient
+import argparse
+
+from anchorpy.provider import Wallet
 from solana.rpc import commitment
 from solana.rpc.async_api import AsyncClient
-from solana.transaction import AccountMeta
-from solders.instruction import Instruction  # type: ignore
-from solders.keypair import Keypair  # type: ignore
+from solders.instruction import AccountMeta, Instruction
+from solders.keypair import Keypair
 from spl.token.constants import TOKEN_PROGRAM_ID
-from spl.token.instructions import create_associated_token_account
-from spl.token.instructions import get_associated_token_address
+from spl.token.instructions import (
+    create_associated_token_account,
+    get_associated_token_address,
+)
+
+from driftpy.account_subscription_config import AccountSubscriptionConfig
+from driftpy.accounts import (
+    get_if_stake_account,
+    get_insurance_fund_stake_public_key,
+    get_spot_market_account,
+)
+from driftpy.constants.numeric_constants import QUOTE_PRECISION
+from driftpy.drift_client import DriftClient
 
 
-async def view_logs(sig: str, connection: AsyncClient):
+async def view_logs(sig: Signature, connection: AsyncClient):
     connection._commitment = commitment.Confirmed
     logs = ""
     try:
         await connection.confirm_transaction(sig, commitment.Confirmed)
-        logs = (await connection.get_transaction(sig))["result"]["meta"]["logMessages"]
+        logs_response = await connection.get_transaction(sig)
+        if logs_response.value is None:
+            raise Exception("No value found")
+        if logs_response.value.transaction.meta is None:
+            raise Exception("No logs found")
+        logs = logs_response.value.transaction.meta.log_messages
     finally:
         connection._commitment = commitment.Processed
     pprint.pprint(logs)
@@ -59,7 +76,7 @@ async def main(
     dc = DriftClient(
         connection,
         wallet,
-        str(env),
+        env,
         account_subscription=AccountSubscriptionConfig("websocket"),
     )
     dc.tx_params = TxParams(200_000, 10_000)
@@ -67,12 +84,17 @@ async def main(
     print(dc.program_id)
 
     spot_market = await get_spot_market_account(dc.program, spot_market_index)
+    if spot_market is None:
+        raise Exception("No spot market found")
     spot_mint = spot_market.mint
     print(spot_mint)
 
     ata = get_associated_token_address(wallet.public_key, spot_mint)
     balance = await connection.get_token_account_balance(ata)
-    print("current spot ata balance:", balance["result"]["value"]["uiAmount"])
+    if balance.value is None:
+        raise Exception("No balance found")
+
+    print("current spot ata balance:", balance.value.ui_amount)
     print("ATA addr:", ata)
 
     if operation == "add" or operation == "remove" and spot_market_index == 1:
@@ -98,6 +120,8 @@ async def main(
         await dc.send_ixs(ix)
 
     spot = await get_spot_market_account(dc.program, spot_market_index)
+    if spot is None:
+        raise Exception("No spot market found")
     total_shares = spot.insurance_fund.total_shares
 
     print(f"{operation}ing {if_amount}$ spot...")
@@ -111,7 +135,7 @@ async def main(
             return
 
         if_addr = get_insurance_fund_stake_public_key(
-            dc.program_id, kp.public_key, spot_market_index
+            dc.program_id, kp.pubkey(), spot_market_index
         )
         if not await does_account_exist(connection, if_addr):
             print("initializing stake account...")
@@ -134,14 +158,35 @@ async def main(
             return
 
         if if_amount is None:
-            vault_balance = (
-                await connection.get_token_account_balance(
-                    get_insurance_fund_vault_public_key(
-                        dc.program_id, spot_market_index
-                    )
-                )
-            )["result"]["value"]["uiAmount"]
+            vault_pk = get_insurance_fund_vault_public_key(
+                dc.program_id, spot_market_index
+            )
+            vault_balance = await connection.get_token_account_balance(vault_pk)
+            if vault_balance.value is None:
+                raise Exception("No vault balance found")
+
+            vault_balance = vault_balance.value.ui_amount
+            if vault_balance is None:
+                raise Exception("No vault balance found")
+
             spot_market = await get_spot_market_account(dc.program, spot_market_index)
+            if spot_market is None:
+                raise Exception("No spot market found")
+
+            ifstake = await get_if_stake_account(
+                dc.program, dc.authority, spot_market_index
+            )
+            if ifstake is None:
+                raise Exception("No if stake found")
+            total_amount = (
+                vault_balance
+                * ifstake.if_shares
+                / spot_market.insurance_fund.total_shares
+            )
+
+            spot_market = await get_spot_market_account(dc.program, spot_market_index)
+            if spot_market is None:
+                raise Exception("No spot market found")
             ifstake = await get_if_stake_account(
                 dc.program, dc.authority, spot_market_index
             )
@@ -176,11 +221,7 @@ async def main(
 
         conn = dc.program.provider.connection
         vault_pk = get_insurance_fund_vault_public_key(dc.program_id, spot_market_index)
-        v_amount = int(
-            (await conn.get_token_account_balance(vault_pk))["result"]["value"][
-                "amount"
-            ]
-        )
+        v_amount = int((await conn.get_token_account_balance(vault_pk)).value.amount)
         balance = v_amount * n_shares / total_shares
         print(
             f"vault_amount: {v_amount/QUOTE_PRECISION:,.2f}$ \nn_shares: {n_shares} \ntotal_shares: {total_shares} \n>balance: {balance / QUOTE_PRECISION}"
@@ -207,9 +248,6 @@ async def main(
 
 
 if __name__ == "__main__":
-    import argparse
-    import os
-
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--keypath", type=str, required=False, default=os.environ.get("ANCHOR_WALLET")
