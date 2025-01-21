@@ -1,32 +1,67 @@
 import copy
 import math
 import time
-from typing import Tuple
+from enum import Enum
+from typing import Optional, Tuple
+
+from solders.pubkey import Pubkey
 
 from driftpy.account_subscription_config import AccountSubscriptionConfig
-from driftpy.accounts.oracle import *
+from driftpy.accounts import (
+    DataAndSlot,
+    OraclePriceData,
+    PerpMarketAccount,
+    SpotMarketAccount,
+    UserAccount,
+)
+from driftpy.constants import BASE_PRECISION, PRICE_PRECISION
+from driftpy.constants.numeric_constants import (
+    AMM_RESERVE_PRECISION,
+    FIVE_MINUTE,
+    FUEL_START_TS,
+    GOV_SPOT_MARKET_INDEX,
+    MARGIN_PRECISION,
+    OPEN_ORDER_MARGIN_REQUIREMENT,
+    QUOTE_PRECISION,
+    QUOTE_SPOT_MARKET_INDEX,
+    SPOT_MARKET_WEIGHT_PRECISION,
+)
 from driftpy.math.amm import calculate_market_open_bid_ask
 from driftpy.math.fuel import (
     calculate_insurance_fuel_bonus,
     calculate_perp_fuel_bonus,
     calculate_spot_fuel_bonus,
 )
-from driftpy.math.margin import *
+from driftpy.math.margin import (
+    MarginCategory,
+    calculate_asset_weight,
+    calculate_liability_weight,
+    calculate_market_margin_ratio,
+    calculate_unrealized_asset_weight,
+)
 from driftpy.math.oracles import calculate_live_oracle_twap
-from driftpy.math.perp_position import *
+from driftpy.math.perp_position import (
+    calculate_base_asset_value_with_oracle,
+    calculate_perp_liability_value,
+    calculate_position_funding_pnl,
+    calculate_position_pnl,
+    calculate_worst_case_base_asset_amount,
+    calculate_worst_case_perp_liability_value,
+    is_available,
+)
 from driftpy.math.spot_balance import get_strict_token_value
-from driftpy.math.spot_market import *
+from driftpy.math.spot_market import get_signed_token_amount, get_token_amount
 from driftpy.math.spot_position import (
     get_worst_case_token_amounts,
     is_spot_position_available,
 )
 from driftpy.oracles.strict_oracle_price import StrictOraclePrice
 from driftpy.types import (
-    OraclePriceData,
     Order,
     PerpPosition,
     SpotPosition,
-    UserAccount,
+    UserStatus,
+    is_variant,
 )
 
 
@@ -79,13 +114,13 @@ class DriftUser:
     ) -> OraclePriceData | None:
         return self.drift_client.get_oracle_price_data_for_perp_market(market_index)
 
-    def get_perp_market_account(self, market_index: int) -> PerpMarketAccount:
+    def get_perp_market_account(self, market_index: int) -> Optional[PerpMarketAccount]:
         return self.drift_client.get_perp_market_account(market_index)
 
-    def get_spot_market_account(self, market_index: int) -> SpotMarketAccount:
+    def get_spot_market_account(self, market_index: int) -> Optional[SpotMarketAccount]:
         return self.drift_client.get_spot_market_account(market_index)
 
-    def get_user_account_and_slot(self) -> DataAndSlot[UserAccount]:
+    def get_user_account_and_slot(self) -> Optional[DataAndSlot[UserAccount]]:
         return self.account_subscriber.get_user_account_and_slot()
 
     def get_user_account(self) -> UserAccount:

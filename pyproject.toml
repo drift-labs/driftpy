@@ -118,7 +118,7 @@ asyncio_mode = "strict"
 [tool.ruff]
 exclude = [".git", "__pycache__", "docs/source/conf.py", "old", "build", "dist", "**/geyser_codegen/**"]
 
-[tool.ruff.pycodestyle]
+[tool.ruff.lint.pycodestyle]
 max-line-length = 88
 
 [tool.pyright]
