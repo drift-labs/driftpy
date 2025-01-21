@@ -305,7 +305,7 @@ class DriftClient:
             raise ValueError("No account subscriber found")
         await self.account_subscriber.unsubscribe()
 
-    def get_user(self, sub_account_id=None) -> DriftUser:
+    def get_user(self, sub_account_id: int | None = None) -> DriftUser:
         sub_account_id = (
             sub_account_id if sub_account_id is not None else self.active_sub_account_id
         )
