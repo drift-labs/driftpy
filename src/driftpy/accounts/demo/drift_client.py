@@ -1,19 +1,23 @@
 from typing import Optional
 
 from anchorpy import Program
-from driftpy.accounts import get_state_account_and_slot
-from driftpy.accounts.get_accounts import get_perp_market_account_and_slot
-from driftpy.accounts.get_accounts import get_spot_market_account_and_slot
-from driftpy.accounts.oracle import oracle_ai_to_oracle_price_data
-from driftpy.accounts.types import DataAndSlot
-from driftpy.accounts.types import DriftClientAccountSubscriber
-from driftpy.oracles.oracle_id import get_oracle_id
-from driftpy.types import OraclePriceData
-from driftpy.types import PerpMarketAccount
-from driftpy.types import SpotMarketAccount
-from driftpy.types import StateAccount
 from solana.rpc.commitment import Commitment
 from solders.pubkey import Pubkey
+
+from driftpy.accounts import get_state_account_and_slot
+from driftpy.accounts.get_accounts import (
+    get_perp_market_account_and_slot,
+    get_spot_market_account_and_slot,
+)
+from driftpy.accounts.oracle import oracle_ai_to_oracle_price_data
+from driftpy.accounts.types import DataAndSlot, DriftClientAccountSubscriber
+from driftpy.oracles.oracle_id import get_oracle_id
+from driftpy.types import (
+    OraclePriceData,
+    PerpMarketAccount,
+    SpotMarketAccount,
+    StateAccount,
+)
 
 
 class DemoDriftClientAccountSubscriber(DriftClientAccountSubscriber):
@@ -65,6 +69,7 @@ class DemoDriftClientAccountSubscriber(DriftClientAccountSubscriber):
         oracle_accounts = await self.program.provider.connection.get_multiple_accounts(
             oracle_pubkeys
         )
+        print("ORACLE ACCOUNTS", oracle_accounts)
 
         for i, oracle_ai in enumerate(oracle_accounts.value):
             if oracle_ai.owner == Pubkey.from_string(
