@@ -1,11 +1,11 @@
 import asyncio
 
-from solana.rpc.websocket_api import connect, SolanaWsClientProtocol
-from driftpy.dlob.client_types import SlotSource
-from driftpy.types import get_ws_url
-
-from driftpy.drift_client import DriftClient
 from events import Events as EventEmitter
+from solana.rpc.websocket_api import SolanaWsClientProtocol, connect
+
+from driftpy.dlob.client_types import SlotSource
+from driftpy.drift_client import DriftClient
+from driftpy.types import get_ws_url
 
 
 class SlotSubscriber(SlotSource):
@@ -19,9 +19,9 @@ class SlotSubscriber(SlotSource):
         self.event_emitter = EventEmitter(("on_slot_change"))
         self.event_emitter.on("on_slot_change")
 
-    async def on_slot_change(self, slot_info):
-        self.current_slot = slot_info.slot
-        self.event_emitter.on_slot_change(slot_info.slot)
+    async def on_slot_change(self, slot_info: int):
+        self.current_slot = slot_info
+        self.event_emitter.on_slot_change(slot_info)
 
     async def subscribe(self):
         if self.subscribed:
@@ -33,7 +33,8 @@ class SlotSubscriber(SlotSource):
         if self.subscription_id is not None:
             return
 
-        self.current_slot = await self.connection.get_slot()
+        current_slot_response = await self.connection.get_slot()
+        self.current_slot = int(current_slot_response.value)
 
         endpoint = self.program.provider.connection._provider.endpoint_uri
         ws_endpoint = get_ws_url(endpoint)
@@ -48,12 +49,13 @@ class SlotSubscriber(SlotSource):
                     await ws.recv()
 
                     async for msg in ws:
-                        await self.on_slot_change(msg[0].result)
+                        await self.on_slot_change(msg[0].result.slot)
 
             except Exception as e:
                 print(f"Error in SlotSubscriber: {e}")
-                await self.ws.close()
-                self.ws = None
+                if self.ws:
+                    await self.ws.close()
+                    self.ws = None
                 await asyncio.sleep(5)  # wait a second before we retry
 
     def get_slot(self) -> int:
@@ -61,6 +63,6 @@ class SlotSubscriber(SlotSource):
 
     async def unsubscribe(self):
         if self.ws:
-            self.ws.close()
+            await self.ws.close()
             self.ws = None
         self.subscribed = False

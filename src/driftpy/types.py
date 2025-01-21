@@ -250,6 +250,8 @@ class OracleSource:
     PythStableCoinPull = constructor()
     SwitchboardOnDemand = constructor()
     PythLazer = constructor()
+    PythLazer1K = constructor()
+    PythLazer1M = constructor()
 
 
 @_rust_enum

@@ -147,3 +147,19 @@ def get_high_leverage_mode_config_public_key(program_id: Pubkey) -> Pubkey:
 
 def get_protected_maker_mode_config_public_key(program_id: Pubkey) -> Pubkey:
     return Pubkey.find_program_address([b"protected_maker_mode_config"], program_id)[0]
+
+
+def get_rfq_user_account_public_key(
+    program_id: Pubkey,
+    user_account_public_key: Pubkey,
+) -> Pubkey:
+    return Pubkey.find_program_address(
+        [b"RFQ", bytes(user_account_public_key)], program_id
+    )[0]
+
+
+def get_swift_user_account_public_key(
+    program_id: Pubkey,
+    authority: Pubkey,
+) -> Pubkey:
+    return Pubkey.find_program_address([b"SWIFT", bytes(authority)], program_id)[0]

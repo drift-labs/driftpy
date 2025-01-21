@@ -100,6 +100,12 @@ async def get_oracle_price_data_and_slot(
     elif is_variant(oracle_source, "PythLazer"):
         oracle_price_data = decode_pyth_lazer_price_info(oracle_raw)
         data_and_slot = DataAndSlot(data=oracle_price_data, slot=slot)
+    elif is_variant(oracle_source, "PythLazer1K"):
+        oracle_price_data = decode_pyth_lazer_price_info(oracle_raw)
+        data_and_slot = DataAndSlot(data=oracle_price_data, slot=slot)
+    elif is_variant(oracle_source, "PythLazer1M"):
+        oracle_price_data = decode_pyth_lazer_price_info(oracle_raw)
+        data_and_slot = DataAndSlot(data=oracle_price_data, slot=slot)
 
     if data_and_slot:
         return data_and_slot
@@ -296,6 +302,10 @@ def decode_oracle(oracle_ai: bytes, oracle_source: OracleSource):
         return decode_prelaunch_price_info(oracle_ai)
     elif is_variant(oracle_source, "PythLazer"):
         return decode_pyth_lazer_price_info(oracle_ai)
+    elif is_variant(oracle_source, "PythLazer1K"):
+        return decode_pyth_lazer_price_info(oracle_ai)
+    elif is_variant(oracle_source, "PythLazer1M"):
+        return decode_pyth_lazer_price_info(oracle_ai)
     else:
         raise NotImplementedError(
             f"Received unexpected oracle source: {str(oracle_source)}"
@@ -314,6 +324,10 @@ def get_oracle_decode_fn(oracle_source: OracleSource):
     elif is_variant(oracle_source, "Prelaunch"):
         return lambda data: decode_prelaunch_price_info(data)
     elif is_variant(oracle_source, "PythLazer"):
+        return lambda data: decode_pyth_lazer_price_info(data)
+    elif is_variant(oracle_source, "PythLazer1K"):
+        return lambda data: decode_pyth_lazer_price_info(data)
+    elif is_variant(oracle_source, "PythLazer1M"):
         return lambda data: decode_pyth_lazer_price_info(data)
     else:
         raise NotImplementedError(
