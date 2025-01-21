@@ -47,8 +47,8 @@ devnet_perp_market_configs: list[PerpMarketConfig] = [
         symbol="1MBONK-PERP",
         base_asset_symbol="1MBONK",
         market_index=4,
-        oracle=Pubkey.from_string("GojbSnJuPdKDT1ZuHuAM5t9oz6bxTo1xhUKpTua2F72p"),
-        oracle_source=OracleSource.Pyth1MPull(),  # type: ignore
+        oracle=Pubkey.from_string("BERaNi6cpEresbq6HC1EQGaB1H1UjvEo4NGnmYSSJof4"),
+        oracle_source=OracleSource.PythLazer1M(),  # type: ignore
     ),
     PerpMarketConfig(
         symbol="MATIC-PERP",
