@@ -1,11 +1,13 @@
 import asyncio
 import base64
 from dataclasses import dataclass
-from typing import Literal, Optional, Sequence, Tuple, Union
+from typing import List, Literal, Optional, Sequence, Tuple, TypeVar, Union
 
 import jsonrpcclient
 from anchorpy.program.core import Program
+from solana.rpc.async_api import AsyncClient
 from solders.pubkey import Pubkey
+from solders.rpc.responses import GetMultipleAccountsResp
 
 from driftpy.accounts.oracle import decode_oracle
 from driftpy.accounts.types import DataAndSlot, FullOracleWrapper
@@ -82,6 +84,33 @@ configs = {
         ),
     ),
 }
+
+
+T = TypeVar("T")
+
+
+def chunks(array: List[T], size: int) -> List[List[T]]:
+    return [array[i : i + size] for i in range(0, len(array), size)]
+
+
+async def get_chunked_account_infos(
+    connection: AsyncClient, pubkeys: List[Pubkey], chunk_size: int = 75
+) -> GetMultipleAccountsResp:
+    pubkey_chunks = chunks(pubkeys, chunk_size)
+    try:
+        chunk_results: List[GetMultipleAccountsResp] = await asyncio.gather(
+            *[connection.get_multiple_accounts(chunk) for chunk in pubkey_chunks]
+        )
+    except Exception as e:
+        print("Error getting account infos", e)
+        raise e
+    values = [
+        item for sublist in chunk_results for item in sublist.value if item is not None
+    ]
+    return GetMultipleAccountsResp(
+        value=values,
+        context=chunk_results[0].context,
+    )
 
 
 async def find_all_market_and_oracles_no_data_and_slots(
@@ -198,9 +227,9 @@ async def find_all_market_and_oracles(
     )
 
     oracle_keys = list(oracle_infos.keys())
-
-    oracle_ais = await program.provider.connection.get_multiple_accounts(oracle_keys)
-
+    oracle_ais = await get_chunked_account_infos(
+        program.provider.connection, oracle_keys
+    )
     oracle_slot = oracle_ais.context.slot
 
     oracle_price_datas = [

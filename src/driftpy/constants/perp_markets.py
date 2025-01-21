@@ -670,4 +670,18 @@ mainnet_perp_market_configs: list[PerpMarketConfig] = [
         oracle=Pubkey.from_string("3gdGkrmBdYR7B1MRRdRVysqhZCvYvLGHonr9b7o9WVki"),
         oracle_source=OracleSource.PythPull(),  # type: ignore
     ),
+    PerpMarketConfig(
+        symbol="TRUMP-PERP",
+        base_asset_symbol="TRUMP",
+        market_index=64,
+        oracle=Pubkey.from_string("AmSLxftd19EPDR9NnZDxvdStqtRW7k9zWto7FfGaz24K"),
+        oracle_source=OracleSource.PythPull(),  # type: ignore
+    ),
+    PerpMarketConfig(
+        symbol="MELANIA-PERP",
+        base_asset_symbol="MELANIA",
+        market_index=65,
+        oracle=Pubkey.from_string("28Zk42cxbg4MxiTewSwoedvW6MUgjoVHSTvTW7zQ7ESi"),
+        oracle_source=OracleSource.PythPull(),  # type: ignore
+    ),
 ]

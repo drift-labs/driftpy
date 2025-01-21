@@ -328,4 +328,18 @@ mainnet_spot_market_configs: list[SpotMarketConfig] = [
         oracle_source=OracleSource.PythPull(),  # type: ignore
         mint=Pubkey.from_string("HeLp6NuQkmYB4pYWo2zYs22mESHXPQYzXbB8n4V98jwC"),
     ),
+    SpotMarketConfig(
+        symbol="TRUMP",
+        market_index=36,
+        oracle=Pubkey.from_string("AmSLxftd19EPDR9NnZDxvdStqtRW7k9zWto7FfGaz24K"),
+        oracle_source=OracleSource.PythPull(),  # type: ignore
+        mint=Pubkey.from_string("6p6xgHyF7AeE6TZkSmFsko444wqoP15icUSqi2jfGiPN"),
+    ),
+    SpotMarketConfig(
+        symbol="MELANIA",
+        market_index=37,
+        oracle=Pubkey.from_string("28Zk42cxbg4MxiTewSwoedvW6MUgjoVHSTvTW7zQ7ESi"),
+        oracle_source=OracleSource.PythPull(),  # type: ignore
+        mint=Pubkey.from_string("FUAfBo2jgks6gB4Z4LfZkqSZgzNucisEHqnNebaRxM1P"),
+    ),
 ]

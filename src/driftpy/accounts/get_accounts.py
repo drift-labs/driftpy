@@ -30,23 +30,31 @@ async def get_account_data_and_slot(
     commitment: Commitment = Commitment("processed"),
     decode: Optional[Callable[[bytes], T]] = None,
 ) -> Optional[DataAndSlot[T]]:
-    account_info = await program.provider.connection.get_account_info(
-        address,
-        encoding="base64",
-        commitment=commitment,
-    )
+    try:
+        resp = await program.provider.connection.get_account_info(
+            address,
+            encoding="base64",
+            commitment=commitment,
+        )
+        if resp.value is None:
+            raise Exception(f"Account {address} not found")
 
-    if not account_info.value:
-        return None
+        data = resp.value.data
+        if len(data) == 0:
+            print(f"resp: {resp}")
+            print(f"value: {resp.value}")
+            print(f"data: {data}")
+            raise Exception(f"Account {address} has no data")
 
-    slot = account_info.context.slot
-    data = account_info.value.data
+        slot = resp.context.slot
+        decoded_data = (
+            decode(data) if decode is not None else program.coder.accounts.decode(data)
+        )
 
-    decoded_data = (
-        decode(data) if decode is not None else program.coder.accounts.decode(data)
-    )
-
-    return DataAndSlot(slot, decoded_data)
+        return DataAndSlot(slot, decoded_data)
+    except Exception as e:
+        print(f"Error fetching account {address}: {str(e)}")
+        raise
 
 
 async def get_state_account_and_slot(program: Program) -> DataAndSlot[StateAccount]:
