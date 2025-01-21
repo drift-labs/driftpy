@@ -10,7 +10,11 @@ from solders.account import Account
 from solders.pubkey import Pubkey
 
 import driftpy
-from driftpy.constants.numeric_constants import *
+from driftpy.constants.numeric_constants import (
+    PRICE_PRECISION,
+    QUOTE_PRECISION,
+    SWB_PRECISION,
+)
 from driftpy.decode.pull_oracle import decode_pull_oracle
 from driftpy.types import OraclePriceData, OracleSource, is_variant
 
@@ -61,7 +65,9 @@ def is_pyth_legacy_oracle(oracle_source: OracleSource):
 
 
 async def get_oracle_price_data_and_slot(
-    connection: AsyncClient, address: Pubkey, oracle_source=OracleSource.Pyth()
+    connection: AsyncClient,
+    address: Pubkey,
+    oracle_source=OracleSource.Pyth(),  # type: ignore
 ) -> DataAndSlot[OraclePriceData]:
     if is_variant(oracle_source, "QuoteAsset"):
         return DataAndSlot(
@@ -70,6 +76,9 @@ async def get_oracle_price_data_and_slot(
 
     resp = await connection.get_account_info(address)
     slot = resp.context.slot
+    if resp.value is None:
+        raise ValueError(f"Oracle account not found: {address}")
+
     oracle_raw = resp.value.data
 
     data_and_slot: Optional[DataAndSlot[OraclePriceData]] = None
@@ -101,7 +110,8 @@ async def get_oracle_price_data_and_slot(
 
 
 def oracle_ai_to_oracle_price_data(
-    oracle_ai: Account, oracle_source=OracleSource.Pyth()
+    oracle_ai: Account,
+    oracle_source=OracleSource.Pyth(),  # type: ignore
 ) -> DataAndSlot[OraclePriceData]:
     if is_pyth_legacy_oracle(oracle_source):
         oracle_price_data = decode_pyth_price_info(oracle_ai.data, oracle_source)
@@ -117,7 +127,7 @@ def oracle_ai_to_oracle_price_data(
 
 def decode_pyth_price_info(
     buffer: bytes,
-    oracle_source=OracleSource.Pyth(),
+    oracle_source=OracleSource.Pyth(),  # type: ignore
 ) -> OraclePriceData:
     if is_pyth_pull_oracle(oracle_source):
         raise ValueError("Use decode_pyth_pull_price_info for Pyth Pull Oracles")
