@@ -37,7 +37,8 @@ async def get_account_data_and_slot(
             commitment=commitment,
         )
         if resp.value is None:
-            raise Exception(f"Account {address} not found")
+            print(f"Account {address} not found")
+            return None
 
         data = resp.value.data
         if len(data) == 0:
