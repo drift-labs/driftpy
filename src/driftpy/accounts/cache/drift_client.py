@@ -80,6 +80,11 @@ class CachedDriftClientAccountSubscriber(DriftClientAccountSubscriber):
                 spot_market_and_slot = await get_spot_market_account_and_slot(
                     self.program, i
                 )
+                if spot_market_and_slot is None:
+                    raise ValueError(
+                        f"Spot market {i} not found, Location: {stack_trace()}"
+                    )
+
                 spot_markets.append(spot_market_and_slot)
 
                 oracle_price_data_and_slot = await get_oracle_price_data_and_slot(
@@ -99,6 +104,11 @@ class CachedDriftClientAccountSubscriber(DriftClientAccountSubscriber):
                 perp_market_and_slot = await get_perp_market_account_and_slot(
                     self.program, i
                 )
+                if perp_market_and_slot is None:
+                    raise ValueError(
+                        f"Perp market {i} not found, Location: {stack_trace()}"
+                    )
+
                 perp_markets.append(perp_market_and_slot)
 
                 oracle_price_data_and_slot = await get_oracle_price_data_and_slot(
