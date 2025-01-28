@@ -1,32 +1,22 @@
-import json
 import os
 import sys
 import time
-
 
 sys.path.append("../src/")
 
 from anchorpy import Wallet
 from dotenv import load_dotenv
+from solana.rpc.async_api import AsyncClient
+
 from driftpy.account_subscription_config import AccountSubscriptionConfig
-from driftpy.accounts import get_perp_market_account
-from driftpy.accounts import get_spot_market_account
+from driftpy.accounts import get_perp_market_account, get_spot_market_account
 from driftpy.accounts.oracle import get_oracle_price_data_and_slot
 from driftpy.constants.config import configs
-from driftpy.constants.config import get_markets_and_oracles
-from driftpy.constants.numeric_constants import BASE_PRECISION
-from driftpy.constants.numeric_constants import PRICE_PRECISION
+from driftpy.constants.numeric_constants import BASE_PRECISION, PRICE_PRECISION
 from driftpy.drift_client import DriftClient
 from driftpy.keypair import load_keypair
-from driftpy.math.spot_market import get_signed_token_amount
-from driftpy.math.spot_market import get_token_amount
-from driftpy.types import MarketType
-from driftpy.types import OrderParams
-from driftpy.types import OrderType
-from driftpy.types import PositionDirection
-from solana.rpc.async_api import AsyncClient
-from solders.keypair import Keypair  # type: ignore
-
+from driftpy.math.spot_market import get_signed_token_amount, get_token_amount
+from driftpy.types import MarketType, OrderParams, OrderType, PositionDirection
 
 load_dotenv()
 
