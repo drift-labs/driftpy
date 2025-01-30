@@ -59,6 +59,7 @@ from driftpy.addresses import (
     get_spot_market_public_key,
     get_spot_market_vault_public_key,
     get_state_public_key,
+    get_swift_user_account_public_key,
     get_user_account_public_key,
     get_user_stats_account_public_key,
 )
@@ -95,6 +96,7 @@ from driftpy.types import (
     ReferrerInfo,
     SequenceAccount,
     SerumV3FulfillmentConfigAccount,
+    SignedSwiftOrderParams,
     SpotPosition,
     SwapReduceOnly,
     TxParams,
@@ -1979,6 +1981,80 @@ class DriftClient:
                 remaining_accounts=remaining_accounts,
             ),
         )
+
+    async def get_place_and_make_swift_perp_order_ixs(
+        self,
+        signed_swift_order_params: SignedSwiftOrderParams,
+        swift_order_uuid: bytes,
+        taker_info: dict,
+        order_params: OrderParams,
+        referrer_info: Optional[ReferrerInfo] = None,
+        sub_account_id: Optional[int] = None,
+        preceding_ixs: list[Instruction] = [],
+        override_ix_count: Optional[int] = None,
+    ) -> list[Instruction]:
+        (
+            swift_order_signature_ix,
+            place_taker_swift_perp_order_ix,
+        ) = await self.get_place_swift_taker_perp_order_ixs(
+            signed_swift_order_params,
+            order_params.market_index,
+            taker_info,
+            None,
+            preceding_ixs,
+            override_ix_count,
+        )
+
+        sub_account_id = self.get_sub_account_id_for_ix(sub_account_id)
+        user_stats_public_key = self.get_user_stats_public_key()
+        user = self.get_user_account_public_key(sub_account_id)
+
+        remaining_accounts = self.get_remaining_accounts(
+            user_accounts=[
+                self.get_user_account(sub_account_id),
+                taker_info["taker_user_account"],
+            ],
+            writable_perp_market_indexes=[order_params.market_index],
+        )
+
+        if referrer_info:
+            remaining_accounts.append(
+                AccountMeta(
+                    pubkey=referrer_info.referrer, is_writable=True, is_signer=False
+                )
+            )
+            remaining_accounts.append(
+                AccountMeta(
+                    pubkey=referrer_info.referrer_stats,
+                    is_writable=True,
+                    is_signer=False,
+                )
+            )
+
+        place_and_make_ix = self.program.instruction["place_and_make_swift_perp_order"](
+            order_params,
+            swift_order_uuid,
+            ctx=Context(
+                accounts={
+                    "state": self.get_state_public_key(),
+                    "user": user,
+                    "user_stats": user_stats_public_key,
+                    "taker": taker_info["taker"],
+                    "taker_stats": taker_info["taker_stats"],
+                    "authority": self.wallet.payer.pubkey(),
+                    "taker_swift_user_orders": get_swift_user_account_public_key(
+                        self.program_id, taker_info["taker_user_account"].authority
+                    ),
+                },
+                remaining_accounts=remaining_accounts,
+            ),
+        )
+
+        return [
+            swift_order_signature_ix,
+            place_taker_swift_perp_order_ix,
+            place_and_make_ix,
+        ]
 
     def get_spot_position(
         self,

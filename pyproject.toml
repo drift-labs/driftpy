@@ -6,6 +6,7 @@ authors = [
     "x19 <https://twitter.com/0xNineteen@gmail.com>",
     "bigz <https://twitter.com/bigz_pubkey>",
     "frank <https://twitter.com/soundsonacid>",
+    "sina <https://github.com/sinakhalili>",
 ]
 license = "MIT"
 readme = "README.md"
@@ -86,6 +87,8 @@ events = "^0.5"
 numpy = "^1.26.2"
 grpcio = "1.68.1"
 protobuf = "5.29.2"
+pynacl = "^1.5.0"
+tqdm = "^4.67.1"
 
 [poetry.group.dev.dependencies]
 pytest = "^7.2.0"
@@ -116,7 +119,15 @@ build-backend = "poetry.core.masonry.api"
 asyncio_mode = "strict"
 
 [tool.ruff]
-exclude = [".git", "__pycache__", "docs/source/conf.py", "old", "build", "dist", "**/geyser_codegen/**"]
+exclude = [
+    ".git",
+    "__pycache__",
+    "docs/source/conf.py",
+    "old",
+    "build",
+    "dist",
+    "**/geyser_codegen/**",
+]
 
 [tool.ruff.lint.pycodestyle]
 max-line-length = 88
