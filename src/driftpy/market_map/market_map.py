@@ -126,7 +126,6 @@ class MarketMap(Generic[T]):
             )
 
             resp = await asyncio.wait_for(post, timeout=30)
-
             parsed_resp = jsonrpcclient.parse(resp.json())
 
             if isinstance(parsed_resp, jsonrpcclient.Error):
@@ -135,14 +134,18 @@ class MarketMap(Generic[T]):
                 raise ValueError(f"Error fetching market map - not ok: {parsed_resp}")
 
             slot = int(parsed_resp.result["context"]["slot"])
-
             self.latest_slot = slot
 
-            rpc_response_values = parsed_resp.result["value"]
+            # Populate the market map directly
+            for market in parsed_resp.result["value"]:
+                raw_bytes = base64.b64decode(market["account"]["data"][0])
+                decoded_market = self.program.coder.accounts.decode(raw_bytes)
+                await self.add_market(
+                    decoded_market.market_index, DataAndSlot(slot, decoded_market)
+                )
 
             raw: Dict[str, bytes] = {}
-
-            for market in rpc_response_values:
+            for market in parsed_resp.result["value"]:
                 pubkey = market["pubkey"]
                 raw_bytes = base64.b64decode(market["account"]["data"][0])
                 raw[str(pubkey)] = raw_bytes
@@ -151,6 +154,7 @@ class MarketMap(Generic[T]):
 
         except Exception as e:
             print(f"error in marketmap pre-dump: {e}")
+            raise
 
     def dump(self, raw: dict[str, bytes], filename: Optional[str] = None):
         try:
