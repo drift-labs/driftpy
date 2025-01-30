@@ -1,13 +1,14 @@
 import inspect
 import zlib
 from dataclasses import dataclass, field
-from typing import Optional
+from typing import Optional, TypedDict
 from urllib.parse import urlparse, urlunparse
 
 from borsh_construct.enum import _rust_enum
 from solana.rpc.commitment import Commitment
 from solders.pubkey import Pubkey
 from sumtypes import constructor
+from typing_extensions import NotRequired
 
 
 def is_variant(enum, type: str) -> bool:
@@ -421,7 +422,7 @@ class OrderParams:
     base_asset_amount: int
     market_index: int
     direction: PositionDirection
-    market_type: MarketType = None
+    market_type: MarketType
     user_order_id: int = 0
     price: int = 0
     reduce_only: bool = False
@@ -1422,3 +1423,47 @@ class GrpcConfig:
     endpoint: str
     token: str
     commitment: Commitment = Commitment("confirmed")
+
+
+class OptionalOrderParams(TypedDict, total=False):
+    """All fields are optional except market_type, market_index, direction"""
+
+    order_type: NotRequired[OrderType]
+    base_asset_amount: NotRequired[int]
+    price: NotRequired[int]
+    market_index: int  # required
+    direction: PositionDirection  # required
+    market_type: MarketType  # required
+    user_order_id: NotRequired[int]
+    reduce_only: NotRequired[bool]
+    post_only: NotRequired[PostOnlyParams]
+    immediate_or_cancel: NotRequired[bool]
+    max_ts: NotRequired[Optional[int]]
+    trigger_price: NotRequired[Optional[int]]
+    trigger_condition: NotRequired[OrderTriggerCondition]
+    oracle_price_offset: NotRequired[Optional[int]]
+    auction_duration: NotRequired[Optional[int]]
+    auction_start_price: NotRequired[Optional[int]]
+    auction_end_price: NotRequired[Optional[int]]
+
+
+@dataclass
+class SignedSwiftOrderParams:
+    order_params: bytes
+    signature: bytes
+
+
+@dataclass
+class SwiftTriggerOrderParams:
+    trigger_price: int
+    base_asset_amount: int
+
+
+@dataclass
+class SwiftOrderParamsMessage:
+    swift_order_params: OptionalOrderParams
+    sub_account_id: int
+    slot: int
+    uuid: bytes
+    take_profit_order_params: SwiftTriggerOrderParams | None
+    stop_loss_order_params: SwiftTriggerOrderParams | None
