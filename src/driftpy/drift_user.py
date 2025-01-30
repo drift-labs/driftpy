@@ -448,6 +448,10 @@ class DriftUser:
                 min(100, max(0, (1 - maintenance_margin_req / total_collateral) * 100))
             )
 
+    def get_settled_perp_pnl(self) -> int:
+        user = self.get_user_account()
+        return user.settled_perp_pnl
+
     def get_unrealized_pnl(
         self,
         with_funding: bool = False,
