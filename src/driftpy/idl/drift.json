@@ -1,5 +1,5 @@
 {
-  "version": "2.106.0",
+  "version": "2.107.0",
   "name": "drift",
   "instructions": [
     {
@@ -49,10 +49,7 @@
         {
           "name": "name",
           "type": {
-            "array": [
-              "u8",
-              32
-            ]
+            "array": ["u8", 32]
           }
         }
       ]
@@ -234,10 +231,7 @@
         {
           "name": "name",
           "type": {
-            "array": [
-              "u8",
-              32
-            ]
+            "array": ["u8", 32]
           }
         }
       ]
@@ -755,10 +749,7 @@
         {
           "name": "swiftOrderUuid",
           "type": {
-            "array": [
-              "u8",
-              8
-            ]
+            "array": ["u8", 8]
           }
         }
       ]
@@ -1071,9 +1062,7 @@
           "name": "instructions",
           "isMut": false,
           "isSigner": false,
-          "docs": [
-            "Instructions Sysvar for instruction introspection"
-          ]
+          "docs": ["Instructions Sysvar for instruction introspection"]
         }
       ],
       "args": [
@@ -1148,9 +1137,7 @@
           "name": "instructions",
           "isMut": false,
           "isSigner": false,
-          "docs": [
-            "Instructions Sysvar for instruction introspection"
-          ]
+          "docs": ["Instructions Sysvar for instruction introspection"]
         }
       ],
       "args": [
@@ -1285,10 +1272,7 @@
         {
           "name": "name",
           "type": {
-            "array": [
-              "u8",
-              32
-            ]
+            "array": ["u8", 32]
           }
         }
       ]
@@ -2331,9 +2315,7 @@
           "name": "instructions",
           "isMut": false,
           "isSigner": false,
-          "docs": [
-            "Instructions Sysvar for instruction introspection"
-          ]
+          "docs": ["Instructions Sysvar for instruction introspection"]
         }
       ],
       "args": [
@@ -2418,9 +2400,7 @@
           "name": "instructions",
           "isMut": false,
           "isSigner": false,
-          "docs": [
-            "Instructions Sysvar for instruction introspection"
-          ]
+          "docs": ["Instructions Sysvar for instruction introspection"]
         }
       ],
       "args": [
@@ -2899,10 +2879,7 @@
         {
           "name": "marketIndexes",
           "type": {
-            "array": [
-              "u16",
-              5
-            ]
+            "array": ["u16", 5]
           }
         }
       ]
@@ -3357,10 +3334,7 @@
         {
           "name": "feedId",
           "type": {
-            "array": [
-              "u8",
-              32
-            ]
+            "array": ["u8", 32]
           }
         },
         {
@@ -3397,10 +3371,7 @@
         {
           "name": "feedId",
           "type": {
-            "array": [
-              "u8",
-              32
-            ]
+            "array": ["u8", 32]
           }
         },
         {
@@ -3641,10 +3612,7 @@
         {
           "name": "name",
           "type": {
-            "array": [
-              "u8",
-              32
-            ]
+            "array": ["u8", 32]
           }
         }
       ]
@@ -4126,10 +4094,7 @@
         {
           "name": "name",
           "type": {
-            "array": [
-              "u8",
-              32
-            ]
+            "array": ["u8", 32]
           }
         }
       ]
@@ -5310,10 +5275,7 @@
         {
           "name": "name",
           "type": {
-            "array": [
-              "u8",
-              32
-            ]
+            "array": ["u8", 32]
           }
         }
       ]
@@ -5948,10 +5910,7 @@
         {
           "name": "name",
           "type": {
-            "array": [
-              "u8",
-              32
-            ]
+            "array": ["u8", 32]
           }
         }
       ]
@@ -6476,10 +6435,7 @@
           "name": "whitelistedSigners",
           "type": {
             "option": {
-              "array": [
-                "publicKey",
-                4
-              ]
+              "array": ["publicKey", 4]
             }
           }
         },
@@ -6626,10 +6582,7 @@
         {
           "name": "feedId",
           "type": {
-            "array": [
-              "u8",
-              32
-            ]
+            "array": ["u8", 32]
           }
         }
       ]
@@ -6667,40 +6620,6 @@
         {
           "name": "feedId",
           "type": "u32"
-        },
-        {
-          "name": "exponent",
-          "type": "i32"
-        }
-      ]
-    },
-    {
-      "name": "updatePythLazerOracleExponent",
-      "accounts": [
-        {
-          "name": "admin",
-          "isMut": true,
-          "isSigner": true
-        },
-        {
-          "name": "lazerOracle",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "state",
-          "isMut": false,
-          "isSigner": false
-        }
-      ],
-      "args": [
-        {
-          "name": "feedId",
-          "type": "u32"
-        },
-        {
-          "name": "exponent",
-          "type": "i32"
         }
       ]
     },
@@ -6924,10 +6843,7 @@
           {
             "name": "padding",
             "type": {
-              "array": [
-                "u8",
-                4
-              ]
+              "array": ["u8", 4]
             }
           }
         ]
@@ -6981,10 +6897,7 @@
           {
             "name": "padding",
             "type": {
-              "array": [
-                "u8",
-                4
-              ]
+              "array": ["u8", 4]
             }
           }
         ]
@@ -7058,10 +6971,7 @@
           {
             "name": "padding",
             "type": {
-              "array": [
-                "u8",
-                4
-              ]
+              "array": ["u8", 4]
             }
           }
         ]
@@ -7087,10 +6997,7 @@
           {
             "name": "padding",
             "type": {
-              "array": [
-                "u8",
-                31
-              ]
+              "array": ["u8", 31]
             }
           }
         ]
@@ -7140,10 +7047,7 @@
           {
             "name": "padding",
             "type": {
-              "array": [
-                "u8",
-                14
-              ]
+              "array": ["u8", 14]
             }
           }
         ]
@@ -7157,10 +7061,7 @@
           {
             "name": "whitelistedSigners",
             "type": {
-              "array": [
-                "publicKey",
-                4
-              ]
+              "array": ["publicKey", 4]
             }
           },
           {
@@ -7178,10 +7079,7 @@
           {
             "name": "padding",
             "type": {
-              "array": [
-                "u128",
-                8
-              ]
+              "array": ["u128", 8]
             }
           }
         ]
@@ -7219,10 +7117,7 @@
           {
             "name": "padding",
             "type": {
-              "array": [
-                "u8",
-                70
-              ]
+              "array": ["u8", 70]
             }
           }
         ]
@@ -7242,9 +7137,7 @@
           },
           {
             "name": "amm",
-            "docs": [
-              "The automated market maker"
-            ],
+            "docs": ["The automated market maker"],
             "type": {
               "defined": "AMM"
             }
@@ -7261,21 +7154,14 @@
           },
           {
             "name": "name",
-            "docs": [
-              "Encoded display name for the perp market e.g. SOL-PERP"
-            ],
+            "docs": ["Encoded display name for the perp market e.g. SOL-PERP"],
             "type": {
-              "array": [
-                "u8",
-                32
-              ]
+              "array": ["u8", 32]
             }
           },
           {
             "name": "insuranceClaim",
-            "docs": [
-              "The perp market's claim on the insurance fund"
-            ],
+            "docs": ["The perp market's claim on the insurance fund"],
             "type": {
               "defined": "InsuranceClaim"
             }
@@ -7395,16 +7281,12 @@
           },
           {
             "name": "numberOfUsersWithBase",
-            "docs": [
-              "number of users in a position (base)"
-            ],
+            "docs": ["number of users in a position (base)"],
             "type": "u32"
           },
           {
             "name": "numberOfUsers",
-            "docs": [
-              "number of users in a position (pnl) or pnl (quote)"
-            ],
+            "docs": ["number of users in a position (pnl) or pnl (quote)"],
             "type": "u32"
           },
           {
@@ -7423,9 +7305,7 @@
           },
           {
             "name": "contractType",
-            "docs": [
-              "Currently only Perpetual markets are supported"
-            ],
+            "docs": ["Currently only Perpetual markets are supported"],
             "type": {
               "defined": "ContractType"
             }
@@ -7446,9 +7326,7 @@
           },
           {
             "name": "quoteSpotMarketIndex",
-            "docs": [
-              "The spot market that pnl is settled in"
-            ],
+            "docs": ["The spot market that pnl is settled in"],
             "type": "u16"
           },
           {
@@ -7462,26 +7340,17 @@
           },
           {
             "name": "fuelBoostPosition",
-            "docs": [
-              "fuel multiplier for perp funding",
-              "precision: 10"
-            ],
+            "docs": ["fuel multiplier for perp funding", "precision: 10"],
             "type": "u8"
           },
           {
             "name": "fuelBoostTaker",
-            "docs": [
-              "fuel multiplier for perp taker",
-              "precision: 10"
-            ],
+            "docs": ["fuel multiplier for perp taker", "precision: 10"],
             "type": "u8"
           },
           {
             "name": "fuelBoostMaker",
-            "docs": [
-              "fuel multiplier for perp maker",
-              "precision: 10"
-            ],
+            "docs": ["fuel multiplier for perp maker", "precision: 10"],
             "type": "u8"
           },
           {
@@ -7499,10 +7368,7 @@
           {
             "name": "padding",
             "type": {
-              "array": [
-                "u8",
-                38
-              ]
+              "array": ["u8", 38]
             }
           }
         ]
@@ -7528,10 +7394,7 @@
           {
             "name": "padding",
             "type": {
-              "array": [
-                "u8",
-                31
-              ]
+              "array": ["u8", 31]
             }
           }
         ]
@@ -7561,10 +7424,7 @@
           {
             "name": "padding",
             "type": {
-              "array": [
-                "u8",
-                4
-              ]
+              "array": ["u8", 4]
             }
           },
           {
@@ -7611,16 +7471,12 @@
           },
           {
             "name": "oracle",
-            "docs": [
-              "The oracle used to price the markets deposits/borrows"
-            ],
+            "docs": ["The oracle used to price the markets deposits/borrows"],
             "type": "publicKey"
           },
           {
             "name": "mint",
-            "docs": [
-              "The token mint of the market"
-            ],
+            "docs": ["The token mint of the market"],
             "type": "publicKey"
           },
           {
@@ -7633,14 +7489,9 @@
           },
           {
             "name": "name",
-            "docs": [
-              "The encoded display name for the market e.g. SOL"
-            ],
+            "docs": ["The encoded display name for the market e.g. SOL"],
             "type": {
-              "array": [
-                "u8",
-                32
-              ]
+              "array": ["u8", 32]
             }
           },
           {
@@ -7953,9 +7804,7 @@
           },
           {
             "name": "ordersEnabled",
-            "docs": [
-              "Whether or not spot trading is enabled"
-            ],
+            "docs": ["Whether or not spot trading is enabled"],
             "type": "bool"
           },
           {
@@ -8045,34 +7894,22 @@
           },
           {
             "name": "fuelBoostDeposits",
-            "docs": [
-              "fuel multiplier for spot deposits",
-              "precision: 10"
-            ],
+            "docs": ["fuel multiplier for spot deposits", "precision: 10"],
             "type": "u8"
           },
           {
             "name": "fuelBoostBorrows",
-            "docs": [
-              "fuel multiplier for spot borrows",
-              "precision: 10"
-            ],
+            "docs": ["fuel multiplier for spot borrows", "precision: 10"],
             "type": "u8"
           },
           {
             "name": "fuelBoostTaker",
-            "docs": [
-              "fuel multiplier for spot taker",
-              "precision: 10"
-            ],
+            "docs": ["fuel multiplier for spot taker", "precision: 10"],
             "type": "u8"
           },
           {
             "name": "fuelBoostMaker",
-            "docs": [
-              "fuel multiplier for spot maker",
-              "precision: 10"
-            ],
+            "docs": ["fuel multiplier for spot maker", "precision: 10"],
             "type": "u8"
           },
           {
@@ -8094,10 +7931,7 @@
           {
             "name": "padding",
             "type": {
-              "array": [
-                "u8",
-                40
-              ]
+              "array": ["u8", 40]
             }
           }
         ]
@@ -8213,10 +8047,7 @@
           {
             "name": "padding",
             "type": {
-              "array": [
-                "u8",
-                10
-              ]
+              "array": ["u8", 10]
             }
           }
         ]
@@ -8256,9 +8087,7 @@
         "fields": [
           {
             "name": "authority",
-            "docs": [
-              "The owner/authority of the account"
-            ],
+            "docs": ["The owner/authority of the account"],
             "type": "publicKey"
           },
           {
@@ -8270,21 +8099,14 @@
           },
           {
             "name": "name",
-            "docs": [
-              "Encoded display name e.g. \"toly\""
-            ],
+            "docs": ["Encoded display name e.g. \"toly\""],
             "type": {
-              "array": [
-                "u8",
-                32
-              ]
+              "array": ["u8", 32]
             }
           },
           {
             "name": "spotPositions",
-            "docs": [
-              "The user's spot positions"
-            ],
+            "docs": ["The user's spot positions"],
             "type": {
               "array": [
                 {
@@ -8296,9 +8118,7 @@
           },
           {
             "name": "perpPositions",
-            "docs": [
-              "The user's perp positions"
-            ],
+            "docs": ["The user's perp positions"],
             "type": {
               "array": [
                 {
@@ -8310,9 +8130,7 @@
           },
           {
             "name": "orders",
-            "docs": [
-              "The user's orders"
-            ],
+            "docs": ["The user's orders"],
             "type": {
               "array": [
                 {
@@ -8324,9 +8142,7 @@
           },
           {
             "name": "lastAddPerpLpSharesTs",
-            "docs": [
-              "The last time the user added perp lp positions"
-            ],
+            "docs": ["The last time the user added perp lp positions"],
             "type": "i64"
           },
           {
@@ -8402,23 +8218,17 @@
           },
           {
             "name": "maxMarginRatio",
-            "docs": [
-              "Custom max initial margin ratio for the user"
-            ],
+            "docs": ["Custom max initial margin ratio for the user"],
             "type": "u32"
           },
           {
             "name": "nextLiquidationId",
-            "docs": [
-              "The next liquidation id to be used for user"
-            ],
+            "docs": ["The next liquidation id to be used for user"],
             "type": "u16"
           },
           {
             "name": "subAccountId",
-            "docs": [
-              "The sub account id for this user"
-            ],
+            "docs": ["The sub account id for this user"],
             "type": "u16"
           },
           {
@@ -8430,9 +8240,7 @@
           },
           {
             "name": "isMarginTradingEnabled",
-            "docs": [
-              "Whether the user has enabled margin trading"
-            ],
+            "docs": ["Whether the user has enabled margin trading"],
             "type": "bool"
           },
           {
@@ -8445,30 +8253,22 @@
           },
           {
             "name": "openOrders",
-            "docs": [
-              "number of open orders"
-            ],
+            "docs": ["number of open orders"],
             "type": "u8"
           },
           {
             "name": "hasOpenOrder",
-            "docs": [
-              "Whether or not user has open order"
-            ],
+            "docs": ["Whether or not user has open order"],
             "type": "bool"
           },
           {
             "name": "openAuctions",
-            "docs": [
-              "number of open orders with auction"
-            ],
+            "docs": ["number of open orders with auction"],
             "type": "u8"
           },
           {
             "name": "hasOpenAuction",
-            "docs": [
-              "Whether or not user has open order with auction"
-            ],
+            "docs": ["Whether or not user has open order with auction"],
             "type": "bool"
           },
           {
@@ -8484,10 +8284,7 @@
           {
             "name": "padding1",
             "type": {
-              "array": [
-                "u8",
-                3
-              ]
+              "array": ["u8", 3]
             }
           },
           {
@@ -8497,10 +8294,7 @@
           {
             "name": "padding",
             "type": {
-              "array": [
-                "u8",
-                12
-              ]
+              "array": ["u8", 12]
             }
           }
         ]
@@ -8513,23 +8307,17 @@
         "fields": [
           {
             "name": "authority",
-            "docs": [
-              "The authority for all of a users sub accounts"
-            ],
+            "docs": ["The authority for all of a users sub accounts"],
             "type": "publicKey"
           },
           {
             "name": "referrer",
-            "docs": [
-              "The address that referred this user"
-            ],
+            "docs": ["The address that referred this user"],
             "type": "publicKey"
           },
           {
             "name": "fees",
-            "docs": [
-              "Stats on the fees paid by the user"
-            ],
+            "docs": ["Stats on the fees paid by the user"],
             "type": {
               "defined": "UserFees"
             }
@@ -8568,23 +8356,17 @@
           },
           {
             "name": "lastMakerVolume30dTs",
-            "docs": [
-              "last time the maker volume was updated"
-            ],
+            "docs": ["last time the maker volume was updated"],
             "type": "i64"
           },
           {
             "name": "lastTakerVolume30dTs",
-            "docs": [
-              "last time the taker volume was updated"
-            ],
+            "docs": ["last time the taker volume was updated"],
             "type": "i64"
           },
           {
             "name": "lastFillerVolume30dTs",
-            "docs": [
-              "last time the filler volume was updated"
-            ],
+            "docs": ["last time the filler volume was updated"],
             "type": "i64"
           },
           {
@@ -8596,9 +8378,7 @@
           },
           {
             "name": "numberOfSubAccounts",
-            "docs": [
-              "The current number of sub accounts"
-            ],
+            "docs": ["The current number of sub accounts"],
             "type": "u16"
           },
           {
@@ -8625,52 +8405,37 @@
           {
             "name": "padding1",
             "type": {
-              "array": [
-                "u8",
-                2
-              ]
+              "array": ["u8", 2]
             }
           },
           {
             "name": "fuelInsurance",
-            "docs": [
-              "accumulated fuel for token amounts of insurance"
-            ],
+            "docs": ["accumulated fuel for token amounts of insurance"],
             "type": "u32"
           },
           {
             "name": "fuelDeposits",
-            "docs": [
-              "accumulated fuel for notional of deposits"
-            ],
+            "docs": ["accumulated fuel for notional of deposits"],
             "type": "u32"
           },
           {
             "name": "fuelBorrows",
-            "docs": [
-              "accumulate fuel bonus for notional of borrows"
-            ],
+            "docs": ["accumulate fuel bonus for notional of borrows"],
             "type": "u32"
           },
           {
             "name": "fuelPositions",
-            "docs": [
-              "accumulated fuel for perp open interest"
-            ],
+            "docs": ["accumulated fuel for perp open interest"],
             "type": "u32"
           },
           {
             "name": "fuelTaker",
-            "docs": [
-              "accumulate fuel bonus for taker volume"
-            ],
+            "docs": ["accumulate fuel bonus for taker volume"],
             "type": "u32"
           },
           {
             "name": "fuelMaker",
-            "docs": [
-              "accumulate fuel bonus for maker volume"
-            ],
+            "docs": ["accumulate fuel bonus for maker volume"],
             "type": "u32"
           },
           {
@@ -8690,10 +8455,7 @@
           {
             "name": "padding",
             "type": {
-              "array": [
-                "u8",
-                12
-              ]
+              "array": ["u8", 12]
             }
           }
         ]
@@ -8719,10 +8481,7 @@
           {
             "name": "name",
             "type": {
-              "array": [
-                "u8",
-                32
-              ]
+              "array": ["u8", 32]
             }
           }
         ]
@@ -8779,9 +8538,7 @@
           },
           {
             "name": "lpShares",
-            "docs": [
-              "precision: AMM_RESERVE_PRECISION"
-            ],
+            "docs": ["precision: AMM_RESERVE_PRECISION"],
             "type": "u64"
           },
           {
@@ -8798,16 +8555,12 @@
           },
           {
             "name": "liquidatorFee",
-            "docs": [
-              "precision: QUOTE_PRECISION"
-            ],
+            "docs": ["precision: QUOTE_PRECISION"],
             "type": "u64"
           },
           {
             "name": "ifFee",
-            "docs": [
-              "precision: QUOTE_PRECISION"
-            ],
+            "docs": ["precision: QUOTE_PRECISION"],
             "type": "u64"
           }
         ]
@@ -8840,16 +8593,12 @@
           },
           {
             "name": "liabilityTransfer",
-            "docs": [
-              "precision: token mint precision"
-            ],
+            "docs": ["precision: token mint precision"],
             "type": "u128"
           },
           {
             "name": "ifFee",
-            "docs": [
-              "precision: token mint precision"
-            ],
+            "docs": ["precision: token mint precision"],
             "type": "u64"
           }
         ]
@@ -9004,44 +8753,32 @@
         "fields": [
           {
             "name": "lastOraclePrice",
-            "docs": [
-              "precision: PRICE_PRECISION"
-            ],
+            "docs": ["precision: PRICE_PRECISION"],
             "type": "i64"
           },
           {
             "name": "lastOracleConf",
-            "docs": [
-              "precision: PRICE_PRECISION"
-            ],
+            "docs": ["precision: PRICE_PRECISION"],
             "type": "u64"
           },
           {
             "name": "lastOracleDelay",
-            "docs": [
-              "number of slots since last update"
-            ],
+            "docs": ["number of slots since last update"],
             "type": "i64"
           },
           {
             "name": "lastOraclePriceTwap",
-            "docs": [
-              "precision: PRICE_PRECISION"
-            ],
+            "docs": ["precision: PRICE_PRECISION"],
             "type": "i64"
           },
           {
             "name": "lastOraclePriceTwap5min",
-            "docs": [
-              "precision: PRICE_PRECISION"
-            ],
+            "docs": ["precision: PRICE_PRECISION"],
             "type": "i64"
           },
           {
             "name": "lastOraclePriceTwapTs",
-            "docs": [
-              "unix_timestamp of last snapshot"
-            ],
+            "docs": ["unix_timestamp of last snapshot"],
             "type": "i64"
           }
         ]
@@ -9054,37 +8791,27 @@
         "fields": [
           {
             "name": "lastIndexBidPrice",
-            "docs": [
-              "precision: PRICE_PRECISION"
-            ],
+            "docs": ["precision: PRICE_PRECISION"],
             "type": "u64"
           },
           {
             "name": "lastIndexAskPrice",
-            "docs": [
-              "precision: PRICE_PRECISION"
-            ],
+            "docs": ["precision: PRICE_PRECISION"],
             "type": "u64"
           },
           {
             "name": "lastIndexPriceTwap",
-            "docs": [
-              "precision: PRICE_PRECISION"
-            ],
+            "docs": ["precision: PRICE_PRECISION"],
             "type": "u64"
           },
           {
             "name": "lastIndexPriceTwap5min",
-            "docs": [
-              "precision: PRICE_PRECISION"
-            ],
+            "docs": ["precision: PRICE_PRECISION"],
             "type": "u64"
           },
           {
             "name": "lastIndexPriceTwapTs",
-            "docs": [
-              "unix_timestamp of last snapshot"
-            ],
+            "docs": ["unix_timestamp of last snapshot"],
             "type": "i64"
           }
         ]
@@ -9234,10 +8961,7 @@
           {
             "name": "uuid",
             "type": {
-              "array": [
-                "u8",
-                8
-              ]
+              "array": ["u8", 8]
             }
           },
           {
@@ -9283,10 +9007,7 @@
           {
             "name": "uuid",
             "type": {
-              "array": [
-                "u8",
-                8
-              ]
+              "array": ["u8", 8]
             }
           },
           {
@@ -9342,10 +9063,7 @@
           {
             "name": "signature",
             "type": {
-              "array": [
-                "u8",
-                64
-              ]
+              "array": ["u8", 64]
             }
           }
         ]
@@ -9369,10 +9087,7 @@
           {
             "name": "makerSignature",
             "type": {
-              "array": [
-                "u8",
-                64
-              ]
+              "array": ["u8", 64]
             }
           }
         ]
@@ -9517,9 +9232,7 @@
           },
           {
             "name": "lastRevenueWithdrawTs",
-            "docs": [
-              "The last time revenue was settled in/out of market"
-            ],
+            "docs": ["The last time revenue was settled in/out of market"],
             "type": "i64"
           }
         ]
@@ -9541,18 +9254,13 @@
           },
           {
             "name": "marketIndex",
-            "docs": [
-              "The spot market the pool is for"
-            ],
+            "docs": ["The spot market the pool is for"],
             "type": "u16"
           },
           {
             "name": "padding",
             "type": {
-              "array": [
-                "u8",
-                6
-              ]
+              "array": ["u8", 6]
             }
           }
         ]
@@ -9565,16 +9273,12 @@
         "fields": [
           {
             "name": "oracle",
-            "docs": [
-              "oracle price data public key"
-            ],
+            "docs": ["oracle price data public key"],
             "type": "publicKey"
           },
           {
             "name": "historicalOracleData",
-            "docs": [
-              "stores historically witnessed oracle data"
-            ],
+            "docs": ["stores historically witnessed oracle data"],
             "type": {
               "defined": "HistoricalOracleData"
             }
@@ -9931,16 +9635,12 @@
           },
           {
             "name": "lastMarkPriceTwap5min",
-            "docs": [
-              "average estimate of (bid+ask)/2 price over FIVE_MINUTES"
-            ],
+            "docs": ["average estimate of (bid+ask)/2 price over FIVE_MINUTES"],
             "type": "u64"
           },
           {
             "name": "lastUpdateSlot",
-            "docs": [
-              "the last blockchain slot the amm was updated"
-            ],
+            "docs": ["the last blockchain slot the amm was updated"],
             "type": "u64"
           },
           {
@@ -9961,16 +9661,12 @@
           },
           {
             "name": "lastFundingRateTs",
-            "docs": [
-              "the last funding rate update unix_timestamp"
-            ],
+            "docs": ["the last funding rate update unix_timestamp"],
             "type": "i64"
           },
           {
             "name": "fundingPeriod",
-            "docs": [
-              "the peridocity of the funding rate updates"
-            ],
+            "docs": ["the peridocity of the funding rate updates"],
             "type": "i64"
           },
           {
@@ -10007,24 +9703,17 @@
           },
           {
             "name": "volume24h",
-            "docs": [
-              "estimated total of volume in market",
-              "QUOTE_PRECISION"
-            ],
+            "docs": ["estimated total of volume in market", "QUOTE_PRECISION"],
             "type": "u64"
           },
           {
             "name": "longIntensityVolume",
-            "docs": [
-              "the volume intensity of long fills against AMM"
-            ],
+            "docs": ["the volume intensity of long fills against AMM"],
             "type": "u64"
           },
           {
             "name": "shortIntensityVolume",
-            "docs": [
-              "the volume intensity of short fills against AMM"
-            ],
+            "docs": ["the volume intensity of short fills against AMM"],
             "type": "u64"
           },
           {
@@ -10052,9 +9741,7 @@
           },
           {
             "name": "lastMarkPriceTwapTs",
-            "docs": [
-              "the last unix_timestamp the mark twap was updated"
-            ],
+            "docs": ["the last unix_timestamp the mark twap was updated"],
             "type": "i64"
           },
           {
@@ -10066,37 +9753,27 @@
           },
           {
             "name": "maxSpread",
-            "docs": [
-              "the maximum spread the AMM can quote"
-            ],
+            "docs": ["the maximum spread the AMM can quote"],
             "type": "u32"
           },
           {
             "name": "longSpread",
-            "docs": [
-              "the spread for asks vs the reserve price"
-            ],
+            "docs": ["the spread for asks vs the reserve price"],
             "type": "u32"
           },
           {
             "name": "shortSpread",
-            "docs": [
-              "the spread for bids vs the reserve price"
-            ],
+            "docs": ["the spread for bids vs the reserve price"],
             "type": "u32"
           },
           {
             "name": "longIntensityCount",
-            "docs": [
-              "the count intensity of long fills against AMM"
-            ],
+            "docs": ["the count intensity of long fills against AMM"],
             "type": "u32"
           },
           {
             "name": "shortIntensityCount",
-            "docs": [
-              "the count intensity of short fills against AMM"
-            ],
+            "docs": ["the count intensity of short fills against AMM"],
             "type": "u32"
           },
           {
@@ -10108,9 +9785,7 @@
           },
           {
             "name": "maxSlippageRatio",
-            "docs": [
-              "the maximum slippage a single fill on the AMM can push"
-            ],
+            "docs": ["the maximum slippage a single fill on the AMM can push"],
             "type": "u16"
           },
           {
@@ -10186,10 +9861,7 @@
           {
             "name": "padding",
             "type": {
-              "array": [
-                "u8",
-                12
-              ]
+              "array": ["u8", 12]
             }
           }
         ]
@@ -10203,10 +9875,7 @@
           {
             "name": "uuid",
             "type": {
-              "array": [
-                "u8",
-                8
-              ]
+              "array": ["u8", 8]
             }
           },
           {
@@ -10421,10 +10090,7 @@
           {
             "name": "uuid",
             "type": {
-              "array": [
-                "u8",
-                8
-              ]
+              "array": ["u8", 8]
             }
           },
           {
@@ -10469,18 +10135,12 @@
         "fields": [
           {
             "name": "totalFeePaid",
-            "docs": [
-              "Total taker fee paid",
-              "precision: QUOTE_PRECISION"
-            ],
+            "docs": ["Total taker fee paid", "precision: QUOTE_PRECISION"],
             "type": "u64"
           },
           {
             "name": "totalFeeRebate",
-            "docs": [
-              "Total maker fee rebate",
-              "precision: QUOTE_PRECISION"
-            ],
+            "docs": ["Total maker fee rebate", "precision: QUOTE_PRECISION"],
             "type": "u64"
           },
           {
@@ -10501,10 +10161,7 @@
           },
           {
             "name": "totalReferrerReward",
-            "docs": [
-              "Total reward to referrer",
-              "precision: QUOTE_PRECISION"
-            ],
+            "docs": ["Total reward to referrer", "precision: QUOTE_PRECISION"],
             "type": "u64"
           },
           {
@@ -10558,34 +10215,25 @@
           },
           {
             "name": "marketIndex",
-            "docs": [
-              "The market index of the corresponding spot market"
-            ],
+            "docs": ["The market index of the corresponding spot market"],
             "type": "u16"
           },
           {
             "name": "balanceType",
-            "docs": [
-              "Whether the position is deposit or borrow"
-            ],
+            "docs": ["Whether the position is deposit or borrow"],
             "type": {
               "defined": "SpotBalanceType"
             }
           },
           {
             "name": "openOrders",
-            "docs": [
-              "Number of open orders"
-            ],
+            "docs": ["Number of open orders"],
             "type": "u8"
           },
           {
             "name": "padding",
             "type": {
-              "array": [
-                "u8",
-                4
-              ]
+              "array": ["u8", 4]
             }
           }
         ]
@@ -10701,16 +10349,12 @@
           },
           {
             "name": "marketIndex",
-            "docs": [
-              "The market index for the perp market"
-            ],
+            "docs": ["The market index for the perp market"],
             "type": "u16"
           },
           {
             "name": "openOrders",
-            "docs": [
-              "The number of open orders"
-            ],
+            "docs": ["The number of open orders"],
             "type": "u8"
           },
           {
@@ -10727,9 +10371,7 @@
         "fields": [
           {
             "name": "slot",
-            "docs": [
-              "The slot the order was placed"
-            ],
+            "docs": ["The slot the order was placed"],
             "type": "u64"
           },
           {
@@ -10793,9 +10435,7 @@
           },
           {
             "name": "maxTs",
-            "docs": [
-              "The time when the order will expire"
-            ],
+            "docs": ["The time when the order will expire"],
             "type": "i64"
           },
           {
@@ -10815,34 +10455,26 @@
           },
           {
             "name": "marketIndex",
-            "docs": [
-              "The perp/spot market index"
-            ],
+            "docs": ["The perp/spot market index"],
             "type": "u16"
           },
           {
             "name": "status",
-            "docs": [
-              "Whether the order is open or unused"
-            ],
+            "docs": ["Whether the order is open or unused"],
             "type": {
               "defined": "OrderStatus"
             }
           },
           {
             "name": "orderType",
-            "docs": [
-              "The type of order"
-            ],
+            "docs": ["The type of order"],
             "type": {
               "defined": "OrderType"
             }
           },
           {
             "name": "marketType",
-            "docs": [
-              "Whether market is spot or perp"
-            ],
+            "docs": ["Whether market is spot or perp"],
             "type": {
               "defined": "MarketType"
             }
@@ -10856,9 +10488,7 @@
           },
           {
             "name": "existingPositionDirection",
-            "docs": [
-              "What the users position was when the order was placed"
-            ],
+            "docs": ["What the users position was when the order was placed"],
             "type": {
               "defined": "PositionDirection"
             }
@@ -10881,9 +10511,7 @@
           },
           {
             "name": "postOnly",
-            "docs": [
-              "Whether the order must be a maker"
-            ],
+            "docs": ["Whether the order must be a maker"],
             "type": "bool"
           },
           {
@@ -10904,18 +10532,13 @@
           },
           {
             "name": "auctionDuration",
-            "docs": [
-              "How many slots the auction lasts"
-            ],
+            "docs": ["How many slots the auction lasts"],
             "type": "u8"
           },
           {
             "name": "padding",
             "type": {
-              "array": [
-                "u8",
-                3
-              ]
+              "array": ["u8", 3]
             }
           }
         ]
@@ -10942,15 +10565,11 @@
         "variants": [
           {
             "name": "UserOrderId",
-            "fields": [
-              "u8"
-            ]
+            "fields": ["u8"]
           },
           {
             "name": "OrderId",
-            "fields": [
-              "u32"
-            ]
+            "fields": ["u32"]
           }
         ]
       }
@@ -11362,10 +10981,7 @@
           },
           {
             "name": "PlaceAndTake",
-            "fields": [
-              "bool",
-              "u8"
-            ]
+            "fields": ["bool", "u8"]
           },
           {
             "name": "Liquidation"
@@ -11391,10 +11007,7 @@
           },
           {
             "name": "Match",
-            "fields": [
-              "publicKey",
-              "u16"
-            ]
+            "fields": ["publicKey", "u16", "u64"]
           }
         ]
       }
@@ -11409,10 +11022,7 @@
           },
           {
             "name": "Match",
-            "fields": [
-              "publicKey",
-              "u16"
-            ]
+            "fields": ["publicKey", "u16"]
           }
         ]
       }
@@ -12037,10 +11647,7 @@
         {
           "name": "name",
           "type": {
-            "array": [
-              "u8",
-              32
-            ]
+            "array": ["u8", 32]
           },
           "index": false
         },
@@ -12450,10 +12057,7 @@
         {
           "name": "swiftOrderUuid",
           "type": {
-            "array": [
-              "u8",
-              8
-            ]
+            "array": ["u8", 8]
           },
           "index": false
         },
@@ -14675,6 +14279,14 @@
       "code": 6308,
       "name": "InvalidLiquidateSpotWithSwap",
       "msg": "InvalidLiquidateSpotWithSwap"
+    },
+    {
+      "code": 6309,
+      "name": "SwiftUserContextUserMismatch",
+      "msg": "User in swift message does not match user in ix context"
     }
-  ]
+  ],
+  "metadata": {
+    "address": "dRiftyHA39MWEi3m9aunc5MzRF1JYuBsbn6VPcn33UH"
+  }
 }
