@@ -684,4 +684,11 @@ mainnet_perp_market_configs: list[PerpMarketConfig] = [
         oracle=Pubkey.from_string("28Zk42cxbg4MxiTewSwoedvW6MUgjoVHSTvTW7zQ7ESi"),
         oracle_source=OracleSource.PythPull(),  # type: ignore
     ),
+    PerpMarketConfig(
+        symbol="BERA-PERP",
+        base_asset_symbol="BERA",
+        market_index=66,
+        oracle=Pubkey.from_string("53Ae7ArP9yCnjqL2CqxJ1zdv3ba64NoVTqRcwjrCg181"),
+        oracle_source=OracleSource.PythPull(),  # type: ignore
+    ),
 ]

@@ -342,4 +342,11 @@ mainnet_spot_market_configs: list[SpotMarketConfig] = [
         oracle_source=OracleSource.PythPull(),  # type: ignore
         mint=Pubkey.from_string("FUAfBo2jgks6gB4Z4LfZkqSZgzNucisEHqnNebaRxM1P"),
     ),
+    SpotMarketConfig(
+        symbol="AUSD",
+        market_index=38,
+        oracle=Pubkey.from_string("8FZhpiM8n3mpgvENWLcEvHsKB1bBhYBAyL4Ypr4gptLZ"),
+        oracle_source=OracleSource.PythStableCoinPull(),  # type: ignore
+        mint=Pubkey.from_string("AUSD1jCcCyPLybk1YnvPWsHQSrZ46dxwoMniN4N2UEB9"),
+    ),
 ]
