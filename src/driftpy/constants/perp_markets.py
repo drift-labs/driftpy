@@ -331,8 +331,8 @@ mainnet_perp_market_configs: list[PerpMarketConfig] = [
         symbol="INJ-PERP",
         base_asset_symbol="INJ",
         market_index=15,
-        oracle=Pubkey.from_string("BfXcyDWJmYADa5eZD7gySSDd6giqgjvm7xsAhQ239SUD"),
-        oracle_source=OracleSource.PythPull(),  # type: ignore
+        oracle=Pubkey.from_string("Ac442xcU276nb6gJFUCsNYAwAo6KWuw4xocxmG3nvDym"),
+        oracle_source=OracleSource.PythLazer(),  # type: ignore
     ),
     PerpMarketConfig(
         symbol="LINK-PERP",
