@@ -1,6 +1,6 @@
-from driftpy.types import OracleSource
-from driftpy.types import OracleSourceNum
 from solders.pubkey import Pubkey
+
+from driftpy.types import OracleSource, OracleSourceNum
 
 
 def get_oracle_source_num(source: OracleSource) -> int:
@@ -20,6 +20,14 @@ def get_oracle_source_num(source: OracleSource) -> int:
         return OracleSourceNum.PYTH_STABLE_COIN_PULL
     elif "PythStableCoin" in source_str:
         return OracleSourceNum.PYTH_STABLE_COIN
+    elif "PythLazer1K" in source_str:
+        return OracleSourceNum.PYTH_LAZER_1K
+    elif "PythLazer1M" in source_str:
+        return OracleSourceNum.PYTH_LAZER_1M
+    elif "PythLazerStableCoin" in source_str:
+        return OracleSourceNum.PYTH_LAZER_STABLE_COIN
+    elif "PythLazer" in source_str:
+        return OracleSourceNum.PYTH_LAZER
     elif "Pyth" in source_str:
         return OracleSourceNum.PYTH
     elif "SwitchboardOnDemand" in source_str:

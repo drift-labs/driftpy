@@ -106,6 +106,9 @@ async def get_oracle_price_data_and_slot(
     elif is_variant(oracle_source, "PythLazer1M"):
         oracle_price_data = decode_pyth_lazer_price_info(oracle_raw)
         data_and_slot = DataAndSlot(data=oracle_price_data, slot=slot)
+    elif is_variant(oracle_source, "PythLazerStableCoin"):
+        oracle_price_data = decode_pyth_lazer_price_info(oracle_raw)
+        data_and_slot = DataAndSlot(data=oracle_price_data, slot=slot)
 
     if data_and_slot:
         return data_and_slot

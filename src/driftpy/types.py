@@ -253,6 +253,7 @@ class OracleSource:
     PythLazer = constructor()
     PythLazer1K = constructor()
     PythLazer1M = constructor()
+    PythLazerStableCoin = constructor()
 
 
 @_rust_enum
@@ -375,6 +376,9 @@ class OracleSourceNum:
     PYTH_STABLE_COIN_PULL = 9
     SWITCHBOARD_ON_DEMAND = 11
     PYTH_LAZER = 12
+    PYTH_LAZER_1K = 13
+    PYTH_LAZER_1M = 14
+    PYTH_LAZER_STABLE_COIN = 15
 
 
 @_rust_enum
@@ -653,7 +657,8 @@ class Order:
     immediate_or_cancel: bool
     trigger_condition: OrderTriggerCondition
     auction_duration: int
-    padding: list[int] = field(default_factory=lambda: [0] * 3)
+    posted_slot_tail: int
+    padding: list[int] = field(default_factory=lambda: [0] * 2)
 
 
 @dataclass
