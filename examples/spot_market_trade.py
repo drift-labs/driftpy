@@ -37,34 +37,37 @@ async def make_spot_trade():
         provider.connection,
         provider.wallet,
         "mainnet",
-        tx_params=TxParams(
-            compute_units_price=85_000,
-            compute_units=1_000_000,
-        ),
+        tx_params=TxParams(compute_units_price=85_000, compute_units=1_400_000),
+        sub_account_ids=[1],
     )
     await drift_client.subscribe()
+    drift_client.active_sub_account_id = 1
     logger.info("Drift client subscribed")
 
+    market_symbol_1 = "JLP"
+    market_symbol_2 = "USDC"
+
     in_decimals_result = drift_client.get_spot_market_account(
-        get_market_by_symbol("USDS").market_index
+        get_market_by_symbol(market_symbol_1).market_index
     )
     if not in_decimals_result:
         logger.error("USDS market not found")
         raise Exception("Market not found")
 
     in_decimals = in_decimals_result.decimals
-    logger.info(f"USDS decimals: {in_decimals}")
+    logger.info(f"{market_symbol_1} decimals: {in_decimals}")
 
     swap_amount = int(1 * 10**in_decimals)
-    logger.info(f"Swapping {swap_amount} USDS to USDC")
+    logger.info(f"Swapping {swap_amount} {market_symbol_1} to {market_symbol_2}")
 
     try:
         swap_ixs, swap_lookups = await drift_client.get_jupiter_swap_ix_v6(
-            out_market_idx=get_market_by_symbol("USDC").market_index,
-            in_market_idx=get_market_by_symbol("USDS").market_index,
+            out_market_idx=get_market_by_symbol(market_symbol_2).market_index,
+            in_market_idx=get_market_by_symbol(market_symbol_1).market_index,
             amount=swap_amount,
             swap_mode="ExactIn",
             only_direct_routes=True,
+            max_accounts=20,
         )
         logger.info("Got swap instructions")
         print("[DEBUG] Got swap instructions of length", len(swap_ixs))

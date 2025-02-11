@@ -3238,6 +3238,7 @@ class DriftClient:
         fee_account: Optional[Pubkey] = None,
         platform_fee_bps: Optional[int] = None,
         only_direct_routes: bool = False,
+        max_accounts: int = 50,
     ) -> Tuple[list[Instruction], list[AddressLookupTableAccount]]:
         pre_instructions: list[Instruction] = []
         JUPITER_URL = os.getenv("JUPITER_URL", "https://quote-api.jup.ag/v6")
@@ -3255,7 +3256,7 @@ class DriftClient:
                 "amount": str(amount),
                 "slippageBps": slippage_bps,
                 "swapMode": swap_mode,
-                "maxAccounts": 50,
+                "maxAccounts": max_accounts,
             }
             if only_direct_routes:
                 params["onlyDirectRoutes"] = "true"
