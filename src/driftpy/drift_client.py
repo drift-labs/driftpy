@@ -1,3 +1,4 @@
+import asyncio
 import base64
 import os
 import random
@@ -139,6 +140,7 @@ class DriftClient:
         active_sub_account_id: Optional[int] = None,
         sub_account_ids: Optional[list[int]] = None,
         market_lookup_table: Optional[Pubkey] = None,
+        market_lookup_tables: Optional[list[Pubkey]] = None,
         jito_params: Optional[JitoParams] = None,
         tx_sender_blockhash_commitment: Commitment | None = None,
         enforce_tx_sequencing: bool = False,
@@ -192,6 +194,7 @@ class DriftClient:
 
         self.account_subscription_config = account_subscription
 
+        # deprecated, use market_lookup_tables instead
         self.market_lookup_table = None
         if env is not None:
             self.market_lookup_table = (
@@ -199,7 +202,16 @@ class DriftClient:
                 if market_lookup_table is not None
                 else configs[env].market_lookup_table
             )
+        # deprecated, use market_lookup_table_accounts instead
         self.market_lookup_table_account: Optional[AddressLookupTableAccount] = None
+
+        self.market_lookup_tables = None
+        if env is not None and market_lookup_tables is not None:
+            self.market_lookup_tables = market_lookup_tables
+        else:
+            self.market_lookup_tables = configs[env].market_lookup_tables
+
+        self.market_lookup_table_accounts: list[AddressLookupTableAccount] = []
 
         if tx_params is None:
             tx_params = TxParams(600_000, 0)
@@ -267,6 +279,19 @@ class DriftClient:
         for sub_account_id in self.sub_account_ids:
             await self.add_user(sub_account_id)
         await self.add_user_stats(self.authority)
+
+    async def fetch_market_lookup_table_accounts(self):
+        if self.market_lookup_tables is None:
+            raise ValueError("No market lookup tables found")
+        self.market_lookup_table_accounts: list[
+            AddressLookupTableAccount
+        ] = await asyncio.gather(
+            *[
+                get_address_lookup_table(self.connection, table)
+                for table in self.market_lookup_tables
+            ]
+        )
+        return self.market_lookup_table_accounts
 
     def resurrect(self, spot_markets, perp_markets, spot_oracles, perp_oracles):
         if not isinstance(self.account_subscriber, CachedDriftClientAccountSubscriber):
@@ -509,7 +534,7 @@ class DriftClient:
             tx = await self.tx_sender.get_legacy_tx(ixs, self.wallet.payer, signers)
         elif tx_version == 0:
             if lookup_tables is None:
-                lookup_tables = [await self.fetch_market_lookup_table()]
+                lookup_tables = await self.fetch_market_lookup_table_accounts()
             tx = await self.tx_sender.get_versioned_tx(
                 ixs, self.wallet.payer, lookup_tables, signers
             )
@@ -2295,11 +2320,13 @@ class DriftClient:
         settlee_user_account: UserAccount,
         market_index: int,
     ):
+        lookup_tables = await self.fetch_market_lookup_table_accounts()
         return (
             await self.send_ixs(
                 self.get_settle_pnl_ix(
                     settlee_user_account_public_key, settlee_user_account, market_index
-                )
+                ),
+                lookup_tables=lookup_tables,
             )
         ).tx_sig
 
@@ -3332,6 +3359,7 @@ class DriftClient:
             )
             address_table_lookup_accounts.append(address_table_lookup_account)
 
+        drift_lookup_tables = await self.fetch_market_lookup_table_accounts()
         swap_ixs = [swap_ix]
 
         begin_swap_ix, end_swap_ix = await self.get_swap_flash_loan_ix(
@@ -3358,7 +3386,11 @@ class DriftClient:
             else:
                 cleansed_ixs.append(ix)
 
-        return cleansed_ixs, address_table_lookup_accounts
+        lookup_tables = [
+            *list(address_table_lookup_accounts),
+            *list(drift_lookup_tables),
+        ]
+        return cleansed_ixs, lookup_tables
 
     def _dict_to_instructions(self, instructions_dict: dict) -> Instruction:
         program_id = Pubkey.from_string(instructions_dict["programId"])

@@ -48,6 +48,7 @@ class Config:
     perp_markets: list[PerpMarketConfig]
     spot_markets: list[SpotMarketConfig]
     market_lookup_table: Pubkey
+    market_lookup_tables: list[Pubkey]
 
 
 configs = {
@@ -66,6 +67,9 @@ configs = {
         market_lookup_table=Pubkey.from_string(
             "FaMS3U4uBojvGn5FSDEPimddcXsCfwkKsFgMVVnDdxGb"
         ),
+        market_lookup_tables=[
+            Pubkey.from_string("FaMS3U4uBojvGn5FSDEPimddcXsCfwkKsFgMVVnDdxGb"),
+        ],
     ),
     "mainnet": Config(
         env="mainnet",
@@ -79,9 +83,14 @@ configs = {
         default_ws="wss://api.mainnet-beta.solana.com",
         perp_markets=mainnet_perp_market_configs,
         spot_markets=mainnet_spot_market_configs,
+        # deprecated, use market_lookup_tables instead
         market_lookup_table=Pubkey.from_string(
-            "D9cnvzswDikQDf53k4HpQ3KJ9y1Fv3HGGDFYMXnK5T6c"
+            "Fpys8GRa5RBWfyeN7AaDUwFGD1zkDCA4z3t4CJLV8dfL"
         ),
+        market_lookup_tables=[
+            Pubkey.from_string("Fpys8GRa5RBWfyeN7AaDUwFGD1zkDCA4z3t4CJLV8dfL"),
+            Pubkey.from_string("EiWSskK5HXnBTptiS5DH6gpAJRVNQ3cAhTKBGaiaysAb"),
+        ],
     ),
 }
 
