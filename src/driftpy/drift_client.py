@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Optional, Tuple, Union, cast
 
+import anchorpy
 import requests
 from anchorpy.program.context import Context
 from anchorpy.program.core import Program
@@ -81,6 +82,7 @@ from driftpy.math.perp_position import is_available
 from driftpy.math.spot_market import cast_to_spot_precision
 from driftpy.math.spot_position import is_spot_position_available
 from driftpy.name import encode_name
+from driftpy.swift.create_verify_ix import create_minimal_ed25519_verify_ix
 from driftpy.tx.standard_tx_sender import StandardTxSender
 from driftpy.tx.types import TxSender, TxSigAndSlot
 from driftpy.types import (
@@ -2006,6 +2008,107 @@ class DriftClient:
                 remaining_accounts=remaining_accounts,
             ),
         )
+
+    async def place_swift_taker_order(
+        self,
+        signed_swift_order_params: SignedSwiftOrderParams,
+        market_index: int,
+        taker_info: dict,
+        preceding_ixs: list[Instruction] = [],
+        override_ix_count: Optional[int] = None,
+    ) -> TxSigAndSlot:
+        ixs = await self.get_place_swift_taker_perp_order_ixs(
+            signed_swift_order_params,
+            market_index,
+            taker_info,
+            None,
+            preceding_ixs,
+            override_ix_count,
+        )
+        return await self.send_ixs(ixs)
+
+    async def get_place_swift_taker_perp_order_ixs(
+        self,
+        signed_swift_order_params: SignedSwiftOrderParams,
+        market_index: int,
+        taker_info: dict,
+        authority: Optional[Pubkey] = None,
+        preceding_ixs: list[Instruction] = [],
+        override_ix_count: Optional[int] = None,
+    ):
+        if not authority and not taker_info["taker_user_account"]:
+            raise Exception("authority or taker_user_account must be provided")
+
+        remaining_accounts = self.get_remaining_accounts(
+            user_accounts=[taker_info["taker_user_account"]],
+            readable_perp_market_indexes=[market_index],
+        )
+
+        authority_to_use = authority or taker_info["taker_user_account"].authority
+
+        message_length_buffer = int.to_bytes(
+            len(signed_swift_order_params.order_params), 2, "little"
+        )
+
+        swift_ix_data = b"".join(
+            [
+                signed_swift_order_params.signature,
+                bytes(authority_to_use),
+                message_length_buffer,
+                signed_swift_order_params.order_params,
+            ]
+        )
+
+        swift_order_params_signature_ix = create_minimal_ed25519_verify_ix(
+            override_ix_count or len(preceding_ixs) + 1,
+            12,
+            swift_ix_data,
+            0,
+        )
+
+        sysvar_pubkey = Pubkey.from_string(
+            "Sysvar1nstructions1111111111111111111111111"
+        )
+
+        place_taker_swift_perp_order_ix = self.program.instruction[
+            "place_swift_taker_order"
+        ](
+            swift_ix_data,
+            ctx=Context(
+                accounts={
+                    "state": self.get_state_public_key(),
+                    "user": taker_info["taker"],
+                    "user_stats": taker_info["taker_stats"],
+                    "swift_user_orders": get_swift_user_account_public_key(
+                        self.program_id,
+                        taker_info["taker_user_account"].authority,
+                    ),
+                    "authority": self.wallet.payer.pubkey(),
+                    "ix_sysvar": sysvar_pubkey,
+                },
+                remaining_accounts=remaining_accounts,
+            ),
+        )
+
+        return [swift_order_params_signature_ix, place_taker_swift_perp_order_ix]
+
+    async def place_and_make_swift_perp_order(
+        self,
+        signed_swift_order_params: SignedSwiftOrderParams,
+        swift_order_uuid: bytes,
+        taker_info: dict,
+        order_params: OrderParams,
+    ):
+        ixs = await self.get_place_and_make_swift_perp_order_ixs(
+            signed_swift_order_params,
+            swift_order_uuid,
+            taker_info,
+            order_params,
+        )
+        lookup_tables = await self.fetch_market_lookup_table_accounts()
+        result = await self.send_ixs(ixs, lookup_tables=lookup_tables)
+        self.last_perp_market_seen_cache[order_params.market_index] = result.slot
+        return result.tx_sig
 
     async def get_place_and_make_swift_perp_order_ixs(
         self,
