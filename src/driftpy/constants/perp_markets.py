@@ -247,8 +247,8 @@ mainnet_perp_market_configs: list[PerpMarketConfig] = [
         symbol="APT-PERP",
         base_asset_symbol="APT",
         market_index=3,
-        oracle=Pubkey.from_string("79EWaCYU9jiQN8SbvVzGFAhAncUZYp3PjNg7KxmN5cLE"),
-        oracle_source=OracleSource.PythPull(),  # type: ignore
+        oracle=Pubkey.from_string("CXZhzKePYajrZgZyrzgvHYFKK3c5tNgDrRobAgySo8Nb"),
+        oracle_source=OracleSource.PythLazer(),  # type: ignore
     ),
     PerpMarketConfig(
         symbol="1MBONK-PERP",
@@ -258,18 +258,18 @@ mainnet_perp_market_configs: list[PerpMarketConfig] = [
         oracle_source=OracleSource.Pyth1MPull(),  # type: ignore
     ),
     PerpMarketConfig(
-        symbol="MATIC-PERP",
-        base_asset_symbol="MATIC",
+        symbol="POL-PERP",
+        base_asset_symbol="POL",
         market_index=5,
-        oracle=Pubkey.from_string("BrzyDgwELy4jjjsqLQpBeUxzrsueYyMhuWpYBaUYcXvi"),
-        oracle_source=OracleSource.PythPull(),  # type: ignore
+        oracle=Pubkey.from_string("HDveCibToLf157NtUqShCEWX3GcF4Aq8Ngt2bst1s1cc"),
+        oracle_source=OracleSource.PythLazer(),  # type: ignore
     ),
     PerpMarketConfig(
         symbol="ARB-PERP",
         base_asset_symbol="ARB",
         market_index=6,
-        oracle=Pubkey.from_string("8ocfAdqVRnzvfdubQaTxar4Kz5HJhNbPNmkLxswqiHUD"),
-        oracle_source=OracleSource.PythPull(),  # type: ignore
+        oracle=Pubkey.from_string("5DYEjGpr28q3EsLKAnLXiDq6UeaFgDFZ5Gdwgp5RmPAp"),
+        oracle_source=OracleSource.PythLazer(),  # type: ignore
     ),
     PerpMarketConfig(
         symbol="DOGE-PERP",
@@ -282,43 +282,43 @@ mainnet_perp_market_configs: list[PerpMarketConfig] = [
         symbol="BNB-PERP",
         base_asset_symbol="BNB",
         market_index=8,
-        oracle=Pubkey.from_string("Dk8eWjuQHMbxJAwB9Sg7pXQPH4kgbg8qZGcUrWcD9gTm"),
-        oracle_source=OracleSource.PythPull(),  # type: ignore
+        oracle=Pubkey.from_string("A9J2j1pRB2aPqAbjUTtKy94niSCTuPUrpimfzvpZHKG1"),
+        oracle_source=OracleSource.PythLazer(),  # type: ignore
     ),
     PerpMarketConfig(
         symbol="SUI-PERP",
         base_asset_symbol="SUI",
         market_index=9,
-        oracle=Pubkey.from_string("HBordkz5YxjzNURmKUY4vfEYFG9fZyZNeNF1VDLMoemT"),
-        oracle_source=OracleSource.PythPull(),  # type: ignore
+        oracle=Pubkey.from_string("HmeJeBKgceqvSBd5XBXZUYECLabnbS1SefLkeJKH8ERK"),
+        oracle_source=OracleSource.PythLazer(),  # type: ignore
     ),
     PerpMarketConfig(
         symbol="1MPEPE-PERP",
         base_asset_symbol="1MPEPE",
         market_index=10,
-        oracle=Pubkey.from_string("CLxofhtzvLiErpn25wvUzpZXEqBhuZ6WMEckEraxyuGt"),
-        oracle_source=OracleSource.Pyth1MPull(),  # type: ignore
+        oracle=Pubkey.from_string("Eo8x9Y1289GvsuYVwRS2R8HfiWRXxYofL1KYvHK2ZM2o"),
+        oracle_source=OracleSource.PythLazer1M(),  # type: ignore
     ),
     PerpMarketConfig(
         symbol="OP-PERP",
         base_asset_symbol="OP",
         market_index=11,
-        oracle=Pubkey.from_string("C9Zi2Y3Mt6Zt6pcFvobN3N29HcrzKujPAPBDDTDRcUa2"),
-        oracle_source=OracleSource.PythPull(),  # type: ignore
+        oracle=Pubkey.from_string("7GPbmQee2T4jMsJg99GuzWyMuzr8c2Uk7rAR9qvvQkzf"),
+        oracle_source=OracleSource.PythLazer(),  # type: ignore
     ),
     PerpMarketConfig(
         symbol="RNDR-PERP",
         base_asset_symbol="RNDR",
         market_index=12,
-        oracle=Pubkey.from_string("8TQztfGcNjHGRusX4ejQQtPZs3Ypczt9jWF6pkgQMqUX"),
-        oracle_source=OracleSource.PythPull(),  # type: ignore
+        oracle=Pubkey.from_string("97EqsAGbTnShB7oYWAFFCVVAx8PWXgDYDhcpm99izNQ4"),
+        oracle_source=OracleSource.PythLazer(),  # type: ignore
     ),
     PerpMarketConfig(
         symbol="XRP-PERP",
         base_asset_symbol="XRP",
         market_index=13,
-        oracle=Pubkey.from_string("9757epAjXWCWQH98kyK9vzgehd1XDVEf7joNHUaKk3iV"),
-        oracle_source=OracleSource.PythPull(),  # type: ignore
+        oracle=Pubkey.from_string("92VexDMsSzYvVq7eiEoodEzZxCLqYnfGKpVTqpkX12FY"),
+        oracle_source=OracleSource.PythLazer(),  # type: ignore
     ),
     PerpMarketConfig(
         symbol="HNT-PERP",
@@ -338,8 +338,8 @@ mainnet_perp_market_configs: list[PerpMarketConfig] = [
         symbol="LINK-PERP",
         base_asset_symbol="LINK",
         market_index=16,
-        oracle=Pubkey.from_string("Gwvob7yoLMgQRVWjScCRyQFMsgpRKrSAYisYEyjDJwEp"),
-        oracle_source=OracleSource.PythPull(),  # type: ignore
+        oracle=Pubkey.from_string("rwyPmfH5xsHdjPf6XsVxvyQEZogX2k4pmhaKEVvgseW"),
+        oracle_source=OracleSource.PythLazer(),  # type: ignore
     ),
     PerpMarketConfig(
         symbol="RLB-PERP",
@@ -352,43 +352,43 @@ mainnet_perp_market_configs: list[PerpMarketConfig] = [
         symbol="PYTH-PERP",
         base_asset_symbol="PYTH",
         market_index=18,
-        oracle=Pubkey.from_string("GqkCu7CbsPVz1H6W6AAHuReqbJckYG59TXz7Y5HDV7hr"),
-        oracle_source=OracleSource.PythPull(),  # type: ignore
+        oracle=Pubkey.from_string("6Sfx8ZAt6xaEgMXTahR6GrT7oYB6nFBMoVyCmMyHmeJV"),
+        oracle_source=OracleSource.PythLazer(),  # type: ignore
     ),
     PerpMarketConfig(
         symbol="TIA-PERP",
         base_asset_symbol="TIA",
         market_index=19,
-        oracle=Pubkey.from_string("C6LHPUrgjrgo5eNUitC8raNEdEttfoRhmqdJ3BHVBJhi"),
-        oracle_source=OracleSource.PythPull(),  # type: ignore
+        oracle=Pubkey.from_string("2rDfWydvqvMQjDuf7vQsgfpa6dLMZehrWrpoXitn6gPx"),
+        oracle_source=OracleSource.PythLazer(),  # type: ignore
     ),
     PerpMarketConfig(
         symbol="JTO-PERP",
         base_asset_symbol="JTO",
         market_index=20,
-        oracle=Pubkey.from_string("Ffq6ACJ17NAgaxC6ocfMzVXL3K61qxB2xHg6WUawWPfP"),
-        oracle_source=OracleSource.PythPull(),  # type: ignore
+        oracle=Pubkey.from_string("CGCz4mB8NsDddCq6BZToRUDUuktzsAfpKYh6ATgyyCGF"),
+        oracle_source=OracleSource.PythLazer(),  # type: ignore
     ),
     PerpMarketConfig(
         symbol="SEI-PERP",
         base_asset_symbol="SEI",
         market_index=21,
-        oracle=Pubkey.from_string("EVyoxFo5jWpv1vV7p6KVjDWwVqtTqvrZ4JMFkieVkVsD"),
-        oracle_source=OracleSource.PythPull(),  # type: ignore
+        oracle=Pubkey.from_string("Edk1TWipQtsaD8nnBXYQV1CEAiQb1GFtEAKeFZCi2A4C"),
+        oracle_source=OracleSource.PythLazer(),  # type: ignore
     ),
     PerpMarketConfig(
         symbol="AVAX-PERP",
         base_asset_symbol="AVAX",
         market_index=22,
-        oracle=Pubkey.from_string("FgBGHNex4urrBmNbSj8ntNQDGqeHcWewKtkvL6JE6dEX"),
-        oracle_source=OracleSource.PythPull(),  # type: ignore
+        oracle=Pubkey.from_string("5ASZLwk3GFCwZiDQ3XpmduRqNPEUGHXjELMX85u8McK3"),
+        oracle_source=OracleSource.PythLazer(),  # type: ignore
     ),
     PerpMarketConfig(
         symbol="WIF-PERP",
         base_asset_symbol="WIF",
         market_index=23,
-        oracle=Pubkey.from_string("6x6KfE7nY2xoLCRSMPT1u83wQ5fpGXoKNBqFjrCwzsCQ"),
-        oracle_source=OracleSource.PythPull(),  # type: ignore
+        oracle=Pubkey.from_string("4QXWStoyEErTZFVsvKrvxuNa6QT8zpeA8jddZunSGvYE"),
+        oracle_source=OracleSource.PythLazer(),  # type: ignore
     ),
     PerpMarketConfig(
         symbol="JUP-PERP",
@@ -401,22 +401,22 @@ mainnet_perp_market_configs: list[PerpMarketConfig] = [
         symbol="DYM-PERP",
         base_asset_symbol="DYM",
         market_index=25,
-        oracle=Pubkey.from_string("hnefGsC8hJi8MBajpRSkUY97wJmLoBQYXaHkz3nmw1z"),
-        oracle_source=OracleSource.PythPull(),  # type: ignore
+        oracle=Pubkey.from_string("HWDqaKbbNrEsgWPLMeKG39AguefMbHsWcvNSthToXG2t"),
+        oracle_source=OracleSource.PythLazer(),  # type: ignore
     ),
     PerpMarketConfig(
         symbol="TAO-PERP",
         base_asset_symbol="TAO",
         market_index=26,
-        oracle=Pubkey.from_string("5ZPtwR9QpBLcZQVMnVURuYBmZMu1qQrBcA9Gutc5eKN3"),
-        oracle_source=OracleSource.PythPull(),  # type: ignore
+        oracle=Pubkey.from_string("44fqbLqAkKK5kEj1FFvuEPYq56XoQQL3ABzCPrqsW3Cv"),
+        oracle_source=OracleSource.PythLazer(),  # type: ignore
     ),
     PerpMarketConfig(
         symbol="W-PERP",
         base_asset_symbol="W",
         market_index=27,
-        oracle=Pubkey.from_string("4HbitGsdcFbtFotmYscikQFAAKJ3nYx4t7sV7fTvsk8U"),
-        oracle_source=OracleSource.PythPull(),  # type: ignore
+        oracle=Pubkey.from_string("CsFUXiA5dM4eCKjVBBy8tXhXzDkDRNoYjU5rjpHyfNEZ"),
+        oracle_source=OracleSource.PythLazer(),  # type: ignore
     ),
     PerpMarketConfig(
         symbol="KMNO-PERP",
@@ -429,8 +429,8 @@ mainnet_perp_market_configs: list[PerpMarketConfig] = [
         symbol="TNSR-PERP",
         base_asset_symbol="TNSR",
         market_index=29,
-        oracle=Pubkey.from_string("13jpjpVyU5hGpjsZ4HzCcmBo85wze4N8Au7U6cC3GMip"),
-        oracle_source=OracleSource.PythPull(),  # type: ignore
+        oracle=Pubkey.from_string("EX6r1GdfsgcUsY6cQ6YsToV4RGsb4HKpjrkokK2DrmsS"),
+        oracle_source=OracleSource.PythLazer(),  # type: ignore
     ),
     PerpMarketConfig(
         symbol="DRIFT-PERP",
@@ -450,8 +450,8 @@ mainnet_perp_market_configs: list[PerpMarketConfig] = [
         symbol="IO-PERP",
         base_asset_symbol="IO",
         market_index=32,
-        oracle=Pubkey.from_string("HxM66CFwGwrvfTFFkvvA8N3CnKX6m2obzameYWDaSSdA"),
-        oracle_source=OracleSource.PythPull(),  # type: ignore
+        oracle=Pubkey.from_string("8x84eFZVGD9C8vmQqnB9P8UDPMdDWduFaULspKUYGthP"),
+        oracle_source=OracleSource.PythLazer(),  # type: ignore
     ),
     PerpMarketConfig(
         symbol="ZEX-PERP",
@@ -520,8 +520,8 @@ mainnet_perp_market_configs: list[PerpMarketConfig] = [
         symbol="TON-PERP",
         base_asset_symbol="TON",
         market_index=42,
-        oracle=Pubkey.from_string("BNjCXrpEqjdBnuRy2SAUgm5Pq8B73wGFwsf6RYFJiLPY"),
-        oracle_source=OracleSource.PythPull(),  # type: ignore
+        oracle=Pubkey.from_string("Cbhiaky9kxDsviokcQaS9qc4HmpAzLaGjfmdSah1qakL"),
+        oracle_source=OracleSource.PythLazer(),  # type: ignore
     ),
     PerpMarketConfig(
         symbol="LANDO-F1-SGP-WIN-BET",
@@ -611,15 +611,15 @@ mainnet_perp_market_configs: list[PerpMarketConfig] = [
         symbol="PNUT-PERP",
         base_asset_symbol="PNUT",
         market_index=55,
-        oracle=Pubkey.from_string("5AcetMtdRHxkse2ny44NcRdsysnXu9deW7Yy5Y63qAHE"),
-        oracle_source=OracleSource.PythPull(),  # type: ignore
+        oracle=Pubkey.from_string("Fbd2hz8Uz26gLm2Jrj7WSrhxusrh9VuSEWVpLBPJgMYX"),
+        oracle_source=OracleSource.PythLazer(),  # type: ignore
     ),
     PerpMarketConfig(
         symbol="RAY-PERP",
         base_asset_symbol="RAY",
         market_index=56,
-        oracle=Pubkey.from_string("DPvPBacXhEyA1VXF4E3EYH3h83Bynh5uP3JLeN25TWzm"),
-        oracle_source=OracleSource.PythPull(),  # type: ignore
+        oracle=Pubkey.from_string("6VXU2P9BJkuPkfA7FJVonBtAo1c2pGnHoV9rxsdZKZyb"),
+        oracle_source=OracleSource.PythLazer(),  # type: ignore
     ),
     PerpMarketConfig(
         symbol="SUPERBOWL-LIX-LIONS-BET",
@@ -653,15 +653,15 @@ mainnet_perp_market_configs: list[PerpMarketConfig] = [
         symbol="ME-PERP",
         base_asset_symbol="ME",
         market_index=61,
-        oracle=Pubkey.from_string("FLQjrmEPGwbCKRYZ1eYM5FPccHBrCv2cN4GBu3mWfmPH"),
-        oracle_source=OracleSource.PythPull(),  # type: ignore
+        oracle=Pubkey.from_string("BboTg1yT114FQkqT6MM3P3G3CcCktuM2RePgU8Gr3K4A"),
+        oracle_source=OracleSource.PythLazer(),  # type: ignore
     ),
     PerpMarketConfig(
         symbol="PENGU-PERP",
         base_asset_symbol="PENGU",
         market_index=62,
-        oracle=Pubkey.from_string("7vGHChuBJyFMYBqMLXRzBmRxWdSuwEmg8RvRm3RWQsxi"),
-        oracle_source=OracleSource.PythPull(),  # type: ignore
+        oracle=Pubkey.from_string("4A3KroGPjZxPAeBNF287V3NyRwV2q8iBi1vX7kHxTCh7"),
+        oracle_source=OracleSource.PythLazer(),  # type: ignore
     ),
     PerpMarketConfig(
         symbol="AI16Z-PERP",
@@ -690,5 +690,19 @@ mainnet_perp_market_configs: list[PerpMarketConfig] = [
         market_index=66,
         oracle=Pubkey.from_string("53Ae7ArP9yCnjqL2CqxJ1zdv3ba64NoVTqRcwjrCg181"),
         oracle_source=OracleSource.PythPull(),  # type: ignore
+    ),
+    PerpMarketConfig(
+        symbol="NBAFINALS25-OKC-BET",
+        base_asset_symbol="NBAFINALS25-OKC",
+        market_index=67,
+        oracle=Pubkey.from_string("HieNNSAy9tjtU2mLEcGtgCMViCeZ1881fX7tfezL7wdV"),
+        oracle_source=OracleSource.Prelaunch(),  # type: ignore
+    ),
+    PerpMarketConfig(
+        symbol="NBAFINALS25-BOS-BET",
+        base_asset_symbol="NBAFINALS25-BOS",
+        market_index=68,
+        oracle=Pubkey.from_string("HorrnsG8RBMv7dhzbgPX4wqcWbUTV5NwV8r59UwTu4CJ"),
+        oracle_source=OracleSource.Prelaunch(),  # type: ignore
     ),
 ]
