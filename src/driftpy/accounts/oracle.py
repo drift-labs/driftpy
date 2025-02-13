@@ -4,7 +4,7 @@ from typing import Optional
 
 from anchorpy.coder.coder import Coder
 from anchorpy_core.idl import Idl
-from pythclient.pythaccounts import _ACCOUNT_HEADER_BYTES, EmaType, PythPriceInfo
+from pythclient.pythaccounts import ACCOUNT_HEADER_BYTES, EmaType, PythPriceInfo
 from solana.rpc.async_api import AsyncClient
 from solders.account import Account
 from solders.pubkey import Pubkey
@@ -141,7 +141,7 @@ def decode_pyth_price_info(
     if is_pyth_pull_oracle(oracle_source):
         raise ValueError("Use decode_pyth_pull_price_info for Pyth Pull Oracles")
 
-    offset = _ACCOUNT_HEADER_BYTES
+    offset = ACCOUNT_HEADER_BYTES
     _, exponent, _ = struct.unpack_from("<IiI", buffer, offset)
 
     # struct.calcsize("IiII") (last I is the number of quoters that make up

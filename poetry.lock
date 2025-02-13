@@ -1688,13 +1688,13 @@ pytest = ">=2.8"
 
 [[package]]
 name = "pythclient"
-version = "0.2.0"
+version = "0.2.1"
 description = "A library to retrieve Pyth account structures off the Solana blockchain."
 optional = false
 python-versions = ">=3.9.0"
 files = [
-    {file = "pythclient-0.2.0-py3-none-any.whl", hash = "sha256:41a6fdd79c6d9faba636aa1c34dfa8d8a5314152529854e7aeaeb3f4edc3e74c"},
-    {file = "pythclient-0.2.0.tar.gz", hash = "sha256:f4b25974bc523552ecb1e0c15c66aad90955feaf69e2c4fd3dc51b82ca93c820"},
+    {file = "pythclient-0.2.1-py3-none-any.whl", hash = "sha256:d31344abdfa3c02e7dd887c259223807902d8dbd03dafddaaa324010230456bd"},
+    {file = "pythclient-0.2.1.tar.gz", hash = "sha256:43265b808465fd7503cd10a18549c14d84d34a5df60d567df63906fe83ef2601"},
 ]
 
 [package.dependencies]
@@ -2416,4 +2416,4 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "f074c13b82b19abcea8c418fc2aa36699cf4744e7ee2e10a759b2fcc5758b4c1"
+content-hash = "b247028657f6ca0b0d8b5ab89fa7fb20e74decd1d754eea9110b5bfbfcd28492"
