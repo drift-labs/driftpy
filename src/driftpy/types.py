@@ -736,7 +736,10 @@ class PerpMarketAccount:
     fuel_boost_taker: Optional[int] = None
     fuel_boost_maker: Optional[int] = None
     fuel_boost_position: Optional[int] = None
-    padding: list[int] = field(default_factory=lambda: [0] * 43)
+    pool_id: Optional[int] = None
+    high_leverage_margin_ratio_initial: Optional[int] = None
+    high_leverage_margin_ratio_maintenance: Optional[int] = None
+    padding: list[int] = field(default_factory=lambda: [0] * 38)
 
 
 @dataclass
