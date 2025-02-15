@@ -730,15 +730,18 @@ class PerpMarketAccount:
     status: MarketStatus
     contract_type: ContractType
     contract_tier: ContractTier
-    padding1: int = 0
-    quote_spot_market_index: Optional[int] = None
-    fee_adjustment: Optional[int] = None
-    fuel_boost_taker: Optional[int] = None
-    fuel_boost_maker: Optional[int] = None
-    fuel_boost_position: Optional[int] = None
-    pool_id: Optional[int] = None
-    high_leverage_margin_ratio_initial: Optional[int] = None
-    high_leverage_margin_ratio_maintenance: Optional[int] = None
+    paused_operations: int
+    quote_spot_market_index: int
+    fee_adjustment: int
+
+    fuel_boost_taker: int
+    fuel_boost_maker: int
+    fuel_boost_position: int
+
+    pool_id: int
+    high_leverage_margin_ratio_initial: int
+    high_leverage_margin_ratio_maintenance: int
+
     padding: list[int] = field(default_factory=lambda: [0] * 38)
 
 

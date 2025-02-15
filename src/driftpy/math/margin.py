@@ -231,14 +231,26 @@ def calculate_market_margin_ratio(
     size: int,
     margin_category: MarginCategory,
     custom_margin_ratio: int = 0,
+    user_high_leverage_mode: bool = False,
 ) -> int:
+    if (
+        user_high_leverage_mode
+        and market.high_leverage_margin_ratio_initial > 0
+        and market.high_leverage_margin_ratio_maintenance > 0
+    ):
+        margin_ratio_initial = market.high_leverage_margin_ratio_initial
+        margin_ratio_maintenance = market.high_leverage_margin_ratio_maintenance
+    else:
+        margin_ratio_initial = market.margin_ratio_initial
+        margin_ratio_maintenance = market.margin_ratio_maintenance
+
     match margin_category:
         case MarginCategory.INITIAL:
             margin_ratio = max(
                 calculate_size_premium_liability_weight(
                     size,
                     market.imf_factor,
-                    market.margin_ratio_initial,
+                    margin_ratio_initial,
                     MARGIN_PRECISION,
                 ),
                 custom_margin_ratio,
@@ -247,7 +259,7 @@ def calculate_market_margin_ratio(
             margin_ratio = calculate_size_premium_liability_weight(
                 size,
                 market.imf_factor,
-                market.margin_ratio_maintenance,
+                margin_ratio_maintenance,
                 MARGIN_PRECISION,
             )
     return margin_ratio
