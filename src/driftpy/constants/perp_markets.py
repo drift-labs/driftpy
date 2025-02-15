@@ -705,4 +705,11 @@ mainnet_perp_market_configs: list[PerpMarketConfig] = [
         oracle=Pubkey.from_string("HorrnsG8RBMv7dhzbgPX4wqcWbUTV5NwV8r59UwTu4CJ"),
         oracle_source=OracleSource.Prelaunch(),  # type: ignore
     ),
+    PerpMarketConfig(
+        symbol="KAITO-PERP",
+        base_asset_symbol="KAITO",
+        market_index=69,
+        oracle=Pubkey.from_string("92178mkEc5EFbHPaRNrsv9KPBpgbbDQCPzbSpxmDVy6a"),
+        oracle_source=OracleSource.Prelaunch(),  # type: ignore
+    ),
 ]
