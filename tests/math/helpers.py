@@ -14,7 +14,6 @@ from driftpy.types import (
     MarketType,
     OraclePriceData,
     Order,
-    OrderStatus,
     OrderTriggerCondition,
     OrderType,
     PerpPosition,

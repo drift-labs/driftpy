@@ -1,3 +1,6 @@
+from solders.pubkey import Pubkey
+
+from driftpy.constants.config import devnet_spot_market_configs
 from driftpy.constants.numeric_constants import (
     AMM_TO_QUOTE_PRECISION_RATIO,
     BASE_PRECISION,
@@ -23,8 +26,6 @@ from driftpy.types import (
     PoolBalance,
     SpotMarketAccount,
 )
-from driftpy.constants.config import devnet_spot_market_configs
-from solders.pubkey import Pubkey
 
 mock_pool_balance = PoolBalance(
     scaled_balance=0, market_index=0, padding=[0] * 6
@@ -184,10 +185,16 @@ mock_perp_markets = [
         unrealized_pnl_initial_asset_weight=0,
         unrealized_pnl_maintenance_asset_weight=0,
         insurance_claim=mock_insurance_claim,
+        paused_operations=0,
         quote_spot_market_index=0,
         fee_adjustment=0,
-        padding1=0,
-        padding=[0] * 46,
+        fuel_boost_taker=0,
+        fuel_boost_maker=0,
+        fuel_boost_position=0,
+        high_leverage_margin_ratio_initial=0,
+        high_leverage_margin_ratio_maintenance=0,
+        pool_id=0,
+        padding=[0] * 38,
     ),
     PerpMarketAccount(
         status=MarketStatus.Initialized(),
@@ -215,10 +222,16 @@ mock_perp_markets = [
         unrealized_pnl_initial_asset_weight=0,
         unrealized_pnl_maintenance_asset_weight=0,
         insurance_claim=mock_insurance_claim,
+        paused_operations=0,
         quote_spot_market_index=0,
         fee_adjustment=0,
-        padding1=0,
-        padding=[0] * 46,
+        fuel_boost_taker=0,
+        fuel_boost_maker=0,
+        fuel_boost_position=0,
+        high_leverage_margin_ratio_initial=0,
+        high_leverage_margin_ratio_maintenance=0,
+        pool_id=0,
+        padding=[0] * 38,
     ),
     PerpMarketAccount(
         status=MarketStatus.Initialized(),
@@ -246,10 +259,16 @@ mock_perp_markets = [
         unrealized_pnl_initial_asset_weight=0,
         unrealized_pnl_maintenance_asset_weight=0,
         insurance_claim=mock_insurance_claim,
+        paused_operations=0,
         quote_spot_market_index=0,
         fee_adjustment=0,
-        padding1=0,
-        padding=[0] * 46,
+        fuel_boost_taker=0,
+        fuel_boost_maker=0,
+        fuel_boost_position=0,
+        high_leverage_margin_ratio_initial=0,
+        high_leverage_margin_ratio_maintenance=0,
+        pool_id=0,
+        padding=[0] * 38,
     ),
 ]
 
