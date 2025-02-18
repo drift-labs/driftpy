@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "driftpy"
-version = "0.8.16"
+version = "0.8.17"
 description = "A Python client for the Drift DEX"
 authors = [
     "x19 <https://twitter.com/0xNineteen@gmail.com>",
