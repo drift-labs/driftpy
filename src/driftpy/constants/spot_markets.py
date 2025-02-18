@@ -315,7 +315,7 @@ mainnet_spot_market_configs: list[SpotMarketConfig] = [
         mint=Pubkey.from_string("27G8MtK7VtTcCHkpASjSDdkWWYfoqT6ggEuKidVJidD4"),
     ),
     SpotMarketConfig(
-        symbol="USDC",
+        symbol="USDC-1",
         market_index=34,
         oracle=Pubkey.from_string("En8hkHLkRe9d9DraYmBTrus518BvmVH448YcvmrFM6Ce"),
         oracle_source=OracleSource.PythStableCoinPull(),  # type: ignore
