@@ -309,6 +309,8 @@ def decode_oracle(oracle_ai: bytes, oracle_source: OracleSource):
         return decode_pyth_lazer_price_info(oracle_ai)
     elif is_variant(oracle_source, "PythLazer1M"):
         return decode_pyth_lazer_price_info(oracle_ai)
+    elif is_variant(oracle_source, "PythLazerStableCoin"):
+        return decode_pyth_lazer_price_info(oracle_ai)
     else:
         raise NotImplementedError(
             f"Received unexpected oracle source: {str(oracle_source)}"
@@ -331,6 +333,8 @@ def get_oracle_decode_fn(oracle_source: OracleSource):
     elif is_variant(oracle_source, "PythLazer1K"):
         return lambda data: decode_pyth_lazer_price_info(data)
     elif is_variant(oracle_source, "PythLazer1M"):
+        return lambda data: decode_pyth_lazer_price_info(data)
+    elif is_variant(oracle_source, "PythLazerStableCoin"):
         return lambda data: decode_pyth_lazer_price_info(data)
     else:
         raise NotImplementedError(
