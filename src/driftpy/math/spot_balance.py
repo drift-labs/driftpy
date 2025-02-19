@@ -1,12 +1,12 @@
 from typing import Tuple
 
+from driftpy.constants.numeric_constants import (
+    PERCENTAGE_PRECISION,
+    SPOT_UTILIZATION_PRECISION,
+)
 from driftpy.math.spot_market import get_token_amount
 from driftpy.oracles.strict_oracle_price import StrictOraclePrice
 from driftpy.types import SpotBalanceType, SpotMarketAccount
-from driftpy.constants.numeric_constants import (
-    SPOT_UTILIZATION_PRECISION,
-    PERCENTAGE_PRECISION,
-)
 
 
 def get_strict_token_value(
@@ -72,12 +72,12 @@ def calculate_spot_market_borrow_capacity(
     return total_capacity, remaining_capacity
 
 
-def calculate_deposit_rate(bank: SpotMarketAccount, delta: int = 0):
-    utilization = calculate_utilization(bank, delta)
-    borrow_rate = calculate_borrow_rate(bank, delta)
+def calculate_deposit_rate(spot_market: SpotMarketAccount, delta: int = 0):
+    utilization = calculate_utilization(spot_market, delta)
+    borrow_rate = calculate_borrow_rate(spot_market, delta)
     deposit_rate = (
         borrow_rate
-        * (PERCENTAGE_PRECISION - bank.insurance_fund.total_factor)
+        * (PERCENTAGE_PRECISION - spot_market.insurance_fund.total_factor)
         * utilization
         // SPOT_UTILIZATION_PRECISION
         // PERCENTAGE_PRECISION
@@ -85,36 +85,36 @@ def calculate_deposit_rate(bank: SpotMarketAccount, delta: int = 0):
     return deposit_rate
 
 
-def calculate_borrow_rate(bank: SpotMarketAccount, delta: int = 0) -> int:
-    return calculate_interest_rate(bank, delta)
+def calculate_borrow_rate(spot_market: SpotMarketAccount, delta: int = 0) -> int:
+    return calculate_interest_rate(spot_market, delta)
 
 
-def calculate_interest_rate(bank: SpotMarketAccount, delta: int = 0) -> int:
-    utilization = calculate_utilization(bank, delta)
-    if utilization > bank.optimal_utilization:
-        surplus_utilization = utilization - bank.optimal_utilization
+def calculate_interest_rate(spot_market: SpotMarketAccount, delta: int = 0) -> int:
+    utilization = calculate_utilization(spot_market, delta)
+    if utilization > spot_market.optimal_utilization:
+        surplus_utilization = utilization - spot_market.optimal_utilization
         borrow_rate_slope = (
-            (bank.max_borrow_rate - bank.optimal_borrow_rate)
+            (spot_market.max_borrow_rate - spot_market.optimal_borrow_rate)
             * SPOT_UTILIZATION_PRECISION
-        ) // (SPOT_UTILIZATION_PRECISION - bank.optimal_utilization)
+        ) // (SPOT_UTILIZATION_PRECISION - spot_market.optimal_utilization)
 
-        return bank.optimal_borrow_rate + (
+        return spot_market.optimal_borrow_rate + (
             surplus_utilization * borrow_rate_slope // SPOT_UTILIZATION_PRECISION
         )
     else:
         borrow_rate_slope = (
-            bank.optimal_borrow_rate * SPOT_UTILIZATION_PRECISION
-        ) // bank.optimal_utilization
+            spot_market.optimal_borrow_rate * SPOT_UTILIZATION_PRECISION
+        ) // spot_market.optimal_utilization
 
         return (utilization * borrow_rate_slope) // SPOT_UTILIZATION_PRECISION
 
 
-def calculate_utilization(bank: SpotMarketAccount, delta: int = 0) -> int:
+def calculate_utilization(spot_market: SpotMarketAccount, delta: int = 0) -> int:
     token_deposit_amount = get_token_amount(
-        bank.deposit_balance, bank, SpotBalanceType.Deposit()
+        spot_market.deposit_balance, spot_market, SpotBalanceType.Deposit()
     )
     token_borrow_amount = get_token_amount(
-        bank.borrow_balance, bank, SpotBalanceType.Borrow()
+        spot_market.borrow_balance, spot_market, SpotBalanceType.Borrow()
     )
 
     if delta > 0:
