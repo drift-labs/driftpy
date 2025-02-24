@@ -1,50 +1,37 @@
-import sys
+import asyncio
+import os
+import time
 
-
-sys.path.append("../src/")
-
+import dotenv
 from anchorpy import Wallet
-
 from solana.rpc.async_api import AsyncClient
-
 from solders.keypair import Keypair
-from solders.pubkey import Pubkey
 
-from driftpy.constants.config import configs
-from driftpy.constants.numeric_constants import (
-    QUOTE_PRECISION,
-    PRICE_PRECISION,
-    MARGIN_PRECISION,
-)
-from driftpy.drift_client import DriftClient
-from driftpy.math.perp_position import is_available
-from driftpy.accounts import *
 from driftpy.account_subscription_config import AccountSubscriptionConfig
+from driftpy.constants.numeric_constants import (
+    MARGIN_PRECISION,
+    QUOTE_PRECISION,
+)
 from driftpy.decode.utils import decode_name
+from driftpy.drift_client import DriftClient
+from driftpy.keypair import load_keypair
 from driftpy.math.conversion import convert_to_number
+from driftpy.math.perp_position import is_available
+
+dotenv.load_dotenv()
 
 
-async def main(
-    authority,
-    subaccount,
-):
-    authority = Pubkey.from_string(authority)
-
-    import time
-
+async def main():
     s = time.time()
-
-    env = "mainnet"
-    config = configs[env]
-    wallet = Wallet(Keypair())  # throwaway
-    connection = AsyncClient(config.default_http)
-
+    kp = load_keypair(os.getenv("PRIVATE_KEY"))
+    wallet = Wallet(kp)
+    connection = AsyncClient(os.getenv("RPC_URL"))
     dc = DriftClient(
         connection,
         wallet,
-        config,
         account_subscription=AccountSubscriptionConfig("websocket"),
     )
+    await dc.subscribe()
     drift_user = dc.get_user()
 
     user = drift_user.get_user_account()
@@ -62,12 +49,14 @@ async def main(
     total_collateral = drift_user.get_total_collateral()
     print("total collateral:", total_collateral)
 
-    perp_liability = drift_user.get_perp_market_liability()
+    perp_liability = drift_user.get_total_perp_position_liability()
     spot_liability = drift_user.get_spot_market_liability_value()
     print("perp_liability", perp_liability, "spot_liability", spot_liability)
 
     perp_market = dc.get_perp_market_account(0)
-    oracle = convert_to_number(dc.get_oracle_price_data_for_perp_market(0))
+    oracle = convert_to_number(
+        dc.get_oracle_price_data_for_perp_market(0).price, QUOTE_PRECISION
+    )
     print("oracle price", oracle)
 
     print(
@@ -91,17 +80,10 @@ async def main(
             print(">", position)
 
     print("time taken:", time.time() - s)
+    orders = drift_user.get_open_orders()
+    print("orders:", orders)
     print("done! :)")
 
 
 if __name__ == "__main__":
-    import argparse
-
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--pubkey", type=str, required=True)
-    parser.add_argument("--subacc", type=int, required=False, default=0)
-    args = parser.parse_args()
-
-    import asyncio
-
-    asyncio.run(main(args.pubkey, args.subacc))
+    asyncio.run(main())
