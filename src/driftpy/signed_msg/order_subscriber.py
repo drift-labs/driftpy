@@ -17,9 +17,9 @@ from driftpy.constants.perp_markets import (
     devnet_perp_market_configs,
     mainnet_perp_market_configs,
 )
-from driftpy.decode.swift_order import decode_swift_order_params_message
+from driftpy.decode.signed_msg_order import decode_signed_msg_order_params_message
 from driftpy.drift_client import DriftClient
-from driftpy.types import MarketType, PostOnlyParams, SwiftOrderParamsMessage
+from driftpy.types import MarketType, PostOnlyParams, SignedMsgOrderParamsMessage
 from driftpy.user_map.user_map import UserMap
 
 logger = logging.getLogger(__name__)
@@ -27,18 +27,17 @@ logger.setLevel(logging.INFO)
 
 
 @dataclass
-class SwiftOrderSubscriberConfig:
+class SignedMsgOrderSubscriberConfig:
     drift_client: DriftClient
     user_map: UserMap
     drift_env: str
-    endpoint: Optional[str]
     market_indexes: List[int]
     keypair: Keypair
+    endpoint: Optional[str] = None
 
 
-class SwiftOrderSubscriber:
-    def __init__(self, config: SwiftOrderSubscriberConfig):
-        print(f"Initializing SwiftOrderSubscriber with config: {config}")
+class SignedMsgOrderSubscriber:
+    def __init__(self, config: SignedMsgOrderSubscriberConfig):
         self.config = config
         self.drift_client = config.drift_client
         self.user_map = config.user_map
@@ -49,33 +48,27 @@ class SwiftOrderSubscriber:
         self.on_order = None
 
     def get_symbol_for_market_index(self, market_index: int) -> str:
-        print(f"Getting symbol for market index: {market_index}")
         markets = (
             devnet_perp_market_configs
             if self.config.drift_env == "devnet"
             else mainnet_perp_market_configs
         )
         symbol = markets[market_index].symbol
-        print(f"Found symbol: {symbol}")
         return symbol
 
     def generate_challenge_response(self, nonce: str) -> str:
-        print(f"Generating challenge response for nonce: {nonce}")
         message_bytes = nonce.encode("utf-8")
         signing_key = nacl.signing.SigningKey(self.config.keypair.secret())
         signature = signing_key.sign(message_bytes).signature
         response = base64.b64encode(signature).decode("utf-8")
-        print("Challenge response generated successfully")
         return response
 
     async def handle_auth_message(self, message: Dict) -> None:
-        print(f"Handling auth message: {message}")
         if self.ws is None:
             logger.warning("WebSocket connection not established")
             return
 
         if message.get("channel") == "auth" and message.get("nonce"):
-            print("Processing auth challenge")
             signature_base64 = self.generate_challenge_response(message["nonce"])
             await self.ws.send(
                 json.dumps(
@@ -85,7 +78,6 @@ class SwiftOrderSubscriber:
                     }
                 )
             )
-            print("Auth response sent")
 
         if (
             message.get("channel") == "auth"
@@ -110,20 +102,18 @@ class SwiftOrderSubscriber:
                 await asyncio.sleep(0.1)
 
     async def subscribe(
-        self, on_order: Callable[[Dict, SwiftOrderParamsMessage], None]
+        self, on_order: Callable[[Dict, SignedMsgOrderParamsMessage], None]
     ) -> None:
         print("Starting subscription process")
         self.on_order = on_order
         endpoint = self.config.endpoint or (
-            "wss://master.swift.drift.trade/ws"
+            "wss://master.fastlane.drift.trade/ws"
             if self.config.drift_env == "devnet"
-            else "wss://swift.drift.trade/ws"
+            else "wss://fastlane.drift.trade/ws"
         )
-        print(f"Using endpoint: {endpoint}")
 
         while True:
             try:
-                print("Attempting WebSocket connection")
                 async with connect(
                     f"{endpoint}?pubkey={str(self.config.keypair.pubkey())}",
                     open_timeout=30,  # Increase timeout to 30 seconds
@@ -142,22 +132,22 @@ class SwiftOrderSubscriber:
                                 await self.handle_auth_message(message)
 
                             if message.get("order"):
-                                order = json.loads(message["order"])
-                                swift_order_params_buf = bytes.fromhex(
+                                order = message["order"]
+                                signed_order_params_buf = bytes.fromhex(
                                     order["order_message"]
                                 )
-                                swift_order_params_message = (
-                                    decode_swift_order_params_message(
-                                        swift_order_params_buf
+                                signed_order_params_message = (
+                                    decode_signed_msg_order_params_message(
+                                        signed_order_params_buf
                                     )
                                 )
 
-                                if not swift_order_params_message.swift_order_params.price:
+                                if not signed_order_params_message.signed_order_params.price:
                                     logger.warning(
-                                        f"Order has no price: {swift_order_params_message.swift_order_params}"
+                                        f"Order has no price: {signed_order_params_message.signed_order_params}"
                                     )
                                     continue
-                                await on_order(order, swift_order_params_message)
+                                await on_order(order, signed_order_params_message)
 
                         except ConnectionClosed:
                             logger.error("WebSocket connection closed")
@@ -173,18 +163,18 @@ class SwiftOrderSubscriber:
             print("Disconnected from server, reconnecting...")
             await asyncio.sleep(1)
 
-    async def get_place_and_make_swift_order_ixs(
+    async def get_place_and_make_signed_msg_order_ixs(
         self,
         order_message_raw: Dict,
-        swift_order_params_message: SwiftOrderParamsMessage,
+        signed_msg_order_params_message: SignedMsgOrderParamsMessage,
         maker_order_params: Dict,
     ):
-        swift_order_params_buf = bytes.fromhex(order_message_raw["order_message"])
+        signed_msg_order_params_buf = bytes.fromhex(order_message_raw["order_message"])
         taker_authority = Pubkey.from_string(order_message_raw["taker_authority"])
         taker_user_pubkey = get_user_account_public_key(
             self.drift_client.program_id,
             taker_authority,
-            swift_order_params_message.sub_account_id,
+            signed_msg_order_params_message.sub_account_id,
         )
 
         taker_user_account = (
@@ -199,9 +189,9 @@ class SwiftOrderSubscriber:
             }
         )
 
-        ixs = await self.drift_client.get_place_and_make_swift_perp_order_ixs(
+        ixs = await self.drift_client.get_place_and_make_signed_msg_perp_order_ixs(
             {
-                "order_params": swift_order_params_buf,
+                "order_params": signed_msg_order_params_buf,
                 "signature": base64.b64decode(order_message_raw["order_signature"]),
                 "user_stats": get_user_stats_account_public_key(
                     self.drift_client.program_id, taker_user_account.authority

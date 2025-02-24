@@ -1459,22 +1459,22 @@ class OptionalOrderParams(TypedDict, total=False):
 
 
 @dataclass
-class SignedSwiftOrderParams:
+class SignedMsgOrderParams:
     order_params: bytes
     signature: bytes
 
 
 @dataclass
-class SwiftTriggerOrderParams:
+class SignedMsgTriggerOrderParams:
     trigger_price: int
     base_asset_amount: int
 
 
 @dataclass
-class SwiftOrderParamsMessage:
-    swift_order_params: OptionalOrderParams
+class SignedMsgOrderParamsMessage:
+    signed_order_params: OptionalOrderParams
     sub_account_id: int
     slot: int
     uuid: bytes
-    take_profit_order_params: SwiftTriggerOrderParams | None
-    stop_loss_order_params: SwiftTriggerOrderParams | None
+    take_profit_order_params: SignedMsgTriggerOrderParams | None
+    stop_loss_order_params: SignedMsgTriggerOrderParams | None

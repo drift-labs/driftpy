@@ -8,9 +8,9 @@ from solana.rpc.commitment import Commitment
 
 from driftpy.drift_client import DriftClient
 from driftpy.keypair import load_keypair
-from driftpy.swift.order_subscriber import (
-    SwiftOrderSubscriber,
-    SwiftOrderSubscriberConfig,
+from driftpy.signed_msg.order_subscriber import (
+    SignedMsgOrderSubscriber,
+    SignedMsgOrderSubscriberConfig,
 )
 from driftpy.user_map.user_map import UserMap
 from driftpy.user_map.user_map_config import PollingConfig, UserMapConfig
@@ -38,20 +38,20 @@ async def main():
     await user_map.subscribe()
     print("UserMap initialized and subscribed")
 
-    config = SwiftOrderSubscriberConfig(
+    config = SignedMsgOrderSubscriberConfig(
         drift_client=drift_client,
         user_map=user_map,
         drift_env="devnet",
         market_indexes=[0],
         keypair=keypair,
     )
-    print("Created SwiftOrderSubscriberConfig")
+    print("Created SignedMsgOrderSubscriberConfig")
 
-    subscriber = SwiftOrderSubscriber(config)
+    subscriber = SignedMsgOrderSubscriber(config)
 
-    async def handle_order(order, swift_params):
+    async def handle_order(order, signed_msg_order_params_message):
         print(f"Received order: {order}")
-        print(f"Swift params: {swift_params}")
+        print(f"SignedMsgOrderParamsMessage: {signed_msg_order_params_message}")
 
     try:
         print("Starting subscriber")

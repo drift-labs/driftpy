@@ -5,8 +5,8 @@ from driftpy.types import (
     OrderType,
     PositionDirection,
     PostOnlyParams,
-    SwiftOrderParamsMessage,
-    SwiftTriggerOrderParams,
+    SignedMsgOrderParamsMessage,
+    SignedMsgTriggerOrderParams,
 )
 
 
@@ -188,7 +188,7 @@ def decode_order_params(buffer: bytes) -> OrderParams:
     )
 
 
-def decode_swift_trigger_params(buffer: bytes) -> SwiftTriggerOrderParams:
+def decode_signed_msg_trigger_params(buffer: bytes) -> SignedMsgTriggerOrderParams:
     offset = 0
 
     # triggerPrice (u64)
@@ -199,14 +199,16 @@ def decode_swift_trigger_params(buffer: bytes) -> SwiftTriggerOrderParams:
     base_asset_amount = int.from_bytes(buffer[offset : offset + 8], "little")
     offset += 8
 
-    return SwiftTriggerOrderParams(
+    return SignedMsgTriggerOrderParams(
         trigger_price=trigger_price, base_asset_amount=base_asset_amount
     )
 
 
-def decode_swift_order_params_message(buffer: bytes) -> SwiftOrderParamsMessage:
+def decode_signed_msg_order_params_message(
+    buffer: bytes,
+) -> SignedMsgOrderParamsMessage:
     # Skip the 8-byte header
-    swift_order_params_buf = buffer[8:]
+    signed_msg_order_params_buf = buffer[8:]
 
     order_params_size = (
         1  # order_type
@@ -231,43 +233,43 @@ def decode_swift_order_params_message(buffer: bytes) -> SwiftOrderParamsMessage:
         + 8  # auction_end_price (since we see it's present)
     )
 
-    order_params = decode_order_params(swift_order_params_buf[:order_params_size])
+    order_params = decode_order_params(signed_msg_order_params_buf[:order_params_size])
     offset = order_params_size
 
     # Read subAccountId (u16)
-    sub_account_id = read_uint16_le(swift_order_params_buf, offset)
+    sub_account_id = read_uint16_le(signed_msg_order_params_buf, offset)
     offset += 2
 
     # Read slot (u64)
-    slot = read_bigint64le(swift_order_params_buf, offset, False)
+    slot = read_bigint64le(signed_msg_order_params_buf, offset, False)
     offset += 8
 
     # Read uuid (8 bytes)
-    uuid = swift_order_params_buf[offset : offset + 8]
+    uuid = signed_msg_order_params_buf[offset : offset + 8]
     offset += 8
 
     # Read take_profit_order_params (option)
-    take_profit_present = read_uint8(swift_order_params_buf, offset)
+    take_profit_present = read_uint8(signed_msg_order_params_buf, offset)
     offset += 1
     take_profit = None
     if take_profit_present == 1:
-        take_profit = decode_swift_trigger_params(
-            swift_order_params_buf[offset : offset + 16]
+        take_profit = decode_signed_msg_trigger_params(
+            signed_msg_order_params_buf[offset : offset + 16]
         )
         offset += 16
 
     # Read stop_loss_order_params (option)
-    stop_loss_present = read_uint8(swift_order_params_buf, offset)
+    stop_loss_present = read_uint8(signed_msg_order_params_buf, offset)
     offset += 1
     stop_loss = None
     if stop_loss_present == 1:
-        stop_loss = decode_swift_trigger_params(
-            swift_order_params_buf[offset : offset + 16]
+        stop_loss = decode_signed_msg_trigger_params(
+            signed_msg_order_params_buf[offset : offset + 16]
         )
         offset += 16
 
-    return SwiftOrderParamsMessage(
-        swift_order_params=order_params,
+    return SignedMsgOrderParamsMessage(
+        signed_order_params=order_params,
         sub_account_id=sub_account_id,
         slot=slot,
         uuid=uuid,

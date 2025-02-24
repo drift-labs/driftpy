@@ -158,8 +158,8 @@ def get_rfq_user_account_public_key(
     )[0]
 
 
-def get_swift_user_account_public_key(
+def get_signed_msg_user_account_public_key(
     program_id: Pubkey,
     authority: Pubkey,
 ) -> Pubkey:
-    return Pubkey.find_program_address([b"SWIFT", bytes(authority)], program_id)[0]
+    return Pubkey.find_program_address([b"SIGNED_MSG", bytes(authority)], program_id)[0]

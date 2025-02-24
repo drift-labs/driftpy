@@ -58,10 +58,10 @@ from driftpy.addresses import (
     get_protected_maker_mode_config_public_key,
     get_sequencer_public_key_and_bump,
     get_serum_signer_public_key,
+    get_signed_msg_user_account_public_key,
     get_spot_market_public_key,
     get_spot_market_vault_public_key,
     get_state_public_key,
-    get_swift_user_account_public_key,
     get_user_account_public_key,
     get_user_stats_account_public_key,
 )
@@ -82,7 +82,7 @@ from driftpy.math.perp_position import is_available
 from driftpy.math.spot_market import cast_to_spot_precision
 from driftpy.math.spot_position import is_spot_position_available
 from driftpy.name import encode_name
-from driftpy.swift.create_verify_ix import create_minimal_ed25519_verify_ix
+from driftpy.signed_msg.create_verify_ix import create_minimal_ed25519_verify_ix
 from driftpy.tx.standard_tx_sender import StandardTxSender
 from driftpy.tx.types import TxSender, TxSigAndSlot
 from driftpy.types import (
@@ -99,7 +99,7 @@ from driftpy.types import (
     ReferrerInfo,
     SequenceAccount,
     SerumV3FulfillmentConfigAccount,
-    SignedSwiftOrderParams,
+    SignedMsgOrderParams,
     SpotPosition,
     SwapReduceOnly,
     TxParams,
@@ -613,6 +613,10 @@ class DriftClient:
         perp_market_account_map: dict[int, AccountMeta],
     ) -> None:
         perp_market_account = self.get_perp_market_account(market_index)
+        if not perp_market_account:
+            raise ValueError(
+                f"No perp market account found for market index {market_index}"
+            )
 
         perp_market_account_map[market_index] = AccountMeta(
             pubkey=perp_market_account.pubkey, is_signer=False, is_writable=writable
@@ -2009,16 +2013,16 @@ class DriftClient:
             ),
         )
 
-    async def place_swift_taker_order(
+    async def place_signed_msg_taker_order(
         self,
-        signed_swift_order_params: SignedSwiftOrderParams,
+        signed_msg_order_params: SignedMsgOrderParams,
         market_index: int,
         taker_info: dict,
         preceding_ixs: list[Instruction] = [],
         override_ix_count: Optional[int] = None,
     ) -> TxSigAndSlot:
-        ixs = await self.get_place_swift_taker_perp_order_ixs(
-            signed_swift_order_params,
+        ixs = await self.get_place_signed_msg_taker_perp_order_ixs(
+            signed_msg_order_params,
             market_index,
             taker_info,
             None,
@@ -2027,9 +2031,9 @@ class DriftClient:
         )
         return await self.send_ixs(ixs)
 
-    async def get_place_swift_taker_perp_order_ixs(
+    async def get_place_signed_msg_taker_perp_order_ixs(
         self,
-        signed_swift_order_params: SignedSwiftOrderParams,
+        signed_msg_order_params: SignedMsgOrderParams,
         market_index: int,
         taker_info: dict,
         authority: Optional[Pubkey] = None,
@@ -2047,22 +2051,22 @@ class DriftClient:
         authority_to_use = authority or taker_info["taker_user_account"].authority
 
         message_length_buffer = int.to_bytes(
-            len(signed_swift_order_params.order_params), 2, "little"
+            len(signed_msg_order_params.order_params), 2, "little"
         )
 
-        swift_ix_data = b"".join(
+        signed_msg_ix_data = b"".join(
             [
-                signed_swift_order_params.signature,
+                signed_msg_order_params.signature,
                 bytes(authority_to_use),
                 message_length_buffer,
-                signed_swift_order_params.order_params,
+                signed_msg_order_params.order_params,
             ]
         )
 
-        swift_order_params_signature_ix = create_minimal_ed25519_verify_ix(
+        signed_msg_order_params_signature_ix = create_minimal_ed25519_verify_ix(
             override_ix_count or len(preceding_ixs) + 1,
             12,
-            swift_ix_data,
+            signed_msg_ix_data,
             0,
         )
 
@@ -2070,16 +2074,16 @@ class DriftClient:
             "Sysvar1nstructions1111111111111111111111111"
         )
 
-        place_taker_swift_perp_order_ix = self.program.instruction[
-            "place_swift_taker_order"
+        place_taker_signed_msg_perp_order_ix = self.program.instruction[
+            "place_signed_msg_taker_order"
         ](
-            swift_ix_data,
+            signed_msg_ix_data,
             ctx=Context(
                 accounts={
                     "state": self.get_state_public_key(),
                     "user": taker_info["taker"],
                     "user_stats": taker_info["taker_stats"],
-                    "swift_user_orders": get_swift_user_account_public_key(
+                    "signed_msg_user_orders": get_signed_msg_user_account_public_key(
                         self.program_id,
                         taker_info["taker_user_account"].authority,
                     ),
@@ -2090,18 +2094,21 @@ class DriftClient:
             ),
         )
 
-        return [swift_order_params_signature_ix, place_taker_swift_perp_order_ix]
+        return [
+            signed_msg_order_params_signature_ix,
+            place_taker_signed_msg_perp_order_ix,
+        ]
 
-    async def place_and_make_swift_perp_order(
+    async def place_and_make_signed_msg_perp_order(
         self,
-        signed_swift_order_params: SignedSwiftOrderParams,
-        swift_order_uuid: bytes,
+        signed_msg_order_params: SignedMsgOrderParams,
+        signed_msg_order_uuid: bytes,
         taker_info: dict,
         order_params: OrderParams,
     ):
-        ixs = await self.get_place_and_make_swift_perp_order_ixs(
-            signed_swift_order_params,
-            swift_order_uuid,
+        ixs = await self.get_place_and_make_signed_msg_perp_order_ixs(
+            signed_msg_order_params,
+            signed_msg_order_uuid,
             taker_info,
             order_params,
         )
@@ -2110,10 +2117,10 @@ class DriftClient:
         self.last_perp_market_seen_cache[order_params.market_index] = result.slot
         return result.tx_sig
 
-    async def get_place_and_make_swift_perp_order_ixs(
+    async def get_place_and_make_signed_msg_perp_order_ixs(
         self,
-        signed_swift_order_params: SignedSwiftOrderParams,
-        swift_order_uuid: bytes,
+        signed_msg_order_params: SignedMsgOrderParams,
+        signed_msg_order_uuid: bytes,
         taker_info: dict,
         order_params: OrderParams,
         referrer_info: Optional[ReferrerInfo] = None,
@@ -2122,10 +2129,10 @@ class DriftClient:
         override_ix_count: Optional[int] = None,
     ) -> list[Instruction]:
         (
-            swift_order_signature_ix,
-            place_taker_swift_perp_order_ix,
-        ) = await self.get_place_swift_taker_perp_order_ixs(
-            signed_swift_order_params,
+            signed_msg_order_signature_ix,
+            place_taker_signed_msg_perp_order_ix,
+        ) = await self.get_place_signed_msg_taker_perp_order_ixs(
+            signed_msg_order_params,
             order_params.market_index,
             taker_info,
             None,
@@ -2159,9 +2166,11 @@ class DriftClient:
                 )
             )
 
-        place_and_make_ix = self.program.instruction["place_and_make_swift_perp_order"](
+        place_and_make_ix = self.program.instruction[
+            "place_and_make_signed_msg_perp_order"
+        ](
             order_params,
-            swift_order_uuid,
+            signed_msg_order_uuid,
             ctx=Context(
                 accounts={
                     "state": self.get_state_public_key(),
@@ -2170,7 +2179,7 @@ class DriftClient:
                     "taker": taker_info["taker"],
                     "taker_stats": taker_info["taker_stats"],
                     "authority": self.wallet.payer.pubkey(),
-                    "taker_swift_user_orders": get_swift_user_account_public_key(
+                    "taker_signed_msg_user_orders": get_signed_msg_user_account_public_key(
                         self.program_id, taker_info["taker_user_account"].authority
                     ),
                 },
@@ -2179,8 +2188,8 @@ class DriftClient:
         )
 
         return [
-            swift_order_signature_ix,
-            place_taker_swift_perp_order_ix,
+            signed_msg_order_signature_ix,
+            place_taker_signed_msg_perp_order_ix,
             place_and_make_ix,
         ]
 
