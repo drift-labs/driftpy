@@ -240,8 +240,8 @@ mainnet_perp_market_configs: list[PerpMarketConfig] = [
         symbol="ETH-PERP",
         base_asset_symbol="ETH",
         market_index=2,
-        oracle=Pubkey.from_string("6bEp2MiyoiiiDxcVqE8rUHQWwHirXUXtKfAEATTVqNzT"),
-        oracle_source=OracleSource.PythPull(),  # type: ignore
+        oracle=Pubkey.from_string("93FG52TzNKCnMiasV14Ba34BYcHDb9p4zK4GjZnLwqWR"),
+        oracle_source=OracleSource.PythLazer(),  # type: ignore
     ),
     PerpMarketConfig(
         symbol="APT-PERP",
@@ -307,8 +307,8 @@ mainnet_perp_market_configs: list[PerpMarketConfig] = [
         oracle_source=OracleSource.PythLazer(),  # type: ignore
     ),
     PerpMarketConfig(
-        symbol="RNDR-PERP",
-        base_asset_symbol="RNDR",
+        symbol="RENDER-PERP",
+        base_asset_symbol="RENDER",
         market_index=12,
         oracle=Pubkey.from_string("97EqsAGbTnShB7oYWAFFCVVAx8PWXgDYDhcpm99izNQ4"),
         oracle_source=OracleSource.PythLazer(),  # type: ignore
@@ -566,15 +566,15 @@ mainnet_perp_market_configs: list[PerpMarketConfig] = [
         oracle_source=OracleSource.Prelaunch(),  # type: ignore
     ),
     PerpMarketConfig(
-        symbol="VRSTPN-WIN-F1-24-DRVRS-CHMP-BET",
-        base_asset_symbol="VRSTPN-WIN-F1-24-DRVRS-CHMP",
+        symbol="VRSTPN-WIN-F1-24-DRVRS-CHMP",
+        base_asset_symbol="VRSTPN-WIN-F1-24-DRVRS",
         market_index=49,
         oracle=Pubkey.from_string("E36rvXEwysWeiToXCpWfHVADd8bzzyR4w83ZSSwxAxqG"),
         oracle_source=OracleSource.Prelaunch(),  # type: ignore
     ),
     PerpMarketConfig(
-        symbol="LNDO-WIN-F1-24-US-GP-BET",
-        base_asset_symbol="LNDO-WIN-F1-24-US-GP",
+        symbol="LNDO-WIN-F1-24-US-GP",
+        base_asset_symbol="LNDO-WIN-F1-24-US",
         market_index=50,
         oracle=Pubkey.from_string("6AVy1y9SnJECnosQaiK2uY1kcT4ZEBf1F4DMvhxgvhUo"),
         oracle_source=OracleSource.Prelaunch(),  # type: ignore
@@ -709,7 +709,14 @@ mainnet_perp_market_configs: list[PerpMarketConfig] = [
         symbol="KAITO-PERP",
         base_asset_symbol="KAITO",
         market_index=69,
-        oracle=Pubkey.from_string("92178mkEc5EFbHPaRNrsv9KPBpgbbDQCPzbSpxmDVy6a"),
-        oracle_source=OracleSource.Prelaunch(),  # type: ignore
+        oracle=Pubkey.from_string("DRCNnwxET1URxGMvpCPncBkZsWf1Xh26TMxXNSGTrGpU"),
+        oracle_source=OracleSource.PythPull(),  # type: ignore
+    ),
+    PerpMarketConfig(
+        symbol="IP-PERP",
+        base_asset_symbol="IP",
+        market_index=70,
+        oracle=Pubkey.from_string("E8A2iky96tzM8YuNNcJateE8S4e5N8FYspg17XHLp2aY"),
+        oracle_source=OracleSource.PythPull(),  # type: ignore
     ),
 ]

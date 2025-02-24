@@ -79,8 +79,8 @@ mainnet_spot_market_configs: list[SpotMarketConfig] = [
     SpotMarketConfig(
         symbol="USDC",
         market_index=0,
-        oracle=Pubkey.from_string("En8hkHLkRe9d9DraYmBTrus518BvmVH448YcvmrFM6Ce"),
-        oracle_source=OracleSource.PythStableCoinPull(),  # type: ignore
+        oracle=Pubkey.from_string("9VCioxmni2gDLv11qufWzT3RDERhQE4iY5Gf7NTfYyAV"),
+        oracle_source=OracleSource.PythLazerStableCoin(),  # type: ignore
         mint=Pubkey.from_string("EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"),
     ),
     SpotMarketConfig(
@@ -88,7 +88,7 @@ mainnet_spot_market_configs: list[SpotMarketConfig] = [
         market_index=1,
         oracle=Pubkey.from_string("BAtFj4kQttZRVep3UZS2aZRDixkGYgWsbqTBVDbnSsPF"),
         oracle_source=OracleSource.PythPull(),  # type: ignore
-        mint=WRAPPED_SOL_MINT,
+        mint=Pubkey.from_string("So11111111111111111111111111111111111111112"),
     ),
     SpotMarketConfig(
         symbol="mSOL",
@@ -100,8 +100,8 @@ mainnet_spot_market_configs: list[SpotMarketConfig] = [
     SpotMarketConfig(
         symbol="wBTC",
         market_index=3,
-        oracle=Pubkey.from_string("9Tq8iN5WnMX2PcZGj4iSFEAgHCi8cM6x8LsDUbuzq8uw"),
-        oracle_source=OracleSource.PythPull(),  # type: ignore
+        oracle=Pubkey.from_string("fqPfDa6uQr9ndMvwaFp4mUBeUrHmLop8Jxfb1XJNmVm"),
+        oracle_source=OracleSource.PythLazer(),  # type: ignore
         mint=Pubkey.from_string("3NZ9JMVBmGAqocybic2c7LQCJScmgsAZ6vQqTDzcqmJh"),
     ),
     SpotMarketConfig(
@@ -161,7 +161,7 @@ mainnet_spot_market_configs: list[SpotMarketConfig] = [
         mint=Pubkey.from_string("JUPyiwrYJFskUPiHa7hkeR8VUtAeFoSYbKedZNsDvCN"),
     ),
     SpotMarketConfig(
-        symbol="RNDR",
+        symbol="RENDER",
         market_index=12,
         oracle=Pubkey.from_string("97EqsAGbTnShB7oYWAFFCVVAx8PWXgDYDhcpm99izNQ4"),
         oracle_source=OracleSource.PythLazer(),  # type: ignore
@@ -301,7 +301,7 @@ mainnet_spot_market_configs: list[SpotMarketConfig] = [
         mint=Pubkey.from_string("2zMMhcVQEXDtdE6vsFS7S7D5oUodfJHE8vd1gnBouauv"),
     ),
     SpotMarketConfig(
-        symbol="BONK",
+        symbol="Bonk",
         market_index=32,
         oracle=Pubkey.from_string("GojbSnJuPdKDT1ZuHuAM5t9oz6bxTo1xhUKpTua2F72p"),
         oracle_source=OracleSource.PythPull(),  # type: ignore
