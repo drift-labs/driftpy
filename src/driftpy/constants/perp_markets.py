@@ -226,15 +226,15 @@ mainnet_perp_market_configs: list[PerpMarketConfig] = [
         symbol="SOL-PERP",
         base_asset_symbol="SOL",
         market_index=0,
-        oracle=Pubkey.from_string("BAtFj4kQttZRVep3UZS2aZRDixkGYgWsbqTBVDbnSsPF"),
-        oracle_source=OracleSource.PythPull(),  # type: ignore
+        oracle=Pubkey.from_string("3m6i4RFWEDw2Ft4tFHPJtYgmpPe21k56M3FHeWYrgGBz"),
+        oracle_source=OracleSource.PythLazer(),  # type: ignore
     ),
     PerpMarketConfig(
         symbol="BTC-PERP",
         base_asset_symbol="BTC",
         market_index=1,
-        oracle=Pubkey.from_string("486kr3pmFPfTsS4aZgcsQ7kS4i9rjMsYYZup6HQNSTT4"),
-        oracle_source=OracleSource.PythPull(),  # type: ignore
+        oracle=Pubkey.from_string("35MbvS1Juz2wf7GsyHrkCw8yfKciRLxVpEhfZDZFrB4R"),
+        oracle_source=OracleSource.PythLazer(),  # type: ignore
     ),
     PerpMarketConfig(
         symbol="ETH-PERP",
@@ -254,8 +254,8 @@ mainnet_perp_market_configs: list[PerpMarketConfig] = [
         symbol="1MBONK-PERP",
         base_asset_symbol="1MBONK",
         market_index=4,
-        oracle=Pubkey.from_string("GojbSnJuPdKDT1ZuHuAM5t9oz6bxTo1xhUKpTua2F72p"),
-        oracle_source=OracleSource.Pyth1MPull(),  # type: ignore
+        oracle=Pubkey.from_string("BERaNi6cpEresbq6HC1EQGaB1H1UjvEo4NGnmYSSJof4"),
+        oracle_source=OracleSource.PythLazer1M(),  # type: ignore
     ),
     PerpMarketConfig(
         symbol="POL-PERP",

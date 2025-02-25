@@ -86,8 +86,8 @@ mainnet_spot_market_configs: list[SpotMarketConfig] = [
     SpotMarketConfig(
         symbol="SOL",
         market_index=1,
-        oracle=Pubkey.from_string("BAtFj4kQttZRVep3UZS2aZRDixkGYgWsbqTBVDbnSsPF"),
-        oracle_source=OracleSource.PythPull(),  # type: ignore
+        oracle=Pubkey.from_string("3m6i4RFWEDw2Ft4tFHPJtYgmpPe21k56M3FHeWYrgGBz"),
+        oracle_source=OracleSource.PythLazer(),  # type: ignore
         mint=Pubkey.from_string("So11111111111111111111111111111111111111112"),
     ),
     SpotMarketConfig(
@@ -268,7 +268,7 @@ mainnet_spot_market_configs: list[SpotMarketConfig] = [
     SpotMarketConfig(
         symbol="cbBTC",
         market_index=27,
-        oracle=Pubkey.from_string("486kr3pmFPfTsS4aZgcsQ7kS4i9rjMsYYZup6HQNSTT4"),
+        oracle=Pubkey.from_string("9jPy6EHpLkXaMdvfkoVnRnSdJoQysQDKKj3bW5Amz4Ci"),
         oracle_source=OracleSource.PythPull(),  # type: ignore
         mint=Pubkey.from_string("cbbtcf3aa214zXHbiAZQwf4122FBYbraNdFqgw4iMij"),
     ),
@@ -303,8 +303,8 @@ mainnet_spot_market_configs: list[SpotMarketConfig] = [
     SpotMarketConfig(
         symbol="Bonk",
         market_index=32,
-        oracle=Pubkey.from_string("GojbSnJuPdKDT1ZuHuAM5t9oz6bxTo1xhUKpTua2F72p"),
-        oracle_source=OracleSource.PythPull(),  # type: ignore
+        oracle=Pubkey.from_string("BERaNi6cpEresbq6HC1EQGaB1H1UjvEo4NGnmYSSJof4"),
+        oracle_source=OracleSource.PythLazer(),  # type: ignore
         mint=Pubkey.from_string("DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263"),
     ),
     SpotMarketConfig(
@@ -317,8 +317,8 @@ mainnet_spot_market_configs: list[SpotMarketConfig] = [
     SpotMarketConfig(
         symbol="USDC-1",
         market_index=34,
-        oracle=Pubkey.from_string("En8hkHLkRe9d9DraYmBTrus518BvmVH448YcvmrFM6Ce"),
-        oracle_source=OracleSource.PythStableCoinPull(),  # type: ignore
+        oracle=Pubkey.from_string("9VCioxmni2gDLv11qufWzT3RDERhQE4iY5Gf7NTfYyAV"),
+        oracle_source=OracleSource.PythLazerStableCoin(),  # type: ignore
         mint=Pubkey.from_string("EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"),
     ),
     SpotMarketConfig(
