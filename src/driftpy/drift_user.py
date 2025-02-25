@@ -49,9 +49,10 @@ from driftpy.math.perp_position import (
     calculate_worst_case_perp_liability_value,
     is_available,
 )
-from driftpy.math.spot_balance import get_strict_token_value
+from driftpy.math.spot_balance import get_strict_token_value, get_token_value
 from driftpy.math.spot_market import get_signed_token_amount, get_token_amount
 from driftpy.math.spot_position import (
+    calculate_weighted_token_value,
     get_worst_case_token_amounts,
     is_spot_position_available,
 )
@@ -447,6 +448,266 @@ class DriftUser:
             return round(
                 min(100, max(0, (1 - maintenance_margin_req / total_collateral) * 100))
             )
+
+    def get_health_components(
+        self, margin_category: MarginCategory = MarginCategory.INITIAL
+    ):
+        health_components = {
+            "deposits": [],
+            "borrows": [],
+            "perp_positions": [],
+            "perp_pnl": [],
+        }
+
+        for perp_position in self.get_active_perp_positions():
+            perp_market = self.drift_client.get_perp_market_account(
+                perp_position.market_index
+            )
+
+            oracle_price_data = self.drift_client.get_oracle_price_data_for_perp_market(
+                perp_market.market_index
+            )
+
+            quote_oracle_price_data = (
+                self.drift_client.get_oracle_price_data_for_spot_market(
+                    QUOTE_SPOT_MARKET_INDEX
+                )
+            )
+
+            health_components["perp_positions"].append(
+                self.get_perp_position_health(
+                    margin_category=margin_category,
+                    perp_position=perp_position,
+                    oracle_price_data=oracle_price_data,
+                    quote_oracle_price_data=quote_oracle_price_data,
+                )
+            )
+
+            quote_spot_market = self.drift_client.get_spot_market_account(
+                perp_market.quote_spot_market_index
+            )
+
+            settled_perp_position = self.get_perp_position_with_lp_settle(
+                perp_position.market_index, perp_position
+            )[0]
+
+            position_unrealized_pnl = calculate_position_pnl(
+                perp_market,
+                settled_perp_position,
+                oracle_price_data,
+                True,  # with_funding=True
+            )
+
+            if position_unrealized_pnl > 0:
+                pnl_weight = calculate_unrealized_asset_weight(
+                    perp_market,
+                    quote_spot_market,
+                    position_unrealized_pnl,
+                    margin_category,
+                    oracle_price_data,
+                )
+            else:
+                pnl_weight = SPOT_MARKET_WEIGHT_PRECISION
+
+            pnl_value = (
+                position_unrealized_pnl * quote_oracle_price_data.price
+            ) // PRICE_PRECISION
+            weighted_pnl_value = (
+                pnl_value * pnl_weight
+            ) // SPOT_MARKET_WEIGHT_PRECISION
+
+            health_components["perp_pnl"].append(
+                {
+                    "market_index": perp_market.market_index,
+                    "size": position_unrealized_pnl,
+                    "value": pnl_value,
+                    "weight": pnl_weight,
+                    "weighted_value": weighted_pnl_value,
+                }
+            )
+
+        # Process spot positions and continue with the rest...
+        net_quote_value = 0
+        for spot_position in self.get_active_spot_positions():
+            spot_market_account = self.drift_client.get_spot_market_account(
+                spot_position.market_index
+            )
+
+            oracle_price_data = self.get_oracle_data_for_spot_market(
+                spot_position.market_index
+            )
+
+            strict_oracle_price = StrictOraclePrice(oracle_price_data.price)
+
+            if spot_position.market_index == QUOTE_SPOT_MARKET_INDEX:
+                token_amount = get_signed_token_amount(
+                    get_token_amount(
+                        spot_position.scaled_balance,
+                        spot_market_account,
+                        spot_position.balance_type,
+                    ),
+                    spot_position.balance_type,
+                )
+                net_quote_value += token_amount
+                continue
+
+            order_fill_simulation = get_worst_case_token_amounts(
+                spot_position,
+                spot_market_account,
+                strict_oracle_price,
+                margin_category,
+                self.get_user_account().max_margin_ratio,
+            )
+
+            worst_case_token_amount = order_fill_simulation.token_amount
+            token_value = order_fill_simulation.token_value
+            weight = order_fill_simulation.weight
+            weighted_token_value = order_fill_simulation.weighted_token_value
+            orders_value = order_fill_simulation.orders_value
+
+            net_quote_value += orders_value
+
+            base_asset_value = abs(token_value)
+            weighted_value = abs(weighted_token_value)
+
+            if weighted_token_value < 0:
+                health_components["borrows"].append(
+                    {
+                        "market_index": spot_market_account.market_index,
+                        "size": worst_case_token_amount,
+                        "value": base_asset_value,
+                        "weight": weight,
+                        "weighted_value": weighted_value,
+                    }
+                )
+            else:
+                health_components["deposits"].append(
+                    {
+                        "market_index": spot_market_account.market_index,
+                        "size": worst_case_token_amount,
+                        "value": base_asset_value,
+                        "weight": weight,
+                        "weighted_value": weighted_value,
+                    }
+                )
+
+        if net_quote_value != 0:
+            spot_market_account = self.drift_client.get_spot_market_account(
+                QUOTE_SPOT_MARKET_INDEX
+            )
+            oracle_price_data = self.get_oracle_data_for_spot_market(
+                QUOTE_SPOT_MARKET_INDEX
+            )
+
+            base_asset_value = get_token_value(
+                net_quote_value, spot_market_account.decimals, oracle_price_data
+            )
+
+            weight, weighted_token_value = calculate_weighted_token_value(
+                net_quote_value,
+                base_asset_value,
+                oracle_price_data.price,
+                spot_market_account,
+                margin_category,
+                self.get_user_account().max_margin_ratio,
+            )
+
+            if net_quote_value < 0:
+                health_components["borrows"].append(
+                    {
+                        "market_index": spot_market_account.market_index,
+                        "size": net_quote_value,
+                        "value": abs(base_asset_value),
+                        "weight": weight,
+                        "weighted_value": abs(weighted_token_value),
+                    }
+                )
+            else:
+                health_components["deposits"].append(
+                    {
+                        "market_index": spot_market_account.market_index,
+                        "size": net_quote_value,
+                        "value": base_asset_value,
+                        "weight": weight,
+                        "weighted_value": weighted_token_value,
+                    }
+                )
+
+        return health_components
+
+    def get_perp_position_health(
+        self,
+        margin_category: MarginCategory,
+        perp_position: PerpPosition,
+        oracle_price_data: Optional[OraclePriceData] = None,
+        quote_oracle_price_data: Optional[OraclePriceData] = None,
+    ):
+        settled_lp_position = self.get_perp_position_with_lp_settle(
+            perp_position.market_index, perp_position
+        )[0]
+
+        perp_market = self.drift_client.get_perp_market_account(
+            perp_position.market_index
+        )
+
+        _oracle_price_data = (
+            oracle_price_data
+            or self.drift_client.get_oracle_data_for_perp_market(
+                perp_market.market_index
+            )
+        )
+
+        oracle_price = _oracle_price_data.price
+
+        worst_case = calculate_worst_case_perp_liability_value(
+            settled_lp_position, perp_market, oracle_price
+        )
+        worst_case_base_amount = worst_case["worst_case_base_asset_amount"]
+        worst_case_liability_value = worst_case["worst_case_liability_value"]
+
+        margin_ratio = calculate_market_margin_ratio(
+            perp_market,
+            abs(worst_case_base_amount),
+            margin_category,
+            self.get_user_account().max_margin_ratio,
+            self.is_high_leverage_mode(),
+        )
+
+        _quote_oracle_price_data = (
+            quote_oracle_price_data
+            or self.drift_client.get_oracle_data_for_spot_market(
+                QUOTE_SPOT_MARKET_INDEX
+            )
+        )
+
+        margin_requirement = (
+            (worst_case_liability_value * _quote_oracle_price_data.price)
+            // PRICE_PRECISION
+            * margin_ratio
+            // MARGIN_PRECISION
+        )
+
+        margin_requirement += perp_position.open_orders * OPEN_ORDER_MARGIN_REQUIREMENT
+
+        if perp_position.lp_shares > 0:
+            margin_requirement += max(
+                QUOTE_PRECISION,
+                (
+                    oracle_price
+                    * perp_market.amm.order_step_size
+                    * QUOTE_PRECISION
+                    // AMM_RESERVE_PRECISION
+                )
+                // PRICE_PRECISION,
+            )
+
+        return {
+            "market_index": perp_market.market_index,
+            "size": worst_case_base_amount,
+            "value": worst_case_liability_value,
+            "weight": margin_ratio,
+            "weighted_value": margin_requirement,
+        }
 
     def get_settled_perp_pnl(self) -> int:
         user = self.get_user_account()

@@ -1,12 +1,28 @@
-from typing import Tuple
+from typing import Optional, Tuple
 
 from driftpy.constants.numeric_constants import (
     PERCENTAGE_PRECISION,
     SPOT_UTILIZATION_PRECISION,
 )
+from driftpy.math.margin import MarginCategory
 from driftpy.math.spot_market import get_token_amount
+from driftpy.math.spot_position import calculate_asset_weight
 from driftpy.oracles.strict_oracle_price import StrictOraclePrice
-from driftpy.types import SpotBalanceType, SpotMarketAccount
+from driftpy.types import (
+    OraclePriceData,
+    SpotBalanceType,
+    SpotMarketAccount,
+)
+
+
+def get_token_value(
+    token_amount: int, spot_decimals: int, oracle_price_data: OraclePriceData
+) -> int:
+    if token_amount == 0:
+        return 0
+
+    precision_decrease = 10**spot_decimals
+    return (token_amount * oracle_price_data.price) // precision_decrease
 
 
 def get_strict_token_value(

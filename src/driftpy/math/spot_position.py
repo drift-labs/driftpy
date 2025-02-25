@@ -10,14 +10,13 @@ from driftpy.math.margin import (
     calculate_asset_weight,
     calculate_liability_weight,
 )
-from driftpy.math.spot_balance import get_strict_token_value
 from driftpy.math.spot_market import (
     get_signed_token_amount,
     get_token_amount,
     get_token_value,
 )
 from driftpy.oracles.strict_oracle_price import StrictOraclePrice
-from driftpy.types import SpotPosition, SpotMarketAccount
+from driftpy.types import SpotMarketAccount, SpotPosition
 
 
 @dataclass
@@ -28,6 +27,22 @@ class OrderFillSimulation:
     weight: int
     weighted_token_value: int
     free_collateral_contribution: int
+
+
+def get_strict_token_value(
+    token_amount: int, spot_decimals: int, strict_oracle_price: StrictOraclePrice
+) -> int:
+    if token_amount == 0:
+        return 0
+
+    if token_amount > 0:
+        price = strict_oracle_price.min()
+    else:
+        price = strict_oracle_price.max()
+
+    precision_decrease = 10**spot_decimals
+
+    return (token_amount * price) // precision_decrease
 
 
 def get_worst_case_token_amounts(

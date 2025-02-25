@@ -2,7 +2,7 @@ from typing import Optional
 
 
 class StrictOraclePrice:
-    def __init__(self, current: int, twap: Optional[int]):
+    def __init__(self, current: int, twap: Optional[int] = None):
         self.current = current
         self.twap = twap
 
