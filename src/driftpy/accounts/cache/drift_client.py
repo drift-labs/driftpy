@@ -223,7 +223,10 @@ class CachedDriftClientAccountSubscriber(DriftClientAccountSubscriber):
         self, market_index: int
     ) -> Optional[DataAndSlot[PerpMarketAccount]]:
         try:
-            return self.cache["perp_markets"][market_index]
+            for market in self.cache["perp_markets"]:
+                if market.data.market_index == market_index:
+                    return market
+            return None
         except IndexError:
             print(
                 f"WARNING: Perp market {market_index} not found in cache, Location: {stack_trace()}"
@@ -234,7 +237,10 @@ class CachedDriftClientAccountSubscriber(DriftClientAccountSubscriber):
         self, market_index: int
     ) -> Optional[DataAndSlot[SpotMarketAccount]]:
         try:
-            return self.cache["spot_markets"][market_index]
+            for market in self.cache["spot_markets"]:
+                if market.data.market_index == market_index:
+                    return market
+            return None
         except IndexError:
             print(
                 f"WARNING: Spot market {market_index} not found in cache Location: {stack_trace()}"
