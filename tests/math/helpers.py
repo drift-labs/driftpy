@@ -77,7 +77,8 @@ mock_order = Order(
     auction_end_price=0,
     max_ts=0,
     posted_slot_tail=0,
-    padding=[0, 0],
+    bit_flags=0,
+    padding=[0],
 )
 
 mock_user_account = UserAccount(
