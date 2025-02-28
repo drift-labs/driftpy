@@ -658,7 +658,8 @@ class Order:
     trigger_condition: OrderTriggerCondition
     auction_duration: int
     posted_slot_tail: int
-    padding: list[int] = field(default_factory=lambda: [0] * 2)
+    bit_flags: int
+    padding: list[int] = field(default_factory=lambda: [0] * 1)
 
 
 @dataclass

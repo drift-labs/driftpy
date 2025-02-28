@@ -259,34 +259,40 @@ def decode_user(buffer: bytes) -> UserAccount:
 
         auction_duration = read_uint8(buffer, offset)
         offset += 1
-        offset += 3  # padding
+        post_slot_tail = read_uint8(buffer, offset)
+        offset += 1
+        bit_flags = read_uint8(buffer, offset)
+        offset += 1
+        offset += 1  # padding
 
         orders.append(
             Order(
-                slot,
-                price,
-                base_asset_amount,
-                base_asset_amount_filled,
-                quote_asset_amount_filled,
-                trigger_price,
-                auction_start_price,
-                auction_end_price,
-                max_ts,
-                oracle_price_offset,
-                order_id,
-                market_index,
-                status,
-                order_type,
-                market_type,
-                user_order_id,
-                existing_position_direction,
-                direction,
-                reduce_only,
-                post_only,
-                immediate_or_cancel,
-                trigger_condition,
-                auction_duration,
-                [0, 0, 0],
+                slot=slot,
+                price=price,
+                base_asset_amount=base_asset_amount,
+                base_asset_amount_filled=base_asset_amount_filled,
+                quote_asset_amount_filled=quote_asset_amount_filled,
+                trigger_price=trigger_price,
+                auction_start_price=auction_start_price,
+                auction_end_price=auction_end_price,
+                max_ts=max_ts,
+                oracle_price_offset=oracle_price_offset,
+                order_id=order_id,
+                market_index=market_index,
+                status=status,
+                order_type=order_type,
+                market_type=market_type,
+                user_order_id=user_order_id,
+                existing_position_direction=existing_position_direction,
+                direction=direction,
+                reduce_only=reduce_only,
+                post_only=post_only,
+                immediate_or_cancel=immediate_or_cancel,
+                trigger_condition=trigger_condition,
+                auction_duration=auction_duration,
+                bit_flags=bit_flags,
+                post_slot_tail=post_slot_tail,
+                padding=[0],
             )
         )
 
