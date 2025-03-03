@@ -259,7 +259,7 @@ def decode_user(buffer: bytes) -> UserAccount:
 
         auction_duration = read_uint8(buffer, offset)
         offset += 1
-        post_slot_tail = read_uint8(buffer, offset)
+        posted_slot_tail = read_uint8(buffer, offset)
         offset += 1
         bit_flags = read_uint8(buffer, offset)
         offset += 1
@@ -291,7 +291,7 @@ def decode_user(buffer: bytes) -> UserAccount:
                 trigger_condition=trigger_condition,
                 auction_duration=auction_duration,
                 bit_flags=bit_flags,
-                post_slot_tail=post_slot_tail,
+                posted_slot_tail=posted_slot_tail,
                 padding=[0],
             )
         )
