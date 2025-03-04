@@ -36,6 +36,7 @@ SEQUENCER_PROGRAM_ID = Pubkey.from_string(
 DEVNET_SEQUENCER_PROGRAM_ID = Pubkey.from_string(
     "FBngRHN4s5cmHagqy3Zd6xcK3zPJBeX5DixtHFbBhyCn"
 )
+VAULT_PROGRAM_ID = Pubkey.from_string("vAuLTsyrvSfZRuRB3XgvkPwNGgYSs9YRYymVebLKoxR")
 
 
 @dataclass
