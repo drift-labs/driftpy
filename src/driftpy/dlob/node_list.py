@@ -1,5 +1,7 @@
 from typing import Generator, Generic, TypeVar
+
 from solders.pubkey import Pubkey
+
 from driftpy.dlob.dlob_node import (
     DLOBNode,
     NodeType,
@@ -7,7 +9,6 @@ from driftpy.dlob.dlob_node import (
     VAMMNode,
     create_node,
 )
-
 from driftpy.types import Order, is_variant
 
 T = TypeVar("T", bound=DLOBNode)
@@ -31,7 +32,7 @@ class NodeList(Generic[T]):
         self.node_map.clear()
 
     def insert(self, order: Order, market_type, user_account: Pubkey):
-        if is_variant(order.status, "Init"):
+        if not is_variant(order.status, "Open"):
             return
 
         new_node = create_node(self.node_type, order, user_account)

@@ -189,7 +189,7 @@ class DLOB:
     ):
         from driftpy.dlob.node_list import get_order_signature
 
-        if is_variant(order.status, "Init"):
+        if not is_variant(order.status, "Open"):
             return
 
         if not is_one_of_variant(order.order_type, SUPPORTED_ORDER_TYPES):
@@ -290,7 +290,7 @@ class DLOB:
         slot: int,
         on_delete: Optional[OrderBookCallback] = None,
     ):
-        if is_variant(order.status, "Init"):
+        if not is_variant(order.status, "Open"):
             return
 
         self.update_resting_limit_orders(slot)

@@ -148,7 +148,7 @@ def decode_user(buffer: bytes) -> UserAccount:
     orders: List[Order] = []
     for _ in range(32):
         # skip order if it's not open
-        if read_uint8(buffer, offset + 82) == 0:
+        if read_uint8(buffer, offset + 82) != 1:
             offset += 96
             continue
 
