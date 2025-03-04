@@ -165,9 +165,6 @@ class DriftClient:
         self.program_id = DRIFT_PROGRAM_ID
         self.program = Program(idl, self.program_id, provider)
 
-        if isinstance(wallet, Keypair):
-            wallet = Wallet(wallet)
-
         if authority is None:
             authority = wallet.public_key
 
