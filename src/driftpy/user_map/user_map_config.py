@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Optional, Union
+from typing import Literal, Optional, Union
 
 from solana.rpc.async_api import AsyncClient
 from solana.rpc.commitment import Commitment
@@ -40,6 +40,14 @@ class UserMapConfig:
 
 
 @dataclass
+class SyncConfig:
+    type: Literal["default", "paginated"]
+    chunk_size: Optional[int] = None
+    concurrency_limit: Optional[int] = None
+
+
+@dataclass
 class UserStatsMapConfig:
     drift_client: DriftClient
     connection: Optional[AsyncClient] = None
+    sync_config: Optional[SyncConfig] = None

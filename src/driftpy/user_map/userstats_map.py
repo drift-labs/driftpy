@@ -30,7 +30,7 @@ from driftpy.types import (
     decompress,
 )
 from driftpy.user_map.user_map import UserMap
-from driftpy.user_map.user_map_config import UserStatsMapConfig
+from driftpy.user_map.user_map_config import SyncConfig, UserStatsMapConfig
 
 
 class UserStatsMap:
@@ -43,6 +43,7 @@ class UserStatsMap:
         self.latest_slot: int = 0
         self.last_dumped_slot: int = 0
         self.connection = config.connection or config.drift_client.connection
+        self.sync_config = config.sync_config or SyncConfig(type="default")
 
     async def subscribe(self):
         if self.size() > 0:
@@ -53,6 +54,12 @@ class UserStatsMap:
         await self.sync()
 
     async def sync(self):
+        if self.sync_config.type == "default":
+            return await self.default_sync()
+        else:
+            return await self.paginated_sync()
+
+    async def default_sync(self):
         async with self.sync_lock:
             try:
                 filters = [
@@ -131,6 +138,151 @@ class UserStatsMap:
 
             except Exception as e:
                 print(f"Error in UserStatsMap.sync(): {e}")
+                traceback.print_exc()
+
+    async def paginated_sync(self):
+        async with self.sync_lock:
+            try:
+                if not hasattr(self, "sync_promise"):
+                    self.sync_promise = None
+
+                if self.sync_promise:
+                    return await self.sync_promise
+
+                self.sync_promise = asyncio.Future()
+
+                try:
+                    filters = [
+                        {
+                            "memcmp": {
+                                "offset": 0,
+                                "bytes": f"{get_user_stats_filter().bytes}",
+                            }
+                        }
+                    ]
+
+                    rpc_request = jsonrpcclient.request(
+                        "getProgramAccounts",
+                        (
+                            str(self.drift_client.program_id),
+                            {
+                                "filters": filters,
+                                "encoding": "base64",
+                                "dataSlice": {"offset": 0, "length": 0},
+                            },
+                        ),
+                    )
+
+                    post = self.connection._provider.session.post(
+                        self.connection._provider.endpoint_uri,
+                        json=rpc_request,
+                        headers={"content-encoding": "gzip"},
+                    )
+
+                    resp = await asyncio.wait_for(post, timeout=120)
+                    parsed_resp = jsonrpcclient.parse(resp.json())
+
+                    if isinstance(parsed_resp, jsonrpcclient.Error):
+                        raise ValueError(
+                            f"Error fetching user stats pubkeys: {parsed_resp.message}"
+                        )
+
+                    accounts_to_load = [
+                        account["pubkey"] for account in parsed_resp.result
+                    ]
+
+                    chunk_size = self.sync_config.chunk_size or 100
+                    concurrency_limit = self.sync_config.concurrency_limit or 10
+
+                    semaphore = asyncio.Semaphore(concurrency_limit)
+                    slot = 0
+
+                    async def process_chunk(chunk):
+                        nonlocal slot
+
+                        async with semaphore:
+                            # Request multiple accounts at once
+                            rpc_request = jsonrpcclient.request(
+                                "getMultipleAccounts",
+                                (
+                                    chunk,
+                                    {
+                                        "encoding": "base64",
+                                        "commitment": "confirmed",
+                                    },
+                                ),
+                            )
+
+                            post = self.connection._provider.session.post(
+                                self.connection._provider.endpoint_uri,
+                                json=rpc_request,
+                            )
+
+                            resp = await asyncio.wait_for(post, timeout=120)
+                            parsed_resp = jsonrpcclient.parse(resp.json())
+
+                            if isinstance(parsed_resp, jsonrpcclient.Error):
+                                raise ValueError(
+                                    f"Error fetching multiple accounts: {parsed_resp.message}"
+                                )
+
+                            slot = int(parsed_resp.result["context"]["slot"])
+                            program_account_buffer_map = set()
+
+                            for i, account_info in enumerate(
+                                parsed_resp.result["value"]
+                            ):
+                                if account_info is None:
+                                    continue
+
+                                buffer = base64.b64decode(account_info["data"][0])
+                                decoded_user_stats = decode_user_stat(buffer)
+
+                                authority = str(decoded_user_stats.authority)
+                                program_account_buffer_map.add(authority)
+
+                                if not self.has(authority):
+                                    await self.add_user_stat(
+                                        decoded_user_stats.authority,
+                                        DataAndSlot(slot, decoded_user_stats),
+                                    )
+
+                            return program_account_buffer_map
+
+                    tasks = []
+                    for i in range(0, len(accounts_to_load), chunk_size):
+                        chunk = accounts_to_load[i : i + chunk_size]
+                        tasks.append(process_chunk(chunk))
+
+                    results = await asyncio.gather(*tasks)
+
+                    all_account_buffer_map = set()
+                    for account_set in results:
+                        all_account_buffer_map.update(account_set)
+
+                    keys_to_delete = []
+                    for key in self.user_stats_map.keys():
+                        if key not in all_account_buffer_map:
+                            keys_to_delete.append(key)
+
+                    for key in keys_to_delete:
+                        user = self.get(key)
+                        if user:
+                            user.unsubscribe()
+                            del self.user_stats_map[key]
+
+                    self.latest_slot = slot
+
+                except Exception as e:
+                    print(f"Error in UserStatsMap.paginated_sync(): {e}")
+                    traceback.print_exc()
+
+                finally:
+                    self.sync_promise.set_result(None)
+                    self.sync_promise = None
+
+            except Exception as e:
+                print(f"Error in UserStatsMap.paginated_sync(): {e}")
                 traceback.print_exc()
 
     def unsubscribe(self):

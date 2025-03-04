@@ -89,8 +89,9 @@ class WebSocketProgramAccountSubscriber:
                                 self.receiving_data = False
             except Exception as e:
                 print(f"Error in subscription {self.subscription_name}: {e}")
-                await self.ws.close()
-                self.ws = None
+                if self.ws:
+                    await self.ws.close()
+                    self.ws = None
                 await asyncio.sleep(5)  # wait a second before we retry
 
     async def _process_message(self, msg):
