@@ -107,9 +107,9 @@ class SignedMsgOrderSubscriber:
         print("Starting subscription process")
         self.on_order = on_order
         endpoint = self.config.endpoint or (
-            "wss://master.fastlane.drift.trade/ws"
+            "wss://master.swift.drift.trade/ws"
             if self.config.drift_env == "devnet"
-            else "wss://fastlane.drift.trade/ws"
+            else "wss://swift.drift.trade/ws"
         )
 
         while True:
