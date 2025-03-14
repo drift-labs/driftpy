@@ -1616,6 +1616,11 @@ class DriftUser:
 
         return total_asset_value - total_liability_value
 
+    def get_net_usd_value(self) -> int:
+        net_spot_market_value = self.get_net_spot_market_value(None)
+        unrealized_pnl = self.get_unrealized_pnl(True, None, None)
+        return net_spot_market_value + unrealized_pnl
+
     def get_fuel_bonus(
         self, now: int, include_settled: bool = True, include_unsettled: bool = True
     ) -> dict[str, int]:
