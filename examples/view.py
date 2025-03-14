@@ -6,7 +6,6 @@ from pprint import pprint
 import dotenv
 from anchorpy import Wallet
 from solana.rpc.async_api import AsyncClient
-from solders.keypair import Keypair
 from solders.pubkey import Pubkey
 
 from driftpy.account_subscription_config import AccountSubscriptionConfig
@@ -28,7 +27,7 @@ async def main():
     s = time.time()
     kp = load_keypair(os.getenv("PRIVATE_KEY"))
     wallet = Wallet(kp)
-    connection = AsyncClient(os.getenv("RPC_URL"))
+    connection = AsyncClient(os.getenv("RPC_TRITON"))
     dc = DriftClient(
         connection,
         wallet,
@@ -36,7 +35,6 @@ async def main():
     )
     await dc.subscribe()
     drift_user = dc.get_user()
-
     user = drift_user.get_user_account()
     print("\n=== User Info ===")
     print(f"Subaccount name: {decode_name(user.name)}")
@@ -45,7 +43,7 @@ async def main():
         None,
         include_open_orders=True,
     )
-    print(f"\n=== Collateral & PnL ===")
+    print("\n=== Collateral & PnL ===")
     print(f"Spot collateral: ${spot_collateral / QUOTE_PRECISION:,.2f}")
 
     pnl = drift_user.get_unrealized_pnl(False)
@@ -56,7 +54,7 @@ async def main():
 
     perp_liability = drift_user.get_total_perp_position_liability()
     spot_liability = drift_user.get_spot_market_liability_value()
-    print(f"\n=== Liabilities ===")
+    print("\n=== Liabilities ===")
     print(f"Perp liability: ${perp_liability / QUOTE_PRECISION:,.2f}")
     print(f"Spot liability: ${spot_liability / QUOTE_PRECISION:,.2f}")
 
@@ -64,7 +62,7 @@ async def main():
     oracle = convert_to_number(
         dc.get_oracle_price_data_for_perp_market(0).price, QUOTE_PRECISION
     )
-    print(f"\n=== Market Info ===")
+    print("\n=== Market Info ===")
     print(f"Oracle price: ${oracle:,.2f}")
 
     init_leverage = MARGIN_PRECISION / perp_market.margin_ratio_initial
@@ -77,13 +75,13 @@ async def main():
 
     total_liability = drift_user.get_margin_requirement(None)
     total_asset_value = drift_user.get_total_collateral()
-    print(f"\n=== Risk Metrics ===")
+    print("\n=== Risk Metrics ===")
     print(f"Total liability: ${total_liability / QUOTE_PRECISION:,.2f}")
     print(f"Total asset value: ${total_asset_value / QUOTE_PRECISION:,.2f}")
     print(f"Current leverage: {(drift_user.get_leverage()) / 10_000:.2f}x")
 
     user = drift_user.get_user_account()
-    print(f"\n=== Perp Positions ===")
+    print("\n=== Perp Positions ===")
     for position in user.perp_positions:
         if not is_available(position):
             pprint(position)
@@ -100,13 +98,17 @@ async def main():
     # Another user
     drift_user2 = DriftUser(
         drift_client=dc,
-        user_public_key=Pubkey.from_string(
-            "7EgKVxtr8xfyc4KSQo1xWt5RV74rRE4u1hH5dDr8ccwd"
-        ),  # a random user to demonstrate the health components
+        user_public_key=Pubkey.from_string(os.getenv("RANDOM_USER_ACCOUNT_PUBKEY")),
     )
     await drift_user2.subscribe()
-    print("\n=== Health Components (User 2) ===")
-    pprint(drift_user2.get_health_components(), indent=2, width=80)
+
+    print("\n=== Perp Positions (User 2) ===")
+    for position in drift_user2.get_user_account().perp_positions:
+        if position.base_asset_amount != 0:
+            pprint(position)
+
+    pnl = drift_user2.get_net_usd_value()
+    print(f"Net USD Value: ${pnl / QUOTE_PRECISION:,.2f}")
 
 
 if __name__ == "__main__":
