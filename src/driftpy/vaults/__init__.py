@@ -14,6 +14,7 @@ from driftpy.vaults.helpers import (
     get_vault_stats,
     get_vaults_program,
 )
+from driftpy.vaults.vault_client import VaultClient
 
 __all__ = [
     "get_vaults_program",
@@ -24,4 +25,5 @@ __all__ = [
     "get_depositor_info",
     "filter_vault_depositors",
     "fetch_all_vault_depositors",
+    "VaultClient",
 ]
