@@ -1,5 +1,5 @@
 {
-  "version": "0.4.0",
+  "version": "0.5.0",
   "name": "drift_vaults",
   "instructions": [
     {
@@ -304,6 +304,27 @@
           "type": {
             "defined": "UpdateVaultParams"
           }
+        }
+      ]
+    },
+    {
+      "name": "updateVaultManager",
+      "accounts": [
+        {
+          "name": "vault",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "manager",
+          "isMut": false,
+          "isSigner": true
+        }
+      ],
+      "args": [
+        {
+          "name": "manager",
+          "type": "publicKey"
         }
       ]
     },
@@ -2606,6 +2627,11 @@
           "name": "managementFeeShares",
           "type": "i64",
           "index": false
+        },
+        {
+          "name": "depositOraclePrice",
+          "type": "i64",
+          "index": false
         }
       ]
     },
@@ -2716,6 +2742,11 @@
         },
         {
           "name": "managementFeeShares",
+          "type": "i64",
+          "index": false
+        },
+        {
+          "name": "depositOraclePrice",
           "type": "i64",
           "index": false
         }
