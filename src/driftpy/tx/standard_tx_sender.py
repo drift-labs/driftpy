@@ -1,18 +1,17 @@
-from solders.hash import Hash
-from solders.keypair import Keypair
+from typing import Optional, Sequence
 
-from driftpy.tx.types import TxSender, TxSigAndSlot
 from solana.rpc.async_api import AsyncClient
-from solana.rpc.types import TxOpts
 from solana.rpc.commitment import Commitment, Confirmed
-from typing import Union, Sequence, Optional
-
+from solana.rpc.types import TxOpts
 from solders.address_lookup_table_account import AddressLookupTableAccount
+from solders.hash import Hash
 from solders.instruction import Instruction
+from solders.keypair import Keypair
 from solders.message import MessageV0
 from solders.rpc.responses import SendTransactionResp
-from solana.transaction import Transaction
 from solders.transaction import VersionedTransaction
+
+from driftpy.tx.types import TxSender, TxSigAndSlot
 
 
 class StandardTxSender(TxSender):
@@ -36,26 +35,6 @@ class StandardTxSender(TxSender):
     async def fetch_latest_blockhash(self) -> Hash:
         return await self.get_blockhash()
 
-    async def get_legacy_tx(
-        self,
-        ixs: Sequence[Instruction],
-        payer: Keypair,
-        additional_signers: Optional[Sequence[Keypair]],
-    ) -> Transaction:
-        latest_blockhash = await self.fetch_latest_blockhash()
-        tx = Transaction(
-            instructions=ixs,
-            recent_blockhash=latest_blockhash,
-            fee_payer=payer.pubkey(),
-        )
-
-        tx.sign_partial(payer)
-
-        if additional_signers is not None:
-            [tx.sign_partial(signer) for signer in additional_signers]
-
-        return tx
-
     async def get_versioned_tx(
         self,
         ixs: Sequence[Instruction],
@@ -75,8 +54,8 @@ class StandardTxSender(TxSender):
 
         return VersionedTransaction(msg, signers)
 
-    async def send(self, tx: Union[Transaction, VersionedTransaction]) -> TxSigAndSlot:
-        raw = tx.serialize() if isinstance(tx, Transaction) else bytes(tx)
+    async def send(self, tx: VersionedTransaction) -> TxSigAndSlot:
+        raw = bytes(tx)
 
         body = self.connection._send_raw_transaction_body(raw, self.opts)
         resp = await self.connection._provider.make_request(body, SendTransactionResp)
@@ -93,10 +72,8 @@ class StandardTxSender(TxSender):
 
         return TxSigAndSlot(sig, slot)
 
-    async def send_no_confirm(
-        self, tx: Union[Transaction, VersionedTransaction]
-    ) -> TxSigAndSlot:
-        raw = tx.serialize() if isinstance(tx, Transaction) else bytes(tx)
+    async def send_no_confirm(self, tx: VersionedTransaction) -> TxSigAndSlot:
+        raw = bytes(tx)
 
         body = self.connection._send_raw_transaction_body(raw, self.opts)
         resp = await self.connection._provider.make_request(body, SendTransactionResp)
