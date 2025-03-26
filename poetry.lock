@@ -141,32 +141,30 @@ frozenlist = ">=1.1.0"
 
 [[package]]
 name = "anchorpy"
-version = "0.20.1"
+version = "0.21.0"
 description = "The Python Anchor client."
 optional = false
-python-versions = "<4.0,>=3.9"
+python-versions = "~=3.9"
 groups = ["main"]
 files = [
-    {file = "anchorpy-0.20.1-py3-none-any.whl", hash = "sha256:78c82b56e340240fd00697cde08cd63f84ccc48b34532f0eed4a570f7054aec9"},
-    {file = "anchorpy-0.20.1.tar.gz", hash = "sha256:e4ac7e3e742a4a31165da2cdded44bfec8d03802488beb36f6735d1c9351fe08"},
+    {file = "anchorpy-0.21.0-py3-none-any.whl", hash = "sha256:5740a1420052ba5bbfe8cc281b3e621b38c0f845931d1f2ca00bd11e496fd44b"},
+    {file = "anchorpy-0.21.0.tar.gz", hash = "sha256:3c5b364cbe3386a8912c314f62f3da71e268c9163d77548246226e2c6b6a36cc"},
 ]
 
 [package.dependencies]
-anchorpy-core = ">=0.2.0,<0.3.0"
-based58 = ">=0.1.1,<0.2.0"
-borsh-construct = ">=0.1.0,<0.2.0"
-construct-typing = ">=0.5.1,<0.6.0"
-more-itertools = ">=8.11.0,<9.0.0"
-pyheck = ">=0.1.4,<0.2.0"
-solana = ">=0.33.0,<1.0"
-solders = ">=0.21.0,<0.22.0"
-toml = ">=0.10.2,<0.11.0"
-toolz = ">=0.11.2,<0.12.0"
-websockets = ">=9.0,<11.0"
+anchorpy-core = ">=0.2.0,<0.3"
+based58 = ">=0.1.1,<0.2"
+borsh-construct = ">=0.1.0,<0.2"
+construct-typing = ">=0.5.1,<0.6"
+pyheck = ">=0.1.4,<0.2"
+solana = ">=0.36.1,<1.0"
+solders = ">=0.21.0,<1.0"
+toml = ">=0.10.2,<0.11"
+toolz = ">=0.11.2,<0.12"
 
 [package.extras]
-cli = ["autoflake (>=1.4,<2.0)", "black (>=22.3.0,<23.0.0)", "genpy (>=2021.1,<2022.0)", "ipython (>=8.0.1,<9.0.0)", "typer (==0.4.1)"]
-pytest = ["py (>=1.11.0,<2.0.0)", "pytest (>=7.2.0,<8.0.0)", "pytest-asyncio (>=0.21.0,<0.22.0)", "pytest-xprocess (>=0.18.1,<0.19.0)"]
+cli = ["autoflake (>=1.4,<2.0)", "black (>=22.3.0,<23)", "genpy (>=2021.1,<2022.0)", "ipython (>=8.0.1,<9)", "typer (==0.4.1)"]
+pytest = ["py (>=1.11.0,<2)", "pytest (>=7.2.0,<8)", "pytest-asyncio (>=0.21.0,<0.22)", "pytest-xprocess (>=0.18.1,<0.19)"]
 
 [[package]]
 name = "anchorpy-core"
@@ -1956,40 +1954,40 @@ files = [
 
 [[package]]
 name = "solana"
-version = "0.35.1"
+version = "0.36.6"
 description = "Solana Python API"
 optional = false
-python-versions = "<4.0,>=3.8"
+python-versions = "<4.0,>=3.9"
 groups = ["main"]
 files = [
-    {file = "solana-0.35.1-py3-none-any.whl", hash = "sha256:f1388142f8e7edcf3fba52ddd021bab5ceaeab491b5100203732f40963f3742f"},
-    {file = "solana-0.35.1.tar.gz", hash = "sha256:8768246c66f9b8aebcb85cb89465240cc42aab3bf802c15ebae2408f2076eaa1"},
+    {file = "solana-0.36.6-py3-none-any.whl", hash = "sha256:c0526b602d834cb762102f854be469be6657731db0d016a985bbabd6212dd09d"},
+    {file = "solana-0.36.6.tar.gz", hash = "sha256:aa2403bc36bb06ea5bf56f6856373a50ae8b1c3a45261d5a4c911350f7427c00"},
 ]
 
 [package.dependencies]
 construct-typing = ">=0.5.2,<0.6.0"
 httpx = ">=0.23.0"
-solders = ">=0.21.0,<0.22.0"
+solders = ">=0.23,<0.27"
 typing-extensions = ">=4.2.0"
-websockets = ">=9.0,<12.0"
+websockets = ">=9.0,<=15.0"
 
 [[package]]
 name = "solders"
-version = "0.21.0"
+version = "0.26.0"
 description = "Python bindings for Solana Rust tools"
 optional = false
 python-versions = ">=3.7"
 groups = ["main"]
 files = [
-    {file = "solders-0.21.0-cp37-abi3-macosx_10_12_x86_64.macosx_11_0_arm64.macosx_10_12_universal2.whl", hash = "sha256:7df88e59aea016644c0b2eac84f2f931d5aa570c654132770263b26f2928fdb7"},
-    {file = "solders-0.21.0-cp37-abi3-manylinux_2_17_armv7l.manylinux2014_armv7l.whl", hash = "sha256:a11dfc5933707c466880ef2116f1bffc74659bf677b79479f4280247d60543c9"},
-    {file = "solders-0.21.0-cp37-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:33a28fedff80defd01455844700e3b9924c06a87d7ca93aff0a9298a9eb902ac"},
-    {file = "solders-0.21.0-cp37-abi3-manylinux_2_28_aarch64.whl", hash = "sha256:3ac70badd0da7e0d87db1c9c2edac63e48470903fd5f28e2fd6b22c7624ef52f"},
-    {file = "solders-0.21.0-cp37-abi3-manylinux_2_5_i686.manylinux1_i686.whl", hash = "sha256:ac79feca36470945ac026433828d4105a4b3bada5422ea77b1083c0e8fe93872"},
-    {file = "solders-0.21.0-cp37-abi3-musllinux_1_2_i686.whl", hash = "sha256:6993e2e1709aa04b94267597dc31e29ae5625cde3d65fdf452c6366c6c7f41cd"},
-    {file = "solders-0.21.0-cp37-abi3-musllinux_1_2_x86_64.whl", hash = "sha256:9521974ffa8b0fc8a4aa3b65f9057392c214a814c10af4f8cd2ad1d3f943ae61"},
-    {file = "solders-0.21.0-cp37-abi3-win_amd64.whl", hash = "sha256:7258b0faa97ab3dc2e1951082af63f2971f178519540f7abac43ec2385d84b7f"},
-    {file = "solders-0.21.0.tar.gz", hash = "sha256:a228c09b690f215acb01c55e17246efdfdb7c013f7332b057ecd0499363868ad"},
+    {file = "solders-0.26.0-cp37-abi3-macosx_10_12_x86_64.macosx_11_0_arm64.macosx_10_12_universal2.whl", hash = "sha256:9c1a0ef5daa1a05934af5fb6e7e32eab7c42cede406c80067fee006f461ffc4a"},
+    {file = "solders-0.26.0-cp37-abi3-manylinux_2_17_armv7l.manylinux2014_armv7l.whl", hash = "sha256:1b964efbd7c0b38aef3bf4293ea5938517ae649b9a23e7cd147d889931775aab"},
+    {file = "solders-0.26.0-cp37-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:36e6a769c5298b887b7588edb171d93709a89302aef75913fe893d11c653739d"},
+    {file = "solders-0.26.0-cp37-abi3-manylinux_2_28_aarch64.whl", hash = "sha256:b3cc55b971ec6ed1b4466fa7e7e09eee9baba492b8cd9e3204e3e1a0c5a0c4aa"},
+    {file = "solders-0.26.0-cp37-abi3-manylinux_2_5_i686.manylinux1_i686.whl", hash = "sha256:3e3973074c17265921c70246a17bcf80972c5b96a3e1ed7f5049101f11865092"},
+    {file = "solders-0.26.0-cp37-abi3-musllinux_1_2_i686.whl", hash = "sha256:59b52419452602f697e659199a25acacda8365971c376ef3c0687aecdd929e07"},
+    {file = "solders-0.26.0-cp37-abi3-musllinux_1_2_x86_64.whl", hash = "sha256:5946ec3f2a340afa9ce5c2b8ab628ae1dea2ad2235551b1297cafdd7e3e5c51a"},
+    {file = "solders-0.26.0-cp37-abi3-win_amd64.whl", hash = "sha256:5466616610170aab08c627ae01724e425bcf90085bc574da682e9f3bd954900b"},
+    {file = "solders-0.26.0.tar.gz", hash = "sha256:057533892d6fa432c1ce1e2f5e3428802964666c10b57d3d1bcaab86295f046c"},
 ]
 
 [package.dependencies]
@@ -2515,4 +2513,4 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.10"
-content-hash = "403ca0e5cff16096f319665e9fa79cef95a56f7b1786e4a73ff563fde4fab193"
+content-hash = "afc5dc548e6b13d783c4dc82f83a3466645ebf0d1417c314b79ac12bcda6d4ff"
