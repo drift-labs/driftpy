@@ -1473,7 +1473,7 @@ class SignedMsgTriggerOrderParams:
 
 @dataclass
 class SignedMsgOrderParamsMessage:
-    signed_order_params: OptionalOrderParams
+    signed_msg_order_params: OptionalOrderParams
     sub_account_id: int
     slot: int
     uuid: bytes
