@@ -436,8 +436,8 @@ mainnet_perp_market_configs: list[PerpMarketConfig] = [
         symbol="DRIFT-PERP",
         base_asset_symbol="DRIFT",
         market_index=30,
-        oracle=Pubkey.from_string("23KmX7SNikmUr2axSCy6Zer7XPBnvmVcASALnDGqBVRR"),
-        oracle_source=OracleSource.PythPull(),  # type: ignore
+        oracle=Pubkey.from_string("5VJou4ufN2vE11zyZUaLsKLTXhyzCTgiq6QDsts2YnnD"),
+        oracle_source=OracleSource.PythLazer(),  # type: ignore
     ),
     PerpMarketConfig(
         symbol="CLOUD-PERP",
@@ -688,8 +688,8 @@ mainnet_perp_market_configs: list[PerpMarketConfig] = [
         symbol="BERA-PERP",
         base_asset_symbol="BERA",
         market_index=66,
-        oracle=Pubkey.from_string("53Ae7ArP9yCnjqL2CqxJ1zdv3ba64NoVTqRcwjrCg181"),
-        oracle_source=OracleSource.PythPull(),  # type: ignore
+        oracle=Pubkey.from_string("r8eNLQ8jysUyk9rrWXuicwAoKZ7V3YngAB6737zfxmv"),
+        oracle_source=OracleSource.PythLazer(),  # type: ignore
     ),
     PerpMarketConfig(
         symbol="NBAFINALS25-OKC-BET",
@@ -709,14 +709,21 @@ mainnet_perp_market_configs: list[PerpMarketConfig] = [
         symbol="KAITO-PERP",
         base_asset_symbol="KAITO",
         market_index=69,
-        oracle=Pubkey.from_string("DRCNnwxET1URxGMvpCPncBkZsWf1Xh26TMxXNSGTrGpU"),
-        oracle_source=OracleSource.PythPull(),  # type: ignore
+        oracle=Pubkey.from_string("8M8mjNJ42k2Xi12Q1zRnQRC3xhggu3WGuftiu5VZZmsF"),
+        oracle_source=OracleSource.PythLazer(),  # type: ignore
     ),
     PerpMarketConfig(
         symbol="IP-PERP",
         base_asset_symbol="IP",
         market_index=70,
-        oracle=Pubkey.from_string("E8A2iky96tzM8YuNNcJateE8S4e5N8FYspg17XHLp2aY"),
-        oracle_source=OracleSource.PythPull(),  # type: ignore
+        oracle=Pubkey.from_string("AZVVDFve8ijzLAm9z6W53GFsoWbcycFsdxCL7WUjMz8S"),
+        oracle_source=OracleSource.PythLazer(),  # type: ignore
+    ),
+    PerpMarketConfig(
+        symbol="FARTCOIN-PERP",
+        base_asset_symbol="FARTCOIN",
+        market_index=71,
+        oracle=Pubkey.from_string("2sZomfWMDuQLcFak3nuharXorHrZ3hK8iaML6ZGSHtso"),
+        oracle_source=OracleSource.PythLazer(),  # type: ignore
     ),
 ]
