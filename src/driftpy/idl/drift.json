@@ -1,5 +1,5 @@
 {
-  "version": "2.114.0",
+  "version": "2.116.0",
   "name": "drift",
   "instructions": [
     {
@@ -9252,6 +9252,50 @@
           {
             "name": "subAccountId",
             "type": "u16"
+          },
+          {
+            "name": "slot",
+            "type": "u64"
+          },
+          {
+            "name": "uuid",
+            "type": {
+              "array": ["u8", 8]
+            }
+          },
+          {
+            "name": "takeProfitOrderParams",
+            "type": {
+              "option": {
+                "defined": "SignedMsgTriggerOrderParams"
+              }
+            }
+          },
+          {
+            "name": "stopLossOrderParams",
+            "type": {
+              "option": {
+                "defined": "SignedMsgTriggerOrderParams"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "SignedMsgOrderParamsDelegateMessage",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "signedMsgOrderParams",
+            "type": {
+              "defined": "OrderParams"
+            }
+          },
+          {
+            "name": "takerPubkey",
+            "type": "publicKey"
           },
           {
             "name": "slot",
