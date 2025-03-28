@@ -1,5 +1,6 @@
 import asyncio
 from copy import deepcopy
+from unittest.mock import Mock
 
 from anchorpy import Wallet
 from solana.rpc.async_api import AsyncClient
@@ -22,6 +23,8 @@ from driftpy.types import (
     SpotPosition,
     UserAccount,
 )
+
+mock_pubkey = Mock()
 
 mock_perp_position = PerpPosition(
     base_asset_amount=0,
@@ -82,8 +85,8 @@ mock_order = Order(
 )
 
 mock_user_account = UserAccount(
-    authority=Pubkey.default(),
-    delegate=Pubkey.default(),
+    authority=mock_pubkey,
+    delegate=mock_pubkey,
     sub_account_id=0,
     name=[1],
     spot_positions=[deepcopy(mock_spot_position) for _ in range(8)],

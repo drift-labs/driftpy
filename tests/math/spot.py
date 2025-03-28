@@ -1,16 +1,48 @@
-import math
-from pytest import mark
 from copy import deepcopy
+from unittest.mock import Mock
 
+from pytest import mark
+
+from driftpy.constants.numeric_constants import (
+    ONE_BILLION,
+    ONE_HUNDRED_THOUSAND,
+    ONE_MILLION,
+    SPOT_CUMULATIVE_INTEREST_PRECISION,
+    TEN_THOUSAND,
+)
 from driftpy.math.margin import calculate_size_premium_liability_weight
-from driftpy.constants.numeric_constants import *
-
-from tests.dlob_test_constants import mock_spot_markets
 from driftpy.math.spot_balance import (
     calculate_borrow_rate,
     calculate_deposit_rate,
     calculate_spot_market_borrow_capacity,
 )
+from tests.dlob_test_constants import mock_spot_markets
+
+mock_pubkey = Mock()
+
+
+# Create a function to recursively replace all Pubkey objects with mocks
+def replace_pubkeys_with_mocks(obj):
+    from solders.pubkey import Pubkey
+
+    if isinstance(obj, Pubkey):
+        return mock_pubkey
+
+    if hasattr(obj, "__dict__"):
+        # For objects with attributes
+        for attr_name, attr_value in obj.__dict__.items():
+            if isinstance(attr_value, Pubkey):
+                setattr(obj, attr_name, mock_pubkey)
+            elif hasattr(attr_value, "__dict__"):
+                # Handle nested objects
+                replace_pubkeys_with_mocks(attr_value)
+
+    return obj
+
+
+# Apply this to all mock_spot_markets
+for market in mock_spot_markets:
+    replace_pubkeys_with_mocks(market)
 
 
 @mark.asyncio

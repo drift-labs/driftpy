@@ -1,15 +1,49 @@
-from pytest import mark
 from copy import deepcopy
+from unittest.mock import Mock
 
-from driftpy.constants.numeric_constants import *
+from pytest import mark
+
+from driftpy.constants.numeric_constants import (
+    BASE_PRECISION,
+    MARGIN_PRECISION,
+    PRICE_PRECISION,
+    QUOTE_PRECISION,
+    SPOT_BALANCE_PRECISION,
+    SPOT_CUMULATIVE_INTEREST_PRECISION,
+)
 from driftpy.math.margin import MarginCategory
 from driftpy.math.perp_position import calculate_position_pnl
-
-from tests.dlob_test_constants import mock_perp_markets, mock_spot_markets
 from driftpy.math.spot_position import get_worst_case_token_amounts
 from driftpy.oracles.strict_oracle_price import StrictOraclePrice
 from driftpy.types import SpotBalanceType
+from tests.dlob_test_constants import mock_perp_markets, mock_spot_markets
+
 from .helpers import make_mock_user, mock_user_account
+
+mock_pubkey = Mock()
+
+
+def replace_pubkeys_with_mocks(obj):
+    from solders.pubkey import Pubkey
+
+    if isinstance(obj, Pubkey):
+        return mock_pubkey
+
+    if hasattr(obj, "__dict__"):
+        for attr_name, attr_value in obj.__dict__.items():
+            if isinstance(attr_value, Pubkey):
+                setattr(obj, attr_name, mock_pubkey)
+            elif hasattr(attr_value, "__dict__"):
+                replace_pubkeys_with_mocks(attr_value)
+
+    return obj
+
+
+for market in mock_perp_markets:
+    replace_pubkeys_with_mocks(market)
+
+for market in mock_spot_markets:
+    replace_pubkeys_with_mocks(market)
 
 
 @mark.asyncio
