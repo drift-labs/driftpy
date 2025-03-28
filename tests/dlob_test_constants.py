@@ -1,3 +1,5 @@
+from unittest.mock import Mock
+
 from solders.pubkey import Pubkey
 
 from driftpy.constants.config import devnet_spot_market_configs
@@ -8,7 +10,6 @@ from driftpy.constants.numeric_constants import (
     QUOTE_PRECISION,
     SPOT_CUMULATIVE_INTEREST_PRECISION,
     SPOT_MARKET_CUMULATIVE_INTEREST_PRECISION,
-    SPOT_MARKET_CUMULATIVE_INTEREST_PRECISION_EXP,
     SPOT_MARKET_WEIGHT_PRECISION,
 )
 from driftpy.types import (
@@ -158,6 +159,8 @@ mock_amm = AMM(
 )
 
 # Mock Perp Markets
+mock_pubkey = Mock()
+
 mock_perp_markets = [
     PerpMarketAccount(
         status=MarketStatus.Initialized(),
@@ -167,7 +170,7 @@ mock_perp_markets = [
         expiry_ts=0,
         expiry_price=0,
         market_index=0,
-        pubkey=Pubkey.default(),
+        pubkey=mock_pubkey,
         amm=mock_amm,
         number_of_users_with_base=0,
         number_of_users=0,
@@ -204,7 +207,7 @@ mock_perp_markets = [
         expiry_ts=0,
         expiry_price=0,
         market_index=1,
-        pubkey=Pubkey.default(),
+        pubkey=mock_pubkey,
         amm=mock_amm,
         number_of_users_with_base=0,
         number_of_users=0,
@@ -241,7 +244,7 @@ mock_perp_markets = [
         expiry_ts=0,
         expiry_price=0,
         market_index=2,
-        pubkey=Pubkey.default(),
+        pubkey=mock_pubkey,
         amm=mock_amm,
         number_of_users_with_base=0,
         number_of_users=0,
