@@ -4,6 +4,7 @@ import os
 import random
 import string
 from dataclasses import dataclass
+from hashlib import sha256
 from pathlib import Path
 from typing import List, Optional, Tuple, Union, cast
 
@@ -82,7 +83,7 @@ from driftpy.math.perp_position import is_available
 from driftpy.math.spot_market import cast_to_spot_precision
 from driftpy.math.spot_position import is_spot_position_available
 from driftpy.name import encode_name
-from driftpy.signed_msg.create_verify_ix import create_minimal_ed25519_verify_ix
+from driftpy.swift.create_verify_ix import create_minimal_ed25519_verify_ix
 from driftpy.tx.standard_tx_sender import StandardTxSender
 from driftpy.tx.types import TxSender, TxSigAndSlot
 from driftpy.types import (
@@ -2008,6 +2009,66 @@ class DriftClient:
                 },
                 remaining_accounts=remaining_accounts,
             ),
+        )
+
+    def decode_signed_msg_order_params_message(
+        self,
+        signed_msg_order_params_buf: bytes,
+    ) -> SignedMsgOrderParams:
+        return self.program.coder.types.decode(
+            "SignedMsgOrderParamsMessage", signed_msg_order_params_buf[8:]
+        )
+
+    def sign_message(self, message: bytes) -> bytes:
+        """Sign a message with the wallet keypair.
+
+        Args:
+            message: The message to sign
+
+        Returns:
+            The signature
+        """
+
+        return self.wallet.payer.sign_message(message).to_bytes()
+
+    def encode_signed_msg_order_params_message(
+        self, order_params_message: dict
+    ) -> bytes:
+        """Borsh encode signedMsg order params message
+
+        Args:
+            order_params_message: The order params message to encode
+
+        Returns:
+            The encoded buffer
+        """
+
+        anchor_ix_name = "global:SignedMsgOrderParamsMessage"
+        prefix = bytes.fromhex(sha256(anchor_ix_name.encode()).hexdigest()[:16])
+
+        encoded = self.program.coder.types.encode(
+            "SignedMsgOrderParamsMessage", order_params_message
+        )
+
+        buf = prefix + encoded
+        return buf
+
+    def sign_signed_msg_order_params_message(
+        self, order_params_message: dict
+    ) -> SignedMsgOrderParams:
+        """Sign a SignedMsgOrderParamsMessage
+
+        Args:
+            order_params_message: The order params message to sign
+
+        Returns:
+            The signed order params
+        """
+        borsh_buf = self.encode_signed_msg_order_params_message(order_params_message)
+        order_params = borsh_buf.hex().encode()
+
+        return SignedMsgOrderParams(
+            order_params=order_params, signature=self.sign_message(order_params)
         )
 
     async def place_signed_msg_taker_order(
