@@ -1,5 +1,12 @@
 from typing import Tuple
-from driftpy.types import Order, PositionDirection, is_one_of_variant, is_variant
+
+from driftpy.types import (
+    Order,
+    OrderBitFlag,
+    PositionDirection,
+    is_one_of_variant,
+    is_variant,
+)
 
 
 def is_auction_complete(order: Order, slot: int) -> bool:
@@ -10,14 +17,25 @@ def is_auction_complete(order: Order, slot: int) -> bool:
 
 
 def get_auction_price(order: Order, slot: int, oracle_price: int) -> int:
-    if is_one_of_variant(
-        order.order_type, ["Market", "TriggerMarket", "Limit", "TriggerLimit"]
+    if is_one_of_variant(order.order_type, ["Market", "TriggerLimit"]) or (
+        is_variant(order.order_type, "TriggerMarket")
+        and (order.bit_flags & OrderBitFlag.OracleTriggerMarket) == 0
     ):
         return get_auction_price_for_fixed_auction(order, slot)
-    elif is_variant(order.order_type, "Oracle"):
+    elif is_variant(order.order_type, "Limit"):
+        if order.oracle_price_offset != 0:
+            return get_auction_price_for_oracle_offset_auction(
+                order, slot, oracle_price
+            )
+        else:
+            return get_auction_price_for_fixed_auction(order, slot)
+    elif is_variant(order.order_type, "Oracle") or (
+        is_variant(order.order_type, "TriggerMarket")
+        and (order.bit_flags & OrderBitFlag.OracleTriggerMarket) != 0
+    ):
         return get_auction_price_for_oracle_offset_auction(order, slot, oracle_price)
     else:
-        raise ValueError("Can't get auction price for order type")
+        raise ValueError(f"Can't get auction price for order type {order.order_type}")
 
 
 def get_auction_price_for_fixed_auction(order: Order, slot: int) -> int:

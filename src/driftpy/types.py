@@ -1479,3 +1479,19 @@ class SignedMsgOrderParamsMessage:
     uuid: bytes
     take_profit_order_params: SignedMsgTriggerOrderParams | None
     stop_loss_order_params: SignedMsgTriggerOrderParams | None
+
+
+@dataclass
+class SignedMsgOrderParamsDelegateMessage:
+    signed_msg_order_params: OptionalOrderParams
+    slot: int
+    uuid: bytes
+    taker_pubkey: Pubkey
+    take_profit_order_params: SignedMsgTriggerOrderParams | None
+    stop_loss_order_params: SignedMsgTriggerOrderParams | None
+
+
+class OrderBitFlag:
+    SignedMessage = 1
+    OracleTriggerMarket = 2
+    SafeTriggerOrder = 4
