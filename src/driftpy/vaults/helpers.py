@@ -144,7 +144,7 @@ async def fetch_all_vault_depositors(program: Program) -> DepositorData:
 
 
 async def filter_vault_depositors(
-    depositors_data: DepositorData, vault_pubkey: str | Pubkey
+    depositors_data: List[VaultDepositor], vault_pubkey: str | Pubkey
 ) -> DepositorList:
     """
     Filter depositors for a specific vault from pre-fetched depositor data
@@ -161,17 +161,11 @@ async def filter_vault_depositors(
 
     regular_depositors = [
         depositor
-        for depositor in depositors_data["regular"]
+        for depositor in depositors_data
         if hasattr(depositor, "vault") and depositor.vault == vault_pubkey
     ]
 
-    tokenized_depositors = [
-        depositor
-        for depositor in depositors_data["tokenized"]
-        if hasattr(depositor, "vault") and depositor.vault == vault_pubkey
-    ]
-
-    return regular_depositors + tokenized_depositors
+    return regular_depositors
 
 
 async def get_vault_depositors(

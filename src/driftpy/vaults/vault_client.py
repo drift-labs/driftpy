@@ -77,7 +77,10 @@ class VaultClient:
     async def get_all_depositors(self, refresh=False):
         """Get all depositors with optional cache refresh"""
         await self.refresh_cache(force=refresh)
-        return self._all_depositors_cache
+        return (
+            self._all_depositors_cache["regular"]
+            + self._all_depositors_cache["tokenized"]
+        )
 
     async def get_vault_depositors(self, vault_pubkey, refresh=False):
         """Get depositors for a specific vault using cached data"""
