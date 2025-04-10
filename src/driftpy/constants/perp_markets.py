@@ -726,4 +726,11 @@ mainnet_perp_market_configs: list[PerpMarketConfig] = [
         oracle=Pubkey.from_string("2sZomfWMDuQLcFak3nuharXorHrZ3hK8iaML6ZGSHtso"),
         oracle_source=OracleSource.PythLazer(),  # type: ignore
     ),
+    PerpMarketConfig(
+        symbol="ADA-PERP",
+        base_asset_symbol="ADA",
+        market_index=72,
+        oracle=Pubkey.from_string("55722FS8VeAxRghz5h2ARJvNjkFiHyzkZ9BF7CEQWN6E"),
+        oracle_source=OracleSource.PythLazer(),  # type: ignore
+    ),
 ]
