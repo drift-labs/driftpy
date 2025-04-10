@@ -101,6 +101,8 @@ from driftpy.types import (
     SequenceAccount,
     SerumV3FulfillmentConfigAccount,
     SignedMsgOrderParams,
+    SignedMsgOrderParamsDelegateMessage,
+    SignedMsgOrderParamsMessage,
     SpotPosition,
     SwapReduceOnly,
     TxParams,
@@ -151,8 +153,25 @@ class DriftClient:
         """Initializes the drift client object
 
         Args:
-            program (Program): Drift anchor program (see from_config on how to initialize it)
-            authority (Keypair, optional): Authority of all txs - if None will default to the Anchor Provider.Wallet Keypair.
+            connection (AsyncClient): Solana RPC connection
+            wallet (Keypair | Wallet): Wallet for transaction signing
+            env (DriftEnv | None, optional): Drift environment. Defaults to "mainnet".
+            opts (TxOpts, optional): Transaction options. Defaults to DEFAULT_TX_OPTIONS.
+            authority (Pubkey | None, optional): Authority for transactions. If None, defaults to wallet's public key.
+            account_subscription (AccountSubscriptionConfig, optional): Config for account subscriptions. Defaults to AccountSubscriptionConfig.default().
+            perp_market_indexes (list[int] | None, optional): List of perp market indexes to subscribe to. Defaults to None.
+            spot_market_indexes (list[int] | None, optional): List of spot market indexes to subscribe to. Defaults to None.
+            oracle_infos (list[OracleInfo] | None, optional): List of oracle infos to subscribe to. Defaults to None.
+            tx_params (Optional[TxParams], optional): Transaction parameters. Defaults to None.
+            tx_version (Optional[TransactionVersion], optional): Transaction version. Defaults to None.
+            tx_sender (TxSender | None, optional): Custom transaction sender. Defaults to None.
+            active_sub_account_id (Optional[int], optional): Active sub-account ID. Defaults to None.
+            sub_account_ids (Optional[list[int]], optional): List of sub-account IDs. Defaults to None.
+            market_lookup_table (Optional[Pubkey], optional): Market lookup table pubkey (deprecated). Defaults to None.
+            market_lookup_tables (Optional[list[Pubkey]], optional): List of market lookup table pubkeys. Defaults to None.
+            jito_params (Optional[JitoParams], optional): Parameters for Jito MEV integration. Defaults to None.
+            tx_sender_blockhash_commitment (Commitment | None, optional): Blockhash commitment for tx sender. Defaults to None.
+            enforce_tx_sequencing (bool, optional): Whether to enforce transaction sequencing. Defaults to False.
         """
         self.connection = connection
 
@@ -1024,7 +1043,7 @@ class DriftClient:
             user_initialized (bool, optional): if need to initialize user account too set this to False. Defaults to True.
 
         Returns:
-            str: sig
+            TxSigAndSlot: tx sig and slot
         """
         tx_sig_and_slot = await self.send_ixs(
             await self.get_deposit_collateral_ix(
@@ -1514,7 +1533,7 @@ class DriftClient:
             sub_account_id (int, optional): subaccount id. Defaults to 0.
 
         Returns:
-            str: tx sig
+            Signature: tx sig
         """
         return (
             await self.send_ixs(
@@ -1891,7 +1910,7 @@ class DriftClient:
             sub_account_id (int, optional): subaccount id. Defaults to 0.
 
         Returns:
-            str: tx sig
+            Signature: tx sig
         """
         tx_sig_and_slot = await self.send_ixs(
             [self.get_add_liquidity_ix(amount, market_index, sub_account_id)]
@@ -2032,39 +2051,72 @@ class DriftClient:
         return self.wallet.payer.sign_message(message).to_bytes()
 
     def encode_signed_msg_order_params_message(
-        self, order_params_message: dict
+        self,
+        order_params_message: Union[
+            dict, SignedMsgOrderParamsMessage, SignedMsgOrderParamsDelegateMessage
+        ],
+        delegate_signer: bool = False,
     ) -> bytes:
         """Borsh encode signedMsg order params message
 
         Args:
             order_params_message: The order params message to encode
+            delegate_signer: Whether to use delegate message format
 
         Returns:
             The encoded buffer
         """
 
-        anchor_ix_name = "global:SignedMsgOrderParamsMessage"
+        anchor_ix_name = (
+            "global:SignedMsgOrderParamsMessage"
+            if not delegate_signer
+            else "global:SignedMsgOrderParamsDelegateMessage"
+        )
         prefix = bytes.fromhex(sha256(anchor_ix_name.encode()).hexdigest()[:16])
 
+        # Convert Pubkey to bytes if it's a delegate message
+        if delegate_signer and isinstance(
+            order_params_message, SignedMsgOrderParamsDelegateMessage
+        ):
+            taker_pubkey_bytes = bytes(order_params_message.taker_pubkey)
+            order_params_message = SignedMsgOrderParamsDelegateMessage(
+                signed_msg_order_params=order_params_message.signed_msg_order_params,
+                slot=order_params_message.slot,
+                uuid=order_params_message.uuid,
+                taker_pubkey=list(taker_pubkey_bytes),
+                take_profit_order_params=order_params_message.take_profit_order_params,
+                stop_loss_order_params=order_params_message.stop_loss_order_params,
+            )
+
         encoded = self.program.coder.types.encode(
-            "SignedMsgOrderParamsMessage", order_params_message
+            "SignedMsgOrderParamsDelegateMessage"
+            if delegate_signer
+            else "SignedMsgOrderParamsMessage",
+            order_params_message,
         )
 
         buf = prefix + encoded
         return buf
 
     def sign_signed_msg_order_params_message(
-        self, order_params_message: dict
+        self,
+        order_params_message: Union[
+            dict, SignedMsgOrderParamsMessage, SignedMsgOrderParamsDelegateMessage
+        ],
+        delegate_signer: bool = False,
     ) -> SignedMsgOrderParams:
         """Sign a SignedMsgOrderParamsMessage
 
         Args:
             order_params_message: The order params message to sign
+            delegate_signer: Whether to use delegate message format
 
         Returns:
             The signed order params
         """
-        borsh_buf = self.encode_signed_msg_order_params_message(order_params_message)
+        borsh_buf = self.encode_signed_msg_order_params_message(
+            order_params_message, delegate_signer
+        )
         order_params = borsh_buf.hex().encode()
 
         return SignedMsgOrderParams(
