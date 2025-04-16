@@ -1,28 +1,26 @@
-from dataclasses import dataclass, field
 from abc import abstractmethod
-from solana.transaction import Signature
-from solana.rpc.commitment import Commitment
-from solana.rpc.async_api import AsyncClient
-
+from dataclasses import dataclass, field
 from typing import Callable, Literal, Union
 
+from solana.rpc.async_api import AsyncClient
+from solana.rpc.commitment import Commitment
 from solders.pubkey import Pubkey
 
 from driftpy.constants.config import DRIFT_PROGRAM_ID
 from driftpy.types import (
-    NewUserRecord,
-    DepositRecord,
-    SpotInterestRecord,
     CurveRecord,
+    DepositRecord,
+    FundingPaymentRecord,
+    FundingRateRecord,
     InsuranceFundRecord,
     InsuranceFundStakeRecord,
-    LPRecord,
-    FundingRateRecord,
-    FundingPaymentRecord,
     LiquidationRecord,
-    SettlePnlRecord,
-    OrderRecord,
+    LPRecord,
+    NewUserRecord,
     OrderActionRecord,
+    OrderRecord,
+    SettlePnlRecord,
+    SpotInterestRecord,
     SwapRecord,
 )
 
@@ -65,7 +63,7 @@ Event = Union[
 # type: ignore
 class WrappedEvent:
     event_type: EventType
-    tx_sig: Signature
+    tx_sig: any
     slot: int
     tx_sig_index: int
     data: Event
@@ -92,7 +90,7 @@ class PollingLogProviderConfig:
 
 LogProviderConfig = Union[WebsocketLogProviderConfig, PollingLogProviderConfig]
 
-LogProviderCallback = Callable[[Signature, int, list[str]], None]
+LogProviderCallback = Callable[[any, int, list[str]], None]
 
 
 class LogProvider:
@@ -142,7 +140,7 @@ class EventSubscriptionOptions:
     log_provider_config: LogProviderConfig = field(
         default_factory=WebsocketLogProviderConfig
     )
-    until_tx: Signature = None
+    until_tx: any = None
 
     @staticmethod
     def default():
