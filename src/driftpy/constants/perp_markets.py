@@ -733,4 +733,11 @@ mainnet_perp_market_configs: list[PerpMarketConfig] = [
         oracle=Pubkey.from_string("55722FS8VeAxRghz5h2ARJvNjkFiHyzkZ9BF7CEQWN6E"),
         oracle_source=OracleSource.PythLazer(),  # type: ignore
     ),
+    PerpMarketConfig(
+        symbol="PAXG-PERP",
+        base_asset_symbol="PAXG",
+        market_index=73,
+        oracle=Pubkey.from_string("8FauFNbX2gvjkPLH8w2kntXCcSGCwZL2prZjHBpvq6aE"),
+        oracle_source=OracleSource.PythLazer(),  # type: ignore
+    ),
 ]
