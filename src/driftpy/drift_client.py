@@ -3490,7 +3490,7 @@ class DriftClient:
         max_accounts: int = 50,
     ) -> Tuple[list[Instruction], list[AddressLookupTableAccount]]:
         pre_instructions: list[Instruction] = []
-        JUPITER_URL = os.getenv("JUPITER_URL", "https://quote-api.jup.ag/v6")
+        JUPITER_URL = os.getenv("JUPITER_URL", "https://lite-api.jup.ag/swap/v1")
 
         out_market = self.get_spot_market_account(out_market_idx)
         in_market = self.get_spot_market_account(in_market_idx)
