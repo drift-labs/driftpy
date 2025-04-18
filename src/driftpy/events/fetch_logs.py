@@ -3,11 +3,11 @@ import asyncio
 import jsonrpcclient
 from solana.rpc.async_api import AsyncClient
 from solana.rpc.commitment import Commitment
-from solana.transaction import Signature
 from solders.pubkey import Pubkey
 from solders.rpc.responses import (
     RpcConfirmedTransactionStatusWithSignature,
 )
+from solders.signature import Signature
 
 
 async def fetch_logs(

@@ -1,17 +1,15 @@
-from solana.rpc.async_api import AsyncClient
-from solana.transaction import Signature
-
-from events import Events as EventEmitter
-
-from anchorpy import Program, EventParser
-
 from typing import Optional
 
+from anchorpy import EventParser, Program
+from events import Events as EventEmitter
+from solana.rpc.async_api import AsyncClient
+from solders.signature import Signature
+
 from driftpy.events.event_list import EventList
+from driftpy.events.parse import parse_logs
 from driftpy.events.sort import get_sort_fn
 from driftpy.events.tx_event_cache import TxEventCache
-from driftpy.events.types import WrappedEvent, EventType, EventSubscriptionOptions
-from driftpy.events.parse import parse_logs
+from driftpy.events.types import EventSubscriptionOptions, EventType, WrappedEvent
 
 
 class EventSubscriber:
