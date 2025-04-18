@@ -8,12 +8,14 @@ from anchorpy.program.core import Program
 from anchorpy.provider import Provider
 from construct import Int32sl, Int64ul
 from solana.rpc.async_api import AsyncClient
-from solana.transaction import Transaction
 from solders.instruction import Instruction
 from solders.keypair import Keypair
 from solders.pubkey import Pubkey
 from solders.signature import Signature
 from solders.system_program import CreateAccountParams, create_account
+from solders.transaction import (
+    Transaction,  # TODO: This Transaction type appears to be being used wrong
+)
 from spl.token._layouts import ACCOUNT_LAYOUT, MINT_LAYOUT
 from spl.token.async_client import AsyncToken
 from spl.token.constants import TOKEN_PROGRAM_ID
