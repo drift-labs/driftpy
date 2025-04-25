@@ -622,7 +622,7 @@ def calculate_spread_reserves(
 
     if amm.curve_update_intensity > 100:
         max_offset = max(
-            amm.max_spread // 5,
+            amm.max_spread // 2,
             (PERCENTAGE_PRECISION // 10_000) * (amm.curve_update_intensity - 100),
         )
 
@@ -654,11 +654,11 @@ def calculate_spread_reserves(
     )
 
     ask_reserves = calculate_spread_reserve(
-        long_spread + reference_price_offset, PositionDirection.Long(), amm
+        int(long_spread)+ reference_price_offset, PositionDirection.Long(), amm
     )
 
     bid_reserves = calculate_spread_reserve(
-        -short_spread + reference_price_offset, PositionDirection.Short(), amm
+        -int(short_spread) + reference_price_offset, PositionDirection.Short(), amm
     )
 
     return bid_reserves, ask_reserves
