@@ -54,6 +54,7 @@ from driftpy.accounts.get_accounts import get_perp_market_account
 from driftpy.address_lookup_table import get_address_lookup_table
 from driftpy.addresses import (
     get_drift_client_signer_public_key,
+    get_high_leverage_mode_config_public_key,
     get_insurance_fund_stake_public_key,
     get_insurance_fund_vault_public_key,
     get_protected_maker_mode_config_public_key,
@@ -93,6 +94,7 @@ from driftpy.types import (
     OracleInfo,
     Order,
     OrderParams,
+    OrderParamsBitFlag,
     OrderType,
     PerpPosition,
     PhoenixV1FulfillmentConfigAccount,
@@ -174,6 +176,7 @@ class DriftClient:
             enforce_tx_sequencing (bool, optional): Whether to enforce transaction sequencing. Defaults to False.
         """
         self.connection = connection
+        self.signer_public_key: Optional[Pubkey] = None
 
         file = Path(str(next(iter(driftpy.__path__))) + "/idl/drift.json")
         idl = Idl.from_json(file.read_text())
@@ -188,7 +191,7 @@ class DriftClient:
         if authority is None:
             authority = wallet.public_key
 
-        self.wallet = wallet
+        self.wallet: Wallet = wallet
         self.authority = authority
 
         self.active_sub_account_id = (
@@ -1158,32 +1161,37 @@ class DriftClient:
             str: tx sig
         """
         tx_sig_and_slot = await self.send_ixs(
-            [
-                self.get_withdraw_collateral_ix(
-                    amount,
-                    market_index,
-                    user_token_account,
-                    reduce_only,
-                    sub_account_id,
-                )
-            ]
+            await self.get_withdraw_collateral_ix(
+                amount,
+                market_index,
+                user_token_account,
+                reduce_only,
+                sub_account_id,
+            )
         )
         self.last_spot_market_seen_cache[market_index] = tx_sig_and_slot.slot
         return tx_sig_and_slot
 
-    def get_withdraw_collateral_ix(
+    async def get_withdraw_collateral_ix(
         self,
         amount: int,
         market_index: int,
         user_token_account: Pubkey,
         reduce_only: bool = False,
         sub_account_id: Optional[int] = None,
-    ):
+    ) -> List[Instruction]:
         sub_account_id = self.get_sub_account_id_for_ix(sub_account_id)
 
         spot_market = self.get_spot_market_account(market_index)
         if not spot_market:
             raise Exception("Spot market account not found")
+
+        is_sol_market = spot_market.mint == WRAPPED_SOL_MINT
+        signer_authority = self.wallet.public_key
+
+        create_WSOL_token_account = (
+            is_sol_market and user_token_account == signer_authority
+        )
 
         remaining_accounts = self.get_remaining_accounts(
             user_accounts=[self.get_user_account(sub_account_id)],
@@ -1191,7 +1199,35 @@ class DriftClient:
         )
         dc_signer = self.get_signer_public_key()
 
-        return self.program.instruction["withdraw"](
+        instructions = []
+        temp_wsol_account_pubkey = None
+
+        if create_WSOL_token_account:
+            # Withdraw SOL to main wallet - create temporary WSOL account
+            # Pass include_rent=False as rent is not needed for withdrawal destination
+            (
+                ixs,
+                temp_wsol_account_pubkey,
+            ) = await self.get_wrapped_sol_account_creation_ixs(amount, False)
+            instructions.extend(ixs)
+            user_token_account_for_ix = temp_wsol_account_pubkey
+        else:
+            account_info = await self.connection.get_account_info(user_token_account)
+            if not account_info.value:
+                create_ata_ix = (
+                    self.create_associated_token_account_idempotent_instruction(
+                        account=user_token_account,
+                        payer=signer_authority,
+                        owner=signer_authority,
+                        mint=spot_market.mint,
+                    )
+                )
+                instructions.append(create_ata_ix)
+            user_token_account_for_ix = user_token_account
+
+        withdraw_ix = self.program.instruction[
+            "withdraw"
+        ](
             market_index,
             amount,
             reduce_only,
@@ -1203,13 +1239,26 @@ class DriftClient:
                     "drift_signer": dc_signer,
                     "user": self.get_user_account_public_key(sub_account_id),
                     "user_stats": self.get_user_stats_public_key(),
-                    "user_token_account": user_token_account,
-                    "authority": self.wallet.payer.pubkey(),
+                    "user_token_account": user_token_account_for_ix,  # Use correct account
+                    "authority": signer_authority,
                     "token_program": TOKEN_PROGRAM_ID,
                 },
                 remaining_accounts=remaining_accounts,
             ),
         )
+        instructions.append(withdraw_ix)
+
+        if create_WSOL_token_account and temp_wsol_account_pubkey:
+            close_account_params = CloseAccountParams(
+                program_id=TOKEN_PROGRAM_ID,
+                account=temp_wsol_account_pubkey,
+                dest=signer_authority,
+                owner=signer_authority,
+            )
+            close_account_ix = close_account(close_account_params)
+            instructions.append(close_account_ix)
+
+        return instructions
 
     async def transfer_deposit(
         self,
@@ -1359,6 +1408,15 @@ class DriftClient:
             readable_perp_market_indexes=[order_params.market_index],
             user_accounts=[self.get_user_account(sub_account_id)],
         )
+
+        if OrderParamsBitFlag.is_update_high_leverage_mode(order_params.bit_flags):
+            remaining_accounts.append(
+                AccountMeta(
+                    pubkey=get_high_leverage_mode_config_public_key(self.program_id),
+                    is_writable=True,
+                    is_signer=False,
+                )
+            )
 
         ix = self.program.instruction["place_perp_order"](
             order_params,
@@ -1749,6 +1807,15 @@ class DriftClient:
             user_accounts=user_accounts,
         )
 
+        if OrderParamsBitFlag.is_update_high_leverage_mode(order_params.bit_flags):
+            remaining_accounts.append(
+                AccountMeta(
+                    pubkey=get_high_leverage_mode_config_public_key(self.program_id),
+                    is_writable=True,
+                    is_signer=False,
+                )
+            )
+
         for maker_info in maker_infos:
             remaining_accounts.append(
                 AccountMeta(pubkey=maker_info.maker, is_signer=False, is_writable=True)
@@ -2130,6 +2197,7 @@ class DriftClient:
         taker_info: dict,
         preceding_ixs: list[Instruction] = [],
         override_ix_count: Optional[int] = None,
+        include_high_leverage_mode_config: Optional[bool] = False,
     ) -> TxSigAndSlot:
         ixs = await self.get_place_signed_msg_taker_perp_order_ixs(
             signed_msg_order_params,
@@ -2138,6 +2206,7 @@ class DriftClient:
             None,
             preceding_ixs,
             override_ix_count,
+            include_high_leverage_mode_config,
         )
         return await self.send_ixs(ixs)
 
@@ -2149,6 +2218,7 @@ class DriftClient:
         authority: Optional[Pubkey] = None,
         preceding_ixs: list[Instruction] = [],
         override_ix_count: Optional[int] = None,
+        include_high_leverage_mode_config: Optional[bool] = False,
     ):
         if not authority and not taker_info["taker_user_account"]:
             raise Exception("authority or taker_user_account must be provided")
@@ -2158,6 +2228,14 @@ class DriftClient:
             readable_perp_market_indexes=[market_index],
         )
 
+        if include_high_leverage_mode_config:
+            remaining_accounts.append(
+                AccountMeta(
+                    pubkey=get_high_leverage_mode_config_public_key(self.program_id),
+                    is_writable=True,
+                    is_signer=False,
+                )
+            )
         authority_to_use = authority or taker_info["taker_user_account"].authority
 
         message_length_buffer = int.to_bytes(
@@ -2237,6 +2315,7 @@ class DriftClient:
         sub_account_id: Optional[int] = None,
         preceding_ixs: list[Instruction] = [],
         override_ix_count: Optional[int] = None,
+        include_high_leverage_mode_config: Optional[bool] = False,
     ) -> list[Instruction]:
         (
             signed_msg_order_signature_ix,
@@ -2261,6 +2340,15 @@ class DriftClient:
             ],
             writable_perp_market_indexes=[order_params.market_index],
         )
+
+        if include_high_leverage_mode_config:
+            remaining_accounts.append(
+                AccountMeta(
+                    pubkey=get_high_leverage_mode_config_public_key(self.program_id),
+                    is_writable=True,
+                    is_signer=False,
+                )
+            )
 
         if referrer_info:
             remaining_accounts.append(
