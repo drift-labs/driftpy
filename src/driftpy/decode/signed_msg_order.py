@@ -240,7 +240,7 @@ def decode_signed_msg_order_params_message(
         offset += 16
 
     return SignedMsgOrderParamsMessage(
-        signed_order_params=order_params,
+        signed_msg_order_params=order_params,
         sub_account_id=sub_account_id,
         slot=slot,
         uuid=uuid,
