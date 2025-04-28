@@ -356,4 +356,32 @@ mainnet_spot_market_configs: list[SpotMarketConfig] = [
         oracle_source=OracleSource.PythLazer(),  # type: ignore
         mint=Pubkey.from_string("9BB6NFEcjBCtnNLFko2FqVQBq8HHM13kCyYcdQbgpump"),
     ),
+    SpotMarketConfig(
+        symbol="JitoSOL-3",
+        market_index=40,
+        oracle=Pubkey.from_string("Fqv8vT5fdjvBbHd5k4B4ZvnXLH6bbdKP8cMv93ybCP8W"),
+        oracle_source=OracleSource.SwitchboardOnDemand(),  # type: ignore
+        mint=Pubkey.from_string("J1toso1uCk3RLmjorhTtrVwY9HJ7X8V9yYac6Y7kGCPn"),
+    ),
+    SpotMarketConfig(
+        symbol="PT-fragSOL-15JUN25-3",
+        market_index=41,
+        oracle=Pubkey.from_string("CLjvwowzQ2L9PrmXA6zqbamxLVeDY9vE87aBxMZLJLoY"),
+        oracle_source=OracleSource.SwitchboardOnDemand(),  # type: ignore
+        mint=Pubkey.from_string("8adRViFUNTe3yexj2gbQtx929zBJtWJRM8TeTzYbQBgx"),
+    ),
+    SpotMarketConfig(
+        symbol="PT-kySOL-10JUL25-3",
+        market_index=42,
+        oracle=Pubkey.from_string("G4FdLzuezfaJxBd8eChuw1NU4Sq3n1rasGTwSh7dXegN"),
+        oracle_source=OracleSource.SwitchboardOnDemand(),  # type: ignore
+        mint=Pubkey.from_string("FxT7bPGvkS5jKF2vgnJ16MciHqtsNqxbcWTfFg7L136h"),
+    ),
+    SpotMarketConfig(
+        symbol="PT-dSOL-30JUN25-3",
+        market_index=43,
+        oracle=Pubkey.from_string("BR4NCRe2R8shvDAskUt6HE3n8Ej8HdMnVqshLz97BMm9"),
+        oracle_source=OracleSource.SwitchboardOnDemand(),  # type: ignore
+        mint=Pubkey.from_string("8H3tZ7WcgYPKEQ7fCCAFQuaNqKdMH1EtBp2ovUPpRK3k"),
+    ),
 ]
