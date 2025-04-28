@@ -1,6 +1,12 @@
 import time
-
 from typing import Optional, Tuple
+
+from driftpy.constants.numeric_constants import (
+    AMM_RESERVE_PRECISION,
+    FUNDING_RATE_OFFSET_DENOMINATOR,
+    PRICE_PRECISION,
+    QUOTE_PRECISION,
+)
 from driftpy.math.amm import calculate_bid_ask_price
 from driftpy.math.oracles import calculate_live_oracle_twap
 from driftpy.math.utils import clamp_num
@@ -8,13 +14,6 @@ from driftpy.types import (
     OraclePriceData,
     PerpMarketAccount,
     is_variant,
-)
-
-from driftpy.constants.numeric_constants import (
-    FUNDING_RATE_OFFSET_DENOMINATOR,
-    PRICE_PRECISION as PRICE_PRECISION,
-    AMM_RESERVE_PRECISION,
-    QUOTE_PRECISION,
 )
 
 
@@ -134,8 +133,8 @@ def shrink_stale_twaps(
 async def calculate_all_estimated_funding_rate(
     market: PerpMarketAccount,
     oracle_price_data: Optional[OraclePriceData],
-    mark_price: Optional[int],
-    now: Optional[int],
+    mark_price: Optional[int] = None,
+    now: Optional[int] = None,
 ):
     if is_variant(market.status, "Initialized"):
         return (0, 0, 0, 0, 0)
