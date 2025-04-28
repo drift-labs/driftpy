@@ -431,7 +431,7 @@ class OrderParams:
     price: int = 0
     reduce_only: bool = False
     post_only: PostOnlyParams = field(default_factory=PostOnlyParams.NONE)
-    immediate_or_cancel: bool = False
+    bit_flags: int = 0
     max_ts: Optional[int] = None
     trigger_price: Optional[int] = None
     trigger_condition: OrderTriggerCondition = field(
@@ -453,6 +453,23 @@ class OrderParams:
             raise ValueError("market type not set on order params")
 
 
+class OrderParamsBitFlag:
+    """Bit flags for OrderParams.bit_flags field"""
+
+    IMMEDIATE_OR_CANCEL = 1 << 0
+    UPDATE_HIGH_LEVERAGE_MODE = 1 << 1
+
+    @staticmethod
+    def is_immediate_or_cancel(bit_flags: int) -> bool:
+        """Check if IMMEDIATE_OR_CANCEL flag is set"""
+        return (bit_flags & OrderParamsBitFlag.IMMEDIATE_OR_CANCEL) != 0
+
+    @staticmethod
+    def is_update_high_leverage_mode(bit_flags: int) -> bool:
+        """Check if UPDATE_HIGH_LEVERAGE_MODE flag is set"""
+        return (bit_flags & OrderParamsBitFlag.UPDATE_HIGH_LEVERAGE_MODE) != 0
+
+
 @dataclass
 class ModifyOrderParams:
     direction: Optional[PositionDirection] = None
@@ -460,7 +477,7 @@ class ModifyOrderParams:
     price: Optional[int] = None
     reduce_only: Optional[bool] = None
     post_only: Optional[PostOnlyParams] = None
-    immediate_or_cancel: Optional[bool] = None
+    bit_flags: Optional[int] = None
     max_ts: Optional[int] = None
     trigger_price: Optional[int] = None
     trigger_condition: Optional[OrderTriggerCondition] = None
