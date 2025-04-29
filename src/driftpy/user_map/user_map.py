@@ -69,8 +69,13 @@ class UserMap(UserMapInterface, DLOBSource):
 
         for key in list(self.user_map.keys()):
             user = self.user_map[key]
-            user.unsubscribe()
-            del self.user_map[key]
+            try:
+                await user.unsubscribe()
+            except TypeError:
+                # Handle cases where unsubscribe is not async (e.g., Polling)
+                user.unsubscribe()
+            finally:
+                del self.user_map[key]
 
         if self.last_number_of_sub_accounts:
             # again, no event emitter

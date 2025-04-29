@@ -3,8 +3,10 @@ import base64
 import json
 import logging
 from dataclasses import dataclass, field
+from hashlib import sha256
 from typing import Callable, Dict, List, Optional
 
+import construct
 import nacl.signing
 from solders.keypair import Keypair
 from solders.pubkey import Pubkey
@@ -23,6 +25,14 @@ from driftpy.user_map.user_map import UserMap
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
+
+ORDER_PARAMS_DISCRIMINATOR = sha256(b"global:OrderParams").digest()[:8]
+SIGNED_MSG_STANDARD_DISCRIMINATOR = sha256(
+    b"global:SignedMsgOrderParamsMessage"
+).digest()[:8]
+SIGNED_MSG_DELEGATE_DISCRIMINATOR = sha256(
+    b"global:SignedMsgOrderParamsDelegateMessage"
+).digest()[:8]
 
 
 @dataclass
@@ -121,7 +131,7 @@ class SwiftOrderSubscriber:
                     ping_timeout=60,
                 ) as websocket:
                     self.ws = websocket
-                    print("Connected to the server")
+                    print(f"Connected to {endpoint} server")
 
                     while True:
                         try:
@@ -138,16 +148,72 @@ class SwiftOrderSubscriber:
                                     order["order_message"]
                                 )
 
-                                signed_order_params_message = self.drift_client.decode_signed_msg_order_params_message(
-                                    signed_order_params_buf
-                                )
+                                discriminator = signed_order_params_buf[:8]
+                                payload = signed_order_params_buf[8:]
 
-                                if not signed_order_params_message.signed_msg_order_params.price:
+                                decoded_message = None
+                                message_type = None
+
+                                if discriminator == SIGNED_MSG_DELEGATE_DISCRIMINATOR:
+                                    message_type = "SignedMsgOrderParamsDelegateMessage"
+                                    try:
+                                        decoded_message = self.drift_client.decode_signed_msg_order_params_message(
+                                            signed_order_params_buf, is_delegate=True
+                                        )
+                                    except construct.core.StreamError as e:
+                                        logger.error(
+                                            f"Failed to decode {message_type}: {e}"
+                                        )
+                                        logger.error(
+                                            f"  Buffer (len={len(signed_order_params_buf)}): {signed_order_params_buf.hex()}"
+                                        )
+                                        continue
+
+                                elif discriminator == SIGNED_MSG_STANDARD_DISCRIMINATOR:
+                                    message_type = "SignedMsgOrderParamsMessage"
+                                    try:
+                                        decoded_message = self.drift_client.decode_signed_msg_order_params_message(
+                                            signed_order_params_buf, is_delegate=False
+                                        )
+                                    except construct.core.StreamError as e:
+                                        logger.error(
+                                            f"Failed to decode {message_type}: {e}"
+                                        )
+                                        logger.error(
+                                            f"  Buffer (len={len(signed_order_params_buf)}): {signed_order_params_buf.hex()}"
+                                        )
+                                        continue
+
+                                elif discriminator == ORDER_PARAMS_DISCRIMINATOR:
+                                    # This should not happen, as we should always receive a signed message
+                                    # but here for logging just in case
+                                    message_type = "OrderParams"
+                                    try:
+                                        decoded_message = self.drift_client.program.coder.types.decode(
+                                            message_type, payload
+                                        )
+                                    except construct.core.StreamError as e:
+                                        logger.error(
+                                            f"Failed to decode {message_type}: {e}"
+                                        )
+                                        logger.error(
+                                            f"  Buffer (len={len(signed_order_params_buf)}): {signed_order_params_buf.hex()}"
+                                        )
+                                        continue
+
+                                else:
                                     logger.warning(
-                                        f"Order has no price: {signed_order_params_message.signed_msg_order_params}"
+                                        f"Received unknown message type with discriminator: {discriminator.hex()}"
                                     )
                                     continue
-                                await on_order(order, signed_order_params_message)
+
+                                if decoded_message is None:
+                                    logger.error(
+                                        "Decoding failed unexpectedly after checks."
+                                    )
+                                    continue
+                                else:
+                                    await on_order(order, decoded_message)
 
                         except ConnectionClosed:
                             logger.error("WebSocket connection closed")
@@ -162,6 +228,20 @@ class SwiftOrderSubscriber:
 
             print("Disconnected from server, reconnecting...")
             await asyncio.sleep(1)
+
+    async def unsubscribe(self):
+        self.subscribed = False
+        if self.heartbeat_task:
+            self.heartbeat_task.cancel()
+            try:
+                await self.heartbeat_task
+            except asyncio.CancelledError:
+                logger.info("Heartbeat task cancelled.")
+            self.heartbeat_task = None
+        if self.ws:
+            await self.ws.close()
+            self.ws = None
+            logger.info("WebSocket connection closed.")
 
     async def get_place_and_make_signed_msg_order_ixs(
         self,

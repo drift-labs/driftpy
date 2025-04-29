@@ -2098,12 +2098,17 @@ class DriftClient:
         )
 
     def decode_signed_msg_order_params_message(
-        self,
-        signed_msg_order_params_buf: bytes,
-    ) -> SignedMsgOrderParams:
-        return self.program.coder.types.decode(
-            "SignedMsgOrderParamsMessage", signed_msg_order_params_buf[8:]
-        )
+        self, signed_msg_order_params_buf: bytes, is_delegate: bool = False
+    ) -> Union[SignedMsgOrderParamsMessage, SignedMsgOrderParamsDelegateMessage]:
+        payload = signed_msg_order_params_buf[8:]
+        if is_delegate:
+            return self.program.coder.types.decode(
+                "SignedMsgOrderParamsDelegateMessage", payload
+            )
+        else:
+            return self.program.coder.types.decode(
+                "SignedMsgOrderParamsMessage", payload
+            )
 
     def sign_message(self, message: bytes) -> bytes:
         """Sign a message with the wallet keypair.
