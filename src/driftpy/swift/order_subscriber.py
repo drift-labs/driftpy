@@ -26,7 +26,6 @@ from driftpy.user_map.user_map import UserMap
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-ORDER_PARAMS_DISCRIMINATOR = sha256(b"global:OrderParams").digest()[:8]
 SIGNED_MSG_STANDARD_DISCRIMINATOR = sha256(
     b"global:SignedMsgOrderParamsMessage"
 ).digest()[:8]
@@ -143,14 +142,11 @@ class SwiftOrderSubscriber:
 
                             if message.get("order"):
                                 order = message["order"]
-
                                 signed_order_params_buf = bytes.fromhex(
                                     order["order_message"]
                                 )
 
                                 discriminator = signed_order_params_buf[:8]
-                                payload = signed_order_params_buf[8:]
-
                                 decoded_message = None
                                 message_type = None
 
@@ -168,7 +164,6 @@ class SwiftOrderSubscriber:
                                             f"  Buffer (len={len(signed_order_params_buf)}): {signed_order_params_buf.hex()}"
                                         )
                                         continue
-
                                 elif discriminator == SIGNED_MSG_STANDARD_DISCRIMINATOR:
                                     message_type = "SignedMsgOrderParamsMessage"
                                     try:
@@ -183,24 +178,6 @@ class SwiftOrderSubscriber:
                                             f"  Buffer (len={len(signed_order_params_buf)}): {signed_order_params_buf.hex()}"
                                         )
                                         continue
-
-                                elif discriminator == ORDER_PARAMS_DISCRIMINATOR:
-                                    # This should not happen, as we should always receive a signed message
-                                    # but here for logging just in case
-                                    message_type = "OrderParams"
-                                    try:
-                                        decoded_message = self.drift_client.program.coder.types.decode(
-                                            message_type, payload
-                                        )
-                                    except construct.core.StreamError as e:
-                                        logger.error(
-                                            f"Failed to decode {message_type}: {e}"
-                                        )
-                                        logger.error(
-                                            f"  Buffer (len={len(signed_order_params_buf)}): {signed_order_params_buf.hex()}"
-                                        )
-                                        continue
-
                                 else:
                                     logger.warning(
                                         f"Received unknown message type with discriminator: {discriminator.hex()}"
@@ -212,8 +189,7 @@ class SwiftOrderSubscriber:
                                         "Decoding failed unexpectedly after checks."
                                     )
                                     continue
-                                else:
-                                    await on_order(order, decoded_message)
+                                asyncio.create_task(on_order(order, decoded_message))
 
                         except ConnectionClosed:
                             logger.error("WebSocket connection closed")

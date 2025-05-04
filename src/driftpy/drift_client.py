@@ -2217,7 +2217,7 @@ class DriftClient:
 
     async def get_place_signed_msg_taker_perp_order_ixs(
         self,
-        signed_msg_order_params: SignedMsgOrderParams,
+        signed_msg_order_params: dict,
         market_index: int,
         taker_info: dict,
         authority: Optional[Pubkey] = None,
@@ -2243,16 +2243,17 @@ class DriftClient:
             )
         authority_to_use = authority or taker_info["taker_user_account"].authority
 
+        print(f"Signed msg order params: {signed_msg_order_params}")
         message_length_buffer = int.to_bytes(
-            len(signed_msg_order_params.order_params), 2, "little"
+            len(signed_msg_order_params["order_params"]), 2, "little"
         )
 
         signed_msg_ix_data = b"".join(
             [
-                signed_msg_order_params.signature,
+                signed_msg_order_params["signature"],
                 bytes(authority_to_use),
                 message_length_buffer,
-                signed_msg_order_params.order_params,
+                signed_msg_order_params["order_params"],
             ]
         )
 
@@ -2263,6 +2264,16 @@ class DriftClient:
             0,
         )
 
+        is_delegate_signer = False
+        if (
+            taker_info.get("signing_authority")
+            and taker_info.get("taker_user_account")
+            and taker_info["taker_user_account"].delegate
+            and taker_info["signing_authority"]
+            == taker_info["taker_user_account"].delegate
+        ):
+            is_delegate_signer = True
+
         sysvar_pubkey = Pubkey.from_string(
             "Sysvar1nstructions1111111111111111111111111"
         )
@@ -2271,6 +2282,7 @@ class DriftClient:
             "place_signed_msg_taker_order"
         ](
             signed_msg_ix_data,
+            is_delegate_signer,
             ctx=Context(
                 accounts={
                     "state": self.get_state_public_key(),
