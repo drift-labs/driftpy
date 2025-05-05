@@ -3807,14 +3807,16 @@ class DriftClient:
         """
         await self.add_user(sub_account_id)
 
-        tx_sig = (await self.send_ixs(
-            [
-                self.get_update_user_margin_trading_enabled_ix(
-                    margin_trading_enabled=margin_trading_enabled,
-                    sub_account_id=sub_account_id,
-                )
-            ]
-        )).tx_sig
+        tx_sig = (
+            await self.send_ixs(
+                [
+                    self.get_update_user_margin_trading_enabled_ix(
+                        margin_trading_enabled=margin_trading_enabled,
+                        sub_account_id=sub_account_id,
+                    )
+                ]
+            )
+        ).tx_sig
         return tx_sig
 
     async def update_prelaunch_oracle(

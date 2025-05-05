@@ -268,6 +268,9 @@ class SwiftOrderSubscriber:
             raise ValueError("user_map must be set to use this function")
 
         signed_msg_order_params_buf = bytes.fromhex(order_message_raw["order_message"])
+        signed_msg_order_params_buffer_raw = order_message_raw["order_message"].encode(
+            "utf-8"
+        )
         taker_authority = Pubkey.from_string(order_message_raw["taker_authority"])
         signing_authority = Pubkey.from_string(order_message_raw["signing_authority"])
 
@@ -305,7 +308,7 @@ class SwiftOrderSubscriber:
         }
 
         order_message = {
-            "order_params": signed_msg_order_params_buf,
+            "order_params": signed_msg_order_params_buffer_raw,
             "signature": base64.b64decode(order_message_raw["order_signature"]),
         }
 

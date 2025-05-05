@@ -9,7 +9,10 @@ from driftpy.accounts.get_accounts import get_perp_market_account
 from driftpy.accounts.oracle import get_oracle_price_data_and_slot
 from driftpy.constants import FUNDING_RATE_PRECISION, QUOTE_PRECISION
 from driftpy.drift_client import DriftClient
-from driftpy.math.funding import calculate_long_short_funding_and_live_twaps
+from driftpy.math.funding import (
+    calculate_live_mark_twap,
+    calculate_long_short_funding_and_live_twaps,
+)
 
 
 async def main():
@@ -50,6 +53,11 @@ async def main():
     print(f"Last Funding Rate Short: {market.amm.last_funding_rate_short/precision}%")
 
     print(f"Oracle Price TWAP: ${oracle_twap/QUOTE_PRECISION:.2f}")
+
+    live_mark_twap = calculate_live_mark_twap(
+        market, oracle_price_data, mark_price, now
+    )
+    print(f"Live Mark TWAP: ${live_mark_twap/QUOTE_PRECISION:.2f}")
 
 
 if __name__ == "__main__":
