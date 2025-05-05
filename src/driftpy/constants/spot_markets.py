@@ -364,14 +364,14 @@ mainnet_spot_market_configs: list[SpotMarketConfig] = [
         mint=Pubkey.from_string("J1toso1uCk3RLmjorhTtrVwY9HJ7X8V9yYac6Y7kGCPn"),
     ),
     SpotMarketConfig(
-        symbol="PT-fragSOL-15JUN25-3",
+        symbol="PT-fragSOL-10JUL25",
         market_index=41,
         oracle=Pubkey.from_string("CLjvwowzQ2L9PrmXA6zqbamxLVeDY9vE87aBxMZLJLoY"),
         oracle_source=OracleSource.SwitchboardOnDemand(),  # type: ignore
         mint=Pubkey.from_string("8adRViFUNTe3yexj2gbQtx929zBJtWJRM8TeTzYbQBgx"),
     ),
     SpotMarketConfig(
-        symbol="PT-kySOL-10JUL25-3",
+        symbol="PT-kySOL-15JUN25-3",
         market_index=42,
         oracle=Pubkey.from_string("G4FdLzuezfaJxBd8eChuw1NU4Sq3n1rasGTwSh7dXegN"),
         oracle_source=OracleSource.SwitchboardOnDemand(),  # type: ignore
@@ -383,5 +383,12 @@ mainnet_spot_market_configs: list[SpotMarketConfig] = [
         oracle=Pubkey.from_string("BR4NCRe2R8shvDAskUt6HE3n8Ej8HdMnVqshLz97BMm9"),
         oracle_source=OracleSource.SwitchboardOnDemand(),  # type: ignore
         mint=Pubkey.from_string("8H3tZ7WcgYPKEQ7fCCAFQuaNqKdMH1EtBp2ovUPpRK3k"),
+    ),
+    SpotMarketConfig(
+        symbol="JTO-3",
+        market_index=44,
+        oracle=Pubkey.from_string("DPvVSQYhZXQ2ygfT2Qjdg6iyeQVAyiz8okj88YRjy6NN"),
+        oracle_source=OracleSource.SwitchboardOnDemand(),  # type: ignore
+        mint=Pubkey.from_string("jtojtomepa8beP8AuQc6eXt5FriJwfFMwQx2v2f9mCL"),
     ),
 ]
