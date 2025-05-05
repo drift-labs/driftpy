@@ -271,53 +271,29 @@ class SwiftMaker:
         )
 
         try:
+            # 1. Decode and Validate Order
             signed_msg_order_params_buf_hex = order_message_raw["order_message"]
             signed_msg_order_params_buf = bytes.fromhex(signed_msg_order_params_buf_hex)
             taker_signature = base64.b64decode(order_message_raw["order_signature"])
             order_uuid = order_uuid_str.encode("utf-8")
 
-            # --- Add logging for raw buffer ---
-            logger.info(
-                f"Order {order_uuid_str}: Raw buffer hex: {signed_msg_order_params_buf.hex()}"
-            )
-            # --- End logging ---
+            discriminator = signed_msg_order_params_buf[:8]
+            is_delegate = discriminator == SIGNED_MSG_DELEGATE_DISCRIMINATOR
 
-            is_delegate = False
             try:
-                # Attempt decoding as delegate first
                 signed_message = (
                     self.drift_client.decode_signed_msg_order_params_message(
-                        signed_msg_order_params_buf, is_delegate=True
+                        signed_msg_order_params_buf, is_delegate=is_delegate
                     )
                 )
-                is_delegate = True
-                logger.info(f"Order {order_uuid_str}: Decoded as delegate.")  # Add log
             except construct.core.StreamError as e:
-                # Fallback to non-delegate decoding
-                logger.info(
-                    f"Order {order_uuid_str}: Failed delegate decode ({e}), trying non-delegate."
-                )  # Add log
-                try:
-                    signed_message = (
-                        self.drift_client.decode_signed_msg_order_params_message(
-                            signed_msg_order_params_buf, is_delegate=False
-                        )
-                    )
-                    logger.info(
-                        f"Order {order_uuid_str}: Decoded as non-delegate."
-                    )  # Add log
-                except construct.core.StreamError as e:
-                    logger.error(
-                        f"Failed to decode order message ({order_uuid_str}) as non-delegate either: {e}"  # Updated error log
-                    )
-                    logger.error(
-                        f"  Buffer (len={len(signed_msg_order_params_buf)}): {signed_msg_order_params_buf.hex()}"
-                    )
-                    return
+                logger.error(f"Failed to decode order message ({order_uuid_str}): {e}")
+                logger.error(
+                    f"  Buffer (len={len(signed_msg_order_params_buf)}): {signed_msg_order_params_buf.hex()}"
+                )
+                return
 
-            print(f"=======> Order {order_uuid_str}: is_delegate={is_delegate}")
-
-            taker_order_params: OrderParams = signed_message.signed_msg_order_params
+            taker_order_params = signed_message.signed_msg_order_params
             market_index = taker_order_params.market_index
 
             if (
@@ -345,7 +321,7 @@ class SwiftMaker:
 
             taker_user_map_entry = await self.user_map.must_get(str(taker_user_pubkey))
             if not taker_user_map_entry:
-                logger.warning(
+                logger.error(
                     f"Could not find taker user account in UserMap: {taker_user_pubkey}"
                 )
                 return
@@ -362,6 +338,7 @@ class SwiftMaker:
 
             maker_base_amount = perp_market.amm.min_order_size * 2
 
+            maker_base_amount = taker_order_params.base_asset_amount // 2
             if maker_base_amount == 0:
                 logger.warning(
                     f"Maker base amount is zero for order {order_uuid_str}. Skipping."
@@ -506,6 +483,97 @@ class SwiftMaker:
         """Sends the transaction with the provided instructions after simulating."""
         start_time = time.time()
         logger.info(f"Simulating transaction for order {order_uuid}...")
+
+        # --- Simulate Transaction ---
+        # try:
+        #     # --- Prepare Versioned Transaction for Simulation ---
+        #     latest_blockhash_data = (
+        #         await self.drift_client.connection.get_latest_blockhash()
+        #     )
+        #     latest_blockhash = latest_blockhash_data.value.blockhash
+
+        #     # Lookup tables (fetch if needed, assuming DriftClient might cache them or provide a way)
+        #     # For now, assume send_ixs handles this, and use empty for simulation if needed
+        #     # lookup_tables = await self.drift_client.fetch_market_lookup_table_accounts() # Potentially needed
+        #     lookup_tables = []
+
+        #     msg = MessageV0.try_compile(
+        #         payer=self.drift_client.wallet.payer.pubkey(),
+        #         instructions=ixs,
+        #         address_lookup_table_accounts=lookup_tables,
+        #         recent_blockhash=latest_blockhash,
+        #     )
+
+        #     # Signers: the maker's keypair
+        #     signers = [self.drift_client.wallet.payer]
+
+        #     tx = VersionedTransaction(msg, signers)
+
+        #     simulation_result = await self.drift_client.connection.simulate_transaction(
+        #         tx,
+        #         commitment=Commitment("confirmed"),  # Use commitment for simulation
+        #     )
+
+        #     sim_elapsed = time.time() - start_time
+        #     if simulation_result.value.err:
+        #         logger.error(
+        #             f"Transaction simulation failed for order {order_uuid} after {sim_elapsed:.3f}s:"
+        #         )
+        #         err_info = simulation_result.value.err
+        #         logger.error(f"  Raw Error: {err_info}")
+
+        #         # --- Decode Error using IDL ---
+        #         ix_err = err_info.err.value
+        #         print(ix_err)
+
+        #         error_code = ix_err
+        #         try:
+        #             idl_errors = self.drift_client.program.idl.errors
+        #             found_error = None
+        #             for e in idl_errors:
+        #                 if e.code == error_code:
+        #                     found_error = e
+        #                     break
+        #             if found_error:
+        #                 logger.error(
+        #                     f"  Decoded Error (Ix {ix_index}): {found_error.name} ({found_error.code}) - {found_error.msg}"
+        #                 )
+        #             else:
+        #                 logger.error(
+        #                     f"  Error code {error_code} not found in Drift IDL errors."
+        #                 )
+        #         except Exception as e:
+        #             print(e)
+        #         else:
+        #             logger.error(f"  Instruction Error Type: {type(ix_err)}")
+        #         # --- End Decode Error ---
+
+        #         if simulation_result.value.logs:
+        #             logger.error("  Logs:")
+        #             for log in simulation_result.value.logs:
+        #                 logger.error(f"    {log}")
+        #         return  # Stop here if simulation fails
+        #     else:
+        #         logger.info(
+        #             f"Transaction simulation successful for order {order_uuid} (took {sim_elapsed:.3f}s)."
+        #         )
+        #         logger.info(
+        #             f"  Compute Units Used: {simulation_result.value.units_consumed}"
+        #         )
+        #         if simulation_result.value.logs:
+        #             logger.info("  Simulation Logs:")
+        #             for log in simulation_result.value.logs:
+        #                 logger.info(f"    {log}")
+
+        # except Exception as e:
+        #     sim_elapsed = time.time() - start_time
+        #     logger.error(
+        #         f"Error during transaction simulation for order {order_uuid} after {sim_elapsed:.3f}s: {e}",
+        #         exc_info=True,
+        #     )
+        #     return  # Stop if simulation itself errors
+
+        # --- Send Transaction (if simulation was successful) ---
         send_start_time = time.time()
         logger.info(f"Sending transaction for order {order_uuid}...")
         try:
