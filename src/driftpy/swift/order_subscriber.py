@@ -4,7 +4,7 @@ import json
 import logging
 from dataclasses import dataclass, field
 from hashlib import sha256
-from typing import Callable, Dict, List, Optional
+from typing import Callable, Dict, List, Optional, Union
 
 import construct
 import nacl.signing
@@ -20,7 +20,12 @@ from driftpy.constants.perp_markets import (
     mainnet_perp_market_configs,
 )
 from driftpy.drift_client import DriftClient
-from driftpy.types import MarketType, PostOnlyParams, SignedMsgOrderParamsMessage
+from driftpy.types import (
+    MarketType,
+    PostOnlyParams,
+    SignedMsgOrderParamsDelegateMessage,
+    SignedMsgOrderParamsMessage,
+)
 from driftpy.user_map.user_map import UserMap
 
 logger = logging.getLogger(__name__)
@@ -53,7 +58,18 @@ class SwiftOrderSubscriber:
         self.heartbeat_task = None
         self.heartbeat_interval = 60
         self.subscribed = False
-        self.on_order = None
+        self.on_order: Optional[
+            Callable[
+                [
+                    Dict,
+                    Union[
+                        SignedMsgOrderParamsMessage, SignedMsgOrderParamsDelegateMessage
+                    ],
+                    bool,
+                ],
+                None,
+            ]
+        ] = None
 
     def get_symbol_for_market_index(self, market_index: int) -> str:
         markets = (
@@ -110,7 +126,16 @@ class SwiftOrderSubscriber:
                 await asyncio.sleep(0.1)
 
     async def subscribe(
-        self, on_order: Callable[[Dict, SignedMsgOrderParamsMessage], None]
+        self,
+        on_order: Callable[
+            [
+                Dict,
+                Union[SignedMsgOrderParamsMessage, SignedMsgOrderParamsDelegateMessage],
+                bool,
+            ],
+            None,
+        ],
+        accept_sanitized: bool = False,
     ) -> None:
         print("Starting subscription process")
         self.on_order = on_order
@@ -142,37 +167,40 @@ class SwiftOrderSubscriber:
 
                             if message.get("order"):
                                 order = message["order"]
+                                if order.get("will_sanitize") and not accept_sanitized:
+                                    continue
+
                                 signed_order_params_buf = bytes.fromhex(
                                     order["order_message"]
                                 )
 
                                 discriminator = signed_order_params_buf[:8]
                                 decoded_message = None
-                                message_type = None
+                                is_delegate = False
 
                                 if discriminator == SIGNED_MSG_DELEGATE_DISCRIMINATOR:
-                                    message_type = "SignedMsgOrderParamsDelegateMessage"
+                                    is_delegate = True
                                     try:
                                         decoded_message = self.drift_client.decode_signed_msg_order_params_message(
                                             signed_order_params_buf, is_delegate=True
                                         )
                                     except construct.core.StreamError as e:
                                         logger.error(
-                                            f"Failed to decode {message_type}: {e}"
+                                            f"Failed to decode SignedMsgOrderParamsDelegateMessage: {e}"
                                         )
                                         logger.error(
                                             f"  Buffer (len={len(signed_order_params_buf)}): {signed_order_params_buf.hex()}"
                                         )
                                         continue
                                 elif discriminator == SIGNED_MSG_STANDARD_DISCRIMINATOR:
-                                    message_type = "SignedMsgOrderParamsMessage"
+                                    is_delegate = False
                                     try:
                                         decoded_message = self.drift_client.decode_signed_msg_order_params_message(
                                             signed_order_params_buf, is_delegate=False
                                         )
                                     except construct.core.StreamError as e:
                                         logger.error(
-                                            f"Failed to decode {message_type}: {e}"
+                                            f"Failed to decode SignedMsgOrderParamsMessage: {e}"
                                         )
                                         logger.error(
                                             f"  Buffer (len={len(signed_order_params_buf)}): {signed_order_params_buf.hex()}"
@@ -189,7 +217,16 @@ class SwiftOrderSubscriber:
                                         "Decoding failed unexpectedly after checks."
                                     )
                                     continue
-                                asyncio.create_task(on_order(order, decoded_message))
+
+                                if not decoded_message.signed_msg_order_params.price:
+                                    logger.error(
+                                        f"Order has no price: {decoded_message.signed_msg_order_params}"
+                                    )
+                                    continue
+
+                                asyncio.create_task(
+                                    on_order(order, decoded_message, is_delegate)
+                                )
 
                         except ConnectionClosed:
                             logger.error("WebSocket connection closed")
@@ -222,45 +259,60 @@ class SwiftOrderSubscriber:
     async def get_place_and_make_signed_msg_order_ixs(
         self,
         order_message_raw: Dict,
-        signed_msg_order_params_message: SignedMsgOrderParamsMessage,
+        signed_msg_order_params_message: Union[
+            SignedMsgOrderParamsMessage, SignedMsgOrderParamsDelegateMessage
+        ],
         maker_order_params: Dict,
     ):
+        if self.user_map is None:
+            raise ValueError("user_map must be set to use this function")
+
         signed_msg_order_params_buf = bytes.fromhex(order_message_raw["order_message"])
         taker_authority = Pubkey.from_string(order_message_raw["taker_authority"])
-        taker_user_pubkey = get_user_account_public_key(
-            self.drift_client.program_id,
-            taker_authority,
-            signed_msg_order_params_message.sub_account_id,
-        )
+        signing_authority = Pubkey.from_string(order_message_raw["signing_authority"])
 
-        taker_user_account = (
-            await self.user_map.must_get(str(taker_user_pubkey))
-        ).get_user_account()
+        discriminator = signed_msg_order_params_buf[:8]
+        is_delegate = discriminator == SIGNED_MSG_DELEGATE_DISCRIMINATOR
+
+        if is_delegate:
+            delegate_message = signed_msg_order_params_message
+            taker_user_pubkey = delegate_message.taker_pubkey
+        else:
+            standard_message = signed_msg_order_params_message
+            taker_user_pubkey = get_user_account_public_key(
+                self.drift_client.program_id,
+                taker_authority,
+                standard_message.sub_account_id,
+            )
+
+        taker_user_map_sub = await self.user_map.must_get(str(taker_user_pubkey))
+        taker_user_account = taker_user_map_sub.get_user_account()
 
         maker_order_params.update(
             {
                 "post_only": PostOnlyParams.MustPostOnly,
-                "immediate_or_cancel": True,
                 "market_type": MarketType.Perp,
             }
         )
 
+        taker_info = {
+            "taker": taker_user_pubkey,
+            "taker_user_account": taker_user_account,
+            "taker_stats": get_user_stats_account_public_key(
+                self.drift_client.program_id, taker_user_account.authority
+            ),
+            "signing_authority": signing_authority,
+        }
+
+        order_message = {
+            "order_params": signed_msg_order_params_buf,
+            "signature": base64.b64decode(order_message_raw["order_signature"]),
+        }
+
         ixs = await self.drift_client.get_place_and_make_signed_msg_perp_order_ixs(
-            {
-                "order_params": signed_msg_order_params_buf,
-                "signature": base64.b64decode(order_message_raw["order_signature"]),
-                "user_stats": get_user_stats_account_public_key(
-                    self.drift_client.program_id, taker_user_account.authority
-                ),
-            },
+            order_message,
             order_message_raw["uuid"].encode("utf-8"),
-            {
-                "taker": taker_user_pubkey,
-                "taker_user_account": taker_user_account,
-                "taker_stats": get_user_stats_account_public_key(
-                    self.drift_client.program_id, taker_user_account.authority
-                ),
-            },
+            taker_info,
             maker_order_params,
         )
         return ixs
