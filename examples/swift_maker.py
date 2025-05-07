@@ -17,11 +17,7 @@ from solana.rpc.types import TxOpts
 from solders.compute_budget import set_compute_unit_limit, set_compute_unit_price
 from solders.instruction import Instruction
 from solders.keypair import Keypair
-from solders.message import MessageV0
 from solders.pubkey import Pubkey
-from solders.transaction import (
-    VersionedTransaction,
-)
 from websockets.client import WebSocketClientProtocol, connect
 from websockets.exceptions import ConnectionClosed, WebSocketException
 
@@ -29,7 +25,6 @@ from driftpy.accounts import get_user_stats_account_public_key
 from driftpy.addresses import get_user_account_public_key
 from driftpy.drift_client import DriftClient
 from driftpy.keypair import load_keypair
-from driftpy.swift.order_subscriber import SIGNED_MSG_DELEGATE_DISCRIMINATOR
 from driftpy.types import (
     MarketType,
     OrderParams,
@@ -259,7 +254,6 @@ class SwiftMaker:
         print(f"Handling order {order_uuid_str} received at {order_received_ts:.3f}")
 
         try:
-            # 1. Decode and Validate Order
             signed_msg_order_params_buf_hex = order_message_raw["order_message"]
             signed_msg_order_params_buf = bytes.fromhex(signed_msg_order_params_buf_hex)
             signed_msg_order_params_buf_utf8_style = order_message_raw[
@@ -274,31 +268,48 @@ class SwiftMaker:
             taker_signature = base64.b64decode(taker_signature_b64)
             order_uuid = order_uuid_str.encode("utf-8")
 
-            with open("py_decoded_signatures.log", "a") as f:
-                f.write(
-                    f"UUID: {order_uuid_str}, DecodedSignatureHex: {taker_signature.hex()}\n"
-                )
-            print("Logging to file...")
-            with open("py_swift_orders.log", "a") as f:
-                f.write(f"UUID: {order_uuid_str}, Signature: {taker_signature_b64}\n")
+            # --- Add logging for raw buffer ---
+            print(
+                f"Order {order_uuid_str}: Raw buffer hex: {signed_msg_order_params_buf.hex()}"
+            )
+            # --- End logging ---
 
-            discriminator = signed_msg_order_params_buf[:8]
-            is_delegate = discriminator == SIGNED_MSG_DELEGATE_DISCRIMINATOR
-
+            is_delegate = False
             try:
+                # Attempt decoding as delegate first
                 signed_message = (
                     self.drift_client.decode_signed_msg_order_params_message(
-                        signed_msg_order_params_buf, is_delegate=is_delegate
+                        signed_msg_order_params_buf, is_delegate=True
                     )
                 )
+                is_delegate = True
+                print(f"Order {order_uuid_str}: Decoded as delegate.")  # Add log
             except construct.core.StreamError as e:
-                print(f"Failed to decode order message ({order_uuid_str}): {e}")
+                # Fallback to non-delegate decoding
                 print(
-                    f"  Buffer (len={len(signed_msg_order_params_buf)}): {signed_msg_order_params_buf.hex()}"
-                )
-                return
+                    f"Order {order_uuid_str}: Failed delegate decode ({e}), trying non-delegate."
+                )  # Add log
+                try:
+                    signed_message = (
+                        self.drift_client.decode_signed_msg_order_params_message(
+                            signed_msg_order_params_buf, is_delegate=False
+                        )
+                    )
+                    print(
+                        f"Order {order_uuid_str}: Decoded as non-delegate."
+                    )  # Add log
+                except construct.core.StreamError as e:
+                    print(
+                        f"Failed to decode order message ({order_uuid_str}) as non-delegate either: {e}"  # Updated error log
+                    )
+                    print(
+                        f"  Buffer (len={len(signed_msg_order_params_buf)}): {signed_msg_order_params_buf.hex()}"
+                    )
+                    return
 
-            taker_order_params = signed_message.signed_msg_order_params
+            print(f"=======> Order {order_uuid_str}: is_delegate={is_delegate}")
+
+            taker_order_params: OrderParams = signed_message.signed_msg_order_params
             market_index = taker_order_params.market_index
 
             if (
@@ -338,28 +349,15 @@ class SwiftMaker:
                 PositionDirection.Short() if is_taker_long else PositionDirection.Long()
             )
 
-            gotten_payload = {
-                "market_index": market_index,
-                "market_type": "perp",
-                "message": signed_msg_order_params_buf,
-                "signature": taker_signature_b64,
-                "taker_pubkey": str(taker_user_pubkey),
-                "taker_authority": str(taker_authority),
-                "signing_authority": str(signing_authority),
-                "is_delegate": is_delegate,
-                "sub_account_id": signed_message.sub_account_id,
-                "taker_order_params": str(taker_order_params),
-                "uuid": order_uuid_str,
-            }
-            pp.pprint(gotten_payload)
-
             maker_base_amount = perp_market.amm.min_order_size * 2
+
             if maker_base_amount == 0:
                 print(
                     f"Maker base amount is zero for order {order_uuid_str}. Skipping."
                 )
                 return
 
+            # --- Add logging for taker prices ---
             print(
                 f"Order {order_uuid_str}: Taker params price={taker_order_params.price}, order_type={taker_order_params.order_type}, "
                 f"auction_start={taker_order_params.auction_start_price}, "
@@ -387,7 +385,7 @@ class SwiftMaker:
                 base_asset_amount=maker_base_amount,
                 price=maker_price,
                 post_only=PostOnlyParams.MustPostOnly(),
-                user_order_id=0,
+                user_order_id=1,
                 reduce_only=False,
                 trigger_price=None,
                 trigger_condition=OrderTriggerCondition.Above(),
