@@ -12,6 +12,7 @@ from typing import cast
 import websockets.exceptions
 
 from driftpy.events.types import LogProviderCallback, LogProvider
+from driftpy.types import get_ws_url
 
 
 class WebsocketLogProvider(LogProvider):
@@ -29,7 +30,11 @@ class WebsocketLogProvider(LogProvider):
 
     async def subscribe_ws(self, callback: LogProviderCallback):
         endpoint = self.connection._provider.endpoint_uri
-        ws_endpoint = endpoint.replace("https", "wss").replace("http", "ws")
+        if endpoint.startswith("http"):
+            ws_endpoint = get_ws_url(endpoint)
+        else:
+            ws_endpoint = endpoint
+
         async for ws in connect(ws_endpoint):
             ws: SolanaWsClientProtocol
             try:
