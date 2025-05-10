@@ -2217,7 +2217,7 @@ class DriftClient:
 
     async def get_place_signed_msg_taker_perp_order_ixs(
         self,
-        signed_msg_order_params: dict,
+        signed_msg_order_params: Union[dict, SignedMsgOrderParams],
         market_index: int,
         taker_info: dict,
         authority: Optional[Pubkey] = None,
@@ -2244,6 +2244,12 @@ class DriftClient:
         authority_to_use = authority or taker_info["taker_user_account"].authority
 
         print(f"Signed msg order params: {signed_msg_order_params}")
+        if isinstance(signed_msg_order_params, SignedMsgOrderParams):
+            signed_msg_order_params = {
+                "signature": signed_msg_order_params.signature,
+                "order_params": signed_msg_order_params.order_params,
+            }
+
         message_length_buffer = int.to_bytes(
             len(signed_msg_order_params["order_params"]), 2, "little"
         )
