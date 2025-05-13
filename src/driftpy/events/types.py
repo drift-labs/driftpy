@@ -7,14 +7,17 @@ from solana.rpc.commitment import Commitment
 from solders.pubkey import Pubkey
 
 from driftpy.constants.config import DRIFT_PROGRAM_ID
+from driftpy.events.grpc_log_provider import GrpcLogProvider
 from driftpy.types import (
     CurveRecord,
     DepositRecord,
     FundingPaymentRecord,
     FundingRateRecord,
+    GrpcLogProviderConfig,
     InsuranceFundRecord,
     InsuranceFundStakeRecord,
     LiquidationRecord,
+    LogProviderCallback,
     LPRecord,
     NewUserRecord,
     OrderActionRecord,
@@ -39,6 +42,11 @@ EventType = Literal[
     "OrderRecord",
     "OrderActionRecord",
     "SwapRecord",
+    "SpotMarketVaultDepositRecord",
+    "SignedMsgOrderRecord",
+    "DeleteUserRecord",
+    "FuelSweepRecord",
+    "FuelSeasonRecord",
 ]
 
 Event = Union[
@@ -60,7 +68,6 @@ Event = Union[
 
 
 @dataclass
-# type: ignore
 class WrappedEvent:
     event_type: EventType
     tx_sig: any
@@ -71,7 +78,7 @@ class WrappedEvent:
 
 SortFn = Callable[[WrappedEvent, WrappedEvent], int]
 
-EventSubscriptionOrderBy = Union["blockchain", "client"]
+EventSubscriptionOrderBy = Literal["blockchain", "client"]
 Asc = Literal["asc"]
 Desc = Literal["desc"]
 EventSubscriptionOrderDirection = Union[Asc, Desc]
@@ -88,9 +95,9 @@ class PollingLogProviderConfig:
     batch_size: int = None
 
 
-LogProviderConfig = Union[WebsocketLogProviderConfig, PollingLogProviderConfig]
-
-LogProviderCallback = Callable[[any, int, list[str]], None]
+LogProviderConfig = Union[
+    WebsocketLogProviderConfig, PollingLogProviderConfig, GrpcLogProviderConfig
+]
 
 
 class LogProvider:
@@ -125,6 +132,11 @@ DEFAULT_EVENT_TYPES = (
     "OrderRecord",
     "OrderActionRecord",
     "SwapRecord",
+    "SpotMarketVaultDepositRecord",
+    "SignedMsgOrderRecord",
+    "DeleteUserRecord",
+    "FuelSweepRecord",
+    "FuelSeasonRecord",
 )
 
 
@@ -151,6 +163,14 @@ class EventSubscriptionOptions:
             from driftpy.events.websocket_log_provider import WebsocketLogProvider
 
             return WebsocketLogProvider(connection, self.address, self.commitment)
+
+        elif isinstance(self.log_provider_config, GrpcLogProviderConfig):
+            return GrpcLogProvider(
+                self.log_provider_config,
+                commitment=self.commitment,
+                user_account_to_filter=self.address,
+            )
+
         else:
             if (
                 str(self.commitment) != "confirmed"

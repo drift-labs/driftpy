@@ -1,7 +1,7 @@
 import inspect
 import zlib
 from dataclasses import dataclass, field
-from typing import Optional, TypedDict
+from typing import Callable, Optional, TypedDict
 from urllib.parse import urlparse, urlunparse
 
 from borsh_construct.enum import _rust_enum
@@ -1262,69 +1262,6 @@ class FundingPaymentRecord:
 
 
 @dataclass
-class LiquidatePerpRecord:
-    market_index: int
-    oracle_price: int
-    base_asset_amount: int
-    quote_asset_amount: int
-    lp_shares: int
-    user_order_id: int
-    liquidator_order_id: int
-    fill_record_id: int
-    liquidator_fee: int
-    if_fee: int
-
-
-@dataclass
-class LiquidateSpotRecord:
-    asset_market_index: int
-    asset_price: int
-    asset_transfer: int
-    liability_market_index: int
-    liability_price: int
-    liability_transfer: int
-    if_fee: int
-
-
-@dataclass
-class LiquidateBorrowForPerpPnlRecord:
-    perp_market_index: int
-    market_oracle_price: int
-    pnl_transfer: int
-    liability_market_index: int
-    liability_price: int
-    liability_transfer: int
-
-
-@dataclass
-class LiquidatePerpPnlForDepositRecord:
-    perp_market_index: int
-    market_oracle_price: int
-    pnl_transfer: int
-    asset_market_index: int
-    asset_price: int
-    asset_transfer: int
-
-
-@dataclass
-class PerpBankruptcyRecord:
-    market_index: int
-    pnl: int
-    if_payment: int
-    clawback_user: Pubkey
-    clawback_user_payment: int
-    cumulative_funding_rate_delta: int
-
-
-@dataclass
-class SpotBankruptcyRecord:
-    market_index: int
-    borrow_amount: int
-    cumulative_deposit_interest_delta: int
-    if_payment: int
-
-
-@dataclass
 class LiquidationRecord:
     ts: int
     user: Pubkey
@@ -1512,3 +1449,12 @@ class OrderBitFlag:
     SignedMessage = 1
     OracleTriggerMarket = 2
     SafeTriggerOrder = 4
+
+
+@dataclass
+class GrpcLogProviderConfig:
+    endpoint: str
+    token: str
+
+
+LogProviderCallback = Callable[[any, int, list[str]], None]
