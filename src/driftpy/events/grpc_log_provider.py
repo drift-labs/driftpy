@@ -48,6 +48,7 @@ class GrpcLogProvider:
         transaction_filter.vote = False
         transaction_filter.failed = False
 
+        # Use account_required for an AND condition
         transaction_filter.account_required.append(str(self.program_id))
 
         if self.user_account_to_filter:
@@ -62,7 +63,7 @@ class GrpcLogProvider:
             request.commitment = geyser_pb2.CommitmentLevel.FINALIZED
         elif self.commitment == Commitment("processed"):
             request.commitment = geyser_pb2.CommitmentLevel.PROCESSED
-        else:
+        else:  # confirmed or default
             request.commitment = geyser_pb2.CommitmentLevel.CONFIRMED
 
         yield request
@@ -73,7 +74,7 @@ class GrpcLogProvider:
             ping_request.ping.id = int(time.time())
             yield ping_request
 
-    def subscribe(self, callback: LogProviderCallback):
+    async def subscribe(self, callback: LogProviderCallback):
         if self.subscribed:
             return
 
@@ -99,9 +100,6 @@ class GrpcLogProvider:
 
             except Exception as e:
                 print(f"Error in gRPC log subscription: {e}")
-                import traceback
-
-                traceback.print_exc()
                 if self.stream:
                     await self.stream.cancel()
                     self.stream = None
@@ -147,7 +145,7 @@ class GrpcLogProvider:
             return
 
         if self.callback:
-            self.callback(signature, slot, logs)
+            await self.callback(signature, slot, logs)
 
     def is_subscribed(self) -> bool:
         return self.subscribed and self.task is not None and not self.task.done()

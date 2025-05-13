@@ -462,7 +462,7 @@ class SwiftMaker:
                     taker_info=taker_info,
                     order_params=maker_order_params,
                     preceding_ixs=[],
-                    override_ix_count=2,
+                    override_ix_count=3,
                 )
             )
 

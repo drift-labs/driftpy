@@ -1,18 +1,15 @@
 import asyncio
 import os
-import uuid
 
 from dotenv import load_dotenv
 from solana.rpc.async_api import AsyncClient
 from solana.rpc.commitment import Confirmed
 from solana.rpc.types import TxOpts
-from solders.compute_budget import set_compute_unit_limit
-from solders.keypair import Keypair
 
-from driftpy.constants.numeric_constants import BASE_PRECISION, PRICE_PRECISION
+from driftpy.constants.numeric_constants import BASE_PRECISION
 from driftpy.drift_client import DriftClient
 from driftpy.keypair import load_keypair
-from driftpy.swift.util import digest_signature, generate_signed_msg_uuid
+from driftpy.swift.util import generate_signed_msg_uuid
 from driftpy.types import (
     MarketType,
     OrderParams,
@@ -49,7 +46,6 @@ async def main():
     print(f"Maker Pubkey: {maker_keypair.pubkey()}")
     print(f"Taker Pubkey: {taker_keypair.pubkey()}")
 
-    # --- Initial Drift Client Setup ---
     maker_client = DriftClient(
         connection,
         wallet=maker_keypair,
@@ -69,15 +65,13 @@ async def main():
 
     print("Clients Subscribed.")
 
-    # --- Market and Oracle Setup ---
-    market_index = 0  # Example: SOL-PERP
+    market_index = 0
     oracle_price_data = maker_client.get_oracle_price_data_for_perp_market(market_index)
     low_price = oracle_price_data.price
     high_price = oracle_price_data.price * 101 // 100
 
-    # --- Taker Creates and Signs Order ---
     print("Taker preparing order...")
-    taker_base_asset_amount = int(0.2 * BASE_PRECISION)  # Example: 0.1 SOL
+    taker_base_asset_amount = int(0.2 * BASE_PRECISION)
 
     direction = PositionDirection.Long()
 
@@ -121,16 +115,15 @@ async def main():
     )
     print(f"Taker signed order with UUID: {taker_uuid}")
 
-    # --- Maker Prepares to Fill Order ---
     print("Maker preparing fill...")
-    maker_base_asset_amount = taker_base_asset_amount // 2  # Maker fills half
-    maker_order_price = low_price  # Maker matches taker's price
+    maker_base_asset_amount = taker_base_asset_amount
+    maker_order_price = high_price
 
     maker_order_params = OrderParams(
         market_index=market_index,
         order_type=OrderType.Limit(),
         market_type=MarketType.Perp(),
-        direction=PositionDirection.Short(),  # Opposite of taker
+        direction=PositionDirection.Short(),
         base_asset_amount=maker_base_asset_amount,
         price=maker_order_price,
         user_order_id=1,
@@ -146,7 +139,6 @@ async def main():
         bit_flags=OrderParamsBitFlag.IMMEDIATE_OR_CANCEL,
     )
 
-    # Need taker's account data for the instruction
     taker_user_account_pubkey = taker_client.get_user_account_public_key()
     taker_user_account = taker_client.get_user_account()
     taker_stats_account_pubkey = taker_client.get_user_stats_public_key()
@@ -158,9 +150,8 @@ async def main():
         "signing_authority": taker_keypair.pubkey(),
     }
 
-    # --- Maker Creates and Sends Transaction ---
     print("Maker constructing place_and_make transaction...")
-    ixs = []  # Add compute budget
+    ixs = []
     ixs.extend(
         await maker_client.get_place_and_make_signed_msg_perp_order_ixs(
             signed_msg_order_params=signed_taker_order,
@@ -176,19 +167,12 @@ async def main():
         tx_sig = await maker_client.send_ixs(ixs)
         print(f"Transaction sent: {tx_sig}")
 
-        # Optional: Verify fills or account state changes
-        await asyncio.sleep(5)  # Give accounts time to update over websocket
+        await asyncio.sleep(5)
         maker_user = maker_client.get_user()
         taker_user = taker_client.get_user()
 
         await maker_user.subscribe()
         await taker_user.subscribe()
-
-        print("\n--- Post-Transaction State ---")
-        print(f"Maker Orders: {len(maker_user.get_orders())}")
-        print(f"Maker Positions: {[str(p) for p in maker_user.get_perp_positions()]}")
-        print(f"Taker Orders: {len(taker_user.get_orders())}")
-        print(f"Taker Positions: {[str(p) for p in taker_user.get_perp_positions()]}")
 
     except Exception as e:
         print(f"Error sending transaction: {e}")
