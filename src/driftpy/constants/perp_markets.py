@@ -740,4 +740,11 @@ mainnet_perp_market_configs: list[PerpMarketConfig] = [
         oracle=Pubkey.from_string("8FauFNbX2gvjkPLH8w2kntXCcSGCwZL2prZjHBpvq6aE"),
         oracle_source=OracleSource.PythLazer(),  # type: ignore
     ),
+    PerpMarketConfig(
+        symbol="LAUNCHCOIN-PERP",
+        base_asset_symbol="LAUNCHCOIN",
+        market_index=74,
+        oracle=Pubkey.from_string("4zXs8GrbMwd9EhDwuaWLngX2yY5BApb2UxeHrTzu3Ckr"),
+        oracle_source=OracleSource.SwitchboardOnDemand(),  # type: ignore
+    ),
 ]
