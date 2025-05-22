@@ -168,7 +168,7 @@ class EventSubscriptionOptions:
             return GrpcLogProvider(
                 self.log_provider_config,
                 commitment=self.commitment,
-                user_account_to_filter=self.address,
+                user_account_to_filter=self.user_account_to_filter,
             )
 
         else:

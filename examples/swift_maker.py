@@ -1,9 +1,8 @@
-# This is just a work in progress, not ready for use yet
 import asyncio
 import base64
 import json
-import logging
 import os
+import pprint
 import time
 from dataclasses import dataclass
 from typing import Dict, List, Optional
@@ -15,13 +14,10 @@ from dotenv import load_dotenv
 from solana.rpc.async_api import AsyncClient
 from solana.rpc.commitment import Commitment
 from solana.rpc.types import TxOpts
+from solders.compute_budget import set_compute_unit_limit, set_compute_unit_price
 from solders.instruction import Instruction
 from solders.keypair import Keypair
-from solders.message import MessageV0
 from solders.pubkey import Pubkey
-from solders.transaction import (
-    VersionedTransaction,
-)
 from websockets.client import WebSocketClientProtocol, connect
 from websockets.exceptions import ConnectionClosed, WebSocketException
 
@@ -29,7 +25,6 @@ from driftpy.accounts import get_user_stats_account_public_key
 from driftpy.addresses import get_user_account_public_key
 from driftpy.drift_client import DriftClient
 from driftpy.keypair import load_keypair
-from driftpy.swift.order_subscriber import SIGNED_MSG_DELEGATE_DISCRIMINATOR
 from driftpy.types import (
     MarketType,
     OrderParams,
@@ -38,15 +33,13 @@ from driftpy.types import (
     OrderType,
     PositionDirection,
     PostOnlyParams,
+    SignedMsgOrderParams,
     is_variant,
 )
 from driftpy.user_map.user_map import UserMap
 from driftpy.user_map.user_map_config import PollingConfig, UserMapConfig
 
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-)
-logger = logging.getLogger(__name__)
+pp = pprint.PrettyPrinter(indent=2)
 
 
 @dataclass
@@ -62,11 +55,7 @@ class SwiftMaker:
         runtime_spec: RuntimeSpec,
         auth_keypair: Keypair,  # Keypair specifically for WS authentication
         stake_keypair: Optional[Keypair] = None,  # Optional keypair for staking rewards
-        markets_to_subscribe: List[str] = [
-            "SOL-PERP",
-            "BTC-PERP",
-            "ETH-PERP",
-        ],
+        markets_to_subscribe: List[str] = ["SOL-PERP"],
         dry_run: bool = False,
     ):
         self.drift_client: DriftClient = drift_client
@@ -86,9 +75,6 @@ class SwiftMaker:
         self.heartbeat_interval_s = 20  # Send pings more often
         self.heartbeat_timeout_s = 80  # Reconnect if no pong/message received
 
-        # TODO: Implement dynamic priority fee fetching if needed
-        # self.priority_fee_subscriber = PriorityFeeSubscriberMap(...)
-
     def _get_ws_endpoint(self) -> str:
         if self.runtime_spec.drift_env == "mainnet":
             return "wss://swift.drift.trade/ws"
@@ -98,7 +84,7 @@ class SwiftMaker:
             raise ValueError(f"Unsupported drift_env: {self.runtime_spec.drift_env}")
 
     async def init(self):
-        logger.info("Initializing SwiftMaker...")
+        print("Initializing SwiftMaker...")
         asyncio.create_task(self.subscribe_ws())
 
     def _start_heartbeat_check(self):
@@ -111,25 +97,25 @@ class SwiftMaker:
                 await asyncio.sleep(self.heartbeat_timeout_s)
                 now = time.time()
                 if now - self.last_heartbeat_ts > self.heartbeat_timeout_s:
-                    logger.warning(
+                    print(
                         f"Heartbeat timeout ({self.heartbeat_timeout_s}s). Last received: {self.last_heartbeat_ts:.2f}. Reconnecting..."
                     )
                     asyncio.create_task(self._reconnect())
                     break  # Exit monitor task on timeout/reconnect attempt
 
-        logger.info("Starting heartbeat monitor task.")
+        print("Starting heartbeat monitor task.")
         self.last_heartbeat_ts = time.time()  # Reset timestamp on start
         self.heartbeat_task = asyncio.create_task(_heartbeat_monitor())
 
     async def _reconnect(self):
-        logger.info("Attempting to reconnect...")
+        print("Attempting to reconnect...")
         self.is_connected = False
         self.is_authenticated = False
         if self.ws:
             try:
                 await self.ws.close()
             except WebSocketException as e:
-                logger.error(f"Error closing websocket during reconnect: {e}")
+                print(f"Error closing websocket during reconnect: {e}")
             self.ws = None
         if self.heartbeat_task:
             self.heartbeat_task.cancel()
@@ -142,7 +128,7 @@ class SwiftMaker:
     async def subscribe_ws(self):
         """Establishes WebSocket connection, handles authentication, and processes messages."""
         connect_url = f"{self.ws_endpoint}?pubkey={str(self.auth_keypair.pubkey())}"
-        logger.info(f"Connecting to WebSocket: {connect_url}")
+        print(f"Connecting to WebSocket: {connect_url}")
 
         try:
             async with connect(
@@ -154,7 +140,7 @@ class SwiftMaker:
                 self.ws = websocket
                 self.is_connected = True
                 self.is_authenticated = False
-                logger.info("WebSocket connection established.")
+                print("WebSocket connection established.")
                 self._start_heartbeat_check()
 
                 async for raw_message in websocket:
@@ -164,9 +150,9 @@ class SwiftMaker:
                         message = json.loads(raw_message)
                         await self._process_message(message)
                     except json.JSONDecodeError:
-                        logger.warning(f"Received non-JSON message: {raw_message}")
+                        print(f"Received non-JSON message: {raw_message}")
                     except Exception as e:
-                        logger.error(f"Error processing message: {e}", exc_info=True)
+                        print(f"Error processing message: {e}")
 
         except (
             ConnectionClosed,
@@ -174,12 +160,12 @@ class SwiftMaker:
             asyncio.TimeoutError,
             OSError,
         ) as e:
-            logger.error(f"WebSocket connection error: {e}. Attempting reconnect...")
+            print(f"WebSocket connection error: {e}. Attempting reconnect...")
             self.is_connected = False
             self.is_authenticated = False
             await self._reconnect()
         except Exception as e:
-            logger.error(f"Unexpected error in subscribe_ws: {e}", exc_info=True)
+            print(f"Unexpected error in subscribe_ws: {e}")
             self.is_connected = False
             self.is_authenticated = False
             await self._reconnect()  # Attempt reconnect on unexpected errors too
@@ -193,34 +179,33 @@ class SwiftMaker:
             if "nonce" in message:
                 await self._handle_auth_challenge(message["nonce"])
             elif isinstance(msg_type, str) and msg_type == "Authenticated":
-                logger.info("WebSocket successfully authenticated.")
+                print("WebSocket successfully authenticated.")
                 self.is_authenticated = True
                 await self._subscribe_to_markets()
             elif isinstance(msg_type, str):
-                logger.warning(f"Received auth message: {msg_type}")
+                print(f"Received auth message: {msg_type}")
 
         elif "order" in message and self.is_authenticated:
             if self.user_map.is_subscribed:
                 asyncio.create_task(self._handle_order(message["order"]))
             else:
-                logger.warning(
+                print(
                     "Received order message but DriftClient/UserMap not ready. Skipping."
                 )
 
         elif channel == "heartbeat":
-            # logger.debug("Received heartbeat message.") # Can be noisy
-            pass  # Handled by last_heartbeat_ts update
+            pass
 
         else:
-            logger.debug(f"Received unhandled message: {message}")
+            print(f"Received unhandled message: {pp.pformat(message)}")
 
     async def _handle_auth_challenge(self, nonce: str):
         """Signs the auth nonce and sends it back."""
         if not self.ws:
-            logger.error("Cannot handle auth challenge, WebSocket is not connected.")
+            print("Cannot handle auth challenge, WebSocket is not connected.")
             return
 
-        logger.info("Received auth challenge, signing nonce...")
+        print("Received auth challenge, signing nonce...")
         message_bytes = nonce.encode("utf-8")
         signing_key = nacl.signing.SigningKey(self.auth_keypair.secret())
         signature = signing_key.sign(message_bytes).signature
@@ -235,50 +220,56 @@ class SwiftMaker:
 
         try:
             await self.ws.send(json.dumps(auth_payload))
-            logger.info("Sent authentication response.")
+            print("Sent authentication response.")
         except WebSocketException as e:
-            logger.error(f"Failed to send authentication response: {e}")
-            # Consider triggering reconnect here
+            print(f"Failed to send authentication response: {e}")
 
     async def _subscribe_to_markets(self):
         """Sends subscription requests for the configured markets."""
         if not self.ws or not self.is_authenticated:
-            logger.error(
+            print(
                 "Cannot subscribe to markets, WebSocket not connected or authenticated."
             )
             return
 
-        logger.info(f"Subscribing to markets: {self.markets_to_subscribe}")
+        print(f"Subscribing to markets: {self.markets_to_subscribe}")
         for market_name in self.markets_to_subscribe:
             sub_payload = {
                 "action": "subscribe",
-                "market_type": "perp",  # Assuming perp markets for now
+                "market_type": "perp",
                 "market_name": market_name,
             }
             try:
                 await self.ws.send(json.dumps(sub_payload))
-                logger.debug(f"Sent subscription request for {market_name}")
-                await asyncio.sleep(0.1)  # Slight delay between subscriptions
+                print(f"Sent subscription request for {market_name}")
+                await asyncio.sleep(0.1)
+                print(f"Subscribed to {market_name}")
             except WebSocketException as e:
-                logger.error(f"Failed to send subscription for {market_name}: {e}")
-                # Consider triggering reconnect or retrying
+                print(f"Failed to send subscription for {market_name}: {e}")
 
     async def _handle_order(self, order_message_raw: Dict):
         """Processes a received order, generates maker instructions, and potentially sends the transaction."""
         order_received_ts = time.time()
         order_uuid_str = order_message_raw.get("uuid", "unknown_uuid")
-        logger.info(
-            f"Handling order {order_uuid_str} received at {order_received_ts:.3f}"
-        )
+        print(f"Handling order {order_uuid_str} received at {order_received_ts:.3f}")
 
         try:
             signed_msg_order_params_buf_hex = order_message_raw["order_message"]
             signed_msg_order_params_buf = bytes.fromhex(signed_msg_order_params_buf_hex)
-            taker_signature = base64.b64decode(order_message_raw["order_signature"])
+            signed_msg_order_params_buf_utf8_style = order_message_raw[
+                "order_message"
+            ].encode("utf-8")
+
+            print(
+                f"Order {order_uuid_str}: ORDER_MESSAGE_UTF8_STYLE: {signed_msg_order_params_buf_utf8_style}"
+            )
+            taker_signature_b64 = order_message_raw["order_signature"]
+            print(f"Order {order_uuid_str}: TAKER_SIGNATURE_B64: {taker_signature_b64}")
+            taker_signature = base64.b64decode(taker_signature_b64)
             order_uuid = order_uuid_str.encode("utf-8")
 
             # --- Add logging for raw buffer ---
-            logger.info(
+            print(
                 f"Order {order_uuid_str}: Raw buffer hex: {signed_msg_order_params_buf.hex()}"
             )
             # --- End logging ---
@@ -292,10 +283,10 @@ class SwiftMaker:
                     )
                 )
                 is_delegate = True
-                logger.info(f"Order {order_uuid_str}: Decoded as delegate.")  # Add log
+                print(f"Order {order_uuid_str}: Decoded as delegate.")  # Add log
             except construct.core.StreamError as e:
                 # Fallback to non-delegate decoding
-                logger.info(
+                print(
                     f"Order {order_uuid_str}: Failed delegate decode ({e}), trying non-delegate."
                 )  # Add log
                 try:
@@ -304,14 +295,14 @@ class SwiftMaker:
                             signed_msg_order_params_buf, is_delegate=False
                         )
                     )
-                    logger.info(
+                    print(
                         f"Order {order_uuid_str}: Decoded as non-delegate."
                     )  # Add log
                 except construct.core.StreamError as e:
-                    logger.error(
+                    print(
                         f"Failed to decode order message ({order_uuid_str}) as non-delegate either: {e}"  # Updated error log
                     )
-                    logger.error(
+                    print(
                         f"  Buffer (len={len(signed_msg_order_params_buf)}): {signed_msg_order_params_buf.hex()}"
                     )
                     return
@@ -325,9 +316,7 @@ class SwiftMaker:
                 not taker_order_params.price
                 and taker_order_params.auction_duration == 0
             ):
-                logger.warning(
-                    f"Order {order_uuid_str} has no price/auction params. Skipping."
-                )
+                print(f"Order {order_uuid_str} has no price/auction params. Skipping.")
                 return
 
             taker_authority = Pubkey.from_string(order_message_raw["taker_authority"])
@@ -346,7 +335,7 @@ class SwiftMaker:
 
             taker_user_map_entry = await self.user_map.must_get(str(taker_user_pubkey))
             if not taker_user_map_entry:
-                logger.warning(
+                print(
                     f"Could not find taker user account in UserMap: {taker_user_pubkey}"
                 )
                 return
@@ -355,7 +344,6 @@ class SwiftMaker:
                 self.drift_client.program.program_id, taker_user_account.authority
             )
             perp_market = self.drift_client.get_perp_market_account(market_index)
-
             is_taker_long = is_variant(taker_order_params.direction, "Long")
             maker_direction = (
                 PositionDirection.Short() if is_taker_long else PositionDirection.Long()
@@ -364,64 +352,28 @@ class SwiftMaker:
             maker_base_amount = perp_market.amm.min_order_size * 2
 
             if maker_base_amount == 0:
-                logger.warning(
+                print(
                     f"Maker base amount is zero for order {order_uuid_str}. Skipping."
                 )
                 return
 
             # --- Add logging for taker prices ---
-            logger.info(
+            print(
                 f"Order {order_uuid_str}: Taker params price={taker_order_params.price}, order_type={taker_order_params.order_type}, "
                 f"auction_start={taker_order_params.auction_start_price}, "
                 f"auction_end={taker_order_params.auction_end_price}, "
                 f"auction_duration={taker_order_params.auction_duration}"
             )
-            # --- End logging ---
 
-            maker_price = None  # Initialize maker_price
-            if is_variant(taker_order_params.order_type, "Oracle"):
-                print(
-                    f"=======> Order {order_uuid_str}: taker_order_params.order_type={taker_order_params.order_type}"
-                )
-            elif is_variant(taker_order_params.order_type, "Market"):
-                print(
-                    f"=======> Order {order_uuid_str}: taker_order_params.order_type={taker_order_params.order_type}"
-                )
-            elif is_variant(taker_order_params.order_type, "Limit"):
-                print(
-                    f"=======> Order {order_uuid_str}: taker_order_params.order_type={taker_order_params.order_type}"
-                )
-            if (
-                taker_order_params.auction_duration is not None
-                and taker_order_params.auction_duration > 0
-                and taker_order_params.auction_start_price is not None
-                and taker_order_params.auction_end_price is not None
-            ):
-                if is_variant(taker_order_params.order_type, "Oracle"):
-                    oracle_info = (
-                        self.drift_client.get_oracle_price_data_for_perp_market(
-                            market_index
-                        )
-                    )
-                    maker_price = (
-                        oracle_info.price + taker_order_params.auction_start_price
-                    )
-                else:
-                    maker_price = taker_order_params.auction_start_price
-
-                logger.info(
-                    f"Order {order_uuid_str}: Auction fill at calculated price {maker_price}"
-                )
+            maker_price = None
+            if taker_order_params.auction_start_price is not None:
+                maker_price = taker_order_params.auction_start_price
             elif taker_order_params.price is not None and taker_order_params.price > 0:
                 maker_price = taker_order_params.price
-                logger.info(
-                    f"Order {order_uuid_str}: Limit fill at price {maker_price}"
-                )
 
-            # Check if we successfully determined a maker price
-            if maker_price is None:
-                logger.warning(
-                    f"Order {order_uuid_str}: Could not determine valid maker price from taker params (Price={taker_order_params.price}, AuctionDuration={taker_order_params.auction_duration}). Skipping."
+            if maker_price is None or maker_price <= 0:
+                print(
+                    f"Order {order_uuid_str}: Could not determine valid maker price. Taker Params: Price={taker_order_params.price}, AuctionStart={taker_order_params.auction_start_price}, AuctionEnd={taker_order_params.auction_end_price}. Skipping."
                 )
                 return
 
@@ -435,11 +387,11 @@ class SwiftMaker:
                 post_only=PostOnlyParams.MustPostOnly(),
                 user_order_id=1,
                 reduce_only=False,
-                trigger_price=0,
+                trigger_price=None,
                 trigger_condition=OrderTriggerCondition.Above(),
-                auction_start_price=0,
-                auction_end_price=0,
-                auction_duration=0,
+                auction_start_price=None,
+                auction_end_price=None,
+                auction_duration=None,
                 max_ts=None,
                 oracle_price_offset=None,
                 bit_flags=OrderParamsBitFlag.IMMEDIATE_OR_CANCEL,
@@ -452,90 +404,82 @@ class SwiftMaker:
                 "signing_authority": signing_authority,
             }
 
-            logger.info(f"Constructing place_and_make IXs for order {order_uuid_str}")
+            print(f"Constructing place_and_make IXs for order {order_uuid_str}")
+            preceding_ixs = [
+                set_compute_unit_limit(1_000_000),
+                set_compute_unit_price(50_000),
+            ]
+
+            order_params_buf = SignedMsgOrderParams(
+                order_params=signed_msg_order_params_buf_utf8_style,
+                signature=taker_signature,
+            )
+
             fill_ixs = (
                 await self.drift_client.get_place_and_make_signed_msg_perp_order_ixs(
-                    signed_msg_order_params={
-                        "order_params": signed_msg_order_params_buf,
-                        "signature": taker_signature,
-                    },
+                    signed_msg_order_params=order_params_buf,
                     signed_msg_order_uuid=order_uuid,
                     taker_info=taker_info,
                     order_params=maker_order_params,
-                    preceding_ixs=[],
-                    override_ix_count=1,
+                    preceding_ixs=preceding_ixs,
                 )
             )
 
-            # --- Add logging for maker price ---
-            logger.info(
+            print(
                 f"Order {order_uuid_str}: Calculated maker_price={maker_order_params.price}"
             )
-            # --- End logging ---
 
             all_ixs = fill_ixs
-            logger.info(
+            print(
                 f"Generated {len(fill_ixs)} fill instructions for order {order_uuid_str}."
             )
 
             if self.dry_run:
-                processing_time = time.time() - order_received_ts
-                logger.info(
-                    f"[Dry Run] Would fill order {order_uuid_str}. Processing time: {processing_time:.3f}s"
-                )
-                logger.info(f"[Dry Run]  Taker: {taker_user_pubkey}")
-                logger.info(
-                    f"[Dry Run]  Maker Direction: {maker_direction}, Base: {maker_base_amount}, Price: {maker_price}"
-                )
-                logger.info(f"[Dry Run]  Instructions ({len(all_ixs)}):")
-                for i, ix in enumerate(all_ixs):
-                    print(ix)
+                all_ixs.append(order_uuid_str)
+                with open("py_orders.log", "a") as f:
+                    f.write(f"{all_ixs}\n")
                 return
 
             await self._send_transaction(all_ixs, market_index, order_uuid_str)
 
         except KeyError as e:
-            logger.error(
-                f"Missing expected key in order message ({order_uuid_str}): {e}"
-            )
+            print(f"Missing expected key in order message ({order_uuid_str}): {e}")
         except Exception as e:
-            logger.error(f"Error handling order {order_uuid_str}: {e}", exc_info=True)
+            print(f"Error handling order {order_uuid_str}: {e}")
 
     async def _send_transaction(
         self, ixs: List[Instruction], market_index: int, order_uuid: str
     ):
         """Sends the transaction with the provided instructions after simulating."""
         start_time = time.time()
-        logger.info(f"Simulating transaction for order {order_uuid}...")
+        print(f"Simulating transaction for order {order_uuid}...")
+
         send_start_time = time.time()
-        logger.info(f"Sending transaction for order {order_uuid}...")
+        print(f"Sending transaction for order {order_uuid}...")
         try:
-            # Send using the existing send_ixs method which handles blockhash and lookup tables
             result = await self.drift_client.send_ixs(ixs)
 
             send_elapsed = time.time() - send_start_time
             total_elapsed = time.time() - start_time
-            logger.info(
+            print(
                 f"Transaction sent for order {order_uuid}. Signature: {result.tx_sig}, Slot: {result.slot}, Send Time: {send_elapsed:.3f}s, Total Time: {total_elapsed:.3f}s"
             )
 
         except Exception as e:
-            logger.error(f"Transaction Error: {e}")
+            print(f"Transaction Error: {e}")
             if hasattr(e, "logs") and e.logs:
-                logger.error(f"Transaction Error Logs: {e.logs}")
-            # Log more details if available
+                print(f"Transaction Error Logs: {e.logs}")
             if hasattr(e, "message"):
-                logger.error(f"  Error Message: {e.message}")
+                print(f"  Error Message: {e.message}")
             if hasattr(e, "logs") and e.logs:
-                logger.error(f"  Logs: \n{''.join(e.logs)}")
+                print(f"  Logs: \n{''.join(e.logs)}")
 
         except Exception as e:
             elapsed = time.time() - start_time
-            logger.error(
-                f"Failed to send transaction for order {order_uuid} after {elapsed:.3f}s: {e}",
-                exc_info=True,
+            print(
+                f"Failed to send transaction for order {order_uuid} after {elapsed:.3f}s: {e}"
             )
-            logger.error(f"  Logs: {e}")
+            print(f"  Logs: {e}")
 
 
 async def main():
@@ -546,7 +490,7 @@ async def main():
     MAKER_PRIVATE_KEY = os.getenv("PRIVATE_KEY")
     WS_AUTH_PRIVATE_KEY = MAKER_PRIVATE_KEY
     DRY_RUN = os.getenv("DRY_RUN", "false").lower() == "true"
-    MARKETS = ["SOL-PERP", "BTC-PERP", "ETH-PERP"]  # Markets to MM
+    MARKETS = ["1KMEW-PERP"]
 
     if not RPC_URL or not MAKER_PRIVATE_KEY:
         raise ValueError("RPC_TRITON and PRIVATE_KEY must be set in .env")
@@ -554,11 +498,11 @@ async def main():
     maker_keypair = load_keypair(MAKER_PRIVATE_KEY)
     auth_keypair = load_keypair(WS_AUTH_PRIVATE_KEY)
 
-    logger.info(f"Maker Pubkey: {maker_keypair.pubkey()}")
-    logger.info(f"WS Auth Pubkey: {auth_keypair.pubkey()}")
-    logger.info(f"RPC Endpoint: {RPC_URL}")
-    logger.info(f"Dry Run: {DRY_RUN}")
-    logger.info(f"Environment: {ENV}")
+    print(f"Maker Pubkey: {maker_keypair.pubkey()}")
+    print(f"WS Auth Pubkey: {auth_keypair.pubkey()}")
+    print(f"RPC Endpoint: {RPC_URL}")
+    print(f"Dry Run: {DRY_RUN}")
+    print(f"Environment: {ENV}")
 
     connection = AsyncClient(RPC_URL, commitment=Commitment("confirmed"))
     wallet = Wallet(maker_keypair)
@@ -567,16 +511,16 @@ async def main():
         connection,
         wallet,
         env=ENV,
-        opts=TxOpts(skip_preflight=True),
+        # opts=TxOpts(skip_preflight=True),
     )
-    logger.info("Subscribing DriftClient...")
+    print("Subscribing DriftClient...")
     await drift_client.subscribe()
-    logger.info("DriftClient subscribed.")
+    print("DriftClient subscribed.")
 
     user_map = UserMap(UserMapConfig(drift_client, PollingConfig(frequency=5)))
-    logger.info("Subscribing UserMap...")
+    print("Subscribing UserMap...")
     await user_map.subscribe()
-    logger.info("UserMap subscribed.")
+    print("UserMap subscribed.")
 
     runtime_spec = RuntimeSpec(drift_env=ENV)
 
@@ -586,25 +530,26 @@ async def main():
         runtime_spec=runtime_spec,
         auth_keypair=auth_keypair,
         markets_to_subscribe=MARKETS,
+        dry_run=False,
     )
 
     await swift_maker.init()
 
-    logger.info("SwiftMaker initialized. Running indefinitely...")
+    print("SwiftMaker initialized. Running indefinitely...")
     while True:
         await asyncio.sleep(60)
         if not swift_maker.is_connected or not swift_maker.is_authenticated:
-            logger.warning("SwiftMaker appears disconnected/unauthenticated.")
+            print("SwiftMaker appears disconnected/unauthenticated.")
         if not user_map.is_subscribed:
-            logger.warning("UserMap appears unsubscribed.")
+            print("UserMap appears unsubscribed.")
 
 
 if __name__ == "__main__":
     try:
         asyncio.run(main())
     except KeyboardInterrupt:
-        logger.info("Received KeyboardInterrupt, shutting down...")
+        print("Received KeyboardInterrupt, shutting down...")
     except Exception as e:
-        logger.critical(f"Unhandled exception in main: {e}", exc_info=True)
+        print(f"Unhandled exception in main: {e}")
     finally:
-        logger.info("Shutdown complete.")
+        print("Shutdown complete.")

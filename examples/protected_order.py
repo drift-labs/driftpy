@@ -23,7 +23,12 @@ async def is_protected_maker():
         wallet=wallet,
         env="mainnet",
     )
+
     await drift_client.subscribe()
+    config_account = await drift_client.program.account[
+        "ProtectedMakerModeConfig"
+    ].fetch(get_protected_maker_mode_config_public_key(drift_client.program_id))
+    print(config_account)
     user = drift_client.get_user()
     print(user.get_open_orders())
     print(get_protected_maker_mode_config_public_key(drift_client.program_id))
