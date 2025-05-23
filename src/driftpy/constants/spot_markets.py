@@ -391,4 +391,32 @@ mainnet_spot_market_configs: list[SpotMarketConfig] = [
         oracle_source=OracleSource.SwitchboardOnDemand(),  # type: ignore
         mint=Pubkey.from_string("jtojtomepa8beP8AuQc6eXt5FriJwfFMwQx2v2f9mCL"),
     ),
+    SpotMarketConfig(
+        symbol="zBTC",
+        market_index=45,
+        oracle=Pubkey.from_string("CN9QvvbGQzMnN8vJaSek2so4vFnTqgJDFrdJB8Y4tQfB"),
+        oracle_source=OracleSource.PythPull(),  # type: ignore
+        mint=Pubkey.from_string("zBTCug3er3tLyffELcvDNrKkCymbPWysGcWihESYfLg"),
+    ),
+    SpotMarketConfig(
+        symbol="ZEUS",
+        market_index=46,
+        oracle=Pubkey.from_string("ABetWkmf1dpQX8gbtrt947ma2j7KzTPjVAdFWHkuEzi3"),
+        oracle_source=OracleSource.PythPull(),  # type: ignore
+        mint=Pubkey.from_string("ZEUS1aR7aX8DFFJf5QjWj2ftDDdNTroMNGo8YoQm3Gq"),
+    ),
+    SpotMarketConfig(
+        symbol="USDC-4",
+        market_index=47,
+        oracle=Pubkey.from_string("9VCioxmni2gDLv11qufWzT3RDERhQE4iY5Gf7NTfYyAV"),
+        oracle_source=OracleSource.PythLazerStableCoin(),  # type: ignore
+        mint=Pubkey.from_string("EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"),
+    ),
+    SpotMarketConfig(
+        symbol="USDT-4",
+        market_index=48,
+        oracle=Pubkey.from_string("JDKJSkxjasBGL3ce1pkrN6tqDzuVUZPWzzkGuyX8m9yN"),
+        oracle_source=OracleSource.PythLazerStableCoin(),  # type: ignore
+        mint=Pubkey.from_string("Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB"),
+    ),
 ]
