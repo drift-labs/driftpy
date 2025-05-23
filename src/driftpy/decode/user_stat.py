@@ -1,10 +1,12 @@
+from solders.pubkey import Pubkey
+
 from driftpy.decode.user import (
+    read_bigint64le,
+    read_int32_le,
     read_uint8,
     read_uint16_le,
-    read_bigint64le,
 )
-from driftpy.types import UserStatsAccount, UserFees
-from solders.pubkey import Pubkey
+from driftpy.types import UserFees, UserStatsAccount
 
 
 def decode_user_stat(buffer: bytes) -> UserStatsAccount:
@@ -36,7 +38,7 @@ def decode_user_stat(buffer: bytes) -> UserStatsAccount:
         current_epoch_referrer_reward,
     )
 
-    next_epoch_ts = read_bigint64le(buffer, offset, False)
+    next_epoch_ts = read_bigint64le(buffer, offset, True)
     offset += 8
 
     maker_volume_30d = read_bigint64le(buffer, offset, False)
@@ -54,7 +56,7 @@ def decode_user_stat(buffer: bytes) -> UserStatsAccount:
     last_taker_volume_30d_ts = read_bigint64le(buffer, offset, True)
     offset += 8
 
-    last_filler_volume_30d_ts = read_bigint64le(buffer, offset, False)
+    last_filler_volume_30d_ts = read_bigint64le(buffer, offset, True)
     offset += 8
 
     if_staked_quote_asset_amount = read_bigint64le(buffer, offset, False)
@@ -66,13 +68,43 @@ def decode_user_stat(buffer: bytes) -> UserStatsAccount:
     number_of_sub_accounts_created = read_uint16_le(buffer, offset)
     offset += 2
 
-    is_referrer = read_uint8(buffer, offset) == 1
+    referrer_status = read_uint8(buffer, offset)
+    is_referrer = (referrer_status & 0x1) == 1
     offset += 1
 
     disable_update_perp_bid_ask_twap = read_uint8(buffer, offset) == 1
     offset += 1
 
-    padding = [0] * 50
+    offset += 1
+
+    fuel_overflow_status = read_uint8(buffer, offset)
+    offset += 1
+
+    fuel_insurance = read_int32_le(buffer, offset, False)
+    offset += 4
+
+    fuel_deposits = read_int32_le(buffer, offset, False)
+    offset += 4
+
+    fuel_borrows = read_int32_le(buffer, offset, False)
+    offset += 4
+
+    fuel_positions = read_int32_le(buffer, offset, False)
+    offset += 4
+
+    fuel_taker = read_int32_le(buffer, offset, False)
+    offset += 4
+
+    fuel_maker = read_int32_le(buffer, offset, False)
+    offset += 4
+
+    if_staked_gov_token_amount = read_bigint64le(buffer, offset, False)
+    offset += 8
+
+    last_fuel_if_bonus_update_ts = read_int32_le(buffer, offset, False)
+    offset += 4
+
+    padding = [0] * 12
 
     return UserStatsAccount(
         authority,
@@ -90,5 +122,14 @@ def decode_user_stat(buffer: bytes) -> UserStatsAccount:
         number_of_sub_accounts_created,
         is_referrer,
         disable_update_perp_bid_ask_twap,
+        fuel_overflow_status,
+        fuel_insurance,
+        fuel_deposits,
+        fuel_borrows,
+        fuel_positions,
+        fuel_taker,
+        fuel_maker,
+        if_staked_gov_token_amount,
+        last_fuel_if_bonus_update_ts,
         padding,
     )

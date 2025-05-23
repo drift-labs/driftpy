@@ -932,7 +932,7 @@ class UserAccount:
 
 @dataclass
 class PickledData:
-    pubkey: Pubkey
+    pubkey: str
     data: bytes
 
 
@@ -952,26 +952,26 @@ class UserStatsAccount:
     referrer: Pubkey
     fees: UserFees
     next_epoch_ts: int
-    maker_volume30d: int
-    taker_volume30d: int
-    filler_volume30d: int
-    last_maker_volume30d_ts: int
-    last_taker_volume30d_ts: int
-    last_filler_volume30d_ts: int
+    maker_volume_30d: int
+    taker_volume_30d: int
+    filler_volume_30d: int
+    last_maker_volume_30d_ts: int
+    last_taker_volume_30d_ts: int
+    last_filler_volume_30d_ts: int
     if_staked_quote_asset_amount: int
     number_of_sub_accounts: int
     number_of_sub_accounts_created: int
     is_referrer: bool
     disable_update_perp_bid_ask_twap: bool
-    padding1: list[int] = (field(default_factory=lambda: [0] * 2),)
-    last_fuel_bonus_update_ts: int = (0,)
-    fuel_insurance: int = (0,)
-    fuel_deposits: int = (0,)
-    fuel_borrows: int = (0,)
-    fuel_positions: int = (0,)
-    fuel_taker: int = (0,)
-    fuel_maker: int = (0,)
-    if_staked_gov_token_amount: int = (0,)
+    fuel_overflow_status: int = 0
+    fuel_insurance: int = 0
+    fuel_deposits: int = 0
+    fuel_borrows: int = 0
+    fuel_positions: int = 0
+    fuel_taker: int = 0
+    fuel_maker: int = 0
+    if_staked_gov_token_amount: int = 0
+    last_fuel_if_bonus_update_ts: int = 0
     padding: list[int] = field(default_factory=lambda: [0] * 12)
 
 

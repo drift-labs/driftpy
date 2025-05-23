@@ -306,8 +306,22 @@ class UserStatsMap:
     async def update_user_stat(
         self, authority: Pubkey, user_stats: DataAndSlot[UserStatsAccount]
     ):
-        await self.must_get(str(authority), user_stats)
-        self.user_stats_map[str(authority)] = user_stats
+        authority_str = str(authority)
+        existing_drift_user_stat = self.get(authority_str)
+
+        if existing_drift_user_stat:
+            existing_drift_user_stat.unsubscribe()
+
+            new_drift_user_stat = DriftUserStats(
+                self.drift_client,
+                get_user_stats_account_public_key(
+                    self.drift_client.program_id, authority
+                ),
+                UserStatsSubscriptionConfig(initial_data=user_stats),
+            )
+            self.user_stats_map[authority_str] = new_drift_user_stat
+        else:
+            await self.add_user_stat(authority, user_stats)
 
     async def update_with_order_record(self, record: OrderRecord, user_map: UserMap):
         user = await user_map.must_get(str(record.user))
@@ -394,15 +408,45 @@ class UserStatsMap:
     def has(self, pubkey: str) -> bool:
         return pubkey in self.user_stats_map
 
-    def get(self, pubkey: str):
+    def get(self, pubkey: str) -> Optional[DriftUserStats]:
         return self.user_stats_map.get(pubkey)
 
     async def must_get(
-        self, pubkey: str, user_stats: Optional[DataAndSlot[UserStatsAccount]] = None
-    ):
-        if not self.has(pubkey):
-            await self.add_user_stat(Pubkey.from_string(pubkey), user_stats)
-        return self.get(pubkey)
+        self,
+        pubkey: str | Pubkey,
+        user_stats: Optional[DataAndSlot[UserStatsAccount]] = None,
+    ) -> DriftUserStats:
+        pubkey_input = pubkey
+        pubkey_str: str
+        authority_for_add: Pubkey
+
+        if isinstance(pubkey_input, Pubkey):
+            pubkey_str = str(pubkey_input)
+            authority_for_add = pubkey_input
+        elif isinstance(pubkey_input, str):
+            pubkey_str = pubkey_input
+            try:
+                authority_for_add = Pubkey.from_string(pubkey_input)
+            except Exception as e:
+                raise ValueError(f"Invalid pubkey string: {pubkey_input}") from e
+        else:
+            raise TypeError(
+                f"pubkey_input must be str or Pubkey, got {type(pubkey_input)}"
+            )
+
+        if not self.has(pubkey_str):
+            await self.add_user_stat(authority_for_add, user_stats)
+
+        elif user_stats is not None:
+            existing_user_stat_obj = self.get(pubkey_str)
+            if existing_user_stat_obj and isinstance(
+                existing_user_stat_obj, DriftUserStats
+            ):
+                await self.update_user_stat(authority_for_add, user_stats)
+            else:
+                await self.add_user_stat(authority_for_add, user_stats)
+
+        return self.get(pubkey_str)
 
     def get_last_dump_filepath(self) -> str:
         return f"userstats_{self.last_dumped_slot}.pkl"
@@ -432,7 +476,7 @@ class UserStatsMap:
         for _pubkey, user_stat in self.raw.items():
             decoded: UserStatsAccount = decode_user_stat(user_stat)
             auth = decoded.authority
-            user_stats.append(PickledData(pubkey=auth, data=compress(user_stat)))
+            user_stats.append(PickledData(pubkey=str(auth), data=compress(user_stat)))
         self.last_dumped_slot = self.latest_slot
         path = filename or f"userstats_{self.last_dumped_slot}.pkl"
         with open(path, "wb") as f:
