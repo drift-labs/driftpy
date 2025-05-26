@@ -85,11 +85,12 @@ async def fetch_transactions(
 
     if isinstance(parsed_resp, jsonrpcclient.Error):
         raise ValueError(f"Error fetching transactions: {parsed_resp.message}")
-    if not isinstance(parsed_resp, jsonrpcclient.Ok):
-        raise ValueError(f"Error fetching transactions - not ok: {parsed_resp}")
 
     response = []
     for rpc_result in parsed_resp:
+        if not isinstance(rpc_result, jsonrpcclient.Ok):
+            raise ValueError(f"Error fetching transactions - not ok: {rpc_result}")
+        
         if rpc_result.result:
             tx_sig = rpc_result.result["transaction"]["signatures"][0]
             slot = rpc_result.result["slot"]
