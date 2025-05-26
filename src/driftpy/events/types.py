@@ -1,6 +1,6 @@
 from abc import abstractmethod
 from dataclasses import dataclass, field
-from typing import Callable, Literal, Union
+from typing import Callable, Literal, Union, Optional
 
 from solana.rpc.async_api import AsyncClient
 from solana.rpc.commitment import Commitment
@@ -86,13 +86,14 @@ EventSubscriptionOrderDirection = Union[Asc, Desc]
 
 @dataclass
 class WebsocketLogProviderConfig:
-    pass
+    frequency: float = 1
+    batch_size: Optional[int] = None
 
 
 @dataclass
 class PollingLogProviderConfig:
     frequency: float = 1
-    batch_size: int = None
+    batch_size: Optional[int] = None
 
 
 LogProviderConfig = Union[
