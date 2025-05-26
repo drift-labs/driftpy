@@ -86,8 +86,7 @@ EventSubscriptionOrderDirection = Union[Asc, Desc]
 
 @dataclass
 class WebsocketLogProviderConfig:
-    frequency: float = 1
-    batch_size: Optional[int] = None
+    pass
 
 
 @dataclass
