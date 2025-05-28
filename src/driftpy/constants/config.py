@@ -178,7 +178,7 @@ async def find_all_market_and_oracles(
         json=perp_request,
         headers={"content-encoding": "gzip"},
     )
-    resp = await asyncio.wait_for(post, timeout=30)
+    resp = await asyncio.wait_for(post, timeout=120)
     parsed_resp = jsonrpcclient.parse(resp.json())
 
     if isinstance(parsed_resp, jsonrpcclient.Error):
@@ -210,7 +210,7 @@ async def find_all_market_and_oracles(
         json=spot_request,
         headers={"content-encoding": "gzip"},
     )
-    resp = await asyncio.wait_for(post, timeout=30)
+    resp = await asyncio.wait_for(post, timeout=120)
     parsed_resp = jsonrpcclient.parse(resp.json())
 
     if isinstance(parsed_resp, jsonrpcclient.Error):
