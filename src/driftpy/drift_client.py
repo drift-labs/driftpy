@@ -904,7 +904,7 @@ class DriftClient:
         sub_account_id: int = 0,
         name: str = None,
         referrer_info: ReferrerInfo = None,
-    ):
+    ) -> Signature:
         """intializes a drift user
 
         Args:
@@ -1034,7 +1034,7 @@ class DriftClient:
         sub_account_id: Optional[int] = None,
         reduce_only=False,
         user_initialized=True,
-    ):
+    ) -> TxSigAndSlot:
         """deposits collateral into protocol
 
         Args:
@@ -1147,7 +1147,7 @@ class DriftClient:
         user_token_account: Pubkey,
         reduce_only: bool = False,
         sub_account_id: int = None,
-    ):
+    ) -> TxSigAndSlot:
         """withdraws from drift protocol (can also allow borrowing)
 
         Args:
@@ -1504,7 +1504,7 @@ class DriftClient:
         self,
         order_id: Optional[int] = None,
         sub_account_id: int = None,
-    ):
+    ) -> Signature:
         """cancel specific order (if order_id=None will be most recent order)
 
         Args:
@@ -1581,7 +1581,7 @@ class DriftClient:
         market_index: int = None,
         direction: PositionDirection = None,
         sub_account_id: int = None,
-    ):
+    ) -> Signature:
         """cancel all existing orders on the book
 
         Args:
@@ -1681,7 +1681,7 @@ class DriftClient:
         order_id: int,
         modify_order_params: ModifyOrderParams,
         sub_account_id: Optional[int] = None,
-    ):
+    ) -> Signature:
         return (
             await self.send_ixs(
                 [
@@ -1722,7 +1722,7 @@ class DriftClient:
         user_order_id: int,
         modify_order_params: ModifyOrderParams,
         sub_account_id: int = None,
-    ):
+    ) -> Signature:
         return (
             await self.send_ixs(
                 [
@@ -1968,7 +1968,7 @@ class DriftClient:
 
     async def add_liquidity(
         self, amount: int, market_index: int, sub_account_id: int = None
-    ):
+    ) -> Signature:
         """mint LP tokens and add liquidity to the DAMM
 
         Args:
@@ -2015,7 +2015,7 @@ class DriftClient:
 
     async def remove_liquidity(
         self, amount: int, market_index: int, sub_account_id: int = None
-    ):
+    ) -> Signature:
         """burns LP tokens and removes liquidity to the DAMM
 
         Args:
@@ -2024,7 +2024,7 @@ class DriftClient:
             sub_account_id (int, optional): subaccount id. Defaults to 0.
 
         Returns:
-            str: tx sig
+            Signature: tx sig
         """
         return (
             await self.send_ixs(
@@ -2060,7 +2060,7 @@ class DriftClient:
         self,
         settlee_user_account_public_key: Pubkey,
         market_index: int,
-    ):
+    ) -> Signature:
         return (
             await self.send_ixs(
                 [
@@ -3796,14 +3796,14 @@ class DriftClient:
 
     async def update_user_margin_trading_enabled(
         self, margin_trading_enabled: bool, sub_account_id: Optional[int] = None
-    ):
+    ) -> Signature:
         """Toggles margin trading for a user
 
         Args:
             sub_account_id (int, optional): subaccount id. Defaults to 0.
 
         Returns:
-            str: tx sig
+            Signature: tx sig
         """
         await self.add_user(sub_account_id)
 
