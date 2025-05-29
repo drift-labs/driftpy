@@ -332,6 +332,7 @@ mock_spot_markets = [
         if_paused_operations=0,
         fee_adjustment=0,
         max_token_borrows_fraction=0,
+        min_borrow_rate=0,
     ),
     SpotMarketAccount(
         status=MarketStatus.Active(),
@@ -389,6 +390,7 @@ mock_spot_markets = [
         if_paused_operations=0,
         fee_adjustment=0,
         max_token_borrows_fraction=0,
+        min_borrow_rate=0,
     ),
     SpotMarketAccount(
         status=MarketStatus.Active(),
@@ -446,5 +448,6 @@ mock_spot_markets = [
         if_paused_operations=0,
         fee_adjustment=0,
         max_token_borrows_fraction=0,
+        min_borrow_rate=0,
     ),
 ]

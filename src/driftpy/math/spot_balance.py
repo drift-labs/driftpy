@@ -107,22 +107,48 @@ def calculate_borrow_rate(spot_market: SpotMarketAccount, delta: int = 0) -> int
 
 def calculate_interest_rate(spot_market: SpotMarketAccount, delta: int = 0) -> int:
     utilization = calculate_utilization(spot_market, delta)
-    if utilization > spot_market.optimal_utilization:
-        surplus_utilization = utilization - spot_market.optimal_utilization
-        borrow_rate_slope = (
-            (spot_market.max_borrow_rate - spot_market.optimal_borrow_rate)
-            * SPOT_UTILIZATION_PRECISION
-        ) // (SPOT_UTILIZATION_PRECISION - spot_market.optimal_utilization)
 
-        return spot_market.optimal_borrow_rate + (
-            surplus_utilization * borrow_rate_slope // SPOT_UTILIZATION_PRECISION
-        )
+    optimal_util = spot_market.optimal_utilization
+    optimal_rate = spot_market.optimal_borrow_rate
+    max_rate = spot_market.max_borrow_rate
+    min_rate = (spot_market.min_borrow_rate * PERCENTAGE_PRECISION) // 200
+
+    if utilization <= optimal_util:
+        # below optimal: linear ramp from 0 to optimalRate
+        borrow_rate_slope = (optimal_rate * SPOT_UTILIZATION_PRECISION) // optimal_util
+        rate = (utilization * borrow_rate_slope) // SPOT_UTILIZATION_PRECISION
     else:
-        borrow_rate_slope = (
-            spot_market.optimal_borrow_rate * SPOT_UTILIZATION_PRECISION
-        ) // spot_market.optimal_utilization
+        # above optimal: piecewise segments
+        weights_divisor = 1000
+        segments = [
+            (850_000, 50),
+            (900_000, 100),
+            (950_000, 150),
+            (990_000, 200),
+            (995_000, 250),
+            (SPOT_UTILIZATION_PRECISION, 250),
+        ]
 
-        return (utilization * borrow_rate_slope) // SPOT_UTILIZATION_PRECISION
+        total_extra_rate = max_rate - optimal_rate
+        rate = optimal_rate
+        prev_util = optimal_util
+
+        for bp, weight in segments:
+            segment_end = min(bp, SPOT_UTILIZATION_PRECISION)
+            segment_range = segment_end - prev_util
+
+            segment_rate_total = (total_extra_rate * weight) // weights_divisor
+
+            if utilization <= segment_end:
+                partial_util = utilization - prev_util
+                partial_rate = (segment_rate_total * partial_util) // segment_range
+                rate = rate + partial_rate
+                break
+            else:
+                rate = rate + segment_rate_total
+                prev_util = segment_end
+
+    return max(min_rate, rate)
 
 
 def calculate_utilization(spot_market: SpotMarketAccount, delta: int = 0) -> int:
