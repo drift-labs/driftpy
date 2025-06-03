@@ -364,7 +364,19 @@ def decode_user(buffer: bytes) -> UserAccount:
         margin_mode = MarginMode.HighLeverage()
     offset += 1
 
-    padding = [0] * 21
+    pool_id = read_uint8(buffer, offset)
+    offset += 1
+
+    padding1_bytes = [buffer[offset + i] for i in range(3)]
+    offset += 3
+
+    last_fuel_bonus_update_ts = read_int32_le(buffer, offset, signed=False)
+    offset += 4
+
+    final_padding_bytes = [buffer[offset + i] for i in range(12)]
+    offset += 12
+
+    user_account_padding = padding1_bytes + final_padding_bytes
 
     return UserAccount(
         authority,
@@ -394,5 +406,7 @@ def decode_user(buffer: bytes) -> UserAccount:
         open_auctions,
         has_open_auction,
         margin_mode,
-        padding,
+        pool_id,
+        last_fuel_bonus_update_ts,
+        user_account_padding,
     )

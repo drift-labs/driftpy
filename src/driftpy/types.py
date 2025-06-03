@@ -927,7 +927,9 @@ class UserAccount:
     open_auctions: int
     has_open_auction: bool
     margin_mode: MarginMode
-    padding: list[int] = field(default_factory=lambda: [0] * 21)
+    pool_id: int
+    last_fuel_bonus_update_ts: int
+    padding: list[int] = field(default_factory=lambda: [0] * 15)
 
 
 @dataclass
