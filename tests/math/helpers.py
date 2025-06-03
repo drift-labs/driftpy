@@ -112,6 +112,8 @@ mock_user_account = UserAccount(
     open_auctions=0,
     has_open_auction=False,
     margin_mode=MarginMode.Default(),
+    pool_id=0,
+    last_fuel_bonus_update_ts=0,
     padding=[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
 )
 
