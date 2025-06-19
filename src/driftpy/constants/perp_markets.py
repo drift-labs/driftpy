@@ -51,8 +51,8 @@ devnet_perp_market_configs: list[PerpMarketConfig] = [
         oracle_source=OracleSource.PythLazer1M(),  # type: ignore
     ),
     PerpMarketConfig(
-        symbol="MATIC-PERP",
-        base_asset_symbol="MATIC",
+        symbol="POL-PERP",
+        base_asset_symbol="POL",
         market_index=5,
         oracle=Pubkey.from_string("BrzyDgwELy4jjjsqLQpBeUxzrsueYyMhuWpYBaUYcXvi"),
         oracle_source=OracleSource.PythPull(),  # type: ignore
@@ -100,8 +100,8 @@ devnet_perp_market_configs: list[PerpMarketConfig] = [
         oracle_source=OracleSource.PythPull(),  # type: ignore
     ),
     PerpMarketConfig(
-        symbol="RNDR-PERP",
-        base_asset_symbol="RNDR",
+        symbol="RENDER-PERP",
+        base_asset_symbol="RENDER",
         market_index=12,
         oracle=Pubkey.from_string("8TQztfGcNjHGRusX4ejQQtPZs3Ypczt9jWF6pkgQMqUX"),
         oracle_source=OracleSource.PythPull(),  # type: ignore
@@ -205,15 +205,14 @@ devnet_perp_market_configs: list[PerpMarketConfig] = [
         oracle_source=OracleSource.Prelaunch(),  # type: ignore
     ),
     PerpMarketConfig(
-        symbol="KAMALA-POPULAR-VOTE-2024-PREDICT",
+        symbol="KAMALA-POPULAR-VOTE-2024",
         base_asset_symbol="KAMALA-POPULAR-VOTE",
         market_index=27,
         oracle=Pubkey.from_string("GU6CA7a2KCyhpfqZNb36UAfc9uzKBM8jHjGdt245QhYX"),
         oracle_source=OracleSource.Prelaunch(),  # type: ignore
     ),
-    # 28 sDAQaZQJQ4RXAxH3x526mbEXyQZT15ktkL84d7hmk7M RANDOM-2024-BET OracleSource.Prelaunch()
     PerpMarketConfig(
-        symbol="RANDOM-2024-BET",  # Unknown!
+        symbol="RANDOM-2024-BET",
         base_asset_symbol="RANDOM-2024",
         market_index=28,
         oracle=Pubkey.from_string("sDAQaZQJQ4RXAxH3x526mbEXyQZT15ktkL84d7hmk7M"),

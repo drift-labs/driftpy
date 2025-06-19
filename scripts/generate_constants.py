@@ -18,7 +18,7 @@ def decode_name(name) -> str:
     return bytes(name).decode("utf-8").strip()
 
 
-async def generate_spot_configs(drift_client: DriftClient) -> str:
+async def generate_spot_configs(drift_client: DriftClient, env: str) -> str:
     spot_markets = sorted(
         drift_client.get_spot_market_accounts(), key=lambda market: market.market_index
     )
@@ -34,8 +34,8 @@ async def generate_spot_configs(drift_client: DriftClient) -> str:
         )
         configs.append(config)
 
-    output = """
-mainnet_spot_market_configs: list[SpotMarketConfig] = ["""
+    output = f"""
+{env}_spot_market_configs: list[SpotMarketConfig] = ["""
 
     for config in configs:
         output += f"""
@@ -51,7 +51,7 @@ mainnet_spot_market_configs: list[SpotMarketConfig] = ["""
     return output
 
 
-async def generate_perp_configs(drift_client: DriftClient) -> str:
+async def generate_perp_configs(drift_client: DriftClient, env: str) -> str:
     perp_markets = sorted(
         drift_client.get_perp_market_accounts(), key=lambda market: market.market_index
     )
@@ -68,8 +68,8 @@ async def generate_perp_configs(drift_client: DriftClient) -> str:
         configs.append(config)
 
     # Generate Python code
-    output = """
-mainnet_perp_market_configs: list[PerpMarketConfig] = ["""
+    output = f"""
+{env}_perp_market_configs: list[PerpMarketConfig] = ["""
 
     for config in configs:
         output += f"""
@@ -89,25 +89,27 @@ mainnet_perp_market_configs: list[PerpMarketConfig] = ["""
 async def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--market-type", choices=["perp", "spot"], required=True)
+    parser.add_argument("--env", choices=["mainnet", "devnet"], default="mainnet")
     args = parser.parse_args()
 
-    rpc_url = os.getenv("MAINNET_RPC_ENDPOINT")
+    rpc_env_var = f"{args.env.upper()}_RPC_ENDPOINT"
+    rpc_url = os.getenv(rpc_env_var)
     if not rpc_url:
-        raise ValueError("MAINNET_RPC_ENDPOINT is not set")
+        raise ValueError(f"{rpc_env_var} is not set")
 
     drift_client = DriftClient(
         AsyncClient(rpc_url),
         Wallet.dummy(),
-        env="mainnet",
+        env=args.env,
         account_subscription=AccountSubscriptionConfig("cached"),
     )
 
     await drift_client.subscribe()
 
     if args.market_type == "perp":
-        output = await generate_perp_configs(drift_client)
+        output = await generate_perp_configs(drift_client, args.env)
     else:
-        output = await generate_spot_configs(drift_client)
+        output = await generate_spot_configs(drift_client, args.env)
 
     print(output)
     await drift_client.unsubscribe()
