@@ -75,6 +75,7 @@ devnet_spot_market_configs: list[SpotMarketConfig] = [
     ),
 ]
 
+
 mainnet_spot_market_configs: list[SpotMarketConfig] = [
     SpotMarketConfig(
         symbol="USDC",
@@ -418,5 +419,40 @@ mainnet_spot_market_configs: list[SpotMarketConfig] = [
         oracle=Pubkey.from_string("JDKJSkxjasBGL3ce1pkrN6tqDzuVUZPWzzkGuyX8m9yN"),
         oracle_source=OracleSource.PythLazerStableCoin(),  # type: ignore
         mint=Pubkey.from_string("Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB"),
+    ),
+    SpotMarketConfig(
+        symbol="SOL-2",
+        market_index=49,
+        oracle=Pubkey.from_string("3PiwrLLyiuWaxS7zJL5znGR9iYD3KWubZThdQzsCdg2e"),
+        oracle_source=OracleSource.SwitchboardOnDemand(),  # type: ignore
+        mint=Pubkey.from_string("So11111111111111111111111111111111111111112"),
+    ),
+    SpotMarketConfig(
+        symbol="JitoSOL-2",
+        market_index=50,
+        oracle=Pubkey.from_string("Fqv8vT5fdjvBbHd5k4B4ZvnXLH6bbdKP8cMv93ybCP8W"),
+        oracle_source=OracleSource.SwitchboardOnDemand(),  # type: ignore
+        mint=Pubkey.from_string("J1toso1uCk3RLmjorhTtrVwY9HJ7X8V9yYac6Y7kGCPn"),
+    ),
+    SpotMarketConfig(
+        symbol="JTO-2",
+        market_index=51,
+        oracle=Pubkey.from_string("DPvVSQYhZXQ2ygfT2Qjdg6iyeQVAyiz8okj88YRjy6NN"),
+        oracle_source=OracleSource.SwitchboardOnDemand(),  # type: ignore
+        mint=Pubkey.from_string("jtojtomepa8beP8AuQc6eXt5FriJwfFMwQx2v2f9mCL"),
+    ),
+    SpotMarketConfig(
+        symbol="dfdvSOL",
+        market_index=52,
+        oracle=Pubkey.from_string("EUQQD2fNN7h7su5TbWpUnf22zeGtF3RjEX2hgX2YPfLd"),
+        oracle_source=OracleSource.SwitchboardOnDemand(),  # type: ignore
+        mint=Pubkey.from_string("sctmB7GPi5L2Q5G9tUSzXvhZ4YiDMEGcRov9KfArQpx"),
+    ),
+    SpotMarketConfig(
+        symbol="sACRED-4",
+        market_index=53,
+        oracle=Pubkey.from_string("GheMfcCB49SuVCWrFReQDD2tLkcPDMG3qZEZWU44mHu"),
+        oracle_source=OracleSource.SwitchboardOnDemand(),  # type: ignore
+        mint=Pubkey.from_string("59CwZq5b6drmDizgGfxECG7f16hxDpG1nXrxPoQx4y8g"),
     ),
 ]

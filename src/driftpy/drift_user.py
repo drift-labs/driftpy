@@ -1697,7 +1697,7 @@ class DriftUser:
                     GOV_SPOT_MARKET_INDEX
                 )
                 fuel_bonus_numerator_user_stats = (
-                    now - user_stats.last_fuel_bonus_update_ts
+                    now - user_stats.last_fuel_if_bonus_update_ts
                 )
                 total_fuel["insurance_fuel"] += calculate_insurance_fuel_bonus(
                     spot_market_account,
@@ -1706,10 +1706,6 @@ class DriftUser:
                 )
 
         return total_fuel
-
-    def get_active_spot_positions(self) -> list[SpotPosition]:
-        user = self.get_user_account()
-        return self.get_active_spot_positions_for_user_account(user)
 
     def get_active_spot_positions_for_user_account(
         self, user: UserAccount

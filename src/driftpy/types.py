@@ -1064,6 +1064,24 @@ class ProtocolIfSharesTransferConfigAccount:
 
 
 @dataclass
+class IfRebalanceConfigAccount:
+    pubkey: Pubkey
+    total_in_amount: int
+    current_in_amount: int
+    current_out_amount: int
+    current_in_amount_since_last_transfer: int
+    epoch_start_ts: int
+    epoch_in_amount: int
+    epoch_max_in_amount: int
+    epoch_duration: int
+    out_market_index: int
+    in_market_index: int
+    max_slippage_bps: int
+    swap_mode: int
+    status: int
+
+
+@dataclass
 class ReferrerNameAccount:
     authority: Pubkey
     user: Pubkey
@@ -1349,10 +1367,58 @@ class SwapRecord:
 
 
 @dataclass
+class InsuranceFundSwapRecord:
+    rebalance_config: Pubkey
+    in_if_total_shares_before: int
+    out_if_total_shares_before: int
+    in_if_user_shares_before: int
+    out_if_user_shares_before: int
+    in_if_total_shares_after: int
+    out_if_total_shares_after: int
+    in_if_user_shares_after: int
+    out_if_user_shares_after: int
+    ts: int
+    in_amount: int
+    out_amount: int
+    out_oracle_price: int
+    out_oracle_price_twap: int
+    in_vault_amount_before: int
+    out_vault_amount_before: int
+    in_fund_vault_amount_after: int
+    out_fund_vault_amount_after: int
+    in_market_index: int
+    out_market_index: int
+
+
+@dataclass
+class TransferProtocolIfSharesToRevenuePoolRecord:
+    ts: int
+    market_index: int
+    amount: int
+    shares: int
+    if_vault_amount_before: int
+    protocol_shares_before: int
+    protocol_shares_after: int
+    current_in_amount_since_last_transfer: int
+
+
+@dataclass
 class PrelaunchOracleParams:
     perp_market_index: int
     price: Optional[int]
     max_price: Optional[int]
+
+
+@dataclass
+class IfRebalanceConfigParams:
+    total_in_amount: int
+    epoch_max_in_amount: int
+    epoch_duration: int
+    out_market_index: int
+    in_market_index: int
+    max_slippage_bps: int
+    swap_mode: int
+    status: int
 
 
 @dataclass
