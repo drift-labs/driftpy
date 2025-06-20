@@ -36,7 +36,7 @@ devnet_spot_market_configs: list[SpotMarketConfig] = [
         market_index=1,
         oracle=Pubkey.from_string("BAtFj4kQttZRVep3UZS2aZRDixkGYgWsbqTBVDbnSsPF"),
         oracle_source=OracleSource.PythPull(),  # type: ignore
-        mint=WRAPPED_SOL_MINT,
+        mint=Pubkey.from_string("So11111111111111111111111111111111111111112"),
     ),
     SpotMarketConfig(
         symbol="BTC",
@@ -46,14 +46,14 @@ devnet_spot_market_configs: list[SpotMarketConfig] = [
         mint=Pubkey.from_string("3BZPwbcqB5kKScF3TEXxwNfx5ipV13kbRVDvfVp5c6fv"),
     ),
     SpotMarketConfig(
-        symbol="PYUSD",
+        symbol="Default Market Name",
         market_index=3,
         oracle=Pubkey.from_string("HpMoKp3TCd3QT4MWYUKk2zCBwmhr5Df45fB6wdxYqEeh"),
         oracle_source=OracleSource.PythPull(),  # type: ignore
         mint=Pubkey.from_string("GLfF72ZCUnS6N9iDJw8kedHzd6WFVf3VbpwdKKy76FRk"),
     ),
     SpotMarketConfig(
-        symbol="BONK",
+        symbol="Bonk",
         market_index=4,
         oracle=Pubkey.from_string("GojbSnJuPdKDT1ZuHuAM5t9oz6bxTo1xhUKpTua2F72p"),
         oracle_source=OracleSource.PythPull(),  # type: ignore
@@ -70,7 +70,7 @@ devnet_spot_market_configs: list[SpotMarketConfig] = [
         symbol="USDC",
         market_index=6,
         oracle=Pubkey.from_string("En8hkHLkRe9d9DraYmBTrus518BvmVH448YcvmrFM6Ce"),
-        oracle_source=OracleSource.PythPull(),  # type: ignore
+        oracle_source=OracleSource.PythStableCoinPull(),  # type: ignore
         mint=Pubkey.from_string("8zGuJQqwhZafTah7Uc7Z4tXRnguqkn5KLFAP8oV6PHe2"),
     ),
 ]
