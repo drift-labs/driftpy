@@ -163,3 +163,18 @@ def get_signed_msg_user_account_public_key(
     authority: Pubkey,
 ) -> Pubkey:
     return Pubkey.find_program_address([b"SIGNED_MSG", bytes(authority)], program_id)[0]
+
+
+def get_if_rebalance_config_public_key(
+    program_id: Pubkey,
+    in_market_index: int,
+    out_market_index: int,
+) -> Pubkey:
+    return Pubkey.find_program_address(
+        [
+            b"if_rebalance_config",
+            int_to_le_bytes(in_market_index),
+            int_to_le_bytes(out_market_index),
+        ],
+        program_id,
+    )[0]
