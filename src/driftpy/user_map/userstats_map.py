@@ -123,7 +123,9 @@ class UserStatsMap:
                             Pubkey.from_string(pubkey), DataAndSlot(slot, data)
                         )
                     else:
-                        await self.update_user_stat(pubkey, DataAndSlot(slot, data))
+                        await self.update_user_stat(
+                            Pubkey.from_string(pubkey), DataAndSlot(slot, data)
+                        )
 
                     await asyncio.sleep(0)
 
