@@ -312,7 +312,7 @@ class UserStatsMap:
         existing_drift_user_stat = self.get(authority_str)
 
         if existing_drift_user_stat:
-            existing_drift_user_stat.unsubscribe()
+            await existing_drift_user_stat.unsubscribe()
 
             new_drift_user_stat = DriftUserStats(
                 self.drift_client,
