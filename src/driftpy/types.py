@@ -584,10 +584,14 @@ class AMM:
     last_oracle_valid: bool
     target_base_asset_amount_per_lp: int
     per_lp_base: int
-    padding1: int = 0
-    padding2: int = 0
     total_fee_earned_per_lp: Optional[int] = None
-    padding: list[int] = field(default_factory=lambda: [0] * 12)
+    net_unsettled_funding_pnl: int
+    quote_asset_amount_with_unsettled_lp: int
+    reference_price_offset: int
+    taker_speed_bump_override: int
+    amm_spread_adjustment: int
+    amm_inventory_spread_adjustment: int
+    padding: list[int] = field(default_factory=lambda: [0] * 14)
 
 
 @dataclass

@@ -44,11 +44,11 @@ def calculate_vol_spread_bn(
 ):
     market_avg_std_pct = (
         ((mark_std + oracle_std) * PERCENTAGE_PRECISION) // reserve_price
-    ) // 2
+    ) // 4
     vol_spread = max(last_oracle_conf_pct, market_avg_std_pct // 2)
 
     clamp_min = PERCENTAGE_PRECISION // 100
-    clamp_max = (PERCENTAGE_PRECISION * 16) // 10
+    clamp_max = PERCENTAGE_PRECISION
 
     long_vol_spread_factor = clamp_num(
         (long_intensity * PERCENTAGE_PRECISION) // max(1, volume_24h),
@@ -64,7 +64,7 @@ def calculate_vol_spread_bn(
     conf_component = last_oracle_conf_pct
 
     if last_oracle_conf_pct <= PRICE_PRECISION // 400:
-        conf_component = last_oracle_conf_pct // 10
+        conf_component = last_oracle_conf_pct // 20
 
     long_vol_spread = max(
         conf_component, (vol_spread * long_vol_spread_factor) // PERCENTAGE_PRECISION
@@ -236,6 +236,7 @@ def calculate_spread_bn(
     long_intensity: int,
     short_intensity: int,
     volume24H: int,
+    amm_inventory_spread_adjustment: int = 0,
     return_terms: bool = False,
 ):
     assert isinstance(base_spread, int)
@@ -258,6 +259,8 @@ def calculate_spread_bn(
         "half_revenue_retreat_amount": 0,
         "long_spread_w_rev_retreat": 0,
         "short_spread_w_rev_retreat": 0,
+        "long_spread_w_offset_shrink": 0,
+        "short_spread_w_offset_shrink": 0,
         "total_spread": 0,
         "long_spread": 0,
         "short_spread": 0,
@@ -293,9 +296,16 @@ def calculate_spread_bn(
     spread_terms["long_spread_w_ps"] = long_spread
     spread_terms["short_spread_w_ps"] = short_spread
 
-    max_target_spread = float(
-        math.floor(max(max_spread, abs(last_oracle_reserve_price_spread_pct)))
+    max_spread_baseline = min(
+        max(
+            abs(last_oracle_reserve_price_spread_pct),
+            last_oracle_conf_pct * 2,
+            max(mark_std, oracle_std) * PERCENTAGE_PRECISION // reserve_price,
+        ),
+        BID_ASK_SPREAD_PRECISION,
     )
+
+    max_target_spread = float(math.floor(max(max_spread, max_spread_baseline)))
 
     inventory_spread_scale = calculate_inventory_scale(
         base_asset_amount_with_amm,
@@ -383,6 +393,30 @@ def calculate_spread_bn(
     spread_terms["long_spread_w_rev_retreat"] = long_spread
     spread_terms["short_spread_w_rev_retreat"] = short_spread
 
+    if amm_inventory_spread_adjustment < 0:
+        adjustment = abs(amm_inventory_spread_adjustment)
+
+        shrunk_long = max(1, long_spread - math.floor((long_spread * adjustment) / 100))
+        shrunk_short = max(
+            1, short_spread - math.floor((short_spread * adjustment) / 100)
+        )
+
+        long_spread = max(long_vol_spread, shrunk_long)
+        short_spread = max(short_vol_spread, shrunk_short)
+    elif amm_inventory_spread_adjustment > 0:
+        adjustment = amm_inventory_spread_adjustment
+
+        grown_long = max(1, long_spread + math.ceil((long_spread * adjustment) / 100))
+        grown_short = max(
+            1, short_spread + math.ceil((short_spread * adjustment) / 100)
+        )
+
+        long_spread = max(long_vol_spread, grown_long)
+        short_spread = max(short_vol_spread, grown_short)
+
+    spread_terms["long_spread_w_offset_shrink"] = long_spread
+    spread_terms["short_spread_w_offset_shrink"] = short_spread
+
     total_spread = long_spread + short_spread
     if total_spread > max_target_spread:
         if long_spread > short_spread:
@@ -446,10 +480,23 @@ def calculate_spread(
         amm.long_intensity_volume,
         amm.short_intensity_volume,
         amm.volume24h,
+        amm.amm_inventory_spread_adjustment,
     )
 
     long_spread = spreads[0]
     short_spread = spreads[1]
+
+    amm_spread_adjustment = amm.amm_spread_adjustment
+    if amm_spread_adjustment > 0:
+        long_spread = max(long_spread + (long_spread * amm_spread_adjustment) / 100, 1)
+        short_spread = max(
+            short_spread + (short_spread * amm_spread_adjustment) / 100, 1
+        )
+    elif amm_spread_adjustment < 0:
+        long_spread = max(long_spread - (long_spread * -amm_spread_adjustment) / 100, 1)
+        short_spread = max(
+            short_spread - (short_spread * -amm_spread_adjustment) / 100, 1
+        )
 
     return long_spread, short_spread
 
