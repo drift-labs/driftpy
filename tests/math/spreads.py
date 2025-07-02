@@ -259,10 +259,11 @@ async def test_various_spreads():
         long_intensity,
         short_intensity,
         volume_24h,
-        True,
+        0,
+        return_terms=True,
     )
 
-    assert long_spread_1 == 14_864
+    assert long_spread_1 == 12_500.0
     assert short_spread_1 == 12_500
     assert long_spread_1 == spread_terms_1["long_spread"]
     assert short_spread_1 == spread_terms_1["short_spread"]
@@ -287,14 +288,15 @@ async def test_various_spreads():
         12_358_265_776,
         72_230_366_233,
         432_067_603_632,
-        True,
+        0,
+        return_terms=True,
     )
 
     assert spread_terms_2["effective_leverage_capped"] >= 1.0002
     assert spread_terms_2["inventory_spread_scale"] == 1.73493
-    assert spread_terms_2["long_spread"] == 4_262
-    assert spread_terms_2["short_spread"] == 43_238
-    assert spread_terms_2["long_spread"] + spread_terms_2["short_spread"] == 47_500
+    assert spread_terms_2["long_spread"] == 89745
+    assert spread_terms_2["short_spread"] == 910255
+    assert spread_terms_2["long_spread"] + spread_terms_2["short_spread"] == 1000000
 
 
 @mark.asyncio
@@ -319,13 +321,14 @@ async def test_corner_case_spreads():
         768_323_534,
         243_875_031,
         130_017_761_029,
-        True,
+        0,
+        return_terms=True,
     )
 
     assert spread_terms["effective_leverage_capped"] <= 1.000001
     assert spread_terms["inventory_spread_scale"] == 1.0306
     assert spread_terms["long_spread"] == 515
-    assert spread_terms["short_spread"] == 5_668
+    assert spread_terms["short_spread"] == 5611
 
     base_spread = 5_000
     last_oracle_reserve_price_spread_pct = -262_785
@@ -376,13 +379,14 @@ async def test_corner_case_spreads():
         long_intensity,
         short_intensity,
         volume_24h,
+        0,
         True,
     )
 
     assert sui_terms["effective_leverage_capped"] <= 1.000001
     assert sui_terms["inventory_spread_scale"] == 1.00007
-    assert sui_terms["long_spread"] == 259_073
-    assert sui_terms["short_spread"] == 3_712
+    assert sui_terms["long_spread"] == 269813
+    assert sui_terms["short_spread"] == 3925
 
 
 @mark.asyncio
