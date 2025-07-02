@@ -584,7 +584,7 @@ class AMM:
     last_oracle_valid: bool
     target_base_asset_amount_per_lp: int
     per_lp_base: int
-    total_fee_earned_per_lp: Optional[int] = None
+    total_fee_earned_per_lp: int
     net_unsettled_funding_pnl: int
     quote_asset_amount_with_unsettled_lp: int
     reference_price_offset: int

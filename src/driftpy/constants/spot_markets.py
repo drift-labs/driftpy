@@ -455,4 +455,11 @@ mainnet_spot_market_configs: list[SpotMarketConfig] = [
         oracle_source=OracleSource.SwitchboardOnDemand(),  # type: ignore
         mint=Pubkey.from_string("59CwZq5b6drmDizgGfxECG7f16hxDpG1nXrxPoQx4y8g"),
     ),
+    SpotMarketConfig(
+        symbol="EURC",
+        market_index=54,
+        oracle=Pubkey.from_string("BkdSPLmw4W6twrJjAePw2bJAwDTBtxJ9t6LvNHfcBKg1"),
+        oracle_source=OracleSource.PythLazer(),  # type: ignore
+        mint=Pubkey.from_string("HzwqbKZw8HxMN6bF2yFZNrht3c2iXXzpKcFu7uBEDKtr"),
+    ),
 ]
