@@ -1,5 +1,4 @@
 from abc import ABC, abstractmethod
-import copy
 from datetime import datetime
 from typing import Dict, Generator, List, Optional
 from solders.pubkey import Pubkey
@@ -12,6 +11,7 @@ from driftpy.math.amm import (
     calculate_quote_asset_amount_swapped,
     calculate_spread_reserves,
     calculate_updated_amm,
+    deepcopy_amm,
 )
 from driftpy.math.orders import standardize_price
 from driftpy.types import (
@@ -178,7 +178,7 @@ def get_vamm_l2_generator(
     top_of_book_bid_size = 0
     bid_size = open_bids // num_base_orders
 
-    bid_amm = copy.deepcopy(updated_amm)
+    bid_amm = deepcopy_amm(updated_amm)
     bid_amm.base_asset_reserve = bid_reserves[0]
     bid_amm.quote_asset_reserve = bid_reserves[1]
 
@@ -245,7 +245,7 @@ def get_vamm_l2_generator(
     top_of_book_ask_size = 0
     ask_size = abs(open_asks) // num_base_orders
 
-    ask_amm = copy.deepcopy(updated_amm)
+    ask_amm = deepcopy_amm(updated_amm)
     ask_amm.base_asset_reserve = ask_reserves[0]
     ask_amm.quote_asset_reserve = ask_reserves[1]
 

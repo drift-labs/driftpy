@@ -1,6 +1,5 @@
 import inspect
 import zlib
-from copy import deepcopy
 from dataclasses import dataclass, field
 from typing import Callable, Optional, TypedDict
 from urllib.parse import urlparse, urlunparse
@@ -593,18 +592,6 @@ class AMM:
     amm_spread_adjustment: int
     amm_inventory_spread_adjustment: int
     padding: list[int] = field(default_factory=lambda: [0] * 14)
-
-    def __deepcopy__(self, memo):
-        field_values = {}
-        for field in self.__dataclass_fields__.values():
-            value = getattr(self, field.name)
-            if isinstance(value, Pubkey):
-                field_values[field.name] = value
-            else:
-                field_values[field.name] = deepcopy(value, memo)
-        copied = AMM(**field_values)
-        memo[id(self)] = copied
-        return copied
 
 
 @dataclass
