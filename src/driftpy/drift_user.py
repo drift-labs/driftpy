@@ -147,7 +147,9 @@ class DriftUser:
 
     def get_order_by_user_order_id(self, user_order_id: int):
         for order in self.get_user_account().orders:
-            if order.user_order_id == user_order_id:
+            if order.user_order_id == user_order_id and is_variant(
+                order.status, "Open"
+            ):
                 return order
 
         return None
