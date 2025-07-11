@@ -101,13 +101,13 @@ async def get_oracle_price_data_and_slot(
         oracle_price_data = decode_pyth_lazer_price_info(oracle_raw)
         data_and_slot = DataAndSlot(data=oracle_price_data, slot=slot)
     elif is_variant(oracle_source, "PythLazer1K"):
-        oracle_price_data = decode_pyth_lazer_price_info(oracle_raw)
+        oracle_price_data = decode_pyth_lazer_price_info(oracle_raw, multiple=1000)
         data_and_slot = DataAndSlot(data=oracle_price_data, slot=slot)
     elif is_variant(oracle_source, "PythLazer1M"):
-        oracle_price_data = decode_pyth_lazer_price_info(oracle_raw)
+        oracle_price_data = decode_pyth_lazer_price_info(oracle_raw, multiple=1000000)
         data_and_slot = DataAndSlot(data=oracle_price_data, slot=slot)
     elif is_variant(oracle_source, "PythLazerStableCoin"):
-        oracle_price_data = decode_pyth_lazer_price_info(oracle_raw)
+        oracle_price_data = decode_pyth_lazer_price_info(oracle_raw, stable_coin=True)
         data_and_slot = DataAndSlot(data=oracle_price_data, slot=slot)
 
     if data_and_slot:
@@ -267,26 +267,31 @@ def decode_pyth_pull_price_info(
     )
 
 
-def decode_pyth_lazer_price_info(data: bytes):
+def decode_pyth_lazer_price_info(
+    data: bytes,
+    multiple: int = 1,
+    stable_coin: bool = False,
+):
     oracle = DRIFT_CODER.accounts.decode(data)
 
     exponent = abs(oracle.exponent)
     pyth_precision = 10**exponent
 
-    price = convert_pyth_price(oracle.price / pyth_precision)
-    confidence = convert_pyth_price(oracle.conf / pyth_precision)
+    price = convert_pyth_price(oracle.price / pyth_precision, multiple)
+    confidence = convert_pyth_price(oracle.conf / pyth_precision, multiple)
 
-    # Stable coin price adjustment logic
-    five_bps = 500
-    if abs(price - QUOTE_PRECISION) < min(confidence, five_bps):
-        price = QUOTE_PRECISION
+    if stable_coin:
+        # Stable coin price adjustment logic
+        five_bps = 500
+        if abs(price - QUOTE_PRECISION) < min(confidence, five_bps):
+            price = QUOTE_PRECISION
 
     price_data = OraclePriceData(
         price=int(price),
         slot=oracle.posted_slot,
         confidence=int(confidence),
-        twap=convert_pyth_price(oracle.price / pyth_precision),
-        twap_confidence=convert_pyth_price(oracle.price / pyth_precision),
+        twap=convert_pyth_price(oracle.price / pyth_precision, multiple),
+        twap_confidence=convert_pyth_price(oracle.price / pyth_precision, multiple),
         has_sufficient_number_of_data_points=True,
     )
     return price_data
@@ -306,11 +311,11 @@ def decode_oracle(oracle_ai: bytes, oracle_source: OracleSource):
     elif is_variant(oracle_source, "PythLazer"):
         return decode_pyth_lazer_price_info(oracle_ai)
     elif is_variant(oracle_source, "PythLazer1K"):
-        return decode_pyth_lazer_price_info(oracle_ai)
+        return decode_pyth_lazer_price_info(oracle_ai, multiple=1000)
     elif is_variant(oracle_source, "PythLazer1M"):
-        return decode_pyth_lazer_price_info(oracle_ai)
+        return decode_pyth_lazer_price_info(oracle_ai, multiple=1000000)
     elif is_variant(oracle_source, "PythLazerStableCoin"):
-        return decode_pyth_lazer_price_info(oracle_ai)
+        return decode_pyth_lazer_price_info(oracle_ai, stable_coin=True)
     else:
         raise NotImplementedError(
             f"Received unexpected oracle source: {str(oracle_source)}"
@@ -331,11 +336,11 @@ def get_oracle_decode_fn(oracle_source: OracleSource):
     elif is_variant(oracle_source, "PythLazer"):
         return lambda data: decode_pyth_lazer_price_info(data)
     elif is_variant(oracle_source, "PythLazer1K"):
-        return lambda data: decode_pyth_lazer_price_info(data)
+        return lambda data: decode_pyth_lazer_price_info(data, multiple=1000)
     elif is_variant(oracle_source, "PythLazer1M"):
-        return lambda data: decode_pyth_lazer_price_info(data)
+        return lambda data: decode_pyth_lazer_price_info(data, multiple=1000000)
     elif is_variant(oracle_source, "PythLazerStableCoin"):
-        return lambda data: decode_pyth_lazer_price_info(data)
+        return lambda data: decode_pyth_lazer_price_info(data, stable_coin=True)
     else:
         raise NotImplementedError(
             f"Received unexpected oracle source: {str(oracle_source)}"
