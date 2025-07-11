@@ -1,6 +1,8 @@
 import math
 import time
 from copy import deepcopy
+from dataclasses import fields
+from solders.pubkey import Pubkey
 from typing import Optional, Tuple
 
 from driftpy.constants.numeric_constants import (
@@ -31,6 +33,19 @@ from driftpy.types import (
     SwapDirection,
     is_variant,
 )
+
+
+def deepcopy_amm(amm: AMM) -> AMM:
+    field_values = {}
+    field_names = {field.name for field in fields(AMM)}
+    for field in amm.__dataclass_fields__.values():
+        value = getattr(amm, field.name)
+        if isinstance(value, Pubkey):
+            field_values[field.name] = value
+        elif field.name in field_names:
+            field_values[field.name] = deepcopy(value)
+    copied = AMM(**field_values)
+    return copied
 
 
 def calculate_vol_spread_bn(
@@ -553,8 +568,8 @@ def calculate_price(
 
 
 def calculate_swap_output(
-    swap_amount: int,
     input_asset_reserve: int,
+    swap_amount: int,
     swap_direction: SwapDirection,
     invariant: int,
 ):
@@ -755,7 +770,7 @@ def calculate_updated_amm(amm: AMM, oracle_price_data: OraclePriceData) -> AMM:
     if amm.curve_update_intensity == 0 or oracle_price_data is None:
         return amm
 
-    new_amm = deepcopy(amm)
+    new_amm = deepcopy_amm(amm)
     (prepeg_cost, p_k_numer, p_k_denom, new_peg) = calculate_new_amm(
         amm, oracle_price_data
     )
@@ -816,7 +831,7 @@ def calculate_new_amm(amm: AMM, oracle_price_data: OraclePriceData):
 
         pre_peg_cost = budget + abs(deficit_makeup)
 
-        new_amm = deepcopy(amm)
+        new_amm = deepcopy_amm(amm)
 
         new_amm.base_asset_reserve = (
             new_amm.base_asset_reserve * p_k_numer
