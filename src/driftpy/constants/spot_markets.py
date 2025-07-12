@@ -462,4 +462,11 @@ mainnet_spot_market_configs: list[SpotMarketConfig] = [
         oracle_source=OracleSource.PythLazer(),  # type: ignore
         mint=Pubkey.from_string("HzwqbKZw8HxMN6bF2yFZNrht3c2iXXzpKcFu7uBEDKtr"),
     ),
+    SpotMarketConfig(
+        symbol="PT-fragSOL-31OCT25-3",
+        market_index=55,
+        oracle=Pubkey.from_string("C41YpBLZfERAbV1p8DD48vDwbYhRQCbiryMx8Vp5sfo4"),
+        oracle_source=OracleSource.SwitchboardOnDemand(),  # type: ignore
+        mint=Pubkey.from_string("Aby6y5DYtTrhQD8i7JXLs4H3jdUTwSXDraYqnwn5tKbt"),
+    ),
 ]
