@@ -746,4 +746,11 @@ mainnet_perp_market_configs: list[PerpMarketConfig] = [
         oracle=Pubkey.from_string("4zXs8GrbMwd9EhDwuaWLngX2yY5BApb2UxeHrTzu3Ckr"),
         oracle_source=OracleSource.SwitchboardOnDemand(),  # type: ignore
     ),
+    PerpMarketConfig(
+        symbol="PUMP-PERP",
+        base_asset_symbol="PUMP",
+        market_index=75,
+        oracle=Pubkey.from_string("7ezQA4H8XrdJjvvet6Jvd4NUtssFfQVN4S3HDDJeZy2M"),
+        oracle_source=OracleSource.Prelaunch(),  # type: ignore
+    ),
 ]
