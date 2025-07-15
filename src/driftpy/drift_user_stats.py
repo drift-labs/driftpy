@@ -49,8 +49,8 @@ class DriftUserStats:
     async def fetch_accounts(self):
         await self.account_subscriber.fetch()
 
-    def unsubscribe(self):
-        self.account_subscriber.unsubscribe()
+    async def unsubscribe(self):
+        await self.account_subscriber.unsubscribe()
 
     def get_account_and_slot(self) -> DataAndSlot[UserStatsAccount]:
         return self.account_subscriber.get_user_stats_account_and_slot()
