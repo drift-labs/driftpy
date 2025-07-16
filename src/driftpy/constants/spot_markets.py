@@ -469,4 +469,11 @@ mainnet_spot_market_configs: list[SpotMarketConfig] = [
         oracle_source=OracleSource.SwitchboardOnDemand(),  # type: ignore
         mint=Pubkey.from_string("Aby6y5DYtTrhQD8i7JXLs4H3jdUTwSXDraYqnwn5tKbt"),
     ),
+    SpotMarketConfig(
+        symbol="PUMP",
+        market_index=56,
+        oracle=Pubkey.from_string("5r8RWTaRiMgr9Lph3FTUE3sGb1vymhpCrm83Bovjfcps"),
+        oracle_source=OracleSource.PythLazer(),  # type: ignore
+        mint=Pubkey.from_string("pumpCmXqMfrsAkQ5r49WcJnRayYRqmXz6ae8H7H9Dfn"),
+    ),
 ]
