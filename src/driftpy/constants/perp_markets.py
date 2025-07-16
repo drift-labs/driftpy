@@ -220,6 +220,7 @@ devnet_perp_market_configs: list[PerpMarketConfig] = [
     ),
 ]
 
+
 mainnet_perp_market_configs: list[PerpMarketConfig] = [
     PerpMarketConfig(
         symbol="SOL-PERP",
@@ -750,7 +751,7 @@ mainnet_perp_market_configs: list[PerpMarketConfig] = [
         symbol="PUMP-PERP",
         base_asset_symbol="PUMP",
         market_index=75,
-        oracle=Pubkey.from_string("7ezQA4H8XrdJjvvet6Jvd4NUtssFfQVN4S3HDDJeZy2M"),
-        oracle_source=OracleSource.Prelaunch(),  # type: ignore
+        oracle=Pubkey.from_string("5r8RWTaRiMgr9Lph3FTUE3sGb1vymhpCrm83Bovjfcps"),
+        oracle_source=OracleSource.PythLazer(),  # type: ignore
     ),
 ]

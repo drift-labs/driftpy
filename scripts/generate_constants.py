@@ -92,7 +92,10 @@ async def main():
     parser.add_argument("--env", choices=["mainnet", "devnet"], default="mainnet")
     args = parser.parse_args()
 
-    rpc_env_var = f"{args.env.upper()}_RPC_ENDPOINT"
+    if args.env == "mainnet":
+        rpc_env_var = "RPC_TRITON"
+    else:
+        rpc_env_var = f"{args.env.upper()}_RPC_ENDPOINT"
     rpc_url = os.getenv(rpc_env_var)
     if not rpc_url:
         raise ValueError(f"{rpc_env_var} is not set")
