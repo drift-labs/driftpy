@@ -137,7 +137,7 @@ class BulkAccountLoader:
             post = self.connection._provider.session.post(
                 self.connection._provider.endpoint_uri,
                 json=rpc_requests,
-                headers={"content-encoding": "gzip"},
+                headers={"Content-Type": "application/json"},
             )
             resp = await asyncio.wait_for(post, timeout=10)
         except asyncio.TimeoutError:
@@ -148,8 +148,6 @@ class BulkAccountLoader:
 
         if isinstance(parsed_resp, jsonrpcclient.Error):
             raise ValueError(f"Error fetching accounts: {parsed_resp.message}")
-        if not isinstance(parsed_resp, jsonrpcclient.Ok):
-            raise ValueError(f"Error fetching accounts - not ok: {parsed_resp}")
 
         for rpc_result, chunk_accounts in zip(parsed_resp, chunk):
             if isinstance(rpc_result, jsonrpcclient.Error):
