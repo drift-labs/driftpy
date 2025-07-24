@@ -35,7 +35,7 @@ def event_loop():
 
 @pytest.fixture(scope="session")
 def rpc_url():
-    return os.environ.get("RPC_TRITON")
+    return os.environ.get("MAINNET_RPC_ENDPOINT")
 
 
 @mark.asyncio
