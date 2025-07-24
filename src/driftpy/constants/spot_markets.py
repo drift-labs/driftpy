@@ -227,8 +227,8 @@ mainnet_spot_market_configs: list[SpotMarketConfig] = [
     SpotMarketConfig(
         symbol="CLOUD",
         market_index=21,
-        oracle=Pubkey.from_string("FNFejcXENaPgKaCTfstew9vSSvdQPnXjGTkJjUnnYvHU"),
-        oracle_source=OracleSource.SwitchboardOnDemand(),  # type: ignore
+        oracle=Pubkey.from_string("4EgPYJkEyNkoUcaMDbeokUiR4b1f3Hs3DK5S4NzqseR2"),
+        oracle_source=OracleSource.PythPull(),  # type: ignore
         mint=Pubkey.from_string("CLoUDKc4Ane7HeQcPpE3YHnznRxhMimJ4MyaUqyHFzAu"),
     ),
     SpotMarketConfig(
