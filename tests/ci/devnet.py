@@ -1,6 +1,7 @@
 import asyncio
 import os
 
+import dotenv
 import pytest
 from anchorpy import Wallet
 from pytest import mark
@@ -10,6 +11,8 @@ from driftpy.account_subscription_config import AccountSubscriptionConfig
 from driftpy.constants.perp_markets import devnet_perp_market_configs
 from driftpy.constants.spot_markets import devnet_spot_market_configs
 from driftpy.drift_client import DriftClient
+
+dotenv.load_dotenv()
 
 
 @pytest.fixture(scope="session")

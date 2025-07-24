@@ -443,8 +443,8 @@ mainnet_perp_market_configs: list[PerpMarketConfig] = [
         symbol="CLOUD-PERP",
         base_asset_symbol="CLOUD",
         market_index=31,
-        oracle=Pubkey.from_string("FNFejcXENaPgKaCTfstew9vSSvdQPnXjGTkJjUnnYvHU"),
-        oracle_source=OracleSource.SwitchboardOnDemand(),  # type: ignore
+        oracle=Pubkey.from_string("4EgPYJkEyNkoUcaMDbeokUiR4b1f3Hs3DK5S4NzqseR2"),
+        oracle_source=OracleSource.PythPull(),  # type: ignore
     ),
     PerpMarketConfig(
         symbol="IO-PERP",
@@ -744,8 +744,8 @@ mainnet_perp_market_configs: list[PerpMarketConfig] = [
         symbol="LAUNCHCOIN-PERP",
         base_asset_symbol="LAUNCHCOIN",
         market_index=74,
-        oracle=Pubkey.from_string("4zXs8GrbMwd9EhDwuaWLngX2yY5BApb2UxeHrTzu3Ckr"),
-        oracle_source=OracleSource.SwitchboardOnDemand(),  # type: ignore
+        oracle=Pubkey.from_string("6Dtdqcr6dEKYMRKCvdDa8mSf5qVFbQVDZHTi6WhU1Foj"),
+        oracle_source=OracleSource.PythPull(),  # type: ignore
     ),
     PerpMarketConfig(
         symbol="PUMP-PERP",
