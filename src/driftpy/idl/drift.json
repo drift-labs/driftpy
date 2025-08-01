@@ -1,5 +1,5 @@
 {
-    "version": "2.129.0",
+    "version": "2.130.0",
     "name": "drift",
     "instructions": [
         {
@@ -1452,6 +1452,11 @@
                     "name": "user",
                     "isMut": true,
                     "isSigner": false
+                },
+                {
+                    "name": "signer",
+                    "isMut": false,
+                    "isSigner": true
                 }
             ],
             "args": [
@@ -2082,7 +2087,12 @@
                     "isSigner": false
                 }
             ],
-            "args": []
+            "args": [
+                {
+                    "name": "disableMaintenance",
+                    "type": "bool"
+                }
+            ]
         },
         {
             "name": "updateUserFuelBonus",
@@ -3098,7 +3108,7 @@
                 {
                     "name": "marketIndexes",
                     "type": {
-                        "array": ["u16", 5]
+                        "vec": "u16"
                     }
                 }
             ]
@@ -6697,6 +6707,10 @@
                 {
                     "name": "ammInventorySpreadAdjustment",
                     "type": "i8"
+                },
+                {
+                    "name": "referencePriceOffset",
+                    "type": "i32"
                 }
             ]
         },
@@ -7486,12 +7500,38 @@
             ]
         },
         {
-            "name": "zeroAmmFieldsPrepMmOracleInfo",
+            "name": "updateFeatureBitFlagsMmOracle",
             "accounts": [
                 {
                     "name": "admin",
-                    "isMut": true,
+                    "isMut": false,
                     "isSigner": true
+                },
+                {
+                    "name": "state",
+                    "isMut": true,
+                    "isSigner": false
+                }
+            ],
+            "args": [
+                {
+                    "name": "enable",
+                    "type": "bool"
+                }
+            ]
+        },
+        {
+            "name": "zeroMmOracleFields",
+            "accounts": [
+                {
+                    "name": "admin",
+                    "isMut": false,
+                    "isSigner": true
+                },
+                {
+                    "name": "state",
+                    "isMut": false,
+                    "isSigner": false
                 },
                 {
                     "name": "perpMarket",
@@ -7500,6 +7540,27 @@
                 }
             ],
             "args": []
+        },
+        {
+            "name": "updateFeatureBitFlagsMedianTriggerPrice",
+            "accounts": [
+                {
+                    "name": "admin",
+                    "isMut": false,
+                    "isSigner": true
+                },
+                {
+                    "name": "state",
+                    "isMut": true,
+                    "isSigner": false
+                }
+            ],
+            "args": [
+                {
+                    "name": "enable",
+                    "type": "bool"
+                }
+            ]
         }
     ],
     "accounts": [
@@ -7715,9 +7776,19 @@
                         "type": "u8"
                     },
                     {
-                        "name": "padding",
+                        "name": "padding1",
                         "type": {
-                            "array": ["u8", 31]
+                            "array": ["u8", 3]
+                        }
+                    },
+                    {
+                        "name": "currentMaintenanceUsers",
+                        "type": "u32"
+                    },
+                    {
+                        "name": "padding2",
+                        "type": {
+                            "array": ["u8", 24]
                         }
                     }
                 ]
@@ -8196,9 +8267,17 @@
                         "type": "u8"
                     },
                     {
+                        "name": "padding1",
+                        "type": "u32"
+                    },
+                    {
+                        "name": "lastFillPrice",
+                        "type": "u64"
+                    },
+                    {
                         "name": "padding",
                         "type": {
-                            "array": ["u8", 36]
+                            "array": ["u8", 24]
                         }
                     }
                 ]
@@ -8912,9 +8991,13 @@
                         "type": "u16"
                     },
                     {
+                        "name": "featureBitFlags",
+                        "type": "u8"
+                    },
+                    {
                         "name": "padding",
                         "type": {
-                            "array": ["u8", 10]
+                            "array": ["u8", 9]
                         }
                     }
                 ]
@@ -10371,7 +10454,7 @@
                         "name": "lastFundingRate",
                         "docs": [
                             "last funding rate in this perp market (unit is quote per base)",
-                            "precision: QUOTE_PRECISION"
+                            "precision: FUNDING_RATE_PRECISION"
                         ],
                         "type": "i64"
                     },
@@ -10379,7 +10462,7 @@
                         "name": "lastFundingRateLong",
                         "docs": [
                             "last funding rate for longs in this perp market (unit is quote per base)",
-                            "precision: QUOTE_PRECISION"
+                            "precision: FUNDING_RATE_PRECISION"
                         ],
                         "type": "i64"
                     },
@@ -10604,7 +10687,7 @@
                         "type": "u64"
                     },
                     {
-                        "name": "maxPositionSize",
+                        "name": "mmOracleSlot",
                         "docs": [
                             "the max base size a single user can have",
                             "precision: BASE_PRECISION"
@@ -10686,18 +10769,9 @@
                         "type": "u32"
                     },
                     {
-                        "name": "longIntensityCount",
-                        "docs": [
-                            "the count intensity of long fills against AMM"
-                        ],
-                        "type": "u32"
-                    },
-                    {
-                        "name": "shortIntensityCount",
-                        "docs": [
-                            "the count intensity of short fills against AMM"
-                        ],
-                        "type": "u32"
+                        "name": "mmOraclePrice",
+                        "docs": ["MM oracle price"],
+                        "type": "i64"
                     },
                     {
                         "name": "maxFillReserveFraction",
@@ -10779,7 +10853,7 @@
                         "type": "i8"
                     },
                     {
-                        "name": "totalFeeEarnedPerLp",
+                        "name": "mmOracleSequenceId",
                         "type": "u64"
                     },
                     {
@@ -10804,8 +10878,12 @@
                     {
                         "name": "padding",
                         "type": {
-                            "array": ["u8", 11]
+                            "array": ["u8", 3]
                         }
+                    },
+                    {
+                        "name": "lastFundingOracleTwap",
+                        "type": "i64"
                     }
                 ]
             }
@@ -11126,7 +11204,7 @@
                     {
                         "name": "openBids",
                         "docs": [
-                            "How many spot bids the user has open",
+                            "How many spot non reduce only trigger orders the user has open",
                             "precision: token mint precision"
                         ],
                         "type": "i64"
@@ -11134,7 +11212,7 @@
                     {
                         "name": "openAsks",
                         "docs": [
-                            "How many spot asks the user has open",
+                            "How many spot non reduce only trigger orders the user has open",
                             "precision: token mint precision"
                         ],
                         "type": "i64"
@@ -11226,7 +11304,7 @@
                     {
                         "name": "openBids",
                         "docs": [
-                            "The amount of open bids the user has in this perp market",
+                            "The amount of non reduce only trigger orders the user has open",
                             "precision: BASE_PRECISION"
                         ],
                         "type": "i64"
@@ -11234,7 +11312,7 @@
                     {
                         "name": "openAsks",
                         "docs": [
-                            "The amount of open asks the user has in this perp market",
+                            "The amount of non reduce only trigger orders the user has open",
                             "precision: BASE_PRECISION"
                         ],
                         "type": "i64"
@@ -11683,6 +11761,29 @@
                     },
                     {
                         "name": "OracleOrderPrice"
+                    },
+                    {
+                        "name": "UseMMOraclePrice"
+                    }
+                ]
+            }
+        },
+        {
+            "name": "LogMode",
+            "type": {
+                "kind": "enum",
+                "variants": [
+                    {
+                        "name": "None"
+                    },
+                    {
+                        "name": "ExchangeOracle"
+                    },
+                    {
+                        "name": "MMOracle"
+                    },
+                    {
+                        "name": "SafeMMOracle"
                     }
                 ]
             }
@@ -12427,6 +12528,20 @@
             }
         },
         {
+            "name": "FeatureBitFlags",
+            "type": {
+                "kind": "enum",
+                "variants": [
+                    {
+                        "name": "MmOracleUpdate"
+                    },
+                    {
+                        "name": "MedianTriggerPrice"
+                    }
+                ]
+            }
+        },
+        {
             "name": "UserStatus",
             "type": {
                 "kind": "enum",
@@ -12553,6 +12668,9 @@
                     },
                     {
                         "name": "SafeTriggerOrder"
+                    },
+                    {
+                        "name": "NewTriggerReduceOnly"
                     }
                 ]
             }
@@ -13339,6 +13457,13 @@
                 },
                 {
                     "name": "makerExistingBaseAssetAmount",
+                    "type": {
+                        "option": "u64"
+                    },
+                    "index": false
+                },
+                {
+                    "name": "triggerPrice",
                     "type": {
                         "option": "u64"
                     },

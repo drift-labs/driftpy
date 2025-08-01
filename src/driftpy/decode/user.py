@@ -360,8 +360,15 @@ def decode_user(buffer: bytes) -> UserAccount:
     margin_mode_num = read_uint8(buffer, offset)
     if margin_mode_num == 0:
         margin_mode = MarginMode.Default()
-    else:
+    elif margin_mode_num == 1:
         margin_mode = MarginMode.HighLeverage()
+    elif margin_mode_num == 2:
+        margin_mode = MarginMode.HighLeverageMaintenance()
+    else:
+        print(
+            f"Warning: unknown margin mode: {margin_mode_num}, (user: {authority}) returning default"
+        )
+        margin_mode = MarginMode.Default()
     offset += 1
 
     pool_id = read_uint8(buffer, offset)

@@ -352,6 +352,7 @@ class UserStatus:
 class MarginMode:
     Default = constructor()
     HighLeverage = constructor()
+    HighLeverageMaintenance = constructor()
 
 
 @_rust_enum
