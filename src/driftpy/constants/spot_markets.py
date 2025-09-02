@@ -483,4 +483,11 @@ mainnet_spot_market_configs: list[SpotMarketConfig] = [
         oracle_source=OracleSource.PythPull(),  # type: ignore
         mint=Pubkey.from_string("AvZZF1YaZDziPY2RCK4oJrRVrbN3mTD9NL24hPeaZeUj"),
     ),
+    SpotMarketConfig(
+        symbol="LBTC",
+        market_index=58,
+        oracle=Pubkey.from_string("Fa3VKWbdb9yQ89vA9JfYnR6micY9LwGneoQ1So9JgXHT"),
+        oracle_source=OracleSource.PythPull(),  # type: ignore
+        mint=Pubkey.from_string("LBTCgU4b3wsFKsPwBn1rRZDx5DoFutM6RPiEt1TPDsY"),
+    ),
 ]
