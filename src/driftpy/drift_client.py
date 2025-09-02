@@ -2636,7 +2636,7 @@ class DriftClient:
             ctx=Context(
                 accounts={
                     "state": self.get_state_public_key(),
-                    "authority": self.wallet.payer.pubkey(),
+                    "authority": self.wallet.public_key,
                     "user": user_pk,
                     "user_stats": user_stats_pk,
                     "liquidator": liq_pk,
