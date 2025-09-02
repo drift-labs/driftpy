@@ -937,8 +937,8 @@ class DriftClient:
                 accounts={
                     "user_stats": user_stats_public_key,
                     "state": state_public_key,
-                    "authority": self.wallet.payer.pubkey(),
-                    "payer": self.wallet.payer.pubkey(),
+                    "authority": self.wallet.public_key,
+                    "payer": self.wallet.public_key,
                     "rent": RENT,
                     "system_program": ID,
                 },
@@ -976,8 +976,8 @@ class DriftClient:
                     "user": user_public_key,
                     "user_stats": user_stats_public_key,
                     "state": state_public_key,
-                    "authority": self.wallet.payer.pubkey(),
-                    "payer": self.wallet.payer.pubkey(),
+                    "authority": self.wallet.public_key,
+                    "payer": self.wallet.public_key,
                     "rent": RENT,
                     "system_program": ID,
                 },
@@ -1122,7 +1122,7 @@ class DriftClient:
                     "user": user_account_public_key,
                     "user_stats": self.get_user_stats_public_key(),
                     "user_token_account": user_token_account,
-                    "authority": self.wallet.payer.pubkey(),
+                    "authority": self.wallet.public_key,
                     "token_program": TOKEN_PROGRAM_ID,
                 },
                 remaining_accounts=remaining_accounts,
@@ -1535,7 +1535,7 @@ class DriftClient:
                 accounts={
                     "state": self.get_state_public_key(),
                     "user": self.get_user_account_public_key(sub_account_id),
-                    "authority": self.wallet.payer.pubkey(),
+                    "authority": self.wallet.public_key,
                 },
                 remaining_accounts=remaining_accounts,
             ),
@@ -1569,7 +1569,7 @@ class DriftClient:
                 accounts={
                     "state": self.get_state_public_key(),
                     "user": self.get_user_account_public_key(sub_account_id),
-                    "authority": self.wallet.payer.pubkey(),
+                    "authority": self.wallet.public_key,
                 },
                 remaining_accounts=remaining_accounts,
             ),
@@ -1622,7 +1622,7 @@ class DriftClient:
                 accounts={
                     "state": self.get_state_public_key(),
                     "user": self.get_user_account_public_key(sub_account_id),
-                    "authority": self.wallet.payer.pubkey(),
+                    "authority": self.wallet.public_key,
                 },
                 remaining_accounts=remaining_accounts,
             ),
@@ -1711,7 +1711,7 @@ class DriftClient:
                 accounts={
                     "state": self.get_state_public_key(),
                     "user": self.get_user_account_public_key(sub_account_id),
-                    "authority": self.wallet.payer.pubkey(),
+                    "authority": self.wallet.public_key,
                 },
                 remaining_accounts=remaining_accounts,
             ),
@@ -1752,7 +1752,7 @@ class DriftClient:
                 accounts={
                     "state": self.get_state_public_key(),
                     "user": self.get_user_account_public_key(sub_account_id),
-                    "authority": self.wallet.payer.pubkey(),
+                    "authority": self.wallet.public_key,
                 },
                 remaining_accounts=remaining_accounts,
             ),
@@ -1852,7 +1852,7 @@ class DriftClient:
                     "state": self.get_state_public_key(),
                     "user": user_account_public_key,
                     "user_stats": self.get_user_stats_public_key(),
-                    "authority": self.wallet.payer.pubkey(),
+                    "authority": self.wallet.public_key,
                 },
                 remaining_accounts=remaining_accounts,
             ),
@@ -1960,7 +1960,7 @@ class DriftClient:
                     "state": self.get_state_public_key(),
                     "user": user_account_public_key,
                     "user_stats": self.get_user_stats_public_key(),
-                    "authority": self.wallet.payer.pubkey(),
+                    "authority": self.wallet.public_key,
                 },
                 remaining_accounts=remaining_accounts,
             ),
@@ -2007,7 +2007,7 @@ class DriftClient:
                 accounts={
                     "state": self.get_state_public_key(),
                     "user": user_account_public_key,
-                    "authority": self.wallet.payer.pubkey(),
+                    "authority": self.wallet.public_key,
                 },
                 remaining_accounts=remaining_accounts,
             ),
@@ -2050,7 +2050,7 @@ class DriftClient:
                 accounts={
                     "state": get_state_public_key(self.program_id),
                     "user": user_account_public_key,
-                    "authority": self.wallet.payer.pubkey(),
+                    "authority": self.wallet.public_key,
                 },
                 remaining_accounts=remaining_accounts,
             ),
@@ -2298,7 +2298,7 @@ class DriftClient:
                         self.program_id,
                         taker_info["taker_user_account"].authority,
                     ),
-                    "authority": self.wallet.payer.pubkey(),
+                    "authority": self.wallet.public_key,
                     "ix_sysvar": sysvar_pubkey,
                 },
                 remaining_accounts=remaining_accounts,
@@ -2399,7 +2399,7 @@ class DriftClient:
                     "user_stats": user_stats_public_key,
                     "taker": taker_info["taker"],
                     "taker_stats": taker_info["taker_stats"],
-                    "authority": self.wallet.payer.pubkey(),
+                    "authority": self.wallet.public_key,
                     "taker_signed_msg_user_orders": get_signed_msg_user_account_public_key(
                         self.program_id, taker_info["taker_user_account"].authority
                     ),
@@ -2494,7 +2494,7 @@ class DriftClient:
             ctx=Context(
                 accounts={
                     "state": self.get_state_public_key(),
-                    "authority": self.wallet.payer.pubkey(),
+                    "authority": self.wallet.public_key,
                     "user": user_pk,
                     "user_stats": user_stats_pk,
                     "liquidator": liq_pk,
@@ -2564,7 +2564,7 @@ class DriftClient:
             ctx=Context(
                 accounts={
                     "state": self.get_state_public_key(),
-                    "authority": self.wallet.payer.pubkey(),
+                    "authority": self.wallet.public_key,
                     "user": user_pk,
                     "user_stats": user_stats_pk,
                     "liquidator": liq_pk,
@@ -2680,7 +2680,7 @@ class DriftClient:
             ctx=Context(
                 accounts={
                     "state": self.get_state_public_key(),
-                    "authority": self.wallet.payer.pubkey(),
+                    "authority": self.wallet.public_key,
                     "user": settlee_user_public_key,
                     "spot_market_vault": get_spot_market_vault_public_key(
                         self.program_id, QUOTE_SPOT_MARKET_INDEX
@@ -2763,7 +2763,7 @@ class DriftClient:
             ctx=Context(
                 accounts={
                     "state": self.get_state_public_key(),
-                    "authority": self.wallet.payer.pubkey(),
+                    "authority": self.wallet.public_key,
                     "user": user_pk,
                     "user_stats": user_stats_pk,
                     "liquidator": liq_pk,
@@ -2834,7 +2834,7 @@ class DriftClient:
             ctx=Context(
                 accounts={
                     "state": self.get_state_public_key(),
-                    "authority": self.wallet.payer.pubkey(),
+                    "authority": self.wallet.public_key,
                     "user": user_pk,
                     "user_stats": user_stats_pk,
                     "liquidator": liq_pk,
@@ -2902,7 +2902,7 @@ class DriftClient:
             ctx=Context(
                 accounts={
                     "state": self.get_state_public_key(),
-                    "authority": self.wallet.payer.pubkey(),
+                    "authority": self.wallet.public_key,
                 },
                 remaining_accounts=remaining_accounts,
             ),
@@ -2942,7 +2942,7 @@ class DriftClient:
                     "user_stats": get_user_stats_account_public_key(
                         self.program_id, self.authority
                     ),
-                    "authority": self.wallet.payer.pubkey(),
+                    "authority": self.wallet.public_key,
                     "insurance_fund_vault": get_insurance_fund_vault_public_key(
                         self.program_id, spot_market_index
                     ),
@@ -2981,7 +2981,7 @@ class DriftClient:
                     "user_stats": get_user_stats_account_public_key(
                         self.program_id, self.authority
                     ),
-                    "authority": self.wallet.payer.pubkey(),
+                    "authority": self.wallet.public_key,
                     "insurance_fund_vault": get_insurance_fund_vault_public_key(
                         self.program_id, spot_market_index
                     ),
@@ -3028,7 +3028,7 @@ class DriftClient:
                     "user_stats": get_user_stats_account_public_key(
                         self.program_id, self.authority
                     ),
-                    "authority": self.wallet.payer.pubkey(),
+                    "authority": self.wallet.public_key,
                     "insurance_fund_vault": get_insurance_fund_vault_public_key(
                         self.program_id, spot_market_index
                     ),
@@ -3079,7 +3079,7 @@ class DriftClient:
                     "user_stats": get_user_stats_account_public_key(
                         self.program_id, self.authority
                     ),
-                    "authority": self.wallet.payer.pubkey(),
+                    "authority": self.wallet.public_key,
                     "spot_market_vault": get_spot_market_vault_public_key(
                         self.program_id, spot_market_index
                     ),
@@ -3122,8 +3122,8 @@ class DriftClient:
                         self.program_id, self.authority
                     ),
                     "state": get_state_public_key(self.program_id),
-                    "authority": self.wallet.payer.pubkey(),
-                    "payer": self.wallet.payer.pubkey(),
+                    "authority": self.wallet.public_key,
+                    "payer": self.wallet.public_key,
                     "rent": RENT,
                     "system_program": ID,
                 }
@@ -3231,7 +3231,7 @@ class DriftClient:
                     "filler_stats": filler_stats_pubkey,
                     "user": user_account_pubkey,
                     "user_stats": user_stats_pubkey,
-                    "authority": self.wallet.payer.pubkey(),
+                    "authority": self.wallet.public_key,
                 },
                 remaining_accounts=remaining_accounts,
             ),
@@ -3247,7 +3247,7 @@ class DriftClient:
                     "state": self.get_state_public_key(),
                     "filler": filler_pubkey,
                     "filler_stats": filler_stats_pubkey,
-                    "authority": self.wallet.payer.pubkey(),
+                    "authority": self.wallet.public_key,
                 }
             )
         )
@@ -3282,7 +3282,7 @@ class DriftClient:
                     "state": self.get_state_public_key(),
                     "filler": filler,
                     "user": user_account_pubkey,
-                    "authority": self.wallet.payer.pubkey(),
+                    "authority": self.wallet.public_key,
                 },
                 remaining_accounts=remaining_accounts,
             ),
@@ -3321,7 +3321,7 @@ class DriftClient:
                     "state": self.get_state_public_key(),
                     "filler": filler,
                     "user": user_account_pubkey,
-                    "authority": self.wallet.payer.pubkey(),
+                    "authority": self.wallet.public_key,
                 },
                 remaining_accounts=remaining_accounts,
             )
@@ -3452,7 +3452,7 @@ class DriftClient:
             ctx=Context(
                 accounts={
                     "state": self.get_state_public_key(),
-                    "authority": self.wallet.payer.pubkey(),
+                    "authority": self.wallet.public_key,
                 },
                 remaining_accounts=remaining_accounts,
             ),
@@ -3788,7 +3788,7 @@ class DriftClient:
             ctx=Context(
                 accounts={
                     "user": self.get_user_account_public_key(sub_account_id),
-                    "authority": self.wallet.payer.pubkey(),
+                    "authority": self.wallet.public_key,
                 },
                 remaining_accounts=remaining_accounts,
             ),
@@ -3864,7 +3864,7 @@ class DriftClient:
             ctx=Context(
                 accounts={
                     "sequence_account": self.sequence_address_by_subaccount[subaccount],
-                    "authority": self.wallet.payer.pubkey(),
+                    "authority": self.wallet.public_key,
                     "system_program": ID,
                 }
             ),
@@ -3893,7 +3893,7 @@ class DriftClient:
             ctx=Context(
                 accounts={
                     "sequence_account": self.sequence_address_by_subaccount[subaccount],
-                    "authority": self.wallet.payer.pubkey(),
+                    "authority": self.wallet.public_key,
                 }
             ),
         )
@@ -3921,7 +3921,7 @@ class DriftClient:
             ctx=Context(
                 accounts={
                     "sequence_account": self.sequence_address_by_subaccount[subaccount],
-                    "authority": self.wallet.payer.pubkey(),
+                    "authority": self.wallet.public_key,
                 }
             ),
         )
@@ -3932,7 +3932,7 @@ class DriftClient:
     async def load_sequence_info(self):
         for subaccount in self.sub_account_ids:
             address, bump = get_sequencer_public_key_and_bump(
-                self.sequence_enforcer_pid, self.wallet.payer.pubkey(), subaccount
+                self.sequence_enforcer_pid, self.wallet.public_key, subaccount
             )
             try:
                 sequence_account_raw = await self.sequence_enforcer_program.account[
@@ -3979,7 +3979,7 @@ class DriftClient:
                 accounts={
                     "state": self.get_state_public_key(),
                     "user": self.get_user_account_public_key(sub_account_id),
-                    "authority": self.wallet.payer.pubkey(),
+                    "authority": self.wallet.public_key,
                     "protected_maker_mode_config": get_protected_maker_mode_config_public_key(
                         self.program_id
                     ),
