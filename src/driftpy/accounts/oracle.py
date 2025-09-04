@@ -63,6 +63,14 @@ def is_pyth_legacy_oracle(oracle_source: OracleSource):
         or is_variant(oracle_source, "PythStableCoin")
     )
 
+def is_pyth_lazer_oracle(oracle_source: OracleSource):
+    return (
+        is_variant(oracle_source, "PythLazer")
+        or is_variant(oracle_source, "PythLazer1K")
+        or is_variant(oracle_source, "PythLazer1M")
+        or is_variant(oracle_source, "PythLazerStableCoin")
+    )
+
 
 async def get_oracle_price_data_and_slot(
     connection: AsyncClient,
@@ -124,9 +132,19 @@ def oracle_ai_to_oracle_price_data(
 ) -> DataAndSlot[OraclePriceData]:
     if is_pyth_legacy_oracle(oracle_source):
         oracle_price_data = decode_pyth_price_info(oracle_ai.data, oracle_source)
-
         return DataAndSlot(oracle_price_data.slot, oracle_price_data)
-    elif is_variant(oracle_source, "QuoteAsset"):
+    elif is_pyth_lazer_oracle(oracle_source):
+        multiple = 1
+        stable_coin = False
+        if is_variant(oracle_source, "PythLazer1K"):
+            multiple = 1000
+        elif is_variant(oracle_source, "PythLazer1M"):
+            multiple = 1000000
+        elif is_variant(oracle_source, "PythLazerStableCoin"):
+            stable_coin = True
+        oracle_price_data = decode_pyth_lazer_price_info(oracle_ai.data, multiple=multiple, stable_coin=stable_coin)
+        return DataAndSlot(oracle_price_data.slot, oracle_price_data)
+    elif is_variant(oracle_source, "QuoteAsset"): 
         return DataAndSlot(
             data=OraclePriceData(PRICE_PRECISION, 0, 1, 1, 0, True), slot=0
         )
