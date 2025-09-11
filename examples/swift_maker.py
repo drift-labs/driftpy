@@ -13,7 +13,6 @@ from anchorpy import Wallet
 from dotenv import load_dotenv
 from solana.rpc.async_api import AsyncClient
 from solana.rpc.commitment import Commitment
-from solana.rpc.types import TxOpts
 from solders.compute_budget import set_compute_unit_limit, set_compute_unit_price
 from solders.instruction import Instruction
 from solders.keypair import Keypair
@@ -25,6 +24,7 @@ from driftpy.accounts import get_user_stats_account_public_key
 from driftpy.addresses import get_user_account_public_key
 from driftpy.drift_client import DriftClient
 from driftpy.keypair import load_keypair
+from driftpy.swift.order_subscriber import SIGNED_MSG_DELEGATE_DISCRIMINATOR
 from driftpy.types import (
     MarketType,
     OrderParams,
@@ -36,6 +36,7 @@ from driftpy.types import (
     SignedMsgOrderParams,
     is_variant,
 )
+from driftpy.user_map.referrer_map import ReferrerMap
 from driftpy.user_map.user_map import UserMap
 from driftpy.user_map.user_map_config import PollingConfig, UserMapConfig
 
@@ -74,6 +75,9 @@ class SwiftMaker:
         self.last_heartbeat_ts: float = 0
         self.heartbeat_interval_s = 20  # Send pings more often
         self.heartbeat_timeout_s = 80  # Reconnect if no pong/message received
+        self.referrer_map: ReferrerMap = ReferrerMap(
+            self.drift_client, parallel_sync=True, verbose=True
+        )
 
     def _get_ws_endpoint(self) -> str:
         if self.runtime_spec.drift_env == "mainnet":
@@ -84,6 +88,17 @@ class SwiftMaker:
             raise ValueError(f"Unsupported drift_env: {self.runtime_spec.drift_env}")
 
     async def init(self):
+        begin_time = time.time()
+        print("Subscribing DriftClient...")
+        await self.drift_client.subscribe()
+        print("DriftClient subscribed.")
+        print("Subscribing UserMap...")
+        await self.user_map.subscribe()
+        print("UserMap subscribed.")
+        print("Subscribing ReferrerMap...")
+        await self.referrer_map.subscribe()
+        print("ReferrerMap subscribed.")
+        print(f"SwiftMaker init() took: {time.time() - begin_time:.2f}s")
         print("Initializing SwiftMaker...")
         asyncio.create_task(self.subscribe_ws())
 
@@ -268,39 +283,36 @@ class SwiftMaker:
             taker_signature = base64.b64decode(taker_signature_b64)
             order_uuid = order_uuid_str.encode("utf-8")
 
-            # --- Add logging for raw buffer ---
             print(
                 f"Order {order_uuid_str}: Raw buffer hex: {signed_msg_order_params_buf.hex()}"
             )
-            # --- End logging ---
 
             is_delegate = False
+            is_delegate_signer = (
+                signed_msg_order_params_buf[:8] == SIGNED_MSG_DELEGATE_DISCRIMINATOR
+            )
             try:
-                # Attempt decoding as delegate first
                 signed_message = (
                     self.drift_client.decode_signed_msg_order_params_message(
-                        signed_msg_order_params_buf, is_delegate=True
+                        signed_msg_order_params_buf, is_delegate=is_delegate_signer
                     )
                 )
-                is_delegate = True
-                print(f"Order {order_uuid_str}: Decoded as delegate.")  # Add log
+                is_delegate = is_delegate_signer
             except construct.core.StreamError as e:
-                # Fallback to non-delegate decoding
                 print(
-                    f"Order {order_uuid_str}: Failed delegate decode ({e}), trying non-delegate."
-                )  # Add log
+                    f"Order {order_uuid_str}: Failed delegate decode check ({e}), attempting opposite direction."
+                )
                 try:
                     signed_message = (
                         self.drift_client.decode_signed_msg_order_params_message(
-                            signed_msg_order_params_buf, is_delegate=False
+                            signed_msg_order_params_buf,
+                            is_delegate=not is_delegate_signer,
                         )
                     )
-                    print(
-                        f"Order {order_uuid_str}: Decoded as non-delegate."
-                    )  # Add log
+                    is_delegate = not is_delegate_signer
                 except construct.core.StreamError as e:
                     print(
-                        f"Failed to decode order message ({order_uuid_str}) as non-delegate either: {e}"  # Updated error log
+                        f"Failed to decode order message ({order_uuid_str}) as non-delegate either: {e}"
                     )
                     print(
                         f"  Buffer (len={len(signed_msg_order_params_buf)}): {signed_msg_order_params_buf.hex()}"
@@ -357,7 +369,6 @@ class SwiftMaker:
                 )
                 return
 
-            # --- Add logging for taker prices ---
             print(
                 f"Order {order_uuid_str}: Taker params price={taker_order_params.price}, order_type={taker_order_params.order_type}, "
                 f"auction_start={taker_order_params.auction_start_price}, "
@@ -410,6 +421,12 @@ class SwiftMaker:
                 set_compute_unit_price(50_000),
             ]
 
+            referrer_info = None
+            try:
+                referrer_info = await self.referrer_map.must_get(str(taker_user_pubkey))
+            except Exception as e:
+                print(f"Failed to get referrer info for order {order_uuid_str}: {e}")
+
             order_params_buf = SignedMsgOrderParams(
                 order_params=signed_msg_order_params_buf_utf8_style,
                 signature=taker_signature,
@@ -422,6 +439,7 @@ class SwiftMaker:
                     taker_info=taker_info,
                     order_params=maker_order_params,
                     preceding_ixs=preceding_ixs,
+                    referrer_info=referrer_info,
                 )
             )
 
@@ -489,8 +507,8 @@ async def main():
     RPC_URL = os.getenv("RPC_TRITON")
     MAKER_PRIVATE_KEY = os.getenv("PRIVATE_KEY")
     WS_AUTH_PRIVATE_KEY = MAKER_PRIVATE_KEY
-    DRY_RUN = os.getenv("DRY_RUN", "false").lower() == "true"
-    MARKETS = ["1KMEW-PERP"]
+    DRY_RUN = "true"
+    MARKETS = ["SOL-PERP", "BTC-PERP", "ETH-PERP"]
 
     if not RPC_URL or not MAKER_PRIVATE_KEY:
         raise ValueError("RPC_TRITON and PRIVATE_KEY must be set in .env")
@@ -530,7 +548,7 @@ async def main():
         runtime_spec=runtime_spec,
         auth_keypair=auth_keypair,
         markets_to_subscribe=MARKETS,
-        dry_run=False,
+        dry_run=True,
     )
 
     await swift_maker.init()
@@ -551,5 +569,6 @@ if __name__ == "__main__":
         print("Received KeyboardInterrupt, shutting down...")
     except Exception as e:
         print(f"Unhandled exception in main: {e}")
+        raise e
     finally:
         print("Shutdown complete.")

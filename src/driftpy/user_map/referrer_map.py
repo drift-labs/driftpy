@@ -124,7 +124,6 @@ class ReferrerMap:
             self.authority_referrer_map[authority] = referrer
         else:
             self.log(f"Fetching referrer for authority: {authority[:8]}...")
-            # If referrer is not provided, fetch it from the user stats account
             user_stats_account_public_key = get_user_stats_account_public_key(
                 self.drift_client.program_id, Pubkey.from_string(authority)
             )
@@ -192,46 +191,65 @@ class ReferrerMap:
                 self.initial_load_finished.set()
 
     async def sync_all(self) -> None:
-        self.log("sync_all() starting...")
+        self.log("sync_all() fast path starting...")
         drift_user_stats_filter = get_user_stats_filter()
         filters = [
-            MemcmpOpts(
-                offset=drift_user_stats_filter.offset,
-                bytes=drift_user_stats_filter.bytes,
-            )
+            {
+                "memcmp": {
+                    "offset": drift_user_stats_filter.offset,
+                    "bytes": drift_user_stats_filter.bytes,
+                }
+            }
         ]
 
-        self.log("Fetching all user stats accounts...")
-        response = await self.drift_client.connection.get_program_accounts(
-            pubkey=self.drift_client.program_id,
-            commitment=self.drift_client.tx_sender.connection.commitment,
-            encoding="base64",
-            data_slice=None,
-            filters=filters,
+        rpc_request = jsonrpcclient.request(
+            "getProgramAccounts",
+            (
+                str(self.drift_client.program_id),
+                {
+                    "filters": filters,
+                    "encoding": "base64",
+                    "dataSlice": {"offset": 8, "length": 32},  # authority only
+                    "withContext": True,
+                    "commitment": str(
+                        self.drift_client.tx_sender.connection.commitment
+                    ),
+                },
+            ),
         )
 
-        if response.value is None:
+        post = self.drift_client.connection._provider.session.post(
+            self.drift_client.connection._provider.endpoint_uri,
+            json=rpc_request,
+        )
+
+        resp = await asyncio.wait_for(post, timeout=120)
+        parsed_resp = jsonrpcclient.parse(resp.json())
+
+        if isinstance(parsed_resp, jsonrpcclient.Error):
+            raise ValueError(
+                f"Error fetching user stats authorities: {parsed_resp.message}"
+            )
+
+        result = parsed_resp.result
+        value = (
+            result["value"]
+            if isinstance(result, dict) and "value" in result
+            else result
+        )
+        if not value:
             self.log("No user stats accounts found")
             return
 
-        self.log(f"Found {len(response.value)} user stats accounts")
         new_users = 0
-        for account_data in response.value:
-            # In sync_all, we are fetching all user stats accounts.
-            # If a user stats account exists, it means the authority (owner of user stats) is a user.
-            # However, they might not have a referrer. So we add them with DEFAULT_PUBLIC_KEY.
-            # If they do have a referrer, sync_referrer will overwrite this later.
-            # The authority is the first 32 bytes after the 8 byte discriminator in UserStats
-            # The authority is encoded in the account data itself, not the pubkey of the UserStats account.
-            # The pubkey of the UserStats account is derived from the authority.
-            # So, we need to parse the authority from the account data.
-            buffer = account_data.account.data
-            authority = str(Pubkey(buffer[8:40]))
-
+        for acc in value:
+            buf_b64 = acc["account"]["data"][0]
+            decoded = base64.b64decode(buf_b64)
+            authority = str(Pubkey(decoded[0:32]))
             if not self.has(authority):
                 await self.add_referrer(authority, DEFAULT_PUBLIC_KEY)
                 new_users += 1
-        self.log(f"sync_all() complete: added {new_users} new users")
+        self.log(f"sync_all() fast path complete: added {new_users} new users")
 
     async def sync_referrer(self, referrer_filter) -> None:
         self.log(
@@ -271,10 +289,7 @@ class ReferrerMap:
         )
 
     async def sync_all_paged(self, semaphore: asyncio.Semaphore) -> None:
-        """Client-side paged sync: fetch pubkeys, then chunked getMultipleAccounts to decode authorities."""
-        self.log("sync_all_paged() starting...")
-
-        # Step 1: fetch only pubkeys for UserStats accounts
+        self.log("sync_all_paged() fast path starting...")
         drift_user_stats_filter = get_user_stats_filter()
         filters = [
             {
@@ -285,108 +300,62 @@ class ReferrerMap:
             }
         ]
 
-        rpc_request = jsonrpcclient.request(
-            "getProgramAccounts",
-            (
-                str(self.drift_client.program_id),
-                {
-                    "filters": filters,
-                    "encoding": "base64",
-                    "dataSlice": {"offset": 0, "length": 0},
-                    "withContext": True,
-                    "commitment": str(
-                        self.drift_client.tx_sender.connection.commitment
-                    ),
-                },
-            ),
-        )
-
-        post = self.drift_client.connection._provider.session.post(
-            self.drift_client.connection._provider.endpoint_uri,
-            json=rpc_request,
-            headers={"content-encoding": "gzip"},
-        )
-
-        resp = await asyncio.wait_for(post, timeout=120)
-        parsed_resp = jsonrpcclient.parse(resp.json())
-
-        if isinstance(parsed_resp, jsonrpcclient.Error):
-            raise ValueError(
-                f"Error fetching user stats pubkeys: {parsed_resp.message}"
+        async with semaphore:
+            rpc_request = jsonrpcclient.request(
+                "getProgramAccounts",
+                (
+                    str(self.drift_client.program_id),
+                    {
+                        "filters": filters,
+                        "encoding": "base64",
+                        "dataSlice": {"offset": 8, "length": 32},
+                        "withContext": True,
+                        "commitment": str(
+                            self.drift_client.tx_sender.connection.commitment
+                        ),
+                    },
+                ),
             )
 
-        result = parsed_resp.result
-        value = (
-            result["value"]
-            if isinstance(result, dict) and "value" in result
-            else result
-        )
-        if not value:
-            self.log("No user stats accounts found")
-            return
+            post = self.drift_client.connection._provider.session.post(
+                self.drift_client.connection._provider.endpoint_uri,
+                json=rpc_request,
+            )
 
-        pubkeys = [acc["pubkey"] for acc in value]
-        self.log(f"Found {len(pubkeys)} user stats account pubkeys")
+            resp = await asyncio.wait_for(post, timeout=120)
+            parsed_resp = jsonrpcclient.parse(resp.json())
 
-        # Step 2: fetch accounts in chunks and decode authority
-        new_users = 0
-
-        async def process_chunk(chunk_pubkeys):
-            nonlocal new_users
-            async with semaphore:
-                rpc_request = jsonrpcclient.request(
-                    "getMultipleAccounts",
-                    (
-                        chunk_pubkeys,
-                        {
-                            "encoding": "base64",
-                            "withContext": True,
-                            "commitment": str(
-                                self.drift_client.tx_sender.connection.commitment
-                            ),
-                        },
-                    ),
+            if isinstance(parsed_resp, jsonrpcclient.Error):
+                raise ValueError(
+                    f"Error fetching user stats authorities: {parsed_resp.message}"
                 )
 
-                post = self.drift_client.connection._provider.session.post(
-                    self.drift_client.connection._provider.endpoint_uri,
-                    json=rpc_request,
-                )
+            result = parsed_resp.result
+            value = (
+                result["value"]
+                if isinstance(result, dict) and "value" in result
+                else result
+            )
+            if not value:
+                self.log("No user stats accounts found")
+                return
 
-                resp = await asyncio.wait_for(post, timeout=120)
-                parsed = jsonrpcclient.parse(resp.json())
-                if isinstance(parsed, jsonrpcclient.Error):
-                    raise ValueError(f"Error in getMultipleAccounts: {parsed.message}")
+            new_users = 0
+            for acc in value:
+                buf_b64 = acc["account"]["data"][0]
+                decoded = base64.b64decode(buf_b64)
+                authority = str(Pubkey(decoded[0:32]))
+                if not self.has(authority):
+                    await self.add_referrer(authority, DEFAULT_PUBLIC_KEY)
+                    new_users += 1
 
-                values = (
-                    parsed.result.get("value")
-                    if isinstance(parsed.result, dict)
-                    else parsed.result
-                ) or []
-
-                for account_info in values:
-                    if account_info is None:
-                        continue
-                    data_b64 = account_info["data"][0]
-                    decoded_buffer = base64.b64decode(data_b64)
-                    authority = str(Pubkey(decoded_buffer[8:40]))
-                    if not self.has(authority):
-                        await self.add_referrer(authority, DEFAULT_PUBLIC_KEY)
-                        new_users += 1
-
-        chunk_size = self.chunk_size or 100
-        tasks = []
-        for i in range(0, len(pubkeys), chunk_size):
-            tasks.append(process_chunk(pubkeys[i : i + chunk_size]))
-        if tasks:
-            await asyncio.gather(*tasks)
-
-        self.log(f"sync_all_paged() complete: added {new_users} new users")
+            self.log(
+                f"sync_all_paged() fast path complete: added {new_users} new users"
+            )
 
     async def sync_referrer_paged(
         self, referrer_filter, semaphore: asyncio.Semaphore
     ) -> None:
-        """Reduced-payload referrer sync using dataSlice; yields in batches; guarded by semaphore."""
         self.log(
             f"[ReferrerMap] sync_referrer_paged() starting with filter offset {referrer_filter.offset}..."
         )
