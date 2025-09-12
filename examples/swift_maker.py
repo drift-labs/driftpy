@@ -24,6 +24,7 @@ from driftpy.accounts import get_user_stats_account_public_key
 from driftpy.addresses import get_user_account_public_key
 from driftpy.drift_client import DriftClient
 from driftpy.keypair import load_keypair
+from driftpy.math.orders import standardize_price
 from driftpy.swift.order_subscriber import SIGNED_MSG_DELEGATE_DISCRIMINATOR
 from driftpy.types import (
     MarketType,
@@ -76,7 +77,7 @@ class SwiftMaker:
         self.heartbeat_interval_s = 20  # Send pings more often
         self.heartbeat_timeout_s = 80  # Reconnect if no pong/message received
         self.referrer_map: ReferrerMap = ReferrerMap(
-            self.drift_client, parallel_sync=True, verbose=True
+            self.drift_client, parallel_sync=True, verbose=False
         )
 
     def _get_ws_endpoint(self) -> str:
@@ -328,7 +329,9 @@ class SwiftMaker:
                 not taker_order_params.price
                 and taker_order_params.auction_duration == 0
             ):
-                print(f"Order {order_uuid_str} has no price/auction params. Skipping.")
+                print(
+                    f"Order {order_uuid_str} has no price/auction params. Could be an Oracle offset order, in that case you'd calculate the maker price relative to the oracle price."
+                )
                 return
 
             taker_authority = Pubkey.from_string(order_message_raw["taker_authority"])
@@ -377,15 +380,57 @@ class SwiftMaker:
             )
 
             maker_price = None
-            if taker_order_params.auction_start_price is not None:
-                maker_price = taker_order_params.auction_start_price
-            elif taker_order_params.price is not None and taker_order_params.price > 0:
-                maker_price = taker_order_params.price
+
+            # Oracle offset orders: price == 0 and order_type == Oracle, auction_* are offsets from oracle
+            is_oracle_offset = is_variant(taker_order_params.order_type, "Oracle")
+            if is_oracle_offset:
+                oracle_price_data = (
+                    self.drift_client.get_oracle_price_data_for_perp_market(
+                        market_index
+                    )
+                )
+                if oracle_price_data is None:
+                    print(
+                        f"Order {order_uuid_str}: No oracle price available for market {market_index}. Skipping."
+                    )
+                    return
+                oracle_price = oracle_price_data.price
+                if is_taker_long:
+                    ref_offset = (
+                        taker_order_params.auction_end_price
+                        if taker_order_params.auction_end_price is not None
+                        else (taker_order_params.auction_start_price or 0)
+                    )
+                    base_price = oracle_price + ref_offset
+                    maker_price = (base_price * 101) // 100
+                else:
+                    ref_offset = (
+                        taker_order_params.auction_start_price
+                        if taker_order_params.auction_start_price is not None
+                        else (taker_order_params.auction_end_price or 0)
+                    )
+                    base_price = oracle_price + ref_offset
+                    maker_price = (base_price * 99) // 100
+                maker_price = standardize_price(
+                    maker_price, perp_market.amm.order_tick_size, maker_direction
+                )
+            else:
+                if taker_order_params.auction_start_price is not None:
+                    maker_price = taker_order_params.auction_start_price
+                elif (
+                    taker_order_params.price is not None
+                    and taker_order_params.price > 0
+                ):
+                    maker_price = taker_order_params.price
 
             if maker_price is None or maker_price <= 0:
                 print(
                     f"Order {order_uuid_str}: Could not determine valid maker price. Taker Params: Price={taker_order_params.price}, AuctionStart={taker_order_params.auction_start_price}, AuctionEnd={taker_order_params.auction_end_price}. Skipping."
                 )
+                if is_oracle_offset:
+                    print(
+                        "This is an Oracle offset order; failed to compute oracle-derived price (missing oracle?)."
+                    )
                 return
 
             maker_order_params = OrderParams(
@@ -426,6 +471,11 @@ class SwiftMaker:
                 referrer_info = await self.referrer_map.must_get(str(taker_user_pubkey))
             except Exception as e:
                 print(f"Failed to get referrer info for order {order_uuid_str}: {e}")
+
+            if referrer_info is not None:
+                print(
+                    f"⭐ Has referrer ⭐ Order {order_uuid_str}: Referrer info: {referrer_info}"
+                )
 
             order_params_buf = SignedMsgOrderParams(
                 order_params=signed_msg_order_params_buf_utf8_style,
@@ -492,13 +542,6 @@ class SwiftMaker:
             if hasattr(e, "logs") and e.logs:
                 print(f"  Logs: \n{''.join(e.logs)}")
 
-        except Exception as e:
-            elapsed = time.time() - start_time
-            print(
-                f"Failed to send transaction for order {order_uuid} after {elapsed:.3f}s: {e}"
-            )
-            print(f"  Logs: {e}")
-
 
 async def main():
     load_dotenv()
@@ -548,7 +591,7 @@ async def main():
         runtime_spec=runtime_spec,
         auth_keypair=auth_keypair,
         markets_to_subscribe=MARKETS,
-        dry_run=True,
+        dry_run=False,
     )
 
     await swift_maker.init()
