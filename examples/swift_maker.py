@@ -80,6 +80,14 @@ class SwiftMaker:
             self.drift_client, parallel_sync=True, verbose=False
         )
 
+        # Price sanity configuration (applies to both oracle-offset and explicit-price orders)
+        # Reject maker prices that deviate too far from the live oracle.
+        # - Percent band keeps us within a reasonable range even if confidence is wide
+        # - Confidence band ties acceptance to feed quality
+        # Feel free to adjust these values as needed, this is just some suggestions
+        self.max_oracle_pct_deviation: float = 0.10  # 10%
+        self.oracle_conf_multiplier: int = 10  # within +/- 10x oracle confidence
+
     def _get_ws_endpoint(self) -> str:
         if self.runtime_spec.drift_env == "mainnet":
             return "wss://swift.drift.trade/ws"
@@ -214,6 +222,39 @@ class SwiftMaker:
 
         else:
             print(f"Received unhandled message: {pp.pformat(message)}")
+
+    def _compute_oracle_bounds(self, market_index: int):
+        """Returns a tuple (low_bound, high_bound, oracle_price, confidence) for sanity checks.
+
+        Bounds are the INTERSECTION of percent deviation and confidence-based bands.
+        Returns (None, None, None, None) if oracle is unavailable.
+        """
+        oracle = self.drift_client.get_oracle_price_data_for_perp_market(market_index)
+        if oracle is None:
+            return None, None, None, None
+
+        oracle_price = oracle.price
+        pct_delta = int(abs(oracle_price) * self.max_oracle_pct_deviation)
+        pct_low = oracle_price - pct_delta
+        pct_high = oracle_price + pct_delta
+
+        conf = getattr(oracle, "confidence", None)
+        if conf is not None:
+            conf_band = int(self.oracle_conf_multiplier * conf)
+            conf_low = oracle_price - conf_band
+            conf_high = oracle_price + conf_band
+            low = max(pct_low, conf_low)
+            high = min(pct_high, conf_high)
+        else:
+            low, high = pct_low, pct_high
+
+        return low, high, oracle_price, conf
+
+    def _is_price_sane(self, price: int, market_index: int) -> bool:
+        low, high, _, _ = self._compute_oracle_bounds(market_index)
+        if low is None or high is None:
+            return False
+        return low <= price <= high
 
     async def _handle_auth_challenge(self, nonce: str):
         """Signs the auth nonce and sends it back."""
@@ -414,6 +455,18 @@ class SwiftMaker:
                 maker_price = standardize_price(
                     maker_price, perp_market.amm.order_tick_size, maker_direction
                 )
+                # sanity check vs oracle
+                low, high, oprice, oconf = self._compute_oracle_bounds(market_index)
+                if low is None:
+                    print(
+                        f"Order {order_uuid_str}: Oracle unavailable to sanity-check price. Skipping."
+                    )
+                    return
+                if not (low <= maker_price <= high):
+                    print(
+                        f"Order {order_uuid_str}: Rejecting maker_price={maker_price} outside sane oracle bounds [{low}, {high}] (oracle={oprice}, conf={oconf})."
+                    )
+                    return
             else:
                 if taker_order_params.auction_start_price is not None:
                     maker_price = taker_order_params.auction_start_price
@@ -422,6 +475,19 @@ class SwiftMaker:
                     and taker_order_params.price > 0
                 ):
                     maker_price = taker_order_params.price
+
+                if maker_price is not None:
+                    maker_price = standardize_price(
+                        maker_price, perp_market.amm.order_tick_size, maker_direction
+                    )
+                    if not self._is_price_sane(maker_price, market_index):
+                        low, high, oprice, oconf = self._compute_oracle_bounds(
+                            market_index
+                        )
+                        print(
+                            f"Order {order_uuid_str}: Rejecting explicit maker_price={maker_price} outside sane oracle bounds [{low}, {high}] (oracle={oprice}, conf={oconf})."
+                        )
+                        return
 
             if maker_price is None or maker_price <= 0:
                 print(
