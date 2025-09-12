@@ -468,7 +468,7 @@ class SwiftMaker:
 
             referrer_info = None
             try:
-                referrer_info = await self.referrer_map.must_get(str(taker_user_pubkey))
+                referrer_info = await self.referrer_map.must_get(str(taker_authority))
             except Exception as e:
                 print(f"Failed to get referrer info for order {order_uuid_str}: {e}")
 
