@@ -474,7 +474,7 @@ class SwiftMaker:
 
             if referrer_info is not None:
                 print(
-                    f"⭐ Has referrer ⭐ Order {order_uuid_str}: Referrer info: {referrer_info}"
+                    f"(Has referrer) Order {order_uuid_str}: Referrer info: {referrer_info}"
                 )
 
             order_params_buf = SignedMsgOrderParams(
