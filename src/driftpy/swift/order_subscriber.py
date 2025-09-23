@@ -171,7 +171,7 @@ class SwiftOrderSubscriber:
                                 if order.get("will_sanitize") and not accept_sanitized:
                                     continue
 
-                                if order.get("deposit_tx") and not accept_deposit_trades:
+                                if order.get("deposit") and not accept_deposit_trades:
                                     continue
 
                                 signed_order_params_buf = bytes.fromhex(
