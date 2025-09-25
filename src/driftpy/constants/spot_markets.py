@@ -73,6 +73,13 @@ devnet_spot_market_configs: list[SpotMarketConfig] = [
         oracle_source=OracleSource.PythStableCoinPull(),  # type: ignore
         mint=Pubkey.from_string("8zGuJQqwhZafTah7Uc7Z4tXRnguqkn5KLFAP8oV6PHe2"),
     ),
+    SpotMarketConfig(
+        symbol="PLXY",
+        market_index=7,
+        oracle=Pubkey.from_string("4wFrjUQHzRBc6qjVtMDbt28aEVgn6GaNiWR6vEff4KxR"),
+        oracle_source=OracleSource.Prelaunch(),  # type: ignore
+        mint=Pubkey.from_string("2vVfXmcWXEaFzp7iaTVnQ4y1gR41S6tJQQMo1S5asJyC"),
+    ),
 ]
 
 
