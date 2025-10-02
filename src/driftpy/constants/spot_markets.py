@@ -32,6 +32,7 @@ devnet_spot_market_configs: list[SpotMarketConfig] = [
         oracle=Pubkey.from_string("En8hkHLkRe9d9DraYmBTrus518BvmVH448YcvmrFM6Ce"),
         oracle_source=OracleSource.PythStableCoinPull(),  # type: ignore
         mint=Pubkey.from_string("8zGuJQqwhZafTah7Uc7Z4tXRnguqkn5KLFAP8oV6PHe2"),
+        decimals=6,
     ),
     SpotMarketConfig(
         symbol="SOL",
@@ -39,6 +40,7 @@ devnet_spot_market_configs: list[SpotMarketConfig] = [
         oracle=Pubkey.from_string("BAtFj4kQttZRVep3UZS2aZRDixkGYgWsbqTBVDbnSsPF"),
         oracle_source=OracleSource.PythPull(),  # type: ignore
         mint=Pubkey.from_string("So11111111111111111111111111111111111111112"),
+        decimals=9,
     ),
     SpotMarketConfig(
         symbol="BTC",
@@ -46,6 +48,7 @@ devnet_spot_market_configs: list[SpotMarketConfig] = [
         oracle=Pubkey.from_string("486kr3pmFPfTsS4aZgcsQ7kS4i9rjMsYYZup6HQNSTT4"),
         oracle_source=OracleSource.PythPull(),  # type: ignore
         mint=Pubkey.from_string("3BZPwbcqB5kKScF3TEXxwNfx5ipV13kbRVDvfVp5c6fv"),
+        decimals=6,
     ),
     SpotMarketConfig(
         symbol="Default Market Name",
@@ -53,6 +56,7 @@ devnet_spot_market_configs: list[SpotMarketConfig] = [
         oracle=Pubkey.from_string("HpMoKp3TCd3QT4MWYUKk2zCBwmhr5Df45fB6wdxYqEeh"),
         oracle_source=OracleSource.PythPull(),  # type: ignore
         mint=Pubkey.from_string("GLfF72ZCUnS6N9iDJw8kedHzd6WFVf3VbpwdKKy76FRk"),
+        decimals=6,
     ),
     SpotMarketConfig(
         symbol="Bonk",
@@ -60,6 +64,7 @@ devnet_spot_market_configs: list[SpotMarketConfig] = [
         oracle=Pubkey.from_string("GojbSnJuPdKDT1ZuHuAM5t9oz6bxTo1xhUKpTua2F72p"),
         oracle_source=OracleSource.PythPull(),  # type: ignore
         mint=Pubkey.from_string("7SekVZDmKCCDgTP8m6Hk4CfexFSru9RkwDCczmcwcsP6"),
+        decimals=5,
     ),
     SpotMarketConfig(
         symbol="JLP",
@@ -67,6 +72,7 @@ devnet_spot_market_configs: list[SpotMarketConfig] = [
         oracle=Pubkey.from_string("5Mb11e5rt1Sp6A286B145E4TmgMzsM2UX9nCF2vas5bs"),
         oracle_source=OracleSource.PythPull(),  # type: ignore
         mint=Pubkey.from_string("HGe9FejFyhWSx6zdvx2RjynX7rmoEXFiJiLU437NXemZ"),
+        decimals=6,
     ),
     SpotMarketConfig(
         symbol="USDC",
@@ -74,6 +80,7 @@ devnet_spot_market_configs: list[SpotMarketConfig] = [
         oracle=Pubkey.from_string("En8hkHLkRe9d9DraYmBTrus518BvmVH448YcvmrFM6Ce"),
         oracle_source=OracleSource.PythStableCoinPull(),  # type: ignore
         mint=Pubkey.from_string("8zGuJQqwhZafTah7Uc7Z4tXRnguqkn5KLFAP8oV6PHe2"),
+        decimals=6,
     ),
     SpotMarketConfig(
         symbol="PLXY",
@@ -81,6 +88,15 @@ devnet_spot_market_configs: list[SpotMarketConfig] = [
         oracle=Pubkey.from_string("4wFrjUQHzRBc6qjVtMDbt28aEVgn6GaNiWR6vEff4KxR"),
         oracle_source=OracleSource.Prelaunch(),  # type: ignore
         mint=Pubkey.from_string("2vVfXmcWXEaFzp7iaTVnQ4y1gR41S6tJQQMo1S5asJyC"),
+        decimals=6,
+    ),
+    SpotMarketConfig(
+        symbol="GLXY",
+        market_index=8,
+        oracle=Pubkey.from_string("4wFrjUQHzRBc6qjVtMDbt28aEVgn6GaNiWR6vEff4KxR"),
+        oracle_source=OracleSource.Prelaunch(),  # type: ignore
+        mint=Pubkey.from_string("2vVfXmcWXEaFzp7iaTVnQ4y1gR41S6tJQQMo1S5asJyC"),
+        decimals=6,
     ),
 ]
 
