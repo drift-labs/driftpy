@@ -31,6 +31,7 @@ async def generate_spot_configs(drift_client: DriftClient, env: str) -> str:
             oracle=market.oracle,
             oracle_source=market.oracle_source,
             mint=market.mint,
+            decimals=market.decimals,
         )
         configs.append(config)
 
@@ -45,6 +46,7 @@ async def generate_spot_configs(drift_client: DriftClient, env: str) -> str:
         oracle=Pubkey.from_string("{str(config.oracle)}"),
         oracle_source=OracleSource.{config.oracle_source.__class__.__name__}(),  # type: ignore
         mint=Pubkey.from_string("{str(config.mint)}"),
+        decimals={config.decimals},
     ),"""
 
     output += "\n]\n"
