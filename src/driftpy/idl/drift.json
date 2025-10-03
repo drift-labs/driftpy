@@ -1,5 +1,5 @@
 {
-    "version": "2.135.0",
+    "version": "2.141.0",
     "name": "drift",
     "instructions": [
         {
@@ -1381,96 +1381,6 @@
             ]
         },
         {
-            "name": "addPerpLpShares",
-            "accounts": [
-                {
-                    "name": "state",
-                    "isMut": false,
-                    "isSigner": false
-                },
-                {
-                    "name": "user",
-                    "isMut": true,
-                    "isSigner": false
-                },
-                {
-                    "name": "authority",
-                    "isMut": false,
-                    "isSigner": true
-                }
-            ],
-            "args": [
-                {
-                    "name": "nShares",
-                    "type": "u64"
-                },
-                {
-                    "name": "marketIndex",
-                    "type": "u16"
-                }
-            ]
-        },
-        {
-            "name": "removePerpLpShares",
-            "accounts": [
-                {
-                    "name": "state",
-                    "isMut": false,
-                    "isSigner": false
-                },
-                {
-                    "name": "user",
-                    "isMut": true,
-                    "isSigner": false
-                },
-                {
-                    "name": "authority",
-                    "isMut": false,
-                    "isSigner": true
-                }
-            ],
-            "args": [
-                {
-                    "name": "sharesToBurn",
-                    "type": "u64"
-                },
-                {
-                    "name": "marketIndex",
-                    "type": "u16"
-                }
-            ]
-        },
-        {
-            "name": "removePerpLpSharesInExpiringMarket",
-            "accounts": [
-                {
-                    "name": "state",
-                    "isMut": false,
-                    "isSigner": false
-                },
-                {
-                    "name": "user",
-                    "isMut": true,
-                    "isSigner": false
-                },
-                {
-                    "name": "signer",
-                    "isMut": false,
-                    "isSigner": true
-                }
-            ],
-            "args": [
-                {
-                    "name": "sharesToBurn",
-                    "type": "u64"
-                },
-                {
-                    "name": "marketIndex",
-                    "type": "u16"
-                }
-            ]
-        },
-        {
             "name": "updateUserName",
             "accounts": [
                 {
@@ -1519,6 +1429,35 @@
                 {
                     "name": "marginRatio",
                     "type": "u32"
+                }
+            ]
+        },
+        {
+            "name": "updateUserPerpPositionCustomMarginRatio",
+            "accounts": [
+                {
+                    "name": "user",
+                    "isMut": true,
+                    "isSigner": false
+                },
+                {
+                    "name": "authority",
+                    "isMut": false,
+                    "isSigner": true
+                }
+            ],
+            "args": [
+                {
+                    "name": "subAccountId",
+                    "type": "u16"
+                },
+                {
+                    "name": "perpMarketIndex",
+                    "type": "u16"
+                },
+                {
+                    "name": "marginRatio",
+                    "type": "u16"
                 }
             ]
         },
@@ -1618,31 +1557,6 @@
                 },
                 {
                     "name": "reduceOnly",
-                    "type": "bool"
-                }
-            ]
-        },
-        {
-            "name": "updateUserAdvancedLp",
-            "accounts": [
-                {
-                    "name": "user",
-                    "isMut": true,
-                    "isSigner": false
-                },
-                {
-                    "name": "authority",
-                    "isMut": false,
-                    "isSigner": true
-                }
-            ],
-            "args": [
-                {
-                    "name": "subAccountId",
-                    "type": "u16"
-                },
-                {
-                    "name": "advancedLp",
                     "type": "bool"
                 }
             ]
@@ -2142,32 +2056,6 @@
             "args": []
         },
         {
-            "name": "updateUserOpenOrdersCount",
-            "accounts": [
-                {
-                    "name": "state",
-                    "isMut": false,
-                    "isSigner": false
-                },
-                {
-                    "name": "authority",
-                    "isMut": false,
-                    "isSigner": true
-                },
-                {
-                    "name": "filler",
-                    "isMut": true,
-                    "isSigner": false
-                },
-                {
-                    "name": "user",
-                    "isMut": true,
-                    "isSigner": false
-                }
-            ],
-            "args": []
-        },
-        {
             "name": "adminDisableUpdatePerpBidAskTwap",
             "accounts": [
                 {
@@ -2278,27 +2166,6 @@
                 }
             ],
             "args": []
-        },
-        {
-            "name": "settleLp",
-            "accounts": [
-                {
-                    "name": "state",
-                    "isMut": false,
-                    "isSigner": false
-                },
-                {
-                    "name": "user",
-                    "isMut": true,
-                    "isSigner": false
-                }
-            ],
-            "args": [
-                {
-                    "name": "marketIndex",
-                    "type": "u16"
-                }
-            ]
         },
         {
             "name": "settleExpiredMarket",
@@ -3212,25 +3079,40 @@
             "args": []
         },
         {
-            "name": "updateUserGovTokenInsuranceStakeDevnet",
+            "name": "updateDelegateUserGovTokenInsuranceStake",
             "accounts": [
+                {
+                    "name": "spotMarket",
+                    "isMut": true,
+                    "isSigner": false
+                },
+                {
+                    "name": "insuranceFundStake",
+                    "isMut": false,
+                    "isSigner": false
+                },
                 {
                     "name": "userStats",
                     "isMut": true,
                     "isSigner": false
                 },
                 {
-                    "name": "signer",
+                    "name": "admin",
                     "isMut": false,
                     "isSigner": true
+                },
+                {
+                    "name": "insuranceFundVault",
+                    "isMut": true,
+                    "isSigner": false
+                },
+                {
+                    "name": "state",
+                    "isMut": false,
+                    "isSigner": false
                 }
             ],
-            "args": [
-                {
-                    "name": "govStakeAmount",
-                    "type": "u64"
-                }
-            ]
+            "args": []
         },
         {
             "name": "initializeInsuranceFundStake",
@@ -3481,61 +3363,6 @@
             ]
         },
         {
-            "name": "transferProtocolIfShares",
-            "accounts": [
-                {
-                    "name": "signer",
-                    "isMut": false,
-                    "isSigner": true
-                },
-                {
-                    "name": "transferConfig",
-                    "isMut": true,
-                    "isSigner": false
-                },
-                {
-                    "name": "state",
-                    "isMut": false,
-                    "isSigner": false
-                },
-                {
-                    "name": "spotMarket",
-                    "isMut": true,
-                    "isSigner": false
-                },
-                {
-                    "name": "insuranceFundStake",
-                    "isMut": true,
-                    "isSigner": false
-                },
-                {
-                    "name": "userStats",
-                    "isMut": true,
-                    "isSigner": false
-                },
-                {
-                    "name": "authority",
-                    "isMut": false,
-                    "isSigner": true
-                },
-                {
-                    "name": "insuranceFundVault",
-                    "isMut": false,
-                    "isSigner": false
-                }
-            ],
-            "args": [
-                {
-                    "name": "marketIndex",
-                    "type": "u16"
-                },
-                {
-                    "name": "shares",
-                    "type": "u128"
-                }
-            ]
-        },
-        {
             "name": "beginInsuranceFundSwap",
             "accounts": [
                 {
@@ -3700,6 +3527,71 @@
                 },
                 {
                     "name": "ifRebalanceConfig",
+                    "isMut": true,
+                    "isSigner": false
+                },
+                {
+                    "name": "tokenProgram",
+                    "isMut": false,
+                    "isSigner": false
+                },
+                {
+                    "name": "driftSigner",
+                    "isMut": false,
+                    "isSigner": false
+                }
+            ],
+            "args": [
+                {
+                    "name": "marketIndex",
+                    "type": "u16"
+                },
+                {
+                    "name": "amount",
+                    "type": "u64"
+                }
+            ]
+        },
+        {
+            "name": "depositIntoInsuranceFundStake",
+            "accounts": [
+                {
+                    "name": "signer",
+                    "isMut": false,
+                    "isSigner": true
+                },
+                {
+                    "name": "state",
+                    "isMut": true,
+                    "isSigner": false
+                },
+                {
+                    "name": "spotMarket",
+                    "isMut": true,
+                    "isSigner": false
+                },
+                {
+                    "name": "insuranceFundStake",
+                    "isMut": true,
+                    "isSigner": false
+                },
+                {
+                    "name": "userStats",
+                    "isMut": true,
+                    "isSigner": false
+                },
+                {
+                    "name": "spotMarketVault",
+                    "isMut": true,
+                    "isSigner": false
+                },
+                {
+                    "name": "insuranceFundVault",
+                    "isMut": true,
+                    "isSigner": false
+                },
+                {
+                    "name": "userTokenAccount",
                     "isMut": true,
                     "isSigner": false
                 },
@@ -4353,27 +4245,6 @@
                     }
                 }
             ]
-        },
-        {
-            "name": "updateSerumVault",
-            "accounts": [
-                {
-                    "name": "state",
-                    "isMut": true,
-                    "isSigner": false
-                },
-                {
-                    "name": "admin",
-                    "isMut": true,
-                    "isSigner": true
-                },
-                {
-                    "name": "srmVault",
-                    "isMut": false,
-                    "isSigner": false
-                }
-            ],
-            "args": []
         },
         {
             "name": "initializePerpMarket",
@@ -5977,58 +5848,6 @@
             ]
         },
         {
-            "name": "updatePerpMarketTargetBaseAssetAmountPerLp",
-            "accounts": [
-                {
-                    "name": "admin",
-                    "isMut": false,
-                    "isSigner": true
-                },
-                {
-                    "name": "state",
-                    "isMut": false,
-                    "isSigner": false
-                },
-                {
-                    "name": "perpMarket",
-                    "isMut": true,
-                    "isSigner": false
-                }
-            ],
-            "args": [
-                {
-                    "name": "targetBaseAssetAmountPerLp",
-                    "type": "i32"
-                }
-            ]
-        },
-        {
-            "name": "updatePerpMarketPerLpBase",
-            "accounts": [
-                {
-                    "name": "admin",
-                    "isMut": false,
-                    "isSigner": true
-                },
-                {
-                    "name": "state",
-                    "isMut": false,
-                    "isSigner": false
-                },
-                {
-                    "name": "perpMarket",
-                    "isMut": true,
-                    "isSigner": false
-                }
-            ],
-            "args": [
-                {
-                    "name": "perLpBase",
-                    "type": "i8"
-                }
-            ]
-        },
-        {
             "name": "updateLpCooldownTime",
             "accounts": [
                 {
@@ -7012,73 +6831,6 @@
             ]
         },
         {
-            "name": "initializeProtocolIfSharesTransferConfig",
-            "accounts": [
-                {
-                    "name": "admin",
-                    "isMut": true,
-                    "isSigner": true
-                },
-                {
-                    "name": "protocolIfSharesTransferConfig",
-                    "isMut": true,
-                    "isSigner": false
-                },
-                {
-                    "name": "state",
-                    "isMut": false,
-                    "isSigner": false
-                },
-                {
-                    "name": "rent",
-                    "isMut": false,
-                    "isSigner": false
-                },
-                {
-                    "name": "systemProgram",
-                    "isMut": false,
-                    "isSigner": false
-                }
-            ],
-            "args": []
-        },
-        {
-            "name": "updateProtocolIfSharesTransferConfig",
-            "accounts": [
-                {
-                    "name": "admin",
-                    "isMut": true,
-                    "isSigner": true
-                },
-                {
-                    "name": "protocolIfSharesTransferConfig",
-                    "isMut": true,
-                    "isSigner": false
-                },
-                {
-                    "name": "state",
-                    "isMut": false,
-                    "isSigner": false
-                }
-            ],
-            "args": [
-                {
-                    "name": "whitelistedSigners",
-                    "type": {
-                        "option": {
-                            "array": ["publicKey", 4]
-                        }
-                    }
-                },
-                {
-                    "name": "maxTransferPerEpoch",
-                    "type": {
-                        "option": "u128"
-                    }
-                }
-            ]
-        },
-        {
             "name": "initializePrelaunchOracle",
             "accounts": [
                 {
@@ -7594,6 +7346,174 @@
             "args": [
                 {
                     "name": "enable",
+                    "type": "bool"
+                }
+            ]
+        },
+        {
+            "name": "updateFeatureBitFlagsBuilderCodes",
+            "accounts": [
+                {
+                    "name": "admin",
+                    "isMut": false,
+                    "isSigner": true
+                },
+                {
+                    "name": "state",
+                    "isMut": true,
+                    "isSigner": false
+                }
+            ],
+            "args": [
+                {
+                    "name": "enable",
+                    "type": "bool"
+                }
+            ]
+        },
+        {
+            "name": "initializeRevenueShare",
+            "accounts": [
+                {
+                    "name": "revenueShare",
+                    "isMut": true,
+                    "isSigner": false
+                },
+                {
+                    "name": "authority",
+                    "isMut": false,
+                    "isSigner": false
+                },
+                {
+                    "name": "payer",
+                    "isMut": true,
+                    "isSigner": true
+                },
+                {
+                    "name": "rent",
+                    "isMut": false,
+                    "isSigner": false
+                },
+                {
+                    "name": "systemProgram",
+                    "isMut": false,
+                    "isSigner": false
+                }
+            ],
+            "args": []
+        },
+        {
+            "name": "initializeRevenueShareEscrow",
+            "accounts": [
+                {
+                    "name": "escrow",
+                    "isMut": true,
+                    "isSigner": false
+                },
+                {
+                    "name": "authority",
+                    "isMut": false,
+                    "isSigner": false
+                },
+                {
+                    "name": "userStats",
+                    "isMut": true,
+                    "isSigner": false
+                },
+                {
+                    "name": "state",
+                    "isMut": false,
+                    "isSigner": false
+                },
+                {
+                    "name": "payer",
+                    "isMut": true,
+                    "isSigner": true
+                },
+                {
+                    "name": "rent",
+                    "isMut": false,
+                    "isSigner": false
+                },
+                {
+                    "name": "systemProgram",
+                    "isMut": false,
+                    "isSigner": false
+                }
+            ],
+            "args": [
+                {
+                    "name": "numOrders",
+                    "type": "u16"
+                }
+            ]
+        },
+        {
+            "name": "resizeRevenueShareEscrowOrders",
+            "accounts": [
+                {
+                    "name": "escrow",
+                    "isMut": true,
+                    "isSigner": false
+                },
+                {
+                    "name": "authority",
+                    "isMut": false,
+                    "isSigner": false
+                },
+                {
+                    "name": "payer",
+                    "isMut": true,
+                    "isSigner": true
+                },
+                {
+                    "name": "systemProgram",
+                    "isMut": false,
+                    "isSigner": false
+                }
+            ],
+            "args": [
+                {
+                    "name": "numOrders",
+                    "type": "u16"
+                }
+            ]
+        },
+        {
+            "name": "changeApprovedBuilder",
+            "accounts": [
+                {
+                    "name": "escrow",
+                    "isMut": true,
+                    "isSigner": false
+                },
+                {
+                    "name": "authority",
+                    "isMut": false,
+                    "isSigner": true
+                },
+                {
+                    "name": "payer",
+                    "isMut": true,
+                    "isSigner": true
+                },
+                {
+                    "name": "systemProgram",
+                    "isMut": false,
+                    "isSigner": false
+                }
+            ],
+            "args": [
+                {
+                    "name": "builder",
+                    "type": "publicKey"
+                },
+                {
+                    "name": "maxFeeBps",
+                    "type": "u16"
+                },
+                {
+                    "name": "add",
                     "type": "bool"
                 }
             ]
@@ -8375,6 +8295,98 @@
                     {
                         "name": "conf",
                         "type": "u64"
+                    }
+                ]
+            }
+        },
+        {
+            "name": "RevenueShare",
+            "type": {
+                "kind": "struct",
+                "fields": [
+                    {
+                        "name": "authority",
+                        "docs": [
+                            "the owner of this account, a builder or referrer"
+                        ],
+                        "type": "publicKey"
+                    },
+                    {
+                        "name": "totalReferrerRewards",
+                        "type": "u64"
+                    },
+                    {
+                        "name": "totalBuilderRewards",
+                        "type": "u64"
+                    },
+                    {
+                        "name": "padding",
+                        "type": {
+                            "array": ["u8", 18]
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "name": "RevenueShareEscrow",
+            "type": {
+                "kind": "struct",
+                "fields": [
+                    {
+                        "name": "authority",
+                        "docs": ["the owner of this account, a user"],
+                        "type": "publicKey"
+                    },
+                    {
+                        "name": "referrer",
+                        "type": "publicKey"
+                    },
+                    {
+                        "name": "referrerBoostExpireTs",
+                        "type": "u32"
+                    },
+                    {
+                        "name": "referrerRewardOffset",
+                        "type": "i8"
+                    },
+                    {
+                        "name": "refereeFeeNumeratorOffset",
+                        "type": "i8"
+                    },
+                    {
+                        "name": "referrerBoostNumerator",
+                        "type": "i8"
+                    },
+                    {
+                        "name": "reservedFixed",
+                        "type": {
+                            "array": ["u8", 17]
+                        }
+                    },
+                    {
+                        "name": "padding0",
+                        "type": "u32"
+                    },
+                    {
+                        "name": "orders",
+                        "type": {
+                            "vec": {
+                                "defined": "RevenueShareOrder"
+                            }
+                        }
+                    },
+                    {
+                        "name": "padding1",
+                        "type": "u32"
+                    },
+                    {
+                        "name": "approvedBuilders",
+                        "type": {
+                            "vec": {
+                                "defined": "BuilderInfo"
+                            }
+                        }
                     }
                 ]
             }
@@ -10052,6 +10064,24 @@
                                 "defined": "SignedMsgTriggerOrderParams"
                             }
                         }
+                    },
+                    {
+                        "name": "maxMarginRatio",
+                        "type": {
+                            "option": "u16"
+                        }
+                    },
+                    {
+                        "name": "builderIdx",
+                        "type": {
+                            "option": "u8"
+                        }
+                    },
+                    {
+                        "name": "builderFeeTenthBps",
+                        "type": {
+                            "option": "u16"
+                        }
                     }
                 ]
             }
@@ -10095,6 +10125,24 @@
                             "option": {
                                 "defined": "SignedMsgTriggerOrderParams"
                             }
+                        }
+                    },
+                    {
+                        "name": "maxMarginRatio",
+                        "type": {
+                            "option": "u16"
+                        }
+                    },
+                    {
+                        "name": "builderIdx",
+                        "type": {
+                            "option": "u8"
+                        }
+                    },
+                    {
+                        "name": "builderFeeTenthBps",
+                        "type": {
+                            "option": "u16"
                         }
                     }
                 ]
@@ -10925,6 +10973,148 @@
             }
         },
         {
+            "name": "RevenueShareOrder",
+            "type": {
+                "kind": "struct",
+                "fields": [
+                    {
+                        "name": "feesAccrued",
+                        "docs": [
+                            "fees accrued so far for this order slot. This is not exclusively fees from this order_id",
+                            "and may include fees from other orders in the same market. This may be swept to the",
+                            "builder's SpotPosition during settle_pnl."
+                        ],
+                        "type": "u64"
+                    },
+                    {
+                        "name": "orderId",
+                        "docs": [
+                            "the order_id of the current active order in this slot. It's only relevant while bit_flag = Open"
+                        ],
+                        "type": "u32"
+                    },
+                    {
+                        "name": "feeTenthBps",
+                        "docs": [
+                            "the builder fee on this order, in tenths of a bps, e.g. 100 = 0.01%"
+                        ],
+                        "type": "u16"
+                    },
+                    {
+                        "name": "marketIndex",
+                        "type": "u16"
+                    },
+                    {
+                        "name": "subAccountId",
+                        "docs": [
+                            "the subaccount_id of the user who created this order. It's only relevant while bit_flag = Open"
+                        ],
+                        "type": "u16"
+                    },
+                    {
+                        "name": "builderIdx",
+                        "docs": [
+                            "the index of the RevenueShareEscrow.approved_builders list, that this order's fee will settle to. Ignored",
+                            "if bit_flag = Referral."
+                        ],
+                        "type": "u8"
+                    },
+                    {
+                        "name": "bitFlags",
+                        "docs": [
+                            "bitflags that describe the state of the order.",
+                            "[`RevenueShareOrderBitFlag::Init`]: this order slot is available for use.",
+                            "[`RevenueShareOrderBitFlag::Open`]: this order slot is occupied, `order_id` is the `sub_account_id`'s active order.",
+                            "[`RevenueShareOrderBitFlag::Completed`]: this order has been filled or canceled, and is waiting to be settled into.",
+                            "the builder's account order_id and sub_account_id are no longer relevant, it may be merged with other orders.",
+                            "[`RevenueShareOrderBitFlag::Referral`]: this order stores referral rewards waiting to be settled for this market.",
+                            "If it is set, no other bitflag should be set."
+                        ],
+                        "type": "u8"
+                    },
+                    {
+                        "name": "userOrderIndex",
+                        "docs": [
+                            "the index into the User's orders list when this RevenueShareOrder was created, make sure to verify that order_id matches."
+                        ],
+                        "type": "u8"
+                    },
+                    {
+                        "name": "marketType",
+                        "type": {
+                            "defined": "MarketType"
+                        }
+                    },
+                    {
+                        "name": "padding",
+                        "type": {
+                            "array": ["u8", 10]
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "name": "BuilderInfo",
+            "type": {
+                "kind": "struct",
+                "fields": [
+                    {
+                        "name": "authority",
+                        "type": "publicKey"
+                    },
+                    {
+                        "name": "maxFeeTenthBps",
+                        "type": "u16"
+                    },
+                    {
+                        "name": "padding",
+                        "type": {
+                            "array": ["u8", 6]
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "name": "RevenueShareEscrowFixed",
+            "type": {
+                "kind": "struct",
+                "fields": [
+                    {
+                        "name": "authority",
+                        "type": "publicKey"
+                    },
+                    {
+                        "name": "referrer",
+                        "type": "publicKey"
+                    },
+                    {
+                        "name": "referrerBoostExpireTs",
+                        "type": "u32"
+                    },
+                    {
+                        "name": "referrerRewardOffset",
+                        "type": "i8"
+                    },
+                    {
+                        "name": "refereeFeeNumeratorOffset",
+                        "type": "i8"
+                    },
+                    {
+                        "name": "referrerBoostNumerator",
+                        "type": "i8"
+                    },
+                    {
+                        "name": "reservedFixed",
+                        "type": {
+                            "array": ["u8", 17]
+                        }
+                    }
+                ]
+            }
+        },
+        {
             "name": "SignedMsgOrderId",
             "type": {
                 "kind": "struct",
@@ -11389,13 +11579,14 @@
                         "type": "i64"
                     },
                     {
-                        "name": "remainderBaseAssetAmount",
-                        "docs": [
-                            "Settling LP position can lead to a small amount of base asset being left over smaller than step size",
-                            "This records that remainder so it can be settled later on",
-                            "precision: BASE_PRECISION"
-                        ],
-                        "type": "i32"
+                        "name": "padding",
+                        "type": {
+                            "array": ["u8", 2]
+                        }
+                    },
+                    {
+                        "name": "maxMarginRatio",
+                        "type": "u16"
                     },
                     {
                         "name": "marketIndex",
@@ -12060,6 +12251,9 @@
                     },
                     {
                         "name": "StakeTransfer"
+                    },
+                    {
+                        "name": "AdminDeposit"
                     }
                 ]
             }
@@ -12419,23 +12613,6 @@
             }
         },
         {
-            "name": "AMMLiquiditySplit",
-            "type": {
-                "kind": "enum",
-                "variants": [
-                    {
-                        "name": "ProtocolOwned"
-                    },
-                    {
-                        "name": "LPOwned"
-                    },
-                    {
-                        "name": "Shared"
-                    }
-                ]
-            }
-        },
-        {
             "name": "AMMAvailability",
             "type": {
                 "kind": "enum",
@@ -12448,6 +12625,26 @@
                     },
                     {
                         "name": "Unavailable"
+                    }
+                ]
+            }
+        },
+        {
+            "name": "RevenueShareOrderBitFlag",
+            "type": {
+                "kind": "enum",
+                "variants": [
+                    {
+                        "name": "Init"
+                    },
+                    {
+                        "name": "Open"
+                    },
+                    {
+                        "name": "Completed"
+                    },
+                    {
+                        "name": "Referral"
                     }
                 ]
             }
@@ -12573,6 +12770,12 @@
                     },
                     {
                         "name": "MedianTriggerPrice"
+                    },
+                    {
+                        "name": "BuilderCodes"
+                    },
+                    {
+                        "name": "BuilderReferral"
                     }
                 ]
             }
@@ -12707,6 +12910,9 @@
                     },
                     {
                         "name": "NewTriggerReduceOnly"
+                    },
+                    {
+                        "name": "HasBuilder"
                     }
                 ]
             }
@@ -12721,6 +12927,9 @@
                     },
                     {
                         "name": "IsReferred"
+                    },
+                    {
+                        "name": "BuilderReferral"
                     }
                 ]
             }
@@ -13504,6 +13713,20 @@
                         "option": "u64"
                     },
                     "index": false
+                },
+                {
+                    "name": "builderIdx",
+                    "type": {
+                        "option": "u8"
+                    },
+                    "index": false
+                },
+                {
+                    "name": "builderFee",
+                    "type": {
+                        "option": "u64"
+                    },
+                    "index": false
                 }
             ]
         },
@@ -14217,6 +14440,327 @@
                 {
                     "name": "fuelTotal",
                     "type": "u128",
+                    "index": false
+                }
+            ]
+        },
+        {
+            "name": "RevenueShareSettleRecord",
+            "fields": [
+                {
+                    "name": "ts",
+                    "type": "i64",
+                    "index": false
+                },
+                {
+                    "name": "builder",
+                    "type": {
+                        "option": "publicKey"
+                    },
+                    "index": false
+                },
+                {
+                    "name": "referrer",
+                    "type": {
+                        "option": "publicKey"
+                    },
+                    "index": false
+                },
+                {
+                    "name": "feeSettled",
+                    "type": "u64",
+                    "index": false
+                },
+                {
+                    "name": "marketIndex",
+                    "type": "u16",
+                    "index": false
+                },
+                {
+                    "name": "marketType",
+                    "type": {
+                        "defined": "MarketType"
+                    },
+                    "index": false
+                },
+                {
+                    "name": "builderSubAccountId",
+                    "type": "u16",
+                    "index": false
+                },
+                {
+                    "name": "builderTotalReferrerRewards",
+                    "type": "u64",
+                    "index": false
+                },
+                {
+                    "name": "builderTotalBuilderRewards",
+                    "type": "u64",
+                    "index": false
+                }
+            ]
+        },
+        {
+            "name": "LPSettleRecord",
+            "fields": [
+                {
+                    "name": "recordId",
+                    "type": "u64",
+                    "index": false
+                },
+                {
+                    "name": "lastTs",
+                    "type": "i64",
+                    "index": false
+                },
+                {
+                    "name": "lastSlot",
+                    "type": "u64",
+                    "index": false
+                },
+                {
+                    "name": "ts",
+                    "type": "i64",
+                    "index": false
+                },
+                {
+                    "name": "slot",
+                    "type": "u64",
+                    "index": false
+                },
+                {
+                    "name": "perpMarketIndex",
+                    "type": "u16",
+                    "index": false
+                },
+                {
+                    "name": "settleToLpAmount",
+                    "type": "i64",
+                    "index": false
+                },
+                {
+                    "name": "perpAmmPnlDelta",
+                    "type": "i64",
+                    "index": false
+                },
+                {
+                    "name": "perpAmmExFeeDelta",
+                    "type": "i64",
+                    "index": false
+                },
+                {
+                    "name": "lpAum",
+                    "type": "u128",
+                    "index": false
+                },
+                {
+                    "name": "lpPrice",
+                    "type": "u128",
+                    "index": false
+                }
+            ]
+        },
+        {
+            "name": "LPSwapRecord",
+            "fields": [
+                {
+                    "name": "ts",
+                    "type": "i64",
+                    "index": false
+                },
+                {
+                    "name": "slot",
+                    "type": "u64",
+                    "index": false
+                },
+                {
+                    "name": "authority",
+                    "type": "publicKey",
+                    "index": false
+                },
+                {
+                    "name": "outAmount",
+                    "type": "u128",
+                    "index": false
+                },
+                {
+                    "name": "inAmount",
+                    "type": "u128",
+                    "index": false
+                },
+                {
+                    "name": "outFee",
+                    "type": "i128",
+                    "index": false
+                },
+                {
+                    "name": "inFee",
+                    "type": "i128",
+                    "index": false
+                },
+                {
+                    "name": "outSpotMarketIndex",
+                    "type": "u16",
+                    "index": false
+                },
+                {
+                    "name": "inSpotMarketIndex",
+                    "type": "u16",
+                    "index": false
+                },
+                {
+                    "name": "outConstituentIndex",
+                    "type": "u16",
+                    "index": false
+                },
+                {
+                    "name": "inConstituentIndex",
+                    "type": "u16",
+                    "index": false
+                },
+                {
+                    "name": "outOraclePrice",
+                    "type": "i64",
+                    "index": false
+                },
+                {
+                    "name": "inOraclePrice",
+                    "type": "i64",
+                    "index": false
+                },
+                {
+                    "name": "lastAum",
+                    "type": "u128",
+                    "index": false
+                },
+                {
+                    "name": "lastAumSlot",
+                    "type": "u64",
+                    "index": false
+                },
+                {
+                    "name": "inMarketCurrentWeight",
+                    "type": "i64",
+                    "index": false
+                },
+                {
+                    "name": "outMarketCurrentWeight",
+                    "type": "i64",
+                    "index": false
+                },
+                {
+                    "name": "inMarketTargetWeight",
+                    "type": "i64",
+                    "index": false
+                },
+                {
+                    "name": "outMarketTargetWeight",
+                    "type": "i64",
+                    "index": false
+                },
+                {
+                    "name": "inSwapId",
+                    "type": "u64",
+                    "index": false
+                },
+                {
+                    "name": "outSwapId",
+                    "type": "u64",
+                    "index": false
+                }
+            ]
+        },
+        {
+            "name": "LPMintRedeemRecord",
+            "fields": [
+                {
+                    "name": "ts",
+                    "type": "i64",
+                    "index": false
+                },
+                {
+                    "name": "slot",
+                    "type": "u64",
+                    "index": false
+                },
+                {
+                    "name": "authority",
+                    "type": "publicKey",
+                    "index": false
+                },
+                {
+                    "name": "description",
+                    "type": "u8",
+                    "index": false
+                },
+                {
+                    "name": "amount",
+                    "type": "u128",
+                    "index": false
+                },
+                {
+                    "name": "fee",
+                    "type": "i128",
+                    "index": false
+                },
+                {
+                    "name": "spotMarketIndex",
+                    "type": "u16",
+                    "index": false
+                },
+                {
+                    "name": "constituentIndex",
+                    "type": "u16",
+                    "index": false
+                },
+                {
+                    "name": "oraclePrice",
+                    "type": "i64",
+                    "index": false
+                },
+                {
+                    "name": "mint",
+                    "type": "publicKey",
+                    "index": false
+                },
+                {
+                    "name": "lpAmount",
+                    "type": "u64",
+                    "index": false
+                },
+                {
+                    "name": "lpFee",
+                    "type": "i64",
+                    "index": false
+                },
+                {
+                    "name": "lpPrice",
+                    "type": "u128",
+                    "index": false
+                },
+                {
+                    "name": "mintRedeemId",
+                    "type": "u64",
+                    "index": false
+                },
+                {
+                    "name": "lastAum",
+                    "type": "u128",
+                    "index": false
+                },
+                {
+                    "name": "lastAumSlot",
+                    "type": "u64",
+                    "index": false
+                },
+                {
+                    "name": "inMarketCurrentWeight",
+                    "type": "i64",
+                    "index": false
+                },
+                {
+                    "name": "inMarketTargetWeight",
+                    "type": "i64",
                     "index": false
                 }
             ]
@@ -15807,6 +16351,46 @@
             "code": 6316,
             "name": "InvalidIfRebalanceSwap",
             "msg": "Invalid If Rebalance Swap"
+        },
+        {
+            "code": 6317,
+            "name": "InvalidRevenueShareResize",
+            "msg": "Invalid RevenueShare resize"
+        },
+        {
+            "code": 6318,
+            "name": "BuilderRevoked",
+            "msg": "Builder has been revoked"
+        },
+        {
+            "code": 6319,
+            "name": "InvalidBuilderFee",
+            "msg": "Builder fee is greater than max fee bps"
+        },
+        {
+            "code": 6320,
+            "name": "RevenueShareEscrowAuthorityMismatch",
+            "msg": "RevenueShareEscrow authority mismatch"
+        },
+        {
+            "code": 6321,
+            "name": "RevenueShareEscrowOrdersAccountFull",
+            "msg": "RevenueShareEscrow has too many active orders"
+        },
+        {
+            "code": 6322,
+            "name": "InvalidRevenueShareAccount",
+            "msg": "Invalid RevenueShareAccount"
+        },
+        {
+            "code": 6323,
+            "name": "CannotRevokeBuilderWithOpenOrders",
+            "msg": "Cannot revoke builder with open orders"
+        },
+        {
+            "code": 6324,
+            "name": "UnableToLoadRevenueShareAccount",
+            "msg": "Unable to load builder account"
         }
     ],
     "metadata": {
