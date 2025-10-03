@@ -574,4 +574,12 @@ mainnet_spot_market_configs: list[SpotMarketConfig] = [
         mint=Pubkey.from_string("LBTCgU4b3wsFKsPwBn1rRZDx5DoFutM6RPiEt1TPDsY"),
         decimals=8,
     ),
+    SpotMarketConfig(
+        symbol="2Z",
+        market_index=59,
+        oracle=Pubkey.from_string("4HTDpcHAwBTHCJLNMwT35w4FGc4nfA4YhT1BkcZQwQ2m"),
+        oracle_source=OracleSource.PythLazer(),  # type: ignore
+        mint=Pubkey.from_string("J6pQQ3FAcJQeWPPGppWRb4nM8jU3wLyYbRrLh7feMfvd"),
+        decimals=8,
+    ),
 ]
