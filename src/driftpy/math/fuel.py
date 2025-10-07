@@ -1,56 +1,42 @@
+from typing import Final
 from driftpy.types import SpotMarketAccount, PerpMarketAccount
 from driftpy.constants.numeric_constants import QUOTE_PRECISION, FUEL_WINDOW
+
+_SCALE_10: Final[int] = QUOTE_PRECISION // 10
+_DENOM: Final[int] = FUEL_WINDOW * _SCALE_10
+
+def _scaled_fuel(value_abs: int, fuel_bonus_numerator: int, boost: int) -> int:
+    if value_abs == 0 or fuel_bonus_numerator == 0 or boost == 0:
+        return 0
+
+    return (value_abs * fuel_bonus_numerator * boost) // _DENOM
 
 
 def calculate_insurance_fuel_bonus(
     spot_market: SpotMarketAccount, token_stake_amount: int, fuel_bonus_numerator: int
 ) -> int:
-    insurance_fund_fuel = (
-        abs(token_stake_amount) * fuel_bonus_numerator
-    ) * spot_market.fuel_boost_insurance
-    insurace_fund_fuel_per_day = insurance_fund_fuel // FUEL_WINDOW
-    insurance_fund_fuel_scaled = insurace_fund_fuel_per_day // (QUOTE_PRECISION // 10)
-
-    return insurance_fund_fuel_scaled
+    value_abs = abs(token_stake_amount)
+    return _scaled_fuel(value_abs, fuel_bonus_numerator, spot_market.fuel_boost_insurance)
 
 
 def calculate_spot_fuel_bonus(
     spot_market: SpotMarketAccount, signed_token_value: int, fuel_bonus_numerator: int
 ) -> int:
-    spot_fuel_scaled: int
+    value_abs = abs(signed_token_value)
 
-    # dust
-    if abs(signed_token_value) <= QUOTE_PRECISION:
-        spot_fuel_scaled = 0
-    elif signed_token_value > 0:
-        deposit_fuel = (
-            abs(signed_token_value) * fuel_bonus_numerator
-        ) * spot_market.fuel_boost_deposits
-        deposit_fuel_per_day = deposit_fuel // FUEL_WINDOW
-        spot_fuel_scaled = deposit_fuel_per_day // (QUOTE_PRECISION // 10)
-    else:
-        borrow_fuel = (
-            abs(signed_token_value) * fuel_bonus_numerator
-        ) * spot_market.fuel_boost_borrows
-        borrow_fuel_per_day = borrow_fuel // FUEL_WINDOW
-        spot_fuel_scaled = borrow_fuel_per_day // (QUOTE_PRECISION // 10)
+    if value_abs <= QUOTE_PRECISION:
+        return 0
 
-    return spot_fuel_scaled
+    boost = spot_market.fuel_boost_deposits if signed_token_value > 0 else spot_market.fuel_boost_borrows
+    return _scaled_fuel(value_abs, fuel_bonus_numerator, boost)
 
 
 def calculate_perp_fuel_bonus(
     perp_market: PerpMarketAccount, base_asset_value: int, fuel_bonus_numerator: int
 ) -> int:
-    perp_fuel_scaled: int
+    value_abs = abs(base_asset_value)
 
-    # dust
-    if abs(base_asset_value) <= QUOTE_PRECISION:
-        perp_fuel_scaled = 0
-    else:
-        perp_fuel = (
-            abs(base_asset_value) * fuel_bonus_numerator
-        ) * perp_market.fuel_boost_position
-        perp_fuel_per_day = perp_fuel // FUEL_WINDOW
-        perp_fuel_scaled = perp_fuel_per_day // (QUOTE_PRECISION // 10)
+    if value_abs <= QUOTE_PRECISION:
+        return 0
 
-    return perp_fuel_scaled
+    return _scaled_fuel(value_abs, fuel_bonus_numerator, perp_market.fuel_boost_position)
