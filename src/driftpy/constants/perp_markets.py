@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from solders.pubkey import Pubkey  # type: ignore
+from solders.pubkey import Pubkey
 
 from driftpy.types import OracleSource
 
@@ -219,7 +219,6 @@ devnet_perp_market_configs: list[PerpMarketConfig] = [
         oracle_source=OracleSource.Prelaunch(),  # type: ignore
     ),
 ]
-
 
 mainnet_perp_market_configs: list[PerpMarketConfig] = [
     PerpMarketConfig(
@@ -774,5 +773,26 @@ mainnet_perp_market_configs: list[PerpMarketConfig] = [
         market_index=78,
         oracle=Pubkey.from_string("4HTDpcHAwBTHCJLNMwT35w4FGc4nfA4YhT1BkcZQwQ2m"),
         oracle_source=OracleSource.PythLazer(),  # type: ignore
+    ),
+    PerpMarketConfig(
+        symbol="ZEC-PERP",
+        base_asset_symbol="ZEC",
+        market_index=79,
+        oracle=Pubkey.from_string("BXunfRSyiQWJHv88qMvE42mpMpksWEC8Bf13p2msnRms"),
+        oracle_source=OracleSource.PythLazer(),  # type: ignore
+    ),
+    PerpMarketConfig(
+        symbol="MNT-PERP",
+        base_asset_symbol="MNT",
+        market_index=80,
+        oracle=Pubkey.from_string("Gy7cJ4U1nxMA44XXC3hwqkpcxEB1mZTYiwJVkaqZfU7u"),
+        oracle_source=OracleSource.PythLazer(),  # type: ignore
+    ),
+    PerpMarketConfig(
+        symbol="1KPUMP-PERP",
+        base_asset_symbol="1KPUMP",
+        market_index=81,
+        oracle=Pubkey.from_string("5r8RWTaRiMgr9Lph3FTUE3sGb1vymhpCrm83Bovjfcps"),
+        oracle_source=OracleSource.PythLazer1K(),  # type: ignore
     ),
 ]

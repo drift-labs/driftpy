@@ -1,14 +1,7 @@
-"""
-This file contains the market configs for the spot markets on Drift.
-
-For reference, see the TypeScript implementation:
-- https://github.com/drift-labs/protocol-v2/blob/master/sdk/src/constants/spotMarkets.ts
-"""
-
 from dataclasses import dataclass
 from typing import Optional
 
-from solders.pubkey import Pubkey  # type: ignore
+from solders.pubkey import Pubkey
 
 from driftpy.types import OracleSource
 
@@ -25,20 +18,21 @@ class SpotMarketConfig:
 
 WRAPPED_SOL_MINT = Pubkey.from_string("So11111111111111111111111111111111111111112")
 
+
 devnet_spot_market_configs: list[SpotMarketConfig] = [
     SpotMarketConfig(
         symbol="USDC",
         market_index=0,
-        oracle=Pubkey.from_string("En8hkHLkRe9d9DraYmBTrus518BvmVH448YcvmrFM6Ce"),
-        oracle_source=OracleSource.PythStableCoinPull(),  # type: ignore
+        oracle=Pubkey.from_string("9VCioxmni2gDLv11qufWzT3RDERhQE4iY5Gf7NTfYyAV"),
+        oracle_source=OracleSource.PythLazerStableCoin(),  # type: ignore
         mint=Pubkey.from_string("8zGuJQqwhZafTah7Uc7Z4tXRnguqkn5KLFAP8oV6PHe2"),
         decimals=6,
     ),
     SpotMarketConfig(
         symbol="SOL",
         market_index=1,
-        oracle=Pubkey.from_string("BAtFj4kQttZRVep3UZS2aZRDixkGYgWsbqTBVDbnSsPF"),
-        oracle_source=OracleSource.PythPull(),  # type: ignore
+        oracle=Pubkey.from_string("3m6i4RFWEDw2Ft4tFHPJtYgmpPe21k56M3FHeWYrgGBz"),
+        oracle_source=OracleSource.PythLazer(),  # type: ignore
         mint=Pubkey.from_string("So11111111111111111111111111111111111111112"),
         decimals=9,
     ),
@@ -99,7 +93,6 @@ devnet_spot_market_configs: list[SpotMarketConfig] = [
         decimals=6,
     ),
 ]
-
 
 mainnet_spot_market_configs: list[SpotMarketConfig] = [
     SpotMarketConfig(
