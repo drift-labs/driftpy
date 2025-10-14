@@ -104,12 +104,12 @@ async def main():
 
     print(f"HTTP/WS RPC URL: {HTTP_RPC_URL}")
 
-    watched_auros_address = "BrRpSaQ6hFDw8darPCyP9Sw7sjydMFQqB4ECAotXSEci"
+    watched_test_address = "Fe4hMZrg7R97ZrbSScWBXUpQwZB9gzBnhodTCGyjkHsG"
     event_subscriber_handler = DriftSubscriber(rpc_url=HTTP_RPC_URL)
     event_subscriber_handler.add_callback(handle_rpc_event)
 
     await event_subscriber_handler.start(
-        watched_address=Pubkey.from_string(watched_auros_address),
+        watched_address=Pubkey.from_string(watched_test_address),
         event_types=(
             "OrderRecord",
             "OrderActionRecord",
