@@ -2,8 +2,9 @@ import math
 import time
 from copy import deepcopy
 from dataclasses import fields
-from solders.pubkey import Pubkey
 from typing import Optional, Tuple
+
+from solders.pubkey import Pubkey
 
 from driftpy.constants.numeric_constants import (
     AMM_TIMES_PEG_TO_QUOTE_PRECISION_RATIO,
@@ -129,7 +130,7 @@ def calculate_reference_price_offset(
     mark_twap_slow: int,
     max_offset_pct: float,
 ):
-    if last_24h_avg_funding_rate == 0:
+    if last_24h_avg_funding_rate == 0 or liquidity_fraction == 0:
         return 0
 
     max_offset_in_price = (max_offset_pct * reserve_price) // PERCENTAGE_PRECISION
@@ -187,6 +188,30 @@ def calculate_inventory_liquidity_ratio(
         abs(
             (base_asset_amount_with_amm * PERCENTAGE_PRECISION)
             // max(min_side_liquidity, 1)
+        ),
+        PERCENTAGE_PRECISION,
+    )
+
+    return inventory_scale_bn
+
+
+def calculate_inventory_liquidity_ratio_for_reference_price_offset(
+    base_asset_amount_with_amm: int,
+    base_asset_reserve: int,
+    min_base_asset_reserve: int,
+    max_base_asset_reserve: int,
+) -> int:
+    # inventory skew
+    open_bids, open_asks = calculate_market_open_bid_ask(
+        base_asset_reserve, min_base_asset_reserve, max_base_asset_reserve
+    )
+
+    avg_side_liquidity = (abs(open_bids) + abs(open_asks)) // 2
+
+    inventory_scale_bn = min(
+        abs(
+            (base_asset_amount_with_amm * PERCENTAGE_PRECISION)
+            // max(avg_side_liquidity, 1)
         ),
         PERCENTAGE_PRECISION,
     )
@@ -629,6 +654,7 @@ def calculate_spread_reserves(
     oracle_price_data: OraclePriceData,
     now: Optional[int] = None,
     is_prediction: bool = False,
+    latest_slot: Optional[int] = None,
 ) -> Tuple[int, int]:
     def calculate_spread_reserve(
         spread: int, direction: PositionDirection, amm: AMM
@@ -689,11 +715,13 @@ def calculate_spread_reserves(
             (PERCENTAGE_PRECISION // 10_000) * (amm.curve_update_intensity - 100),
         )
 
-        liquidity_fraction = calculate_inventory_liquidity_ratio(
-            amm.base_asset_amount_with_amm,
-            amm.base_asset_reserve,
-            amm.min_base_asset_reserve,
-            amm.max_base_asset_reserve,
+        liquidity_fraction = (
+            calculate_inventory_liquidity_ratio_for_reference_price_offset(
+                amm.base_asset_amount_with_amm,
+                amm.base_asset_reserve,
+                amm.min_base_asset_reserve,
+                amm.max_base_asset_reserve,
+            )
         )
 
         sign = sig_num(
@@ -701,10 +729,28 @@ def calculate_spread_reserves(
         )
         liquidity_fraction_signed = liquidity_fraction * sign
 
+        # Apply deadband logic
+        liquidity_fraction_after_deadband = liquidity_fraction_signed
+        deadband_pct = (
+            (amm.reference_price_offset_deadband_pct * PERCENTAGE_PRECISION) // 100
+            if amm.reference_price_offset_deadband_pct
+            else 0
+        )
+
+        if liquidity_fraction_after_deadband != 0 and deadband_pct > 0:
+            abs_liquidity = abs(liquidity_fraction_after_deadband)
+            if abs_liquidity <= deadband_pct:
+                liquidity_fraction_after_deadband = 0
+            else:
+                liquidity_fraction_after_deadband = (
+                    liquidity_fraction_after_deadband
+                    - (deadband_pct * sig_num(liquidity_fraction_after_deadband))
+                )
+
         reference_price_offset = calculate_reference_price_offset(
             reserve_price,
             amm.last24h_avg_funding_rate,
-            liquidity_fraction_signed,
+            liquidity_fraction_after_deadband,
             amm.historical_oracle_data.last_oracle_price_twap5min,
             amm.last_mark_price_twap5min,
             amm.historical_oracle_data.last_oracle_price_twap,
@@ -715,6 +761,32 @@ def calculate_spread_reserves(
     long_spread, short_spread = calculate_spread(
         amm, oracle_price_data, now, reserve_price
     )
+
+    # Reference price offset smoothing logic
+    do_reference_price_offset_smooth = (
+        sig_num(reference_price_offset) != sig_num(amm.reference_price_offset)
+        and amm.curve_update_intensity > 100
+    )
+
+    if do_reference_price_offset_smooth:
+        slots_passed = (
+            max(latest_slot - amm.last_update_slot, 0) if latest_slot is not None else 0
+        )
+        full_offset_delta = reference_price_offset - amm.reference_price_offset
+        raw = min(abs(full_offset_delta), slots_passed * 1000) // 10
+        max_allowed = abs(amm.reference_price_offset) or abs(reference_price_offset)
+
+        magnitude = min(max(raw, 10), max_allowed)
+        reference_price_delta = sig_num(full_offset_delta) * magnitude
+
+        reference_price_offset = amm.reference_price_offset + reference_price_delta
+
+        if reference_price_delta < 0:
+            long_spread += abs(reference_price_delta)
+            short_spread += abs(reference_price_offset)
+        else:
+            short_spread += abs(reference_price_delta)
+            long_spread += abs(reference_price_offset)
 
     ask_reserves = calculate_spread_reserve(
         int(long_spread) + reference_price_offset, PositionDirection.Long(), amm
