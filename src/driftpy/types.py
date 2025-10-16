@@ -592,7 +592,9 @@ class AMM:
     taker_speed_bump_override: int
     amm_spread_adjustment: int
     amm_inventory_spread_adjustment: int
-    padding: list[int] = field(default_factory=lambda: [0] * 14)
+    last_funding_oracle_twap: int
+    reference_price_offset_deadband_pct: int
+    padding: list[int] = field(default_factory=lambda: [0] * 12)
 
 
 @dataclass
@@ -1092,6 +1094,15 @@ class ReferrerNameAccount:
     user: Pubkey
     user_stats: Pubkey
     name: list[int]
+
+
+@dataclass
+class MMOraclePriceData:
+    price: int
+    slot: int
+    confidence: int
+    has_sufficient_number_of_data_points: bool
+    isMMOracleActive: bool
 
 
 @dataclass
