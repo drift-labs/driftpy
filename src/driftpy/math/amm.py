@@ -111,12 +111,10 @@ def calculate_effective_leverage(
 
     effective_gap = max(0, local_base_asset_value - net_base_asset_value)
 
-    effective_leverage = (
-        effective_gap / (max(0, total_fee_minus_distributions) + 1)
-        + 1 / QUOTE_PRECISION
-    )
+    denom = max(1, total_fee_minus_distributions)
+    effective_leverage_qp = (effective_gap * QUOTE_PRECISION) // denom
 
-    return effective_leverage
+    return effective_leverage_qp
 
 
 def calculate_reference_price_offset(
