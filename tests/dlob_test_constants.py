@@ -159,6 +159,8 @@ mock_amm = AMM(
     reference_price_offset=0,
     amm_inventory_spread_adjustment=0,
     amm_spread_adjustment=0,
+    last_funding_oracle_twap=0,
+    reference_price_offset_deadband_pct=0,
     padding=[0] * 10,
 )
 
