@@ -1517,6 +1517,9 @@ class SignedMsgOrderParamsMessage:
     uuid: bytes
     take_profit_order_params: SignedMsgTriggerOrderParams | None
     stop_loss_order_params: SignedMsgTriggerOrderParams | None
+    max_margin_ratio: int | None
+    builder_idx: int | None
+    builder_fee_tenth_bps: int | None
 
 
 @dataclass
@@ -1527,6 +1530,9 @@ class SignedMsgOrderParamsDelegateMessage:
     taker_pubkey: Pubkey
     take_profit_order_params: SignedMsgTriggerOrderParams | None
     stop_loss_order_params: SignedMsgTriggerOrderParams | None
+    max_margin_ratio: int | None
+    builder_idx: int | None
+    builder_fee_tenth_bps: int | None
 
 
 class OrderBitFlag:

@@ -2101,13 +2101,14 @@ class DriftClient:
         self, signed_msg_order_params_buf: bytes, is_delegate: bool = False
     ) -> Union[SignedMsgOrderParamsMessage, SignedMsgOrderParamsDelegateMessage]:
         payload = signed_msg_order_params_buf[8:]
+        payload_with_padding = payload + bytes(128)
         if is_delegate:
             return self.program.coder.types.decode(
-                "SignedMsgOrderParamsDelegateMessage", payload
+                "SignedMsgOrderParamsDelegateMessage", payload_with_padding
             )
         else:
             return self.program.coder.types.decode(
-                "SignedMsgOrderParamsMessage", payload
+                "SignedMsgOrderParamsMessage", payload_with_padding
             )
 
     def sign_message(self, message: bytes) -> bytes:
