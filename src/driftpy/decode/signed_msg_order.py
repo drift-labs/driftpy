@@ -239,6 +239,27 @@ def decode_signed_msg_order_params_message(
         )
         offset += 16
 
+    max_margin_ratio_present = read_uint8(signed_msg_order_params_buf, offset)
+    offset += 1
+    max_margin_ratio = None
+    if max_margin_ratio_present == 1:
+        max_margin_ratio = read_uint16_le(signed_msg_order_params_buf, offset)
+        offset += 2
+
+    builder_idx_present = read_uint8(signed_msg_order_params_buf, offset)
+    offset += 1
+    builder_idx = None
+    if builder_idx_present == 1:
+        builder_idx = read_uint8(signed_msg_order_params_buf, offset)
+        offset += 1
+
+    builder_fee_tenth_bps_present = read_uint8(signed_msg_order_params_buf, offset)
+    offset += 1
+    builder_fee_tenth_bps = None
+    if builder_fee_tenth_bps_present == 1:
+        builder_fee_tenth_bps = read_uint16_le(signed_msg_order_params_buf, offset)
+        offset += 2
+
     return SignedMsgOrderParamsMessage(
         signed_msg_order_params=order_params,
         sub_account_id=sub_account_id,
@@ -246,6 +267,9 @@ def decode_signed_msg_order_params_message(
         uuid=uuid,
         take_profit_order_params=take_profit,
         stop_loss_order_params=stop_loss,
+        max_margin_ratio=max_margin_ratio,
+        builder_idx=builder_idx,
+        builder_fee_tenth_bps=builder_fee_tenth_bps,
     )
 
 

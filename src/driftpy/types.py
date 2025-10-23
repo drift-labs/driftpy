@@ -1,3 +1,4 @@
+import enum as py_enum
 import inspect
 import zlib
 from dataclasses import dataclass, field
@@ -11,8 +12,25 @@ from sumtypes import constructor
 from typing_extensions import NotRequired
 
 
-def is_variant(enum, type: str) -> bool:
-    return type == enum.__class__.__name__
+def is_variant(enum, _type: str) -> bool:
+    if isinstance(enum, py_enum.EnumMeta):
+        raise TypeError(
+            f"is_variant expected a sumtypes variant instance, got Enum class {enum}"
+        )
+    if isinstance(enum, py_enum.Enum):
+        raise TypeError(
+            f"is_variant expected a sumtypes variant, got Python Enum {enum!r}. Use normal comparison instead: variable == {enum}"
+        )
+    if enum.__class__.__name__ == "type":
+        raise ValueError(
+            "enum.__class__.__name__ is 'type' You most likely passed the class itself rather than an instance. Use the instance instead for example MarketType.Perp() instead of MarketType.Perp"
+        )
+
+    return _type == enum.__class__.__name__
+
+
+def is_variant_str(enum, type: str) -> bool:
+    return type == enum
 
 
 def is_one_of_variant(enum, types):
@@ -961,12 +979,12 @@ class UserStatsAccount:
     referrer: Pubkey
     fees: UserFees
     next_epoch_ts: int
-    maker_volume_30d: int
-    taker_volume_30d: int
-    filler_volume_30d: int
-    last_maker_volume_30d_ts: int
-    last_taker_volume_30d_ts: int
-    last_filler_volume_30d_ts: int
+    maker_volume30d: int
+    taker_volume30d: int
+    filler_volume30d: int
+    last_maker_volume30d_ts: int
+    last_taker_volume30d_ts: int
+    last_filler_volume30d_ts: int
     if_staked_quote_asset_amount: int
     number_of_sub_accounts: int
     number_of_sub_accounts_created: int

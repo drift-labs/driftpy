@@ -1,7 +1,7 @@
 import math
 import time
 from copy import deepcopy
-from dataclasses import fields
+from dataclasses import MISSING, fields
 from typing import Optional, Tuple
 
 from solders.pubkey import Pubkey
@@ -38,13 +38,25 @@ from driftpy.types import (
 
 def deepcopy_amm(amm: AMM) -> AMM:
     field_values = {}
-    field_names = {field.name for field in fields(AMM)}
-    for field in amm.__dataclass_fields__.values():
-        value = getattr(amm, field.name)
-        if isinstance(value, Pubkey):
-            field_values[field.name] = value
-        elif field.name in field_names:
-            field_values[field.name] = deepcopy(value)
+    for f in fields(AMM):
+        if hasattr(amm, f.name):
+            v = getattr(amm, f.name)
+            if isinstance(v, Pubkey):
+                field_values[f.name] = v
+            else:
+                field_values[f.name] = deepcopy(v)
+        else:
+            if f.default is not MISSING:
+                field_values[f.name] = deepcopy(f.default)
+            elif getattr(f, "default_factory", MISSING) is not MISSING:  # type: ignore[attr-defined]
+                field_values[f.name] = f.default_factory()  # type: ignore[misc]
+            else:
+                if f.type is int:
+                    field_values[f.name] = 0
+                elif f.type is bool:
+                    field_values[f.name] = False
+                else:
+                    field_values[f.name] = None
     copied = AMM(**field_values)
     return copied
 
@@ -959,7 +971,7 @@ def calculate_max_base_asset_amount_to_trade(
     oracle_price_data: OraclePriceData,
     now: Optional[int] = None,
     is_prediction: bool = False,
-) -> (int, PositionDirection):
+) -> tuple[int, PositionDirection]:
     invariant = amm.sqrt_k * amm.sqrt_k
 
     new_base_asset_reserve_squared = (
