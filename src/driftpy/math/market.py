@@ -4,7 +4,7 @@ from driftpy.types import OraclePriceData, PerpMarketAccount, PositionDirection
 def calculate_bid_price(
     market: PerpMarketAccount, oracle_price_data: OraclePriceData
 ) -> int:
-    from driftpy.math.amm import calculate_updated_amm_spread_reserves, calculate_price
+    from driftpy.math.amm import calculate_price, calculate_updated_amm_spread_reserves
 
     (
         base_asset_reserve,
@@ -21,7 +21,7 @@ def calculate_bid_price(
 def calculate_ask_price(
     market: PerpMarketAccount, oracle_price_data: OraclePriceData
 ) -> int:
-    from driftpy.math.amm import calculate_updated_amm_spread_reserves, calculate_price
+    from driftpy.math.amm import calculate_price, calculate_updated_amm_spread_reserves
 
     (
         base_asset_reserve,

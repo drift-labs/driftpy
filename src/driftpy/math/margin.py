@@ -5,6 +5,7 @@ from driftpy.constants.numeric_constants import (
     AMM_RESERVE_PRECISION,
     BASE_PRECISION,
     MARGIN_PRECISION,
+    PERCENTAGE_PRECISION,
     PRICE_TO_QUOTE_PRECISION_RATIO,
     SPOT_IMF_PRECISION,
     SPOT_WEIGHT_PRECISION,
@@ -15,6 +16,7 @@ from driftpy.types import (
     PerpMarketAccount,
     SpotBalanceType,
     SpotMarketAccount,
+    is_variant,
 )
 
 
@@ -105,7 +107,11 @@ def calculate_scaled_initial_asset_weight(
 
 
 def calculate_size_premium_liability_weight(
-    size: int, imf_factor: int, liability_weight: int, precision: int
+    size: int,
+    imf_factor: int,
+    liability_weight: int,
+    precision: int,
+    is_bounded: bool = True,
 ) -> int:
     if imf_factor == 0:
         return liability_weight
@@ -122,9 +128,35 @@ def calculate_size_premium_liability_weight(
         (size_sqrt * imf_factor) // denom
     )
 
-    max_liability_weight = max(liability_weight, size_premium_liability_weight)
+    if is_bounded:
+        return max(liability_weight, size_premium_liability_weight)
+    else:
+        return size_premium_liability_weight
 
-    return max_liability_weight
+
+def calc_high_leverage_mode_initial_margin_ratio_from_size(
+    pre_size_adj_margin_ratio: int,
+    size_adj_margin_ratio: int,
+    default_margin_ratio: int,
+) -> int:
+    if size_adj_margin_ratio < pre_size_adj_margin_ratio:
+        denom_component = max(pre_size_adj_margin_ratio // 5, 1)
+        size_pct_discount_factor = PERCENTAGE_PRECISION - (
+            (pre_size_adj_margin_ratio - size_adj_margin_ratio)
+            * PERCENTAGE_PRECISION
+            // denom_component
+        )
+
+        hlm_margin_delta = max(pre_size_adj_margin_ratio - default_margin_ratio, 1)
+        hlm_margin_delta_proportion = (
+            hlm_margin_delta * size_pct_discount_factor
+        ) // PERCENTAGE_PRECISION
+
+        return hlm_margin_delta_proportion + default_margin_ratio
+    elif size_adj_margin_ratio == pre_size_adj_margin_ratio:
+        return default_margin_ratio
+    else:
+        return size_adj_margin_ratio
 
 
 def calculate_net_user_pnl(
@@ -233,33 +265,61 @@ def calculate_market_margin_ratio(
     custom_margin_ratio: int = 0,
     user_high_leverage_mode: bool = False,
 ) -> int:
-    if (
+    if is_variant(market.status, "Settlement"):
+        return 0
+
+    is_high_leverage_user = (
         user_high_leverage_mode
         and market.high_leverage_margin_ratio_initial > 0
         and market.high_leverage_margin_ratio_maintenance > 0
-    ):
-        margin_ratio_initial = market.high_leverage_margin_ratio_initial
-        margin_ratio_maintenance = market.high_leverage_margin_ratio_maintenance
-    else:
-        margin_ratio_initial = market.margin_ratio_initial
-        margin_ratio_maintenance = market.margin_ratio_maintenance
+    )
 
-    match margin_category:
-        case MarginCategory.INITIAL:
-            margin_ratio = max(
-                calculate_size_premium_liability_weight(
-                    size,
-                    market.imf_factor,
-                    margin_ratio_initial,
-                    MARGIN_PRECISION,
-                ),
-                custom_margin_ratio,
-            )
-        case MarginCategory.MAINTENANCE:
-            margin_ratio = calculate_size_premium_liability_weight(
-                size,
-                market.imf_factor,
-                margin_ratio_maintenance,
-                MARGIN_PRECISION,
-            )
+    margin_ratio_initial_default = (
+        market.high_leverage_margin_ratio_initial
+        if is_high_leverage_user
+        else market.margin_ratio_initial
+    )
+    margin_ratio_maintenance_default = (
+        market.high_leverage_margin_ratio_maintenance
+        if is_high_leverage_user
+        else market.margin_ratio_maintenance
+    )
+
+    if margin_category == MarginCategory.INITIAL:
+        default_margin_ratio = margin_ratio_initial_default
+    elif margin_category == MarginCategory.MAINTENANCE:
+        default_margin_ratio = margin_ratio_maintenance_default
+    else:
+        raise Exception("Invalid margin category")
+
+    if is_high_leverage_user and margin_category != MarginCategory.MAINTENANCE:
+        # Use ordinary-mode ratios for size-adjusted calc
+        pre_size_adj_margin_ratio = market.margin_ratio_initial
+
+        size_adj_margin_ratio = calculate_size_premium_liability_weight(
+            size,
+            market.imf_factor,
+            pre_size_adj_margin_ratio,
+            MARGIN_PRECISION,
+            False,
+        )
+
+        margin_ratio = calc_high_leverage_mode_initial_margin_ratio_from_size(
+            pre_size_adj_margin_ratio,
+            size_adj_margin_ratio,
+            default_margin_ratio,
+        )
+    else:
+        size_adj_margin_ratio = calculate_size_premium_liability_weight(
+            size,
+            market.imf_factor,
+            default_margin_ratio,
+            MARGIN_PRECISION,
+            True,
+        )
+        margin_ratio = max(default_margin_ratio, size_adj_margin_ratio)
+
+    if margin_category == MarginCategory.INITIAL:
+        margin_ratio = max(margin_ratio, custom_margin_ratio)
+
     return margin_ratio
