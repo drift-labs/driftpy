@@ -19,6 +19,7 @@ class SpotMarketConfig:
 WRAPPED_SOL_MINT = Pubkey.from_string("So11111111111111111111111111111111111111112")
 
 
+
 devnet_spot_market_configs: list[SpotMarketConfig] = [
     SpotMarketConfig(
         symbol="USDC",
@@ -250,8 +251,8 @@ mainnet_spot_market_configs: list[SpotMarketConfig] = [
     SpotMarketConfig(
         symbol="JLP",
         market_index=19,
-        oracle=Pubkey.from_string("5Mb11e5rt1Sp6A286B145E4TmgMzsM2UX9nCF2vas5bs"),
-        oracle_source=OracleSource.PythPull(),  # type: ignore
+        oracle=Pubkey.from_string("4VMtKepA6iFwMTJ7bBbdcGxavNRKiDjxxRr1CaB2NnFJ"),
+        oracle_source=OracleSource.PythLazer(),  # type: ignore
         mint=Pubkey.from_string("27G8MtK7VtTcCHkpASjSDdkWWYfoqT6ggEuKidVJidD4"),
         decimals=6,
     ),
@@ -574,5 +575,13 @@ mainnet_spot_market_configs: list[SpotMarketConfig] = [
         oracle_source=OracleSource.PythLazer(),  # type: ignore
         mint=Pubkey.from_string("J6pQQ3FAcJQeWPPGppWRb4nM8jU3wLyYbRrLh7feMfvd"),
         decimals=8,
+    ),
+    SpotMarketConfig(
+        symbol="MET",
+        market_index=60,
+        oracle=Pubkey.from_string("HN7qfUNM5Q7gQTwyEucmYdCF4CjwUrspj3DbNQ4V8P52"),
+        oracle_source=OracleSource.PythLazer(),  # type: ignore
+        mint=Pubkey.from_string("METvsvVRapdj9cFLzq4Tr43xK4tAjQfwX76z3n6mWQL"),
+        decimals=6,
     ),
 ]

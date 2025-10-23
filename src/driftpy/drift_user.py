@@ -58,6 +58,8 @@ from driftpy.math.spot_position import (
 )
 from driftpy.oracles.strict_oracle_price import StrictOraclePrice
 from driftpy.types import (
+    FeeTier,
+    MarketType,
     Order,
     PerpPosition,
     SpotPosition,
@@ -200,8 +202,14 @@ class DriftUser:
             signed,
         )
 
-    def is_high_leverage_mode(self) -> bool:
-        return is_variant(self.get_user_account().margin_mode, "HighLeverage")
+    def is_high_leverage_mode(
+        self, margin_category: Optional[MarginCategory] = None
+    ) -> bool:
+        is_hl = is_variant(self.get_user_account().margin_mode, "HighLeverage")
+        return is_hl or (
+            margin_category == MarginCategory.MAINTENANCE
+            and self.is_high_leverage_maintenance_mode()
+        )
 
     def is_high_leverage_maintenance_mode(self) -> bool:
         return is_variant(
@@ -817,7 +825,7 @@ class DriftUser:
         include_open_orders: bool = True,
         strict: bool = False,
         now: Optional[int] = None,
-    ) -> (int, int):
+    ) -> tuple[int, int]:
         now = now or int(time.time())
         net_quote_value = 0
         total_asset_value = 0
@@ -1929,3 +1937,87 @@ class DriftUser:
         )
 
         return perp_liability + spot_liability
+
+    def get_user_30d_rolling_volume_estimate(self, now: Optional[int] = None) -> int:
+        """Estimate user's rolling 30d volume combining maker/taker with linear decay.
+
+        Returns value in QUOTE_PRECISION units.
+        """
+        user_stats = self.drift_client.get_user_stats().get_account()
+        now = now or int(time.time())
+
+        thirty_days = 60 * 60 * 24 * 30
+        since_last_taker = max(now - user_stats.last_taker_volume30d_ts, 0)
+        since_last_maker = max(now - user_stats.last_maker_volume30d_ts, 0)
+
+        taker_component = (
+            user_stats.taker_volume30d * max(thirty_days - since_last_taker, 0)
+        ) // thirty_days
+        maker_component = (
+            user_stats.maker_volume30d * max(thirty_days - since_last_maker, 0)
+        ) // thirty_days
+
+        return taker_component + maker_component
+
+    def get_user_fee_tier(
+        self, market_type: MarketType, now: Optional[int] = None
+    ) -> FeeTier:
+        """Port of sdk getUserFeeTier. Returns a FeeTier adjusted for 30d volume and IF stake.
+
+        - If in high leverage mode and market is Perp, returns tier[0] directly.
+        - Otherwise, picks tier by 30d volume, then applies stake benefit to
+          fee_numerator (discount) and maker_rebate_numerator (boost).
+        """
+        state = self.drift_client.get_state_account()
+        if is_variant(market_type, "Perp"):
+            fee_tiers = state.perp_fee_structure.fee_tiers
+            if self.is_high_leverage_mode(margin_category=MarginCategory.MAINTENANCE):
+                return copy.deepcopy(fee_tiers[0])
+
+            user_stats = self.drift_client.get_user_stats().get_account()
+            total_30d_volume = self.get_user_30d_rolling_volume_estimate(now)
+            staked_gov_amount = user_stats.if_staked_gov_token_amount
+
+            volume_thresholds = [
+                2_000_000 * QUOTE_PRECISION,
+                10_000_000 * QUOTE_PRECISION,
+                20_000_000 * QUOTE_PRECISION,
+                80_000_000 * QUOTE_PRECISION,
+                200_000_000 * QUOTE_PRECISION,
+            ]
+            stake_thresholds = [
+                (1_000 - 1) * QUOTE_PRECISION,
+                (10_000 - 1) * QUOTE_PRECISION,
+                (50_000 - 1) * QUOTE_PRECISION,
+                (100_000 - 1) * QUOTE_PRECISION,
+                (250_000 - 5) * QUOTE_PRECISION,
+            ]
+            stake_benefit_frac = [0, 5, 10, 20, 30, 40]
+
+            fee_tier_index = 5
+            for i, thresh in enumerate(volume_thresholds):
+                if total_30d_volume < thresh:
+                    fee_tier_index = i
+                    break
+
+            stake_benefit_index = 5
+            for i, thresh in enumerate(stake_thresholds):
+                if staked_gov_amount < thresh:
+                    stake_benefit_index = i
+                    break
+
+            stake_benefit = stake_benefit_frac[stake_benefit_index]
+
+            tier = copy.deepcopy(fee_tiers[fee_tier_index])
+            if stake_benefit > 0:
+                tier.fee_numerator = (tier.fee_numerator * (100 - stake_benefit)) // 100
+                tier.maker_rebate_numerator = (
+                    tier.maker_rebate_numerator * (100 + stake_benefit)
+                ) // 100
+
+            return tier
+        else:
+            print(
+                "state.spot_fee_structure.fee_tiers", state.spot_fee_structure.fee_tiers
+            )
+            return state.spot_fee_structure.fee_tiers[0]

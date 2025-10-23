@@ -795,4 +795,11 @@ mainnet_perp_market_configs: list[PerpMarketConfig] = [
         oracle=Pubkey.from_string("5r8RWTaRiMgr9Lph3FTUE3sGb1vymhpCrm83Bovjfcps"),
         oracle_source=OracleSource.PythLazer1K(),  # type: ignore
     ),
+    PerpMarketConfig(
+        symbol="MET-PERP",
+        base_asset_symbol="MET",
+        market_index=82,
+        oracle=Pubkey.from_string("HN7qfUNM5Q7gQTwyEucmYdCF4CjwUrspj3DbNQ4V8P52"),
+        oracle_source=OracleSource.PythLazer(),  # type: ignore
+    ),
 ]
