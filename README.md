@@ -64,14 +64,13 @@ If you intend to use `AccountSubscriptionConfig("demo)`, you *must* call `get_ma
 
 Ensure correct python version (using pyenv is recommended):
 ```bash
-pyenv install 3.10.11
-pyenv global 3.10.11
-poetry env use $(pyenv which python)
+pyenv install 3.11
+pyenv global 3.11
 ```
 
 Install dependencies:
 ```bash
-poetry install
+uv sync
 ```
 
 To run tests, first ensure you have set up the RPC url, then run `pytest`:
@@ -79,6 +78,6 @@ To run tests, first ensure you have set up the RPC url, then run `pytest`:
 export MAINNET_RPC_ENDPOINT="<YOUR_RPC_URL>"
 export DEVNET_RPC_ENDPOINT="https://api.devnet.solana.com" # or your own RPC
 
-poetry run pytest -v -s -x tests/ci/*.py
-poetry run pytest -v -s tests/math/*.py
+uv run pytest -v -s -x tests/ci/*.py
+uv run pytest -v -s tests/math/*.py
 ```
