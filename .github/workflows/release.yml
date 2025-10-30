@@ -12,16 +12,11 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v4.3.0
       with:
-        python-version: '3.10.10' 
+        python-version: '3.11'
     #----------------------------------------------
-    #  -----  install & configure poetry  -----
+    #  -----  install & configure uv  -----
     #----------------------------------------------
-    - name: Install and configure Poetry
-      uses: snok/install-poetry@v1.3.3
-      with:
-        version: 1.4.2
-        virtualenvs-create: true
-        virtualenvs-in-project: true
-        installer-parallel: true
-    - run: poetry build
-    - run: poetry publish --username=__token__ --password=${{ secrets.PYPI_TOKEN }}
+    - name: Install uv
+      uses: astral-sh/setup-uv@v4
+    - run: uv build
+    - run: uv publish --token ${{ secrets.PYPI_TOKEN }}
