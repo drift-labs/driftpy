@@ -56,6 +56,7 @@ from driftpy.math.spot_position import (
     get_worst_case_token_amounts,
     is_spot_position_available,
 )
+from driftpy.math.trade import get_user_30d_rolling_volume_estimate
 from driftpy.oracles.strict_oracle_price import StrictOraclePrice
 from driftpy.types import (
     FeeTier,
@@ -1938,31 +1939,10 @@ class DriftUser:
 
         return perp_liability + spot_liability
 
-    def get_user_30d_rolling_volume_estimate(self, now: Optional[int] = None) -> int:
-        """Estimate user's rolling 30d volume combining maker/taker with linear decay.
-
-        Returns value in QUOTE_PRECISION units.
-        """
-        user_stats = self.drift_client.get_user_stats().get_account()
-        now = now or int(time.time())
-
-        thirty_days = 60 * 60 * 24 * 30
-        since_last_taker = max(now - user_stats.last_taker_volume30d_ts, 0)
-        since_last_maker = max(now - user_stats.last_maker_volume30d_ts, 0)
-
-        taker_component = (
-            user_stats.taker_volume30d * max(thirty_days - since_last_taker, 0)
-        ) // thirty_days
-        maker_component = (
-            user_stats.maker_volume30d * max(thirty_days - since_last_maker, 0)
-        ) // thirty_days
-
-        return taker_component + maker_component
-
     def get_user_fee_tier(
         self, market_type: MarketType, now: Optional[int] = None
     ) -> FeeTier:
-        """Port of sdk getUserFeeTier. Returns a FeeTier adjusted for 30d volume and IF stake.
+        """Returns a FeeTier adjusted for 30d volume and IF staked amount.
 
         - If in high leverage mode and market is Perp, returns tier[0] directly.
         - Otherwise, picks tier by 30d volume, then applies stake benefit to
@@ -1975,7 +1955,7 @@ class DriftUser:
                 return copy.deepcopy(fee_tiers[0])
 
             user_stats = self.drift_client.get_user_stats().get_account()
-            total_30d_volume = self.get_user_30d_rolling_volume_estimate(now)
+            total_30d_volume = get_user_30d_rolling_volume_estimate(user_stats, now)
             staked_gov_amount = user_stats.if_staked_gov_token_amount
 
             volume_thresholds = [
@@ -2017,7 +1997,4 @@ class DriftUser:
 
             return tier
         else:
-            print(
-                "state.spot_fee_structure.fee_tiers", state.spot_fee_structure.fee_tiers
-            )
             return state.spot_fee_structure.fee_tiers[0]
