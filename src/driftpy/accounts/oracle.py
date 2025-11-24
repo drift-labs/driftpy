@@ -229,12 +229,17 @@ def decode_swb_price_info(data: bytes):
 
 
 def decode_prelaunch_price_info(data: bytes):
-    prelaunch_oracle = DRIFT_CODER.accounts.decode(data)
+    decoded_account = DRIFT_CODER.accounts.decode(data)
+
+    if not hasattr(decoded_account, "amm_last_update_slot"):
+        raise ValueError(
+            "Decoded account does not have amm_last_update_slot attribute, not a PrelaunchOracle"
+        )
 
     return OraclePriceData(
-        price=prelaunch_oracle.price,
-        slot=prelaunch_oracle.amm_last_update_slot,
-        confidence=prelaunch_oracle.confidence,
+        price=decoded_account.price,
+        slot=decoded_account.amm_last_update_slot,
+        confidence=decoded_account.confidence,
         has_sufficient_number_of_data_points=True,
         twap=None,
         twap_confidence=None,
