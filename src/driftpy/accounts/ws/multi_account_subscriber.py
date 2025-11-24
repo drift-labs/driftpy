@@ -199,7 +199,6 @@ class WebsocketMultiAccountSubscriber:
                         continue
 
             except websockets.exceptions.ConnectionClosed:
-                print("Websocket connection closed, reconnecting...")
                 self.ws = None
                 async with self._lock:
                     self.subscription_map.clear()
