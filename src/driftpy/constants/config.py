@@ -26,6 +26,7 @@ from driftpy.types import (
     PerpMarketAccount,
     SpotMarketAccount,
 )
+print("⚡ USING LOCAL DRIFTPY CONFIG — gzip removed patch active")
 
 DriftEnv = Literal["devnet", "mainnet"]
 
@@ -176,7 +177,6 @@ async def find_all_market_and_oracles(
     post = program.provider.connection._provider.session.post(
         program.provider.connection._provider.endpoint_uri,
         json=perp_request,
-        headers={"content-encoding": "gzip"},
     )
     resp = await asyncio.wait_for(post, timeout=120)
     parsed_resp = jsonrpcclient.parse(resp.json())
@@ -208,7 +208,6 @@ async def find_all_market_and_oracles(
     post = program.provider.connection._provider.session.post(
         program.provider.connection._provider.endpoint_uri,
         json=spot_request,
-        headers={"content-encoding": "gzip"},
     )
     resp = await asyncio.wait_for(post, timeout=120)
     parsed_resp = jsonrpcclient.parse(resp.json())
