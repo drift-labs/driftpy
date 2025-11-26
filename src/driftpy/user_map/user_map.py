@@ -238,8 +238,8 @@ class UserMap(UserMapInterface, DLOBSource):
             filename = self.get_last_dump_filepath()
         if not os.path.exists(filename):
             raise FileNotFoundError(f"File {filename} not found")
-        start = filename.index("_") + 1
-        end = filename.index(".")
+        start = filename.rindex("_") + 1
+        end = filename.rindex(".")
         slot = int(filename[start:end])
         with open(filename, "rb") as f:
             users: list[PickledData] = pickle.load(f)
