@@ -270,7 +270,7 @@ class UserStatsMap:
                     for key in keys_to_delete:
                         user = self.get(key)
                         if user:
-                            user.unsubscribe()
+                            await user.unsubscribe()
                             del self.user_stats_map[key]
 
                     self.latest_slot = slot
@@ -287,10 +287,11 @@ class UserStatsMap:
                 print(f"Error in UserStatsMap.paginated_sync(): {e}")
                 traceback.print_exc()
 
-    def unsubscribe(self):
+    async def unsubscribe(self):
         keys = list(self.user_stats_map.keys())
         for key in keys:
-            self.user_stats_map[key].unsubscribe()
+            user_stat = self.user_stats_map[key]
+            await user_stat.unsubscribe()
             del self.user_stats_map[key]
 
     async def add_user_stat(
@@ -312,7 +313,7 @@ class UserStatsMap:
         existing_drift_user_stat = self.get(authority_str)
 
         if existing_drift_user_stat:
-            existing_drift_user_stat.unsubscribe()
+            await existing_drift_user_stat.unsubscribe()
 
             new_drift_user_stat = DriftUserStats(
                 self.drift_client,

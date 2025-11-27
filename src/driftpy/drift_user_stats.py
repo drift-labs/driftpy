@@ -1,16 +1,16 @@
 from dataclasses import dataclass
 from typing import Optional
 
-from solders.pubkey import Pubkey
 from solana.rpc.commitment import Commitment, Confirmed
+from solders.pubkey import Pubkey
 
 from driftpy.accounts.types import DataAndSlot
-from driftpy.types import ReferrerInfo, UserStatsAccount
 from driftpy.accounts.ws.user_stats import WebsocketUserStatsAccountSubscriber
 from driftpy.addresses import (
     get_user_account_public_key,
     get_user_stats_account_public_key,
 )
+from driftpy.types import ReferrerInfo, UserStatsAccount
 
 
 @dataclass
@@ -49,8 +49,8 @@ class DriftUserStats:
     async def fetch_accounts(self):
         await self.account_subscriber.fetch()
 
-    def unsubscribe(self):
-        self.account_subscriber.unsubscribe()
+    async def unsubscribe(self):
+        await self.account_subscriber.unsubscribe()
 
     def get_account_and_slot(self) -> DataAndSlot[UserStatsAccount]:
         return self.account_subscriber.get_user_stats_account_and_slot()
