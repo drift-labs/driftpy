@@ -14,7 +14,7 @@ homepage = "https://github.com/drift-labs/driftpy"
 documentation = "https://drift-labs.github.io/driftpy/"
 
 [tool.poetry.dependencies]
-python = "^3.10"
+python = ">=3.10,<3.12"
 anchorpy = "0.21.0"
 solana = "^0.36"
 requests = "^2.28.1"
