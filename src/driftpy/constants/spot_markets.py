@@ -591,4 +591,12 @@ mainnet_spot_market_configs: list[SpotMarketConfig] = [
         mint=Pubkey.from_string("CASHx9KJUStyftLFWGvEVf59SGeG9sh5FfcnZMVPCASH"),
         decimals=6,
     ),
+    SpotMarketConfig(
+        symbol="USD1",
+        market_index=62,
+        oracle=Pubkey.from_string("Hk34ANkHfu4LHJhACMNCPNgGbi5ixpom2e3T7oh7EPDG"),
+        oracle_source=OracleSource.PythLazerStableCoin(),  # type: ignore
+        mint=Pubkey.from_string("USD1ttGY1N17NEEHLmELoaybftRBUSErhqYiQzvEmuB"),
+        decimals=6,
+    ),
 ]

@@ -18,7 +18,7 @@ from driftpy.constants.numeric_constants import (
     PRICE_PRECISION,
     QUOTE_PRECISION,
 )
-from driftpy.math.oracles import calculate_live_oracle_std
+from driftpy.math.oracles import calculate_live_oracle_std, get_new_oracle_conf_pct
 from driftpy.math.repeg import (
     calculate_adjust_k_cost,
     calculate_budgeted_peg,
@@ -145,9 +145,9 @@ def calculate_reference_price_offset(
     if last_24h_avg_funding_rate == 0 or liquidity_fraction == 0:
         return 0
 
-    max_offset_in_price = (max_offset_pct * reserve_price) // PERCENTAGE_PRECISION
+    max_offset_in_price = int(max_offset_pct * reserve_price) // PERCENTAGE_PRECISION
 
-    # calc quote denom market premium
+    # Calculate quote denominated market premium
     mark_premium_minute = clamp_num(
         mark_twap_fast - oracle_twap_fast, max_offset_in_price * -1, max_offset_in_price
     )
@@ -156,30 +156,27 @@ def calculate_reference_price_offset(
         mark_twap_slow - oracle_twap_slow, max_offset_in_price * -1, max_offset_in_price
     )
 
-    # convert funding to quote denom premium
+    # Convert last24hAvgFundingRate to quote denominated premium
     mark_premium_day = clamp_num(
         (last_24h_avg_funding_rate // FUNDING_RATE_BUFFER) * 24,
         max_offset_in_price * -1,
         max_offset_in_price,
     )
 
+    # Take average clamped premium as the price-based offset
     mark_premium_avg = (mark_premium_minute + mark_premium_hour + mark_premium_day) // 3
 
     mark_premium_avg_pct = (mark_premium_avg * PRICE_PRECISION) // reserve_price
 
-    inventory_pct = clamp_num(
-        liquidity_fraction * max_offset_pct // PERCENTAGE_PRECISION,
-        max_offset_in_price * -1,
-        max_offset_in_price,
-    )
+    # Only apply when inventory is consistent with recent and 24h market premium
+    offset_pct = (mark_premium_avg_pct * abs(liquidity_fraction)) // 2
 
-    # only apply when inv is consistent with recent and 24h market premim
-    offset_pct = mark_premium_avg_pct + inventory_pct
-
-    if not sig_num(inventory_pct) == sig_num(mark_premium_avg_pct):
+    if sig_num(liquidity_fraction) != sig_num(mark_premium_avg_pct):
         offset_pct = 0
 
-    clamped_offset_pct = clamp_num(offset_pct, max_offset_pct * -1, max_offset_pct)
+    clamped_offset_pct = clamp_num(
+        offset_pct, int(max_offset_pct * -1), int(max_offset_pct)
+    )
 
     return clamped_offset_pct
 
@@ -502,15 +499,16 @@ def calculate_spread(
         )
 
     target_price = oracle_price_data.price or reserve_price
-    conf_interval = oracle_price_data.confidence or 0
 
     target_mark_spread_pct = (
         (reserve_price - target_price) * BID_ASK_SPREAD_PRECISION
     ) // reserve_price
-    conf_interval_pct = (conf_interval * BID_ASK_SPREAD_PRECISION) // reserve_price
 
     now = now or int(time.time())
     live_oracle_std = calculate_live_oracle_std(amm, oracle_price_data, now)
+    conf_interval_pct = get_new_oracle_conf_pct(
+        amm, oracle_price_data, reserve_price, now
+    )
 
     spreads = calculate_spread_bn(
         amm.base_spread,
@@ -717,15 +715,18 @@ def calculate_spread_reserves(
         amm.base_asset_reserve, amm.quote_asset_reserve, amm.peg_multiplier
     )
 
-    # always allow 10 bps of price offset, up to 20% of the market's max_spread
+    # always allow 10 bps of price offset, up to a half of the market's max_spread
     max_offset = 0
     reference_price_offset = 0
 
     if amm.curve_update_intensity > 100:
-        max_offset = max(
-            amm.max_spread // 2,
-            (PERCENTAGE_PRECISION // 10_000) * (amm.curve_update_intensity - 100),
-        )
+        if amm.curve_update_intensity == 200:
+            max_offset = max(amm.max_spread // 2, 10_000)
+        else:
+            max_offset = min(
+                amm.max_spread // 2,
+                (PERCENTAGE_PRECISION // 10_000) * (amm.curve_update_intensity - 100),
+            )
 
         liquidity_fraction = (
             calculate_inventory_liquidity_ratio_for_reference_price_offset(
