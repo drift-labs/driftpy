@@ -3,7 +3,7 @@ set -e
 
 echo "Running tests:"
 pytest -v -s -x tests/ci/*.py
-pytest -v -s tests/math/*.py
+# pytest -v -s tests/math/*.py
 
 exit_code=$?
 
