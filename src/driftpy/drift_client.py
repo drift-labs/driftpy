@@ -3820,6 +3820,67 @@ class DriftClient:
         ).tx_sig
         return tx_sig
 
+    def get_update_user_custom_margin_ratio_ix(
+        self,
+        margin_ratio: int,
+        sub_account_id: Optional[int] = None,
+    ) -> Instruction:
+        sub_account_id = self.get_sub_account_id_for_ix(sub_account_id)
+
+        remaining_accounts = self.get_remaining_accounts(
+            user_accounts=[self.get_user_account(sub_account_id)],
+        )
+
+        return self.program.instruction["update_user_custom_margin_ratio"](
+            sub_account_id,
+            margin_ratio,
+            ctx=Context(
+                accounts={
+                    "user": self.get_user_account_public_key(sub_account_id),
+                    "authority": self.wallet.public_key,
+                },
+                remaining_accounts=remaining_accounts,
+            ),
+        )
+
+    async def update_user_custom_margin_ratio(
+        self,
+        updates: List[dict],
+    ) -> Signature:
+        """Updates custom margin ratio for one or more subaccounts
+
+        Args:
+            updates: List of dicts with 'margin_ratio' and 'sub_account_id' keys
+            for example like this
+            updates = [
+                {
+                    "margin_ratio": 10000,
+                    "sub_account_id": 0,
+                }
+            ]
+
+        Returns:
+            Signature: tx sig
+        """
+        ixs = []
+        for update in updates:
+            margin_ratio = update.get("margin_ratio")
+            sub_account_id = update.get("sub_account_id", 0)
+
+            if margin_ratio is None:
+                raise ValueError("margin_ratio is required in each update")
+
+            await self.add_user(sub_account_id)
+            ixs.append(
+                self.get_update_user_custom_margin_ratio_ix(
+                    margin_ratio=margin_ratio,
+                    sub_account_id=sub_account_id,
+                )
+            )
+
+        tx_sig = (await self.send_ixs(ixs)).tx_sig
+        return tx_sig
+
     async def update_prelaunch_oracle(
         self,
         market_index: int,
