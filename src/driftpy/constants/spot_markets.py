@@ -19,6 +19,7 @@ class SpotMarketConfig:
 WRAPPED_SOL_MINT = Pubkey.from_string("So11111111111111111111111111111111111111112")
 
 
+
 devnet_spot_market_configs: list[SpotMarketConfig] = [
     SpotMarketConfig(
         symbol="USDC",
