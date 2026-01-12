@@ -1793,9 +1793,7 @@ class DriftClient:
         maker_infos = (
             maker_info
             if isinstance(maker_info, list)
-            else [maker_info]
-            if maker_info
-            else []
+            else [maker_info] if maker_info else []
         )
 
         user_accounts = [self.get_user_account(sub_account_id)]
@@ -1904,9 +1902,7 @@ class DriftClient:
         maker_infos = (
             maker_info
             if isinstance(maker_info, list)
-            else [maker_info]
-            if maker_info
-            else []
+            else [maker_info] if maker_info else []
         )
         for maker_info in maker_infos:
             user_accounts.append(maker_info.maker_user_account)
@@ -3184,9 +3180,7 @@ class DriftClient:
         maker_info = (
             maker_info
             if isinstance(maker_info, list)
-            else [maker_info]
-            if maker_info
-            else []
+            else [maker_info] if maker_info else []
         )
 
         user_accounts = [user_account]
