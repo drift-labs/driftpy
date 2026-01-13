@@ -3,5 +3,9 @@
     "python.analysis.extraPaths": [
         "${workspaceFolder}/src/",
         "./venv/bin/python"
+    ],
+    "cursorpyright.analysis.extraPaths": [
+        "${workspaceFolder}/src/",
+        "./venv/bin/python"
     ]
 }
