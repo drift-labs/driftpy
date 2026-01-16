@@ -1,19 +1,6 @@
 site_name: DriftPy
 theme:
-  name: material
-  icon:
-    logo: material/chart-line
-  favicon: img/drift.png
-  palette:
-    - scheme: default
-      primary: deep-purple
-      toggle:
-        icon: material/toggle-switch-off-outline
-        name: Switch to dark mode
-    - scheme: slate
-      toggle:
-        icon: material/toggle-switch
-        name: Switch to light mode
+  name: readthedocs
 markdown_extensions:
   - pymdownx.highlight
   - pymdownx.superfences
@@ -29,13 +16,14 @@ plugins:
   - mkdocstrings:
       handlers:
         python:
-          selection:
+          paths:
+            - src
+          options:
             filters:
-              - "!^_"  # exlude all members starting with _
-              - "^__init__$"  # but always include __init__ modules and methods
+              - "!^_"
+              - "^__init__$"
               - "!^T$"
               - "!^get_clearing_house_state_account_public_key_and_nonce$"
-          rendering:
             show_root_heading: true
             show_root_full_path: false
             show_if_no_docstring: true
