@@ -1,56 +1,107 @@
 from driftpy.types import SpotMarketAccount, PerpMarketAccount
 from driftpy.constants.numeric_constants import QUOTE_PRECISION, FUEL_WINDOW
 
+SCALED_QUOTE_PRECISION = QUOTE_PRECISION // 10
+
+def calculate_scaled_fuel(value: int, boost: float, fuel_bonus_numerator: int) -> int:
+    """
+    Calculate scaled fuel value.
+
+    Args:
+        value (int): The base value for calculation.
+        boost (float): The boost factor.
+        fuel_bonus_numerator (int): The fuel bonus numerator.
+
+    Returns:
+        int: The calculated scaled fuel value.
+    """
+    fuel = abs(value) * fuel_bonus_numerator * boost
+    fuel_per_day = fuel // FUEL_WINDOW
+    return fuel_per_day // SCALED_QUOTE_PRECISION
 
 def calculate_insurance_fuel_bonus(
-    spot_market: SpotMarketAccount, token_stake_amount: int, fuel_bonus_numerator: int
+    spot_market: SpotMarketAccount,
+    token_stake_amount: int,
+    fuel_bonus_numerator: int
 ) -> int:
-    insurance_fund_fuel = (
-        abs(token_stake_amount) * fuel_bonus_numerator
-    ) * spot_market.fuel_boost_insurance
-    insurace_fund_fuel_per_day = insurance_fund_fuel // FUEL_WINDOW
-    insurance_fund_fuel_scaled = insurace_fund_fuel_per_day // (QUOTE_PRECISION // 10)
+    """
+    Calculate the insurance fuel bonus for a given spot market.
 
-    return insurance_fund_fuel_scaled
+    Args:
+        spot_market (SpotMarketAccount): The spot market account.
+        token_stake_amount (int): The amount of tokens staked.
+        fuel_bonus_numerator (int): The fuel bonus numerator.
 
+    Returns:
+        int: The calculated insurance fuel bonus.
+
+    Raises:
+        ValueError: If fuel_bonus_numerator is not positive.
+    """
+    if fuel_bonus_numerator <= 0:
+        raise ValueError("fuel_bonus_numerator must be positive")
+    
+    return calculate_scaled_fuel(
+        token_stake_amount,
+        spot_market.fuel_boost_insurance,
+        fuel_bonus_numerator
+    )
 
 def calculate_spot_fuel_bonus(
-    spot_market: SpotMarketAccount, signed_token_value: int, fuel_bonus_numerator: int
+    spot_market: SpotMarketAccount,
+    signed_token_value: int,
+    fuel_bonus_numerator: int
 ) -> int:
-    spot_fuel_scaled: int
+    """
+    Calculate the spot fuel bonus for a given spot market.
 
-    # dust
+    Args:
+        spot_market (SpotMarketAccount): The spot market account.
+        signed_token_value (int): The signed token value.
+        fuel_bonus_numerator (int): The fuel bonus numerator.
+
+    Returns:
+        int: The calculated spot fuel bonus.
+
+    Raises:
+        ValueError: If fuel_bonus_numerator is not positive.
+    """
+    if fuel_bonus_numerator <= 0:
+        raise ValueError("fuel_bonus_numerator must be positive")
+
     if abs(signed_token_value) <= QUOTE_PRECISION:
-        spot_fuel_scaled = 0
-    elif signed_token_value > 0:
-        deposit_fuel = (
-            abs(signed_token_value) * fuel_bonus_numerator
-        ) * spot_market.fuel_boost_deposits
-        deposit_fuel_per_day = deposit_fuel // FUEL_WINDOW
-        spot_fuel_scaled = deposit_fuel_per_day // (QUOTE_PRECISION // 10)
-    else:
-        borrow_fuel = (
-            abs(signed_token_value) * fuel_bonus_numerator
-        ) * spot_market.fuel_boost_borrows
-        borrow_fuel_per_day = borrow_fuel // FUEL_WINDOW
-        spot_fuel_scaled = borrow_fuel_per_day // (QUOTE_PRECISION // 10)
-
-    return spot_fuel_scaled
-
+        return 0
+    
+    boost = spot_market.fuel_boost_deposits if signed_token_value > 0 else spot_market.fuel_boost_borrows
+    return calculate_scaled_fuel(signed_token_value, boost, fuel_bonus_numerator)
 
 def calculate_perp_fuel_bonus(
-    perp_market: PerpMarketAccount, base_asset_value: int, fuel_bonus_numerator: int
+    perp_market: PerpMarketAccount,
+    base_asset_value: int,
+    fuel_bonus_numerator: int
 ) -> int:
-    perp_fuel_scaled: int
+    """
+    Calculate the perpetual fuel bonus for a given perpetual market.
 
-    # dust
+    Args:
+        perp_market (PerpMarketAccount): The perpetual market account.
+        base_asset_value (int): The base asset value.
+        fuel_bonus_numerator (int): The fuel bonus numerator.
+
+    Returns:
+        int: The calculated perpetual fuel bonus.
+
+    Raises:
+        ValueError: If fuel_bonus_numerator is not positive.
+    """
+    if fuel_bonus_numerator <= 0:
+        raise ValueError("fuel_bonus_numerator must be positive")
+
     if abs(base_asset_value) <= QUOTE_PRECISION:
-        perp_fuel_scaled = 0
-    else:
-        perp_fuel = (
-            abs(base_asset_value) * fuel_bonus_numerator
-        ) * perp_market.fuel_boost_position
-        perp_fuel_per_day = perp_fuel // FUEL_WINDOW
-        perp_fuel_scaled = perp_fuel_per_day // (QUOTE_PRECISION // 10)
-
-    return perp_fuel_scaled
+        return 0
+    
+    return calculate_scaled_fuel(
+        base_asset_value,
+        perp_market.fuel_boost_position,
+        fuel_bonus_numerator
+    )
