@@ -131,8 +131,8 @@ mainnet_spot_market_configs: list[SpotMarketConfig] = [
     SpotMarketConfig(
         symbol="wETH",
         market_index=4,
-        oracle=Pubkey.from_string("6bEp2MiyoiiiDxcVqE8rUHQWwHirXUXtKfAEATTVqNzT"),
-        oracle_source=OracleSource.PythPull(),  # type: ignore
+        oracle=Pubkey.from_string("93FG52TzNKCnMiasV14Ba34BYcHDb9p4zK4GjZnLwqWR"),
+        oracle_source=OracleSource.PythLazer(),  # type: ignore
         mint=Pubkey.from_string("7vfCXTUXx5WJV5JADk17DUJ4ksgau7utNKj4b963voxs"),
         decimals=8,
     ),
@@ -163,8 +163,8 @@ mainnet_spot_market_configs: list[SpotMarketConfig] = [
     SpotMarketConfig(
         symbol="bSOL",
         market_index=8,
-        oracle=Pubkey.from_string("BmDWPMsytWmYkh9n6o7m79eVshVYf2B5GVaqQ2EWKnGH"),
-        oracle_source=OracleSource.PythPull(),  # type: ignore
+        oracle=Pubkey.from_string("6YEQjxkbhfrWV2VdR9zxBJxWYshcMYRs6bpuX1ng2CbP"),
+        oracle_source=OracleSource.PythLazer(),  # type: ignore
         mint=Pubkey.from_string("bSo13r4TkiE4KumL71LsHTPpL2euBYLFx6h9HP3piy1"),
         decimals=9,
     ),
@@ -227,16 +227,16 @@ mainnet_spot_market_configs: list[SpotMarketConfig] = [
     SpotMarketConfig(
         symbol="INF",
         market_index=16,
-        oracle=Pubkey.from_string("B7RUYg2zF6UdUSHv2RmpnriPVJccYWojgFydNS1NY5F8"),
-        oracle_source=OracleSource.PythPull(),  # type: ignore
+        oracle=Pubkey.from_string("7SAxf2SCJe5c72rZNo4etpGjz5TaEAqi8QkbfpRbouuT"),
+        oracle_source=OracleSource.PythLazer(),  # type: ignore
         mint=Pubkey.from_string("5oVNBeEEQvYi1cX3ir8Dx5n1P7pdxydbGF2X4TxVusJm"),
         decimals=9,
     ),
     SpotMarketConfig(
         symbol="dSOL",
         market_index=17,
-        oracle=Pubkey.from_string("4YstsHafLyDbYFxmJbgoEr33iJJEp6rNPgLTQRgXDkG2"),
-        oracle_source=OracleSource.PythPull(),  # type: ignore
+        oracle=Pubkey.from_string("EopUQMXT56Lbyg1DKDbc7VAQFcx4QGBKBepZxeKe1sJf"),
+        oracle_source=OracleSource.PythLazer(),  # type: ignore
         mint=Pubkey.from_string("Dso1bDeDjCQxTrWHqUUi63oBvV7Mdm6WaobLbQ7gnPQ"),
         decimals=9,
     ),
@@ -315,8 +315,8 @@ mainnet_spot_market_configs: list[SpotMarketConfig] = [
     SpotMarketConfig(
         symbol="cbBTC",
         market_index=27,
-        oracle=Pubkey.from_string("9jPy6EHpLkXaMdvfkoVnRnSdJoQysQDKKj3bW5Amz4Ci"),
-        oracle_source=OracleSource.PythPull(),  # type: ignore
+        oracle=Pubkey.from_string("D1QgWnMoPzB4wJ79Egrc6MGYYM3HHVNhpff1QQHDSoCq"),
+        oracle_source=OracleSource.PythLazer(),  # type: ignore
         mint=Pubkey.from_string("cbbtcf3aa214zXHbiAZQwf4122FBYbraNdFqgw4iMij"),
         decimals=8,
     ),
@@ -363,8 +363,8 @@ mainnet_spot_market_configs: list[SpotMarketConfig] = [
     SpotMarketConfig(
         symbol="JLP-1",
         market_index=33,
-        oracle=Pubkey.from_string("3ZLn5XDgSLWhTk2NjqAU44cPkSeC5JAhW5o6w5Nz4p8R"),
-        oracle_source=OracleSource.PythPull(),  # type: ignore
+        oracle=Pubkey.from_string("DtmeBbyWat6p2vSpRhuZ4MGRndXr2cdpd4GV8izCFvLb"),
+        oracle_source=OracleSource.PythLazer(),  # type: ignore
         mint=Pubkey.from_string("27G8MtK7VtTcCHkpASjSDdkWWYfoqT6ggEuKidVJidD4"),
         decimals=6,
     ),
@@ -555,16 +555,16 @@ mainnet_spot_market_configs: list[SpotMarketConfig] = [
     SpotMarketConfig(
         symbol="syrupUSDC",
         market_index=57,
-        oracle=Pubkey.from_string("GqqkoqHU5pqgTvL88xSCipH9txbPETyzvAvybQ3zRpzw"),
-        oracle_source=OracleSource.PythPull(),  # type: ignore
+        oracle=Pubkey.from_string("6cvX4Sgcuw53y8yYXLcpAjZ7fn1VcLKojVS23tor9sVx"),
+        oracle_source=OracleSource.PythLazer(),  # type: ignore
         mint=Pubkey.from_string("AvZZF1YaZDziPY2RCK4oJrRVrbN3mTD9NL24hPeaZeUj"),
         decimals=6,
     ),
     SpotMarketConfig(
         symbol="LBTC",
         market_index=58,
-        oracle=Pubkey.from_string("Fa3VKWbdb9yQ89vA9JfYnR6micY9LwGneoQ1So9JgXHT"),
-        oracle_source=OracleSource.PythPull(),  # type: ignore
+        oracle=Pubkey.from_string("BmU3Hp9SZn77dUhWuED3ySuV3HenBgCoPZZP58M2ZMCr"),
+        oracle_source=OracleSource.PythLazer(),  # type: ignore
         mint=Pubkey.from_string("LBTCgU4b3wsFKsPwBn1rRZDx5DoFutM6RPiEt1TPDsY"),
         decimals=8,
     ),
